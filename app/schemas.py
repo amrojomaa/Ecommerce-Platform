@@ -61,6 +61,21 @@ class CartResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class Updateinputcart(BaseModel):
+    quantity: int
+
+class UpdateCartOut(BaseModel):
+    name: str
+    price: float
+
+    class Config:
+        orm_mode = True
+
+class Updateoutputcart(BaseModel):
+    product: UpdateCartOut
+    quantity: int
+    total: float
+
     # total: float
     # product_id: int
     # product_name: str
@@ -68,8 +83,8 @@ class CartResponse(BaseModel):
     # quantity: int
     # total: float
 
-    class Config:
-        orm_mode = True
+    # class Config:
+    #     orm_mode = True
 
 
 # class PostBase(BaseModel):

@@ -31,6 +31,8 @@ class DBUser(Base):
                         nullable=False, server_default=text('now()'))
     cart = relationship("DBCart", back_populates="user", cascade="all, delete",
                         uselist=False) #one cart per user
+    orders = relationship("DBOrder", back_populates="user", cascade="all, delete")
+
 
 
 
@@ -47,7 +49,7 @@ class DBCart(Base):
     def grand_total(self):
         return sum(item.total for item in self.items)
     
-    
+
 class DBCartItem(Base):
 
     __tablename__ = "cartitems"
@@ -63,3 +65,29 @@ class DBCartItem(Base):
     @property
     def total(self):
         return float(self.product.price * self.quantity)
+    
+
+
+class DBOredr(Base):
+    __tablename__ = "orders"
+    id = Column(Integer, primary_key=True, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        nullable=False, server_default=text('now()'))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    user = relationship("DBUser", back_populates="order")
+    orderitems = relationship("DBOrderItem", back_populates="order", cascade="all, delete")
+
+
+class DBOrderItem(Base):
+    __tablename__ = "order_items"
+    
+    id = Column(Integer, primary_key=True, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(Numeric(10,2), nullable=False)  
+    total = Column(Numeric(10,2), nullable=False)  
+
+    order = relationship("DBOrder", back_populates="orderitems")
+    product = relationship("DBProduct")

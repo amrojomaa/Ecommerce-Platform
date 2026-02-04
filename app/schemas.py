@@ -76,6 +76,27 @@ class Updateoutputcart(BaseModel):
     quantity: int
     total: float
 
+
+class Orderitemname(BaseModel):
+    name: str
+
+ 
+class OrderItemResponse(BaseModel):
+    product: Orderitemname
+    quantity: int
+    price: float
+    total: float
+
+    class Config:
+        from_attributes = True
+
+
+class OrderResponse(BaseModel):
+    items: List[OrderItemResponse]
+    total_amount: float
+
+    class Config:
+        from_attributes = True
     # total: float
     # product_id: int
     # product_name: str

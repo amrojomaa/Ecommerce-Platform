@@ -32,12 +32,13 @@ def add_to_cart(request :schemas.AddCart, db: Session = Depends (get_db), curren
     cart_item = db.query(models.DBCartItem).filter(
         models.DBCartItem.cart_id == cart.id,
         models.DBCartItem.product_id == product.id).first()
-    
-    if (product.quantity < (request.quantity+cart_item.quantity)):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Not enough stock available")
+
     
     if cart_item:
+        if (product.quantity < (request.quantity+cart_item.quantity)):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Not enough stock available")
         cart_item.quantity += request.quantity
+    
     else:
         cart_item = models.DBCartItem(
             cart_id=cart.id,
@@ -116,7 +117,7 @@ def clear_cart(Cart_id: int, db: Session = Depends(get_db), current_user: schema
     
     items = db.query(models.DBCartItem).filter(models.DBCartItem.cart_id == Cart_id)
     if not items:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty")
     items.delete(synchronize_session=False)
     # db.delete(items)
     db.commit()

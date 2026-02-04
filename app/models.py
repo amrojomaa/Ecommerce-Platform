@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric
+from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -31,7 +31,7 @@ class DBUser(Base):
                         nullable=False, server_default=text('now()'))
     cart = relationship("DBCart", back_populates="user", cascade="all, delete",
                         uselist=False) #one cart per user
-    orders = relationship("DBOrder", back_populates="user", cascade="all, delete")
+    order = relationship("DBOrder", back_populates="user", cascade="all, delete")
 
 
 
@@ -52,9 +52,9 @@ class DBCart(Base):
 
 class DBCartItem(Base):
 
-    __tablename__ = "cartitems"
+    __tablename__ = "cart_items"
     id = Column(Integer, primary_key=True, nullable=False)
-    quantity = Column(Integer, nullable=False, server_default=text("1"))
+    quantity = Column(Integer, nullable=False, server_default=text("0"))
 
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     product = relationship("DBProduct", back_populates="items")
@@ -68,11 +68,12 @@ class DBCartItem(Base):
     
 
 
-class DBOredr(Base):
+class DBOrder(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text('now()'))
+    total_amount = Column(Float, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     user = relationship("DBUser", back_populates="order")

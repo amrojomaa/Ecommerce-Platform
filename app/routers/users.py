@@ -1,13 +1,14 @@
-from base64 import decode
-from typing import List
-from fastapi import HTTPException, status, Response, Depends, Security
+import random
+import shutil
+import string
+from fastapi import File, HTTPException, UploadFile, status, Depends
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from app.routers.admin import require_admin
 from ..database import get_db
 from app import models, utils, schemas
-from ..OAuth2 import oauth2_scheme
 from app import OAuth2
+from typing import List
 
 
 router = APIRouter(
@@ -32,21 +33,23 @@ def get_all_user(db: Session = Depends (get_db), admin_user = Depends(require_ad
     return users
     
 
-@router.get("/users/current", response_model=schemas.User)
-def get_currenr_users(db: Session = Depends (get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+# @router.get("/users/current", response_model=schemas.User)
+# def get_current_user(db: Session = Depends (get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+#     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+#     if user == None:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+#     return user
+
+@router.get("/users/me/information", response_model=schemas.User)
+def get_me_information(db: Session = Depends (get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return user
 
-@router.get("/users/me/information", response_model=schemas.UserA)
-def get_me_information(db: Session = Depends (get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
-    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
-    return user
-
 
 @router.get("/users/{id}", response_model=schemas.User)
-def get_users_by_id(id :int, db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
+def get_users_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
     user = db.query(models.DBUser).filter(models.DBUser.id == id).first()
     if user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -76,22 +79,29 @@ def update_user(user: schemas.UserBase, id :int, db: Session = Depends (get_db),
 
 
 @router.delete("/users/{id}",  status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def delete_user(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin), current_user: int = Depends(OAuth2.get_current_user)):
+
     deleteuser = db.query(models.DBUser).filter(models.DBUser.id == id)
-    if deleteuser == None:
+    if deleteuser.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
+    if (current_user.id == id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You're admin dont delete yoreself")
     
     deleteuser.delete(synchronize_session=False)
     db.commit()
 
 
-#     @router.get("/users/{id}", status_code=status.HTTP_404_NOT_FOUND)
-# def creat(id: int, response: Response):
-#     # print(type(id))
-#     if id > 5:
-#         response.status_code=status.HTTP_404_NOT_FOUND
-#         return {"massage" : "hello fastapi" + f"{id}"}
-#     else:
-#         response.status_code=status.HTTP_200_OK
-#         return {"massage" : "hello fastapi" + f"{id}"}
 
+@router.post("/image")
+def upload_image(image: UploadFile = File(...), current_user: int = Depends(OAuth2.get_current_user)):
+    letter = string.ascii_letters
+    rand_str = ''.join(random.choice(letter) for i in range(6))
+    new = f"_{rand_str}."
+    filename = new.join(image.filename.rsplit(".", 1))
+    path = f"images/{filename}"
+
+    with open(path, "w+b") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    return {"filename": path}

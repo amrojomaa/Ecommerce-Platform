@@ -6,6 +6,17 @@ from sqlalchemy.sql.sqltypes import TIMESTAMP
 from .database import Base
 
 
+class DBCategory(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),nullable=False, server_default=text('now()'))
+
+    products = relationship("DBProduct", back_populates="category")
+
+
 class DBProduct(Base):
     __tablename__ = "products"
 
@@ -13,13 +24,14 @@ class DBProduct(Base):
     name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
-    quantity = Column(Integer, nullable=False, server_default=text("0"))
+    quantity = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),nullable=False, server_default=text('now()'))
 
+    category_name = Column(String, ForeignKey("categories.name", ondelete="RESTRICT"), nullable=False)
     items = relationship("DBCartItem", back_populates="product")
+    category = relationship("DBCategory", back_populates="products")
 
     # published = Column(Boolean, server_default='TRUE', nullable=False)
-
 
 class DBUser(Base):
     __tablename__ = "users"
@@ -29,6 +41,7 @@ class DBUser(Base):
     role = Column(String, nullable=False, server_default="user")
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text('now()'))
+    
     cart = relationship("DBCart", back_populates="user", cascade="all, delete",
                         uselist=False) #one cart per user
     order = relationship("DBOrder", back_populates="user", cascade="all, delete")

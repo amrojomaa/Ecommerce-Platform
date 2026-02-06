@@ -4,32 +4,62 @@ from typing import List, Optional
 
 # from pydantic.types import conint
 
+class Categories(BaseModel):
+    name: str
+    description: str
+
+
+class CategoriesDisplay(BaseModel):
+    # id: int
+    name: str
+    description: str
+    created_at: datetime
+
 class ProductBase(BaseModel):
     name: str
     description: str
     price: float
+    quantity: int
+    category_name: str
+
+    class Config:
+        orm_mode = True
     
 class Product(BaseModel):
-    id: int
+    # id: int
     name: str
     description: str
     price: float
+    category_name: str
 
+    class Config:
+        orm_mode = True
+
+class categoryname(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
+
+
+class Productname(BaseModel):
+    name: str
+
+    class Config:
+        orm_mode = True
 
 class UserBase(BaseModel):
     email: EmailStr
     password: str
+    class Config:
+        orm_mode = True
 
 class User(BaseModel):
-    id: int
-    email: EmailStr
-    created_at: datetime
-
-class UserA(BaseModel):
-    id: int
+    # id: int
     email: EmailStr
     role: str
     created_at: datetime
+
 
 class TokenData(BaseModel):
     id: Optional[int] = None

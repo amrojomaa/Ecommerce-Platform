@@ -1,6 +1,6 @@
 from fastapi import Depends, status, HTTPException, APIRouter
 from sqlalchemy.orm import Session
-from app import models, schemas
+from app import models
 from ..database import get_db
 from .. import models, utils, OAuth2
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
@@ -10,14 +10,14 @@ router = APIRouter(
 )
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-def new_user(user : OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db), ):#admin_user = Depends(require_admin)):
-    users = db.query(models.DBUser).filter(models.DBUser.email == user.username).first()
+def new_user(user_credentials : OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db), ):#admin_user = Depends(require_admin)):
+    users = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
     if users:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
-    user.password = utils.hash(user.password)
+    user_credentials.password = utils.hash(user_credentials.password)
     new_user = models.DBUser(
-        email=user.username,
-        password=user.password  )
+        email=user_credentials.username,
+        password=user_credentials.password  )
     
     db.add(new_user)
     db.commit()
@@ -25,7 +25,7 @@ def new_user(user : OAuth2PasswordRequestForm = Depends(), db: Session = Depends
     return {"message": "Account created successfully"} 
 
 @router.post("/login")
-def get_email(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db)): 
+def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db)): 
 
     getuser = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
     if not getuser :
@@ -37,6 +37,7 @@ def get_email(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Sessi
     token = OAuth2.create_access_token(data = {"user_id": getuser.id})
 
     return {"access_token" : token , 
-            "token_type" : 'bearer',
-            "username" : getuser.email,
-            "user_id" : getuser.id}
+            # "token_type" : 'bearer',
+            # "username" : getuser.email,
+            # "user_id" : getuser.id
+            }

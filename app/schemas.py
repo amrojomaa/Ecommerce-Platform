@@ -4,6 +4,13 @@ from typing import List, Optional
 
 # from pydantic.types import conint
 
+class FilterProducts(BaseModel):
+    name: Optional[str] = None,
+    category: Optional[str] = None,
+    min_price: Optional[str] = None,
+    max_price: Optional[str] = None,
+
+
 class Categories(BaseModel):
     name: str
     description: str

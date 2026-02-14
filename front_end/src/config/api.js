@@ -40,6 +40,12 @@ export const ORDER_ENDPOINTS = {
   DELETE: '/orders/{order_id}',
 };
 
+// Payment endpoints
+export const PAYMENT_ENDPOINTS = {
+  CREATE_INTENT: '/payment/create-intent',
+  CONFIRM: '/payment/confirm',
+};
+
 // Category endpoints
 export const CATEGORY_ENDPOINTS = {
   ALL: '/Categories/all',

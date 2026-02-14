@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Response
 from fastapi.staticfiles import StaticFiles
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order
+from .routers import Cart, Categories, login, products, users, order, payment
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -17,6 +17,7 @@ app.include_router(login.router)
 app.include_router(Cart.router)
 app.include_router(order.router)
 app.include_router(Categories.router)
+app.include_router(payment.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")
 

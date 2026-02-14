@@ -59,6 +59,12 @@
   gap: 1rem;
 }
 
+.order-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-self: flex-end;
+}
+
 .order-header {
   display: flex;
   justify-content: space-between;
@@ -209,8 +215,32 @@
   padding: 2rem;
 }
 
+.payment-order-btn {
+  background-color: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payment-order-btn:hover {
+  background-color: var(--primary-hover, #0056b3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.payment-order-btn:active {
+  transform: translateY(0);
+}
+
 .delete-order-btn {
-  align-self: flex-end;
   background-color: #dc3545;
   color: white;
   border: none;
@@ -242,6 +272,12 @@
 }
 
 @media (max-width: 768px) {
+  .order-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .payment-order-btn,
   .delete-order-btn {
     width: 100%;
     justify-content: center;

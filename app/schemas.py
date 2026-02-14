@@ -225,4 +225,17 @@ class OrderResponse(BaseModel):
 #     access_token: str
 #     token_type: str
 
+class PaymentIntentCreate(BaseModel):
+    amount: float
+    order_id: Optional[int] = None
+    currency: str = "usd"
+
+class PaymentIntentResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+
+class PaymentConfirm(BaseModel):
+    payment_intent_id: str
+    order_id: Optional[int] = None
+
 

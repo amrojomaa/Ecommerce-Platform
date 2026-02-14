@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import http from '../services/http';
-import { ORDER_ENDPOINTS, buildUrl } from '../config/api';
+import { ORDER_ENDPOINTS } from '../config/api';
 import { formatPrice, formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Orders.css';
 
 const Orders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
@@ -66,25 +67,37 @@ const Orders = () => {
 
     setDeletingOrderId(orderId);
     try {
-      const deleteUrl = buildUrl(ORDER_ENDPOINTS.DELETE, { order_id: orderId });
+      const deleteUrl = ORDER_ENDPOINTS.DELETE.replace('{order_id}', orderId);
       await http.delete(deleteUrl);
       
-      toast.success('Order deleted successfully');
+      // toast.success('Order deleted successfully');
+      alert('Order deleted successfully');
       
-      // Remove the order from the list
-      setOrders(orders.filter(order => order.id !== orderId));
-      
-      // If the deleted order was expanded, close it
+      // If the deleted order was expanded, close it first
       if (expandedOrderId === orderId) {
         setExpandedOrderId(null);
       }
+      
+      // Remove the order from the list
+      setOrders(prevOrders => prevOrders.filter(order => order && order.id !== orderId));
     } catch (error) {
       console.error('Error deleting order:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to delete order';
-      toast.error(`Failed to delete order: ${errorMsg}`);
+      // toast.error(`Failed to delete order: ${errorMsg}`);
+      alert(`Failed to delete order: ${errorMsg}`);
     } finally {
       setDeletingOrderId(null);
     }
+  };
+
+  const handlePayment = (order) => {
+    // Navigate to payment page with order information
+    navigate('/payment', {
+      state: {
+        amount: order.total_amount,
+        orderId: order.id
+      }
+    });
   };
 
   if (loading) {
@@ -109,6 +122,11 @@ const Orders = () => {
       ) : (
         <div className="orders-list">
           {orders.map((order, index) => {
+            // Safety check: skip if order is invalid
+            if (!order || !order.id) {
+              return null;
+            }
+            
             const isExpanded = expandedOrderId === order.id;
             // Debug: Log order structure
             if (isExpanded) {
@@ -143,17 +161,29 @@ const Orders = () => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    className="delete-order-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteOrder(order.id);
-                    }}
-                    disabled={deletingOrderId === order.id}
-                    title="Delete order"
-                  >
-                    {deletingOrderId === order.id ? 'Deleting...' : '🗑️ Delete'}
-                  </button>
+                  <div className="order-actions">
+                    <button
+                      className="payment-order-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePayment(order);
+                      }}
+                      title="Pay for order"
+                    >
+                      Pay Now
+                    </button>
+                    <button
+                      className="delete-order-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteOrder(order.id);
+                      }}
+                      disabled={deletingOrderId === order.id}
+                      title="Delete order"
+                    >
+                      {deletingOrderId === order.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
 
                 {isExpanded && (

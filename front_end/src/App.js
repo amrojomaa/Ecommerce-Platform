@@ -21,6 +21,7 @@ import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import Payment from './pages/Payment';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Orders from './pages/Orders';
@@ -52,6 +53,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
         </Route>
         

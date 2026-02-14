@@ -41,7 +41,7 @@ def get_all_user(db: Session = Depends (get_db), admin_user = Depends(require_ad
 #     return user
 
 @router.get("/users/me/information", response_model=schemas.User)
-def get_me_information(db: Session = Depends (get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+def get_me_information(db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if user == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)

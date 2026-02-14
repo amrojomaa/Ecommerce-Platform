@@ -13,6 +13,22 @@ router = APIRouter(
 )
 
 
+@router.get("/products/filter", response_model=list[schemas.Product])
+def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db)):
+    query = db.query(models.DBProduct)
+    if prod.name:
+        query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
+    if prod.category:
+        query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
+    if prod.min_price:
+        query = query.filter(models.DBProduct.price >= prod.min_price)
+    if prod.max_price:
+        query = query.filter(models.DBProduct.price <= prod.max_price)
+    products = query.all()
+    if not products:
+        raise HTTPException(status_code=404, detail="No products found")
+    return products
+
 @router.get("/products/filter/user", response_model=list[schemas.Product])
 def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
     query = db.query(models.DBProduct)

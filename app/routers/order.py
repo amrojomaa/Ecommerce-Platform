@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import HTTPException, status, Response, Depends, Security
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
@@ -14,7 +14,7 @@ router = APIRouter(
 )
 
 @router.post("/checkout", response_model=schemas.OrderResponse)
-def checkout(db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+def checkout(db: Session = Depends(get_db), current_user  = Depends(OAuth2.get_current_user)):
 
     cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
     if not cart or not cart.items:
@@ -42,6 +42,53 @@ def checkout(db: Session = Depends(get_db), current_user: schemas.User = Depends
     # db.query(models.DBCartItem).filter(models.DBCartItem.cart_id == cart.id).delete()
     db.commit()
 
-    return {
-    "items": new_order.orderitems,
-    "total_amount": new_order.total_amount}
+    # return {
+    # "items": new_order.orderitems,
+    # "total_amount": new_order.total_amount}
+    return new_order
+
+
+
+@router.get("/orders/my", response_model=List[schemas.OrderResponse])
+def get_my_orders(
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(OAuth2.get_current_user)
+):
+    orders = (
+        db.query(models.DBOrder)
+        .options(
+            selectinload(models.DBOrder.orderitems).joinedload(models.DBOrderItem.product)
+        )
+        .filter(models.DBOrder.user_id == current_user.id)
+        .order_by(models.DBOrder.created_at.desc())
+        .all()
+    )
+
+    return orders
+
+
+@router.delete("/orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(OAuth2.get_current_user)
+):
+    order = (
+        db.query(models.DBOrder)
+        .filter(
+            models.DBOrder.id == order_id,
+            models.DBOrder.user_id == current_user.id
+        )
+        .first()
+    )
+    
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    
+    db.delete(order)
+    db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

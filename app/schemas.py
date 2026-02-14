@@ -1,14 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from typing import List, Optional
 
 # from pydantic.types import conint
 
 class FilterProducts(BaseModel):
-    name: Optional[str] = None,
-    category: Optional[str] = None,
-    min_price: Optional[str] = None,
-    max_price: Optional[str] = None,
+    name: Optional[str] = None
+    category: Optional[str] = None
+    min_price: Optional[str] = None
+    max_price: Optional[str] = None
 
 
 class Categories(BaseModel):
@@ -37,6 +37,7 @@ class Product(BaseModel):
     name: str
     description: str
     price: float
+    quantity: int
     category_name: str
 
     class Config:
@@ -58,14 +59,29 @@ class Productname(BaseModel):
 class UserBase(BaseModel):
     email: EmailStr
     password: str
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
     class Config:
         orm_mode = True
 
 class User(BaseModel):
     # id: int
     email: EmailStr
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
     role: str
     created_at: datetime
+
+    class Config:
+        orm_mode = True
 
 
 class TokenData(BaseModel):
@@ -118,7 +134,16 @@ class Orderitemname(BaseModel):
     name: str
 
  
+# class OrderItemResponse(BaseModel):
+#     product: Orderitemname
+#     quantity: int
+#     price: float
+#     total: float
+
+#     class Config:
+#         from_attributes = True
 class OrderItemResponse(BaseModel):
+    id: int
     product: Orderitemname
     quantity: int
     price: float
@@ -128,12 +153,23 @@ class OrderItemResponse(BaseModel):
         from_attributes = True
 
 
+
+# class OrderResponse(BaseModel):
+#     items: List[OrderItemResponse]
+#     total_amount: float
+
+#     class Config:
+#         from_attributes = True
 class OrderResponse(BaseModel):
-    items: List[OrderItemResponse]
+    id: int
+    created_at: datetime
     total_amount: float
+    items: List[OrderItemResponse] = Field(alias="orderitems")
 
     class Config:
         from_attributes = True
+
+
     # total: float
     # product_id: int
     # product_name: str

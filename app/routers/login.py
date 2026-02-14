@@ -2,7 +2,7 @@ from fastapi import Depends, status, HTTPException, APIRouter
 from sqlalchemy.orm import Session
 from app import models
 from ..database import get_db
-from .. import models, utils, OAuth2
+from .. import models, utils, OAuth2, schemas
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 
 router = APIRouter(
@@ -10,14 +10,22 @@ router = APIRouter(
 )
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-def new_user(user_credentials : OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db), ):#admin_user = Depends(require_admin)):
-    users = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
+def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
+    users = db.query(models.DBUser).filter(models.DBUser.email == user_data.email).first()
     if users:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
-    user_credentials.password = utils.hash(user_credentials.password)
+    
+    hashed_password = utils.hash(user_data.password)
     new_user = models.DBUser(
-        email=user_credentials.username,
-        password=user_credentials.password  )
+        email=user_data.email,
+        password=hashed_password,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        phone=user_data.phone,
+        country=user_data.country,
+        city=user_data.city,
+        street=user_data.street
+    )
     
     db.add(new_user)
     db.commit()
@@ -37,7 +45,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     token = OAuth2.create_access_token(data = {"user_id": getuser.id})
 
     return {"access_token" : token , 
-            # "token_type" : 'bearer',
+            "token_type" : 'bearer',
             # "username" : getuser.email,
             # "user_id" : getuser.id
             }

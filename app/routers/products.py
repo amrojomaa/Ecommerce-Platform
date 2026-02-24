@@ -2,6 +2,7 @@ from fastapi import HTTPException, status, Response, Depends
 from fastapi import APIRouter
 from app import OAuth2, models, schemas
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.routers.admin import require_admin
 from ..database import get_db
 from typing import List
@@ -11,6 +12,20 @@ router = APIRouter(
     # prefix="/products",
     tags=['Products']
 )
+
+
+def get_product_with_images(product: models.DBProduct) -> dict:
+    """Helper function to convert DBProduct to dict with images"""
+    product_dict = {
+        "id": product.id,
+        "name": product.name,
+        "description": product.description,
+        "price": float(product.price),
+        "quantity": product.quantity,
+        "category_name": product.category_name,
+        "images": [img.image_path for img in product.images]
+    }
+    return product_dict
 
 
 @router.get("/products/filter", response_model=list[schemas.Product])
@@ -27,7 +42,7 @@ def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depe
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    return products
+    return [schemas.Product(**get_product_with_images(p)) for p in products]
 
 @router.get("/products/filter/user", response_model=list[schemas.Product])
 def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
@@ -43,7 +58,7 @@ def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session =
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    return products
+    return [schemas.Product(**get_product_with_images(p)) for p in products]
 
 @router.get("/products/filter/admin", response_model=list[schemas.ProductBase])
 def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_admin)):
@@ -59,7 +74,7 @@ def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session 
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    return products
+    return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
 
 @router.post("/products/create", status_code=status.HTTP_201_CREATED, response_model=schemas.ProductBase)
 def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db), admin_user = Depends(require_admin)):
@@ -74,30 +89,45 @@ def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db),
     if products:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Product name already exists")
     
-    new_product = models.DBProduct(**product.dict())
-
-    # new_product = models.DBProduct(
-    # name=product.name,
-    # description=product.description,
-    # price=product.price,
-    # quantity=product.quantity,
-    # category_name=category.name)
+    # Validate images: must have 1-3 images
+    images = product.images or []
+    if len(images) < 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one image is required")
+    if len(images) > 3:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
+    
+    # Create product without images (images is not a column in DBProduct)
+    product_dict = product.dict()
+    product_dict.pop('images', None)
+    new_product = models.DBProduct(**product_dict)
     
     db.add(new_product)
+    db.flush()  # Flush to get the product ID
+    
+    # Create product images
+    for image_path in images:
+        product_image = models.DBProductImage(
+            product_id=new_product.id,
+            image_path=image_path
+        )
+        db.add(product_image)
+    
     db.commit()
     db.refresh(new_product)
-    return new_product
+    
+    # Return product with images
+    return schemas.ProductBase(**get_product_with_images(new_product))
 
 
 @router.get("/products/all", response_model=List[schemas.Product])
 def get_all_products(db: Session = Depends (get_db)):
     products = db.query(models.DBProduct).all() 
-    return products
+    return [schemas.Product(**get_product_with_images(p)) for p in products]
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
 def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_admin)):
     products = db.query(models.DBProduct).all() 
-    return products
+    return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
 
 
 @router.get("/products/name/byadmin", response_model=schemas.ProductBase)
@@ -105,64 +135,126 @@ def get_products_by_name(name: str, db: Session = Depends (get_db), admin_user =
     product = db.query(models.DBProduct).filter(models.DBProduct.name == name).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    return product
+    return schemas.ProductBase(**get_product_with_images(product))
 
 @router.get("/products/name/byuser", response_model=schemas.Product)
 def get_products_by_name(name: str, db: Session = Depends (get_db)):
     product = db.query(models.DBProduct).filter(models.DBProduct.name == name).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    return product
+    return schemas.Product(**get_product_with_images(product))
 
 @router.get("/products/{id}", response_model=schemas.ProductBase)
 def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)): 
     product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    return product
+    return schemas.ProductBase(**get_product_with_images(product))
 
 
 
 
 @router.put("/products/{id}", response_model=schemas.ProductBase)
 def update_product(product: schemas.ProductBase, id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
-    
-    updateproduct = db.query(models.DBProduct).filter(models.DBProduct.id == id)
-    update = updateproduct.first()
-    if update == None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    
-    prod = db.query(models.DBProduct).filter(models.DBProduct.name == product.name).first()
-    if prod :
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Product name already exists")
-    
-    category_name = product.category_name
-    category = db.query(models.DBCategory).filter(models.DBCategory.name == category_name).first()
+    try:
+        updateproduct = db.query(models.DBProduct).filter(models.DBProduct.id == id)
+        update = updateproduct.first()
+        if update == None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
+        
+        prod = db.query(models.DBProduct).filter(models.DBProduct.name == product.name).first()
+        if prod and prod.id != id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Product name already exists")
+        
+        category_name = product.category_name
+        category = db.query(models.DBCategory).filter(models.DBCategory.name == category_name).first()
 
-    if not category:
-        raise HTTPException(status_code=404,detail="Category not found")
-    
-    updateproduct.update(product.dict(), synchronize_session=False)
-
-    # updateproduct.update({
-    #     update.name: product.name,
-    #     update.description: product.description,
-    #     update.price: product.price,
-    #     update.quantity: product.quantity,
-    #     update.category_name: product.category_name
-    # }, synchronize_session=False)
-    db.commit()
-    return updateproduct.first()
+        if not category:
+            raise HTTPException(status_code=404,detail="Category not found")
+        
+        # Validate images: must have 1-3 images
+        images = product.images or []
+        if len(images) < 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one image is required")
+        if len(images) > 3:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
+        
+        # Update product without images and id (id is primary key, shouldn't be updated)
+        product_dict = product.dict()
+        product_dict.pop('images', None)
+        product_dict.pop('id', None)  # Remove id to prevent updating primary key
+        updateproduct.update(product_dict, synchronize_session=False)
+        
+        # Delete existing images
+        db.query(models.DBProductImage).filter(models.DBProductImage.product_id == id).delete()
+        
+        # Add new images
+        for image_path in images:
+            product_image = models.DBProductImage(
+                product_id=id,
+                image_path=image_path
+            )
+            db.add(product_image)
+        
+        db.commit()
+        db.refresh(update)
+        
+        # Query again to get the updated product with images
+        updated_product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
+        return schemas.ProductBase(**get_product_with_images(updated_product))
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error updating product: {str(e)}")
 
 
 @router.delete("/products/{id}",  status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
-    deleteproduct = db.query(models.DBProduct).filter(models.DBProduct.id == id)
-    if deleteproduct.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    
-    deleteproduct.delete(synchronize_session=False)
-    db.commit()
+    try:
+        product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        
+        # Check if product has order items (for historical record keeping, prevent deletion)
+        order_items = db.query(models.DBOrderItem).filter(models.DBOrderItem.product_id == id).first()
+        if order_items:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Cannot delete product that has been ordered. Product is part of order history."
+            )
+        
+        # Delete product images (cascade should handle this, but being explicit)
+        db.query(models.DBProductImage).filter(models.DBProductImage.product_id == id).delete()
+        
+        # Delete cart items (cascade should handle this, but being explicit)
+        db.query(models.DBCartItem).filter(models.DBCartItem.product_id == id).delete()
+        
+        # Delete the product
+        db.query(models.DBProduct).filter(models.DBProduct.id == id).delete(synchronize_session=False)
+        db.commit()
+        
+    except HTTPException:
+        raise
+    except IntegrityError as e:
+        db.rollback()
+        # Check if it's a foreign key constraint error
+        error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+        if 'order_items' in error_msg.lower() or 'foreign key' in error_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete product that has been ordered. Product is part of order history."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete product due to database constraints: {error_msg}"
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error deleting product: {str(e)}"
+        )
 
 
 

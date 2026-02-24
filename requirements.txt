@@ -9,3 +9,11 @@ jose
 jwt 
 email-validator
 stripe
+fastapi-mail
+aiosmtplib
+python-dotenv
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+httpx
+google-generativeai

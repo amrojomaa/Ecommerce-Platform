@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
-import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS } from '../../config/api';
+import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS } from '../../config/api';
 import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
@@ -10,6 +10,7 @@ import '../../styles/pages/admin/AdminProducts.css';
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -25,6 +26,7 @@ const AdminProducts = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -33,9 +35,20 @@ const AdminProducts = () => {
       const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
       setProducts(response.data);
     } catch (error) {
-      toast.error('Failed to fetch products');
+      // toast.error('Failed to fetch products');
+      alert('Failed to fetch products');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await http.get(CATEGORY_ENDPOINTS.ALL);
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      // Don't show alert for categories, just log error
     }
   };
 
@@ -48,6 +61,16 @@ const AdminProducts = () => {
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
+    
+    // Check total images count (existing + new)
+    const totalImages = images.length + files.length;
+    if (totalImages > 3) {
+      // toast.error('Maximum 3 images allowed. Please remove some images first.');
+      alert('Maximum 3 images allowed. Please remove some images first.');
+      e.target.value = ''; // Reset file input
+      return;
+    }
+    
     setUploading(true);
     
     try {
@@ -64,33 +87,68 @@ const AdminProducts = () => {
       const responses = await Promise.all(uploadPromises);
       const uploadedImages = responses.map(r => r.data.filename);
       setImages([...images, ...uploadedImages]);
-      toast.success('Images uploaded successfully');
+      // toast.success('Images uploaded successfully');
+      alert('Images uploaded successfully');
     } catch (error) {
-      toast.error('Failed to upload images');
+      // toast.error('Failed to upload images');
+      alert('Failed to upload images');
     } finally {
       setUploading(false);
+      e.target.value = ''; // Reset file input
     }
+  };
+
+  const handleRemoveImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate images: must have at least 1 image
+    if (images.length < 1) {
+      // toast.error('At least one image is required');
+      alert('At least one image is required');
+      return;
+    }
+    
+    if (images.length > 3) {
+      // toast.error('Maximum 3 images allowed');
+      alert('Maximum 3 images allowed');
+      return;
+    }
+    
     try {
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        quantity: parseInt(formData.quantity),
+        images: images
+      };
+      
       if (editingProduct) {
+        if (!editingProduct.id) {
+          alert('Error: Product ID is missing. Please refresh and try again.');
+          return;
+        }
         await http.put(
           PRODUCT_ENDPOINTS.UPDATE.replace('{id}', editingProduct.id),
-          formData
+          productData
         );
-        toast.success('Product updated successfully');
+        // toast.success('Product updated successfully');
+        alert('Product updated successfully');
       } else {
-        await http.post(PRODUCT_ENDPOINTS.CREATE, formData);
-        toast.success('Product created successfully');
+        await http.post(PRODUCT_ENDPOINTS.CREATE, productData);
+        // toast.success('Product created successfully');
+        alert('Product created successfully');
       }
       
       resetForm();
       fetchProducts();
     } catch (error) {
-      toast.error(error.message || 'Failed to save product');
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save product';
+      // toast.error(errorMessage);
+      alert(errorMessage);
     }
   };
 
@@ -103,6 +161,8 @@ const AdminProducts = () => {
       quantity: product.quantity,
       category_name: product.category_name,
     });
+    // Load existing images
+    setImages(product.images || []);
     setShowModal(true);
   };
 
@@ -113,10 +173,12 @@ const AdminProducts = () => {
 
     try {
       await http.delete(PRODUCT_ENDPOINTS.DELETE.replace('{id}', id));
-      toast.success('Product deleted successfully');
+      // toast.success('Product deleted successfully');
+      alert('Product deleted successfully');
       fetchProducts();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete product');
+      // toast.error(error.message || 'Failed to delete product');
+      alert(error.message || 'Failed to delete product');
     }
   };
 
@@ -168,11 +230,13 @@ const AdminProducts = () => {
             >
               <div className="product-image">
                 <img
-                  src={`http://localhost:8000/images/placeholder.jpg`}
+                  src={product.images && product.images.length > 0 
+                    ? `http://localhost:8000/${product.images[0]}`
+                    : `http://localhost:8000/images/placeholder.jpg`}
                   alt={product.name}
-                  onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                  }}
+                  // onError={(e) => {
+                  //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                  // }}
                 />
               </div>
               <div className="product-info">
@@ -267,31 +331,52 @@ const AdminProducts = () => {
 
                 <div className="form-group">
                   <label>Category Name *</label>
-                  <input
-                    type="text"
+                  <select
                     name="category_name"
                     value={formData.category_name}
                     onChange={handleInputChange}
                     required
-                  />
+                    className="category-select"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                      <option key={category.name} value={category.name}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Product Images</label>
+                  <label>Product Images * (1-3 images required)</label>
                   <input
                     type="file"
                     multiple
                     accept="image/*"
                     onChange={handleImageUpload}
-                    disabled={uploading}
+                    disabled={uploading || images.length >= 3}
                   />
+                  <small className="image-hint">
+                    {images.length === 0 && 'At least 1 image is required. '}
+                    {images.length > 0 && `${images.length}/3 images selected. `}
+                    {images.length < 3 && 'You can add more images.'}
+                    {images.length >= 3 && 'Maximum 3 images reached.'}
+                  </small>
                   {uploading && <LoadingSpinner size="small" />}
                   {images.length > 0 && (
                     <div className="uploaded-images">
                       {images.map((img, idx) => (
-                        <span key={idx} className="image-tag">
-                          {img.split('/').pop()}
-                        </span>
+                        <div key={img || idx} className="image-tag">
+                          <span>{img.split('/').pop()}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="remove-image-btn"
+                            title="Remove image"
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}

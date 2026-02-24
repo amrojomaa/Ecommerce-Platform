@@ -83,11 +83,118 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await http.post(AUTH_ENDPOINTS.SIGNUP, userData);
 
-      return { success: true, message: response.data.message || 'Account created successfully' };
+      return { 
+        success: true, 
+        message: response.data.message || 'Account created successfully',
+        email: response.data.email || userData.email,
+        verification_code: response.data.verification_code || null
+      };
     } catch (error) {
       return {
         success: false,
         error: error.response?.data?.detail || error.message || 'Signup failed. Please try again.',
+      };
+    }
+  };
+
+  const verifyEmail = async (email, verificationCode) => {
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.VERIFY_EMAIL, {
+        email,
+        verification_code: verificationCode
+      });
+
+      return { 
+        success: true, 
+        message: response.data.message || 'Email verified successfully' 
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Verification failed. Please try again.',
+      };
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
+        email
+      });
+
+      return { 
+        success: true, 
+        message: response.data.message || 'Verification code sent to your email',
+        email: response.data.email,
+        verification_code: response.data.verification_code || null
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Failed to send verification code. Please try again.',
+      };
+    }
+  };
+
+  const verifyResetCode = async (email, verificationCode) => {
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.VERIFY_RESET_CODE, {
+        email,
+        verification_code: verificationCode
+      });
+
+      return { 
+        success: true, 
+        message: response.data.message || 'Verification code is valid' 
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Invalid verification code. Please try again.',
+      };
+    }
+  };
+
+  const resetPassword = async (email, verificationCode, newPassword) => {
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.RESET_PASSWORD, {
+        email,
+        verification_code: verificationCode,
+        new_password: newPassword
+      });
+
+      return { 
+        success: true, 
+        message: response.data.message || 'Password reset successfully' 
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Failed to reset password. Please try again.',
+      };
+    }
+  };
+
+  const loginWithGoogle = async (googleToken) => {
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.GOOGLE_AUTH, {
+        token: googleToken
+      });
+
+      const { access_token } = response.data;
+      
+      if (access_token) {
+        localStorage.setItem('token', access_token);
+        await fetchUserInfo();
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Google login failed' };
+    } catch (error) {
+      const errorMessage = error.message || error.data?.detail || error.response?.data?.detail || 'Google login failed. Please try again.';
+      return {
+        success: false,
+        error: errorMessage,
       };
     }
   };
@@ -109,9 +216,14 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     signup,
+    verifyEmail,
+    loginWithGoogle,
     logout,
     isAdmin,
     fetchUserInfo,
+    forgotPassword,
+    verifyResetCode,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

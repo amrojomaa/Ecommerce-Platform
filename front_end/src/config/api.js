@@ -7,7 +7,12 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 export const AUTH_ENDPOINTS = {
   LOGIN: '/login',
   SIGNUP: '/signup',
+  VERIFY_EMAIL: '/verify-email',
+  GOOGLE_AUTH: '/auth/google',
   LOGOUT: '/logout', // If implemented
+  FORGOT_PASSWORD: '/forgot-password',
+  VERIFY_RESET_CODE: '/verify-reset-code',
+  RESET_PASSWORD: '/reset-password',
 };
 
 // Product endpoints
@@ -37,7 +42,9 @@ export const CART_ENDPOINTS = {
 export const ORDER_ENDPOINTS = {
   CHECKOUT: '/checkout',
   MY_ORDERS: '/orders/my',
-  DELETE: '/orders/{order_id}',
+  ALL_ORDERS: '/orders/all',
+  CANCEL: '/orders/{order_id}/cancel',
+  UPDATE_STATUS: '/orders/{order_id}/status',
 };
 
 // Payment endpoints
@@ -60,6 +67,7 @@ export const CATEGORY_ENDPOINTS = {
 export const USER_ENDPOINTS = {
   ME: '/users/me/information',
   UPDATE_ME: '/users/me',
+  UPLOAD_PROFILE_IMAGE: '/users/me/profile-image',
   ALL: '/users/all',
   BY_ID: '/users/{id}',
   UPDATE: '/users/{id}',
@@ -69,6 +77,12 @@ export const USER_ENDPOINTS = {
 // Image upload endpoint
 export const IMAGE_ENDPOINTS = {
   UPLOAD: '/image',
+};
+
+// AI Assistant endpoints
+export const AI_ASSISTANT_ENDPOINTS = {
+  CHAT: '/ai-assistant/chat',
+  CLEAR: '/ai-assistant/chat/clear',
 };
 
 // Helper function to replace path parameters

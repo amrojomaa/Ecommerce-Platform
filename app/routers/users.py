@@ -57,10 +57,17 @@ def get_users_by_id(id :int, db: Session = Depends (get_db), admin_user = Depend
 
 
 @router.put("/users/me", response_model=schemas.User)
-def update_me(user: schemas.UserBase, db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
-    user.password = utils.hash(user.password)
+def update_me(user: schemas.UserUpdate, db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
+    update_data = user.dict(exclude_unset=True)
+    # Only hash password if it's provided and not empty
+    if update_data.get('password'):
+        update_data['password'] = utils.hash(update_data['password'])
+    else:
+        # Remove password from update if not provided
+        update_data.pop('password', None)
+    
     updateuser = db.query(models.DBUser).filter(models.DBUser.id == current_user.id)
-    updateuser.update(user.dict(), synchronize_session=False)
+    updateuser.update(update_data, synchronize_session=False)
     db.commit()
     return updateuser.first()
 
@@ -105,3 +112,26 @@ def upload_image(image: UploadFile = File(...), current_user: int = Depends(OAut
         shutil.copyfileobj(image.file, buffer)
 
     return {"filename": path}
+
+@router.post("/users/me/profile-image")
+def upload_profile_image(image: UploadFile = File(...), db: Session = Depends(get_db), current_user: int = Depends(OAuth2.get_current_user)):
+    letter = string.ascii_letters
+    rand_str = ''.join(random.choice(letter) for i in range(6))
+    new = f"_{rand_str}."
+    filename = new.join(image.filename.rsplit(".", 1))
+    path = f"images/profile/{filename}"
+
+    # Create directory if it doesn't exist
+    import os
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    with open(path, "w+b") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+    # Update user's profile_image
+    updateuser = db.query(models.DBUser).filter(models.DBUser.id == current_user.id)
+    updateuser.update({"profile_image": path}, synchronize_session=False)
+    db.commit()
+    
+    user = updateuser.first()
+    return {"profile_image": user.profile_image}

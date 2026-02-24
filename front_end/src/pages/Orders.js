@@ -12,7 +12,7 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
-  const [deletingOrderId, setDeletingOrderId] = useState(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -55,38 +55,40 @@ const Orders = () => {
     }
   };
 
-  const handleDeleteOrder = async (orderId) => {
-    // Confirm deletion
+  const handleCancelOrder = async (orderId) => {
+    // Confirm cancellation
     const confirmed = window.confirm(
-      `Are you sure you want to delete Order #${orderId}? This action cannot be undone.`
+      `Are you sure you want to cancel Order #${orderId}?`
     );
     
     if (!confirmed) {
       return;
     }
 
-    setDeletingOrderId(orderId);
+    setCancellingOrderId(orderId);
     try {
-      const deleteUrl = ORDER_ENDPOINTS.DELETE.replace('{order_id}', orderId);
-      await http.delete(deleteUrl);
+      const cancelUrl = ORDER_ENDPOINTS.CANCEL.replace('{order_id}', orderId);
+      const response = await http.patch(cancelUrl);
       
-      // toast.success('Order deleted successfully');
-      alert('Order deleted successfully');
+      alert('Order cancelled successfully');
       
-      // If the deleted order was expanded, close it first
+      // Update the order in the list with new status
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId ? { ...order, status: 'cancelled' } : order
+        )
+      );
+      
+      // If the cancelled order was expanded, refresh it
       if (expandedOrderId === orderId) {
         setExpandedOrderId(null);
       }
-      
-      // Remove the order from the list
-      setOrders(prevOrders => prevOrders.filter(order => order && order.id !== orderId));
     } catch (error) {
-      console.error('Error deleting order:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to delete order';
-      // toast.error(`Failed to delete order: ${errorMsg}`);
-      alert(`Failed to delete order: ${errorMsg}`);
+      console.error('Error cancelling order:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Failed to cancel order';
+      alert(`Failed to cancel order: ${errorMsg}`);
     } finally {
-      setDeletingOrderId(null);
+      setCancellingOrderId(null);
     }
   };
 
@@ -153,6 +155,11 @@ const Orders = () => {
                       </p>
                     </div>
                     <div className="order-header-right">
+                      <div className="order-status-badge">
+                        <span className={`status-badge status-${order.status || 'created'}`}>
+                          {order.status || 'created'}
+                        </span>
+                      </div>
                       <div className="order-total">
                         Total: {formatPrice(order.total_amount)}
                       </div>
@@ -162,27 +169,31 @@ const Orders = () => {
                     </div>
                   </div>
                   <div className="order-actions">
-                    <button
-                      className="payment-order-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePayment(order);
-                      }}
-                      title="Pay for order"
-                    >
-                      Pay Now
-                    </button>
-                    <button
-                      className="delete-order-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteOrder(order.id);
-                      }}
-                      disabled={deletingOrderId === order.id}
-                      title="Delete order"
-                    >
-                      {deletingOrderId === order.id ? 'Deleting...' : 'Delete'}
-                    </button>
+                    {order.status === 'created' && (
+                      <button
+                        className="payment-order-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePayment(order);
+                        }}
+                        title="Pay for order"
+                      >
+                        Pay Now
+                      </button>
+                    )}
+                    {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                      <button
+                        className="cancel-order-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelOrder(order.id);
+                        }}
+                        disabled={cancellingOrderId === order.id}
+                        title="Cancel order"
+                      >
+                        {cancellingOrderId === order.id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -201,6 +212,12 @@ const Orders = () => {
                       <div className="info-row">
                         <span className="info-label">Total Amount:</span>
                         <span className="info-value">{formatPrice(order.total_amount)}</span>
+                      </div>
+                      <div className="info-row">
+                        <span className="info-label">Status:</span>
+                        <span className={`info-value status-${order.status || 'created'}`}>
+                          {order.status || 'created'}
+                        </span>
                       </div>
                     </div>
 

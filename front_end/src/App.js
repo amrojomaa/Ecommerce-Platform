@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -10,7 +11,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
-// import AdminLayout from './layouts/AdminLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -24,20 +25,27 @@ import Checkout from './pages/Checkout';
 import Payment from './pages/Payment';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import EmailVerification from './pages/EmailVerification';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyResetCode from './pages/VerifyResetCode';
+import ResetPassword from './pages/ResetPassword';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 
-// Pages - Admin
-// import AdminDashboard from './pages/admin/AdminDashboard';
-// import AdminProducts from './pages/admin/AdminProducts';
-// import AdminCategories from './pages/admin/AdminCategories';
-// import AdminOrders from './pages/admin/AdminOrders';
+//Pages - Admin
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminOrders from './pages/admin/AdminOrders';
 
 // Styles
 import './styles/App.css';
 
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+
 function App() {
   return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <ThemeProvider>
     <AuthProvider>
       <CartProvider>
@@ -50,15 +58,24 @@ function App() {
           <Route path="products/:name" element={<ProductDetails />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="verify-email" element={<EmailVerification />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="verify-reset-code" element={<VerifyResetCode />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           <Route path="profile" element={<Profile />} />
           <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
         </Route>
-        
+        <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="products" element={<AdminProducts />} />
+                    <Route path="categories" element={<AdminCategories />} />
+                    <Route path="orders" element={<AdminOrders />} />
+        </Route>
 
-        <Route path="*" element={<Navigate to="/" />} />
+        {/* <Route path="*" element={<Navigate to="/" />} /> */}
 
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />
@@ -66,6 +83,7 @@ function App() {
     </CartProvider>
     </AuthProvider>
     </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

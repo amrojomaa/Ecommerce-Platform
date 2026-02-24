@@ -271,6 +271,87 @@
   opacity: 0.6;
 }
 
+.cancel-order-btn {
+  background-color: #ffc107;
+  color: #000;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancel-order-btn:hover:not(:disabled) {
+  background-color: #e0a800;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cancel-order-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cancel-order-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.order-status-badge {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-created {
+  background-color: #6c757d;
+  color: white;
+}
+
+.status-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.status-shipped {
+  background-color: #007bff;
+  color: white;
+}
+
+.status-delivered {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.status-cancelled {
+  background-color: #dc3545;
+  color: white;
+}
+
+.info-value.status-created,
+.info-value.status-paid,
+.info-value.status-shipped,
+.info-value.status-delivered,
+.info-value.status-cancelled {
+  text-transform: capitalize;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  display: inline-block;
+}
+
 @media (max-width: 768px) {
   .order-actions {
     width: 100%;
@@ -278,7 +359,8 @@
   }
   
   .payment-order-btn,
-  .delete-order-btn {
+  .delete-order-btn,
+  .cancel-order-btn {
     width: 100%;
     justify-content: center;
   }

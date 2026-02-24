@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS } from '../config/api';
@@ -8,13 +8,14 @@ import { ProductCardSkeleton } from '../components/Skeleton';
 import '../styles/pages/Home.css';
 
 const Home = () => {
+  const location = useLocation();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchFeaturedProducts();
-  }, []);
+  }, [location.pathname]); // Refresh when navigating to home page
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -133,11 +134,13 @@ const Home = () => {
                 >
                   <div className="product-image">
                     <img
-                      src={`http://localhost:8000/images/Capture001_cvxOtb.png`}
+                      src={product.images && product.images.length > 0
+                        ? `http://localhost:8000/${product.images[0]}`
+                        : `http://localhost:8000/images/placeholder.jpg`}
                       alt={product.name}
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                      }}
+                      // onError={(e) => {
+                      //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                      // }}
                     />
                   </div>
                   <div className="product-info">

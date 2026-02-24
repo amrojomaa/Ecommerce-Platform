@@ -2,13 +2,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 200px);
-  padding: 2rem;
+  min-height: calc(100vh - 300px);
+  padding: 1rem;
+  padding-top: 0rem;
 }
 
 .auth-container {
   background-color: var(--surface);
-  padding: 3rem;
+  padding: 1.5rem;
   border-radius: 1rem;
   box-shadow: var(--shadow-lg);
   width: 100%;
@@ -17,14 +18,14 @@
 
 .auth-container h1 {
   text-align: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   color: var(--text-primary);
 }
 
 .auth-container > p {
   text-align: center;
   color: var(--text-secondary);
-  margin-bottom: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .auth-form {
@@ -33,13 +34,13 @@
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .form-row {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .form-row .form-group {
@@ -50,6 +51,7 @@
 .form-row-three {
   display: flex;
   gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .form-row-three .form-group {
@@ -64,13 +66,75 @@
   font-weight: 500;
 }
 
-.form-group input {
+.password-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.forgot-password-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.625rem;
+  padding-right: 2.5rem;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   background-color: var(--background);
   color: var(--text-primary);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: var(--text-primary);
+}
+
+.password-toggle:focus {
+  outline: none;
+  color: var(--primary-color);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
 }
 
 .form-group input.error {
@@ -88,11 +152,11 @@
   width: 100%;
   background-color: var(--primary-color);
   color: white;
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 0.5rem;
   font-weight: 600;
   font-size: 1rem;
-  margin-top: 0.5rem;
+  margin-top: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,15 +172,85 @@
   cursor: not-allowed;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+  padding: 0 1rem;
+  font-size: 0.875rem;
+}
+
+.google-button {
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.google-button:hover:not(:disabled) {
+  background-color: var(--background) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.google-button svg {
+  margin-right: 0.5rem;
+}
+
 .auth-link {
   text-align: center;
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
   color: var(--text-secondary);
 }
 
 .auth-link a {
   color: var(--primary-color);
   font-weight: 600;
+}
+
+.verification-code-container {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.verification-input {
+  width: 50px;
+  height: 60px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.verification-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.verification-input.error {
+  border-color: var(--error-color);
+}
+
+.verification-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

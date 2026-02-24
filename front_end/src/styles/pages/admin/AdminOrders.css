@@ -71,8 +71,58 @@
   border-radius: 1rem;
   font-size: 0.875rem;
   font-weight: 600;
-  background-color: var(--success-color);
+  text-transform: capitalize;
+}
+
+.status-created {
+  background-color: #6c757d;
   color: white;
+}
+
+.status-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.status-shipped {
+  background-color: #007bff;
+  color: white;
+}
+
+.status-delivered {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.status-cancelled {
+  background-color: #dc3545;
+  color: white;
+}
+
+.status-select {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.status-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-select:hover:not(:disabled) {
+  border-color: var(--primary-color);
+}
+
+.no-action {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 768px) {

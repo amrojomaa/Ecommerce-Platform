@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
@@ -6,11 +6,15 @@ import { USER_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import API_BASE_URL from '../config/api';
 import '../styles/pages/Profile.css';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, fetchUserInfo } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
@@ -23,6 +27,9 @@ const Profile = () => {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
+  
+  // Default profile image
+  const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
 
   useEffect(() => {
     if (user) {
@@ -37,8 +44,86 @@ const Profile = () => {
         password: '',
         confirmPassword: '',
       });
+      // Reset preview when user changes
+      setPreviewImage(null);
     }
   }, [user]);
+  
+  const getProfileImageUrl = () => {
+    if (previewImage) {
+      return previewImage;
+    }
+    if (user?.profile_image) {
+      // Check if it's already a full URL (e.g., Google profile image)
+      if (user.profile_image.startsWith('http://') || user.profile_image.startsWith('https://')) {
+        return user.profile_image;
+      }
+      // Otherwise, it's a relative path from our server
+      return `${API_BASE_URL}/${user.profile_image}`;
+    }
+    return defaultProfileImage;
+  };
+  
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        // toast.error('Please select an image file');
+        alert('Please select an image file');
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        // toast.error('Image size should be less than 5MB');
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleImageUpload = async () => {
+    const file = fileInputRef.current?.files[0];
+    if (!file) {
+      // toast.error('Please select an image');
+      alert('Please select an image');
+      return;
+    }
+    
+    setImageLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await http.post(USER_ENDPOINTS.UPLOAD_PROFILE_IMAGE, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // toast.success('Profile image updated successfully!');
+      alert('Profile image updated successfully!');
+      // Refresh user data
+      await fetchUserInfo();
+      setPreviewImage(null);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      // toast.error(error.response?.data?.detail || error.message || 'Failed to upload image');
+      alert(error.response?.data?.detail || error.message || 'Failed to upload image');
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -92,10 +177,11 @@ const Profile = () => {
       }
 
       await http.put(USER_ENDPOINTS.UPDATE_ME, updateData);
-      toast.success('Profile updated successfully!');
+      // toast.success('Profile updated successfully!');
+      alert('Profile updated successfully!');
       
-      // Reload page to refresh user data
-      window.location.reload();
+      // Refresh user data
+      await fetchUserInfo();
       
       // Clear password fields
       setFormData({
@@ -104,7 +190,8 @@ const Profile = () => {
         confirmPassword: '',
       });
     } catch (error) {
-      toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
+      // toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
+      alert(error.response?.data?.detail || error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -129,6 +216,50 @@ const Profile = () => {
       >
         <div className="profile-info">
           <h2>Account Information</h2>
+          
+          <div className="profile-image-section">
+            <div className="profile-image-container">
+              <img 
+                src={getProfileImageUrl()} 
+                alt="Profile" 
+                className="profile-image-display"
+                onError={(e) => {
+                  e.target.src = defaultProfileImage;
+                }}
+              />
+            </div>
+            <div className="profile-image-upload">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{ display: 'none' }}
+                id="profile-image-input"
+              />
+              <label htmlFor="profile-image-input" className="image-upload-label">
+                Choose Image
+              </label>
+              {previewImage && (
+                <button
+                  type="button"
+                  onClick={handleImageUpload}
+                  className="upload-image-btn"
+                  disabled={imageLoading}
+                >
+                  {imageLoading ? (
+                    <>
+                      <LoadingSpinner size="small" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Image'
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+          
           <div className="info-item">
             <label>Email:</label>
             <span>{user.email}</span>

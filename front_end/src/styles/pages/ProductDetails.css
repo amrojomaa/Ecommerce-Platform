@@ -27,11 +27,14 @@
 }
 
 .main-image {
-  width: 100%;
+  width: 60%;
+  max-width: 500px;
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: 1rem;
   background-color: var(--surface);
+  margin: 0 auto;
+  margin-left: 0px;
 }
 
 .main-image img {

@@ -90,7 +90,9 @@ const Cart = () => {
               >
                 <div className="cart-item-image">
                   <img
-                    src={`http://localhost:8000/images/placeholder.jpg`}
+                    src={item.product?.images && item.product.images.length > 0
+                      ? `http://localhost:8000/${item.product.images[0]}`
+                      : `http://localhost:8000/images/placeholder.jpg`}
                     alt={item.product?.name || 'Product'}
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';

@@ -7,6 +7,20 @@ from app import models, schemas
 from app import OAuth2
 
 
+def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
+    """Helper function to convert DBCartItem to dict with product images"""
+    return {
+        "id": cart_item.id,
+        "quantity": cart_item.quantity,
+        "total": float(cart_item.total),
+        "product": {
+            "name": cart_item.product.name,
+            "price": float(cart_item.product.price),
+            "images": [img.image_path for img in cart_item.product.images]
+        }
+    }
+
+
 router = APIRouter(
     # prefix="/users",
     tags=['Cart']
@@ -48,7 +62,17 @@ def add_to_cart(request :schemas.AddCart, db: Session = Depends (get_db), curren
     db.commit()
     db.refresh(cart_item)
     # raise HTTPException(status_code=status.HTTP_200_OK, detail="add to cart succsessfully")
-    return cart_item
+    
+    # Return cart item with product images
+    return {
+        "product": {
+            "name": cart_item.product.name,
+            "price": float(cart_item.product.price),
+            "images": [img.image_path for img in cart_item.product.images]
+        },
+        "quantity": cart_item.quantity,
+        "total": float(cart_item.total)
+    }
 
 
 @router.get("/showmecart", response_model=schemas.CartResponse)
@@ -58,25 +82,18 @@ def show_me_cart(db: Session = Depends(get_db), current_user: schemas.User = Dep
     if not cart:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart not found")
     
-    # cart_items = db.query(models.DBCartItem).filter(models.DBCartItem.cart_id == cart.id).all()
-    
     if not cart.items:
-        return []
+        return {
+            "items": [],
+            "grand_total": 0.0
+        }
 
-    # result = []
-
-    # for item in cart.items:
-    #     result.append({
-    #         "product_id": item.product.id,
-    #         "product_name": item.product.name,
-    #         "price": float(item.product.price),
-    #         "quantity": item.quantity,
-    #         "total": float(item.product.price * item.quantity)
-    #     })
+    # Convert cart items to include product images
+    cart_items = [get_cart_item_with_images(item) for item in cart.items]
 
     return {
-        "items": cart.items,
-        "grand_total": cart.grand_total
+        "items": cart_items,
+        "grand_total": float(cart.grand_total)
     }
 
 
@@ -93,7 +110,17 @@ def update_cart(item_id: int, request :schemas.Updateinputcart, db: Session = De
     cartitem.quantity = request.quantity
     db.commit()
     db.refresh(cartitem)
-    return cartitem
+    
+    # Return cart item with product images
+    return {
+        "product": {
+            "name": cartitem.product.name,
+            "price": float(cartitem.product.price),
+            "images": [img.image_path for img in cartitem.product.images]
+        },
+        "quantity": cartitem.quantity,
+        "total": float(cartitem.total)
+    }
 
 @router.delete("/deletecart/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_cart(item_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):

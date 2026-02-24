@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS } from '../config/api';
@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 import '../styles/pages/Products.css';
 
 const Products = () => {
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -27,7 +28,7 @@ const Products = () => {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.pathname]); // Refresh when navigating to products page
 
   // useEffect(() => {
   //   applyFilters();
@@ -217,11 +218,13 @@ const Products = () => {
                     >
                       <div className="product-image">
                         <img
-                          src={`http://localhost:8000/images/placeholder.jpg`}
+                          src={product.images && product.images.length > 0
+                            ? `http://localhost:8000/${product.images[0]}`
+                            : `http://localhost:8000/images/placeholder.jpg`}
                           alt={product.name}
-                          onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                          }}
+                          // onError={(e) => {
+                          //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                          // }}
                         />
                       </div>
                       <div className="product-info">

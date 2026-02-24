@@ -71,7 +71,7 @@ def confirm_payment(
                 detail=f"Payment not succeeded. Status: {intent.status}"
             )
         
-        # If order_id is provided, update order status
+        # If order_id is provided, update order status to paid
         if payment_confirm.order_id:
             order = (
                 db.query(models.DBOrder)
@@ -88,8 +88,9 @@ def confirm_payment(
                     detail="Order not found"
                 )
             
-            # You can add a payment_status field to your Order model if needed
-            # For now, we'll just return success
+            # Update order status to paid
+            order.status = "paid"
+            db.commit()
         
         return {
             "status": "success",

@@ -23,22 +23,25 @@ class CategoriesDisplay(BaseModel):
     created_at: datetime
 
 class ProductBase(BaseModel):
+    id: Optional[int] = None
     name: str
     description: str
     price: float
     quantity: int
     category_name: str
+    images: Optional[List[str]] = []
 
     class Config:
         orm_mode = True
     
 class Product(BaseModel):
-    # id: int
+    id: Optional[int] = None
     name: str
     description: str
     price: float
     quantity: int
     category_name: str
+    images: Optional[List[str]] = []
 
     class Config:
         orm_mode = True
@@ -65,6 +68,20 @@ class UserBase(BaseModel):
     country: Optional[str] = None
     city: Optional[str] = None
     street: Optional[str] = None
+    profile_image: Optional[str] = None
+    class Config:
+        orm_mode = True
+
+class UserUpdate(BaseModel):
+    email: EmailStr
+    password: Optional[str] = None
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    country: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+    profile_image: Optional[str] = None
     class Config:
         orm_mode = True
 
@@ -77,6 +94,7 @@ class User(BaseModel):
     country: Optional[str] = None
     city: Optional[str] = None
     street: Optional[str] = None
+    profile_image: Optional[str] = None
     role: str
     created_at: datetime
 
@@ -96,6 +114,7 @@ class AddCart(BaseModel):
 class ShowCartOut(BaseModel):
     name: str
     price: float
+    images: Optional[List[str]] = []
     # quantity: int
     # total: float
 
@@ -120,6 +139,7 @@ class Updateinputcart(BaseModel):
 class UpdateCartOut(BaseModel):
     name: str
     price: float
+    images: Optional[List[str]] = []
 
     class Config:
         orm_mode = True
@@ -164,7 +184,29 @@ class OrderResponse(BaseModel):
     id: int
     created_at: datetime
     total_amount: float
+    status: str
     items: List[OrderItemResponse] = Field(alias="orderitems")
+
+    class Config:
+        from_attributes = True
+
+
+class OrderUserInfo(BaseModel):
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AdminOrderResponse(BaseModel):
+    id: int
+    created_at: datetime
+    total_amount: float
+    status: str
+    items: List[OrderItemResponse] = Field(alias="orderitems")
+    user: Optional[OrderUserInfo] = None
 
     class Config:
         from_attributes = True
@@ -238,4 +280,40 @@ class PaymentConfirm(BaseModel):
     payment_intent_id: str
     order_id: Optional[int] = None
 
+class EmailVerification(BaseModel):
+    email: EmailStr
+    verification_code: str
+
+class OrderStatusUpdate(BaseModel):
+    status: str
+
+class GoogleAuth(BaseModel):
+    token: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class VerifyResetCode(BaseModel):
+    email: EmailStr
+    verification_code: str
+
+class ResetPassword(BaseModel):
+    email: EmailStr
+    verification_code: str
+    new_password: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    message: str
+    products: List[Product] = []
+    session_id: str
+
+
+class ClearChatRequest(BaseModel):
+    session_id: Optional[str] = None
 

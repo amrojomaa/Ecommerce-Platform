@@ -26,6 +26,18 @@ const ProductDetails = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
+  // Reset selected image index when product images change
+  useEffect(() => {
+    if (product) {
+      const productImages = product.images && product.images.length > 0
+        ? product.images
+        : [];
+      if (selectedImageIndex >= productImages.length) {
+        setSelectedImageIndex(0);
+      }
+    }
+  }, [product, selectedImageIndex]);
+
   const fetchProduct = async () => {
     setLoading(true);
     try {
@@ -80,12 +92,10 @@ const ProductDetails = () => {
     return null;
   }
 
-  // Mock images array - replace with actual product images when available
-  const productImages = [
-    // `http://localhost:8000/images/placeholder.jpg`,
-    // `http://localhost:8000/images/placeholder.jpg`,
-    // `http://localhost:8000/images/placeholder.jpg`,
-  ];
+  // Get product images from API response
+  const productImages = product.images && product.images.length > 0
+    ? product.images.map(img => `http://localhost:8000/${img}`)
+    : [`http://localhost:8000/images/placeholder.jpg`];
 
   // Get quantity from product, defaulting to 0 if not available
   const maxQuantity = product.quantity !== undefined && product.quantity !== null ? product.quantity : 0;
@@ -111,7 +121,7 @@ const ProductDetails = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 onError={(e) => {
-                  // e.target.src = 'https://via.placeholder.com/600x600?text=No+Image';
+                  e.target.src = 'https://via.placeholder.com/600x600?text=No+Image';
                 }}
               />
             </div>
@@ -170,7 +180,7 @@ const ProductDetails = () => {
                 <span className="out-of-stock">Out of Stock</span>
               ) : (
                 <span className="in-stock">
-                  {maxQuantity} available
+                  Available
                 </span>
               )}
             </motion.div>

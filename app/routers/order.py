@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
+from app.routers.admin import require_admin
 
 
 
@@ -67,14 +68,18 @@ def get_my_orders(
     return orders
 
 
-@router.delete("/orders/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_order(
+@router.patch("/orders/{order_id}/cancel", response_model=schemas.OrderResponse)
+def cancel_order(
     order_id: int,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(OAuth2.get_current_user)
 ):
+    """Cancel an order (sets status to cancelled instead of deleting)"""
     order = (
         db.query(models.DBOrder)
+        .options(
+            selectinload(models.DBOrder.orderitems).joinedload(models.DBOrderItem.product)
+        )
         .filter(
             models.DBOrder.id == order_id,
             models.DBOrder.user_id == current_user.id
@@ -88,7 +93,92 @@ def delete_order(
             detail="Order not found"
         )
     
-    db.delete(order)
+    # Set status to cancelled instead of deleting
+    order.status = "cancelled"
     db.commit()
+    db.refresh(order)
     
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return order
+
+
+@router.get("/orders/all", response_model=List[schemas.AdminOrderResponse])
+def get_all_orders(
+    db: Session = Depends(get_db),
+    admin_user = Depends(require_admin)
+):
+    """Get all orders (Admin only)"""
+    orders = (
+        db.query(models.DBOrder)
+        .options(
+            selectinload(models.DBOrder.orderitems).joinedload(models.DBOrderItem.product),
+            joinedload(models.DBOrder.user)
+        )
+        .order_by(models.DBOrder.created_at.desc())
+        .all()
+    )
+    
+    return orders
+
+
+@router.patch("/orders/{order_id}/status", response_model=schemas.AdminOrderResponse)
+def update_order_status(
+    order_id: int,
+    status_update: schemas.OrderStatusUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(require_admin)
+):
+    """Update order status (Admin only)
+    
+    Allowed transitions:
+    - paid → shipped
+    - shipped → delivered
+    - any status → cancelled
+    """
+    # Validate status value
+    valid_statuses = ["created", "paid", "shipped", "delivered", "cancelled"]
+    if status_update.status not in valid_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status. Allowed values: {', '.join(valid_statuses)}"
+        )
+    
+    order = (
+        db.query(models.DBOrder)
+        .options(
+            selectinload(models.DBOrder.orderitems).joinedload(models.DBOrderItem.product),
+            joinedload(models.DBOrder.user)
+        )
+        .filter(models.DBOrder.id == order_id)
+        .first()
+    )
+    
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+    
+    # Validate status transition rules
+    current_status = order.status
+    new_status = status_update.status
+    
+    # Allow cancellation from any status
+    if new_status == "cancelled":
+        order.status = new_status
+    # Allow paid → shipped
+    elif current_status == "paid" and new_status == "shipped":
+        order.status = new_status
+    # Allow shipped → delivered
+    elif current_status == "shipped" and new_status == "delivered":
+        order.status = new_status
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status transition from '{current_status}' to '{new_status}'. "
+                   f"Allowed transitions: paid→shipped, shipped→delivered, any→cancelled"
+        )
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order

@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
-import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS } from '../../config/api';
+import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import '../../styles/pages/admin/AdminProducts.css';
 
 const AdminProducts = () => {
-  const [products, setProducts] = useState([]);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [allProducts, setAllProducts] = useState([]); // Store all products
+  const [products, setProducts] = useState([]); // Filtered products
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -23,23 +27,78 @@ const AdminProducts = () => {
   });
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [isLowStockFilter, setIsLowStockFilter] = useState(false);
+  const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [sentimentAnalytics, setSentimentAnalytics] = useState({}); // { productId: { total, positive, neutral, negative } }
 
   useEffect(() => {
+    fetchLowStockThreshold();
     fetchProducts();
     fetchCategories();
   }, []);
+
+  const fetchLowStockThreshold = async () => {
+    try {
+      const response = await http.get(ADMIN_SETTINGS_ENDPOINTS.GET_LOW_STOCK_THRESHOLD);
+      const threshold = response.data.threshold;
+      setLowStockThreshold(threshold);
+    } catch (error) {
+      console.error('Error fetching low stock threshold:', error);
+      // Use default value of 10 if fetch fails
+      setLowStockThreshold(10);
+    }
+  };
+
+  // Check URL parameter and apply filter
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    const isLowStock = filterParam === 'lowstock';
+    setIsLowStockFilter(isLowStock);
+    
+    if (isLowStock && allProducts.length > 0) {
+      // Filter products with quantity < threshold
+      const lowStockProducts = allProducts.filter(product => product.quantity < lowStockThreshold);
+      setProducts(lowStockProducts);
+    } else if (allProducts.length > 0) {
+      // Show all products if no filter
+      setProducts(allProducts);
+    }
+  }, [searchParams, allProducts, lowStockThreshold]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-      setProducts(response.data);
+      setAllProducts(response.data); // Store all products
+      // Fetch sentiment analytics for all products
+      await fetchSentimentAnalytics(response.data);
     } catch (error) {
-      // toast.error('Failed to fetch products');
-      alert('Failed to fetch products');
+      toast.error('Failed to fetch products');
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSentimentAnalytics = async (products) => {
+    const analytics = {};
+    const promises = products.map(async (product) => {
+      try {
+        const response = await http.get(
+          buildUrl(COMMENT_ENDPOINTS.SENTIMENT_ANALYTICS, { product_id: product.id })
+        );
+        analytics[product.id] = response.data;
+      } catch (error) {
+        // If analytics endpoint fails, set default values
+        analytics[product.id] = {
+          total_reviews: 0,
+          positive_count: 0,
+          neutral_count: 0,
+          negative_count: 0
+        };
+      }
+    });
+    await Promise.all(promises);
+    setSentimentAnalytics(analytics);
   };
 
   const fetchCategories = async () => {
@@ -65,8 +124,7 @@ const AdminProducts = () => {
     // Check total images count (existing + new)
     const totalImages = images.length + files.length;
     if (totalImages > 3) {
-      // toast.error('Maximum 3 images allowed. Please remove some images first.');
-      alert('Maximum 3 images allowed. Please remove some images first.');
+      toast.error('Maximum 3 images allowed. Please remove some images first.');
       e.target.value = ''; // Reset file input
       return;
     }
@@ -87,11 +145,9 @@ const AdminProducts = () => {
       const responses = await Promise.all(uploadPromises);
       const uploadedImages = responses.map(r => r.data.filename);
       setImages([...images, ...uploadedImages]);
-      // toast.success('Images uploaded successfully');
-      alert('Images uploaded successfully');
+      toast.success('Images uploaded successfully');
     } catch (error) {
-      // toast.error('Failed to upload images');
-      alert('Failed to upload images');
+      toast.error('Failed to upload images');
     } finally {
       setUploading(false);
       e.target.value = ''; // Reset file input
@@ -107,14 +163,12 @@ const AdminProducts = () => {
     
     // Validate images: must have at least 1 image
     if (images.length < 1) {
-      // toast.error('At least one image is required');
-      alert('At least one image is required');
+      toast.error('At least one image is required');
       return;
     }
     
     if (images.length > 3) {
-      // toast.error('Maximum 3 images allowed');
-      alert('Maximum 3 images allowed');
+      toast.error('Maximum 3 images allowed');
       return;
     }
     
@@ -128,27 +182,24 @@ const AdminProducts = () => {
       
       if (editingProduct) {
         if (!editingProduct.id) {
-          alert('Error: Product ID is missing. Please refresh and try again.');
+          toast.error('Error: Product ID is missing. Please refresh and try again.');
           return;
         }
         await http.put(
           PRODUCT_ENDPOINTS.UPDATE.replace('{id}', editingProduct.id),
           productData
         );
-        // toast.success('Product updated successfully');
-        alert('Product updated successfully');
+        toast.success('Product updated successfully');
       } else {
         await http.post(PRODUCT_ENDPOINTS.CREATE, productData);
-        // toast.success('Product created successfully');
-        alert('Product created successfully');
+        toast.success('Product created successfully');
       }
       
       resetForm();
-      fetchProducts();
+      await fetchProducts();
     } catch (error) {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to save product';
-      // toast.error(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -173,12 +224,10 @@ const AdminProducts = () => {
 
     try {
       await http.delete(PRODUCT_ENDPOINTS.DELETE.replace('{id}', id));
-      // toast.success('Product deleted successfully');
-      alert('Product deleted successfully');
-      fetchProducts();
+      toast.success('Product deleted successfully');
+      await fetchProducts();
     } catch (error) {
-      // toast.error(error.message || 'Failed to delete product');
-      alert(error.message || 'Failed to delete product');
+      toast.error(error.message || 'Failed to delete product');
     }
   };
 
@@ -198,7 +247,19 @@ const AdminProducts = () => {
   return (
     <div className="admin-products">
       <div className="admin-products-header">
-        <h1>Manage Products</h1>
+        <div>
+          <h1>Manage Products</h1>
+          {isLowStockFilter && (
+            <p style={{ 
+              color: '#F44336', 
+              marginTop: '0.5rem',
+              fontSize: '0.9rem',
+              fontWeight: '500'
+            }}>
+              ⚠️ Showing low stock items (quantity {'<'} {lowStockThreshold})
+            </p>
+          )}
+        </div>
         <motion.button
           className="add-product-btn"
           onClick={() => {
@@ -217,6 +278,34 @@ const AdminProducts = () => {
           {[...Array(8)].map((_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
+        </div>
+      ) : products.length === 0 ? (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem',
+          color: 'var(--text-secondary)'
+        }}>
+          <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+            {isLowStockFilter 
+              ? 'No low stock items found. All products have sufficient inventory.' 
+              : 'No products found.'}
+          </p>
+          {isLowStockFilter && (
+            <button
+              onClick={() => navigate('/admin/products')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                fontSize: '1rem'
+              }}
+            >
+              Show All Products
+            </button>
+          )}
         </div>
       ) : (
         <div className="products-grid">
@@ -244,8 +333,58 @@ const AdminProducts = () => {
                 <p className="product-category">{product.category_name}</p>
                 <p className="product-price">{formatPrice(product.price)}</p>
                 <p className="product-stock">Stock: {product.quantity}</p>
+                {sentimentAnalytics[product.id] && (
+                  <div className="sentiment-analytics">
+                    <p className="sentiment-title">Review Sentiment:</p>
+                    <div className="sentiment-stats">
+                      <span className="sentiment-positive">
+                        👍 {sentimentAnalytics[product.id].positive_count}
+                      </span>
+                      <span className="sentiment-neutral">
+                        😐 {sentimentAnalytics[product.id].neutral_count}
+                      </span>
+                      <span className="sentiment-negative">
+                        👎 {sentimentAnalytics[product.id].negative_count}
+                      </span>
+                    </div>
+                    {sentimentAnalytics[product.id].total_reviews > 0 && (
+                      <div className="sentiment-chart">
+                        <div className="sentiment-bar">
+                          <div
+                            className="sentiment-bar-positive"
+                            style={{
+                              width: `${(sentimentAnalytics[product.id].positive_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
+                            }}
+                          />
+                          <div
+                            className="sentiment-bar-neutral"
+                            style={{
+                              width: `${(sentimentAnalytics[product.id].neutral_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
+                            }}
+                          />
+                          <div
+                            className="sentiment-bar-negative"
+                            style={{
+                              width: `${(sentimentAnalytics[product.id].negative_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
+                            }}
+                          />
+                        </div>
+                        <p className="sentiment-total">
+                          Total: {sentimentAnalytics[product.id].total_reviews} reviews
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="product-actions">
+                <button 
+                  onClick={() => navigate(`/admin/comments/product/${product.id}`)} 
+                  className="reviews-btn"
+                  title="View Reviews"
+                >
+                  Reviews
+                </button>
                 <button onClick={() => handleEdit(product)} className="edit-btn">
                   Edit
                 </button>

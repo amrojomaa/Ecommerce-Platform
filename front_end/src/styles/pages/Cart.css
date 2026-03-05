@@ -1,5 +1,13 @@
 .cart-page {
   width: 100%;
+  scroll-behavior: auto;
+}
+
+/* Prevent scroll during cart updates */
+body.cart-updating {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 .cart-page h1 {
@@ -103,11 +111,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
-.quantity-btn:hover {
+.quantity-btn:hover:not(:disabled) {
   background-color: var(--primary-color);
   color: white;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.quantity-btn:disabled:hover {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.quantity-btn:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .quantity-value {
@@ -133,10 +161,23 @@
   align-items: center;
   justify-content: center;
   transition: background-color 0.3s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
 }
 
-.remove-item-btn:hover {
+.remove-item-btn:hover:not(:disabled) {
   background-color: #dc2626;
+}
+
+.remove-item-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.remove-item-btn:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .cart-summary {

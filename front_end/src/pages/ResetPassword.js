@@ -71,22 +71,19 @@ const ResetPassword = () => {
       const result = await resetPassword(email, verificationCode, formData.newPassword);
       
       if (result?.success) {
-        // toast.success(result.message || 'Password reset successfully!');
-        alert(result.message || 'Password reset successfully!');
+        toast.success(result.message || 'Password reset successfully!');
         // Navigate to login page after successful reset
         setTimeout(() => {
           navigate('/login');
         }, 1500);
       } else {
         setError(result?.error || 'Failed to reset password');
-        // toast.error(result?.error || 'Failed to reset password');
-        alert(result?.error || 'Failed to reset password');
+        toast.error(result?.error || 'Failed to reset password');
       }
     } catch (err) {
       console.error("RESET PASSWORD ERROR:", err);
       setError('Something went wrong. Please try again.');
-      // toast.error('Something went wrong. Please try again.');
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     }
 
     setLoading(false);

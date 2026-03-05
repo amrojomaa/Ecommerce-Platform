@@ -5,6 +5,7 @@ import http from '../services/http';
 import { ORDER_ENDPOINTS } from '../config/api';
 import { formatPrice, formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import API_BASE_URL from '../config/api';
 import '../styles/pages/Orders.css';
 
 const Orders = () => {
@@ -36,7 +37,7 @@ const Orders = () => {
       // Network errors (no response from server)
       if (!error.response) {
         console.error('Network error - server may be down or endpoint not accessible');
-        alert('Network Error: Unable to connect to server. Please check if the server is running.');
+        toast.error('Network Error: Unable to connect to server. Please check if the server is running.');
         setOrders([]);
         return;
       }
@@ -47,7 +48,7 @@ const Orders = () => {
       } else {
         const errorMsg = error.response?.data?.detail || error.message || 'Failed to fetch orders';
         console.error('Error message:', errorMsg);
-        alert(`Failed to fetch orders: ${errorMsg}`);
+        toast.error(`Failed to fetch orders: ${errorMsg}`);
         setOrders([]); // Set empty array to prevent UI breaking
       }
     } finally {
@@ -70,7 +71,7 @@ const Orders = () => {
       const cancelUrl = ORDER_ENDPOINTS.CANCEL.replace('{order_id}', orderId);
       const response = await http.patch(cancelUrl);
       
-      alert('Order cancelled successfully');
+      // alert('Order cancelled successfully');
       
       // Update the order in the list with new status
       setOrders(prevOrders => 
@@ -83,10 +84,11 @@ const Orders = () => {
       if (expandedOrderId === orderId) {
         setExpandedOrderId(null);
       }
+      toast.success('Order cancelled successfully');
     } catch (error) {
       console.error('Error cancelling order:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to cancel order';
-      alert(`Failed to cancel order: ${errorMsg}`);
+      toast.error(`Failed to cancel order: ${errorMsg}`);
     } finally {
       setCancellingOrderId(null);
     }
@@ -181,7 +183,7 @@ const Orders = () => {
                         Pay Now
                       </button>
                     )}
-                    {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                    {order.status === 'created' && (
                       <button
                         className="cancel-order-btn"
                         onClick={(e) => {
@@ -202,22 +204,12 @@ const Orders = () => {
                     <div className="order-info-section">
                       <h4>Order Information</h4>
                       <div className="info-row">
-                        <span className="info-label">Order ID:</span>
-                        <span className="info-value">#{order.id}</span>
-                      </div>
-                      <div className="info-row">
                         <span className="info-label">Created At:</span>
                         <span className="info-value">{formatDate(order.created_at)}</span>
                       </div>
                       <div className="info-row">
                         <span className="info-label">Total Amount:</span>
                         <span className="info-value">{formatPrice(order.total_amount)}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Status:</span>
-                        <span className={`info-value status-${order.status || 'created'}`}>
-                          {order.status || 'created'}
-                        </span>
                       </div>
                     </div>
 
@@ -227,18 +219,44 @@ const Orders = () => {
                         {orderItems.length === 0 ? (
                           <p className="no-items">No products found in this order.</p>
                         ) : (
-                          orderItems.map((item) => (
-                          <div key={item.id} className="order-item">
-                            <div className="order-item-info">
-                              <h4>{item.product?.name || 'Product'}</h4>
-                              <p>Quantity: {item.quantity}</p>
-                            </div>
-                            <div className="order-item-price">
-                              <p>Price: {formatPrice(item.price)} each</p>
-                              <p className="item-total">Total: {formatPrice(item.total)}</p>
-                            </div>
-                          </div>
-                          ))
+                          orderItems.map((item) => {
+                            const productImage = item.product?.images && item.product.images.length > 0
+                              ? `${API_BASE_URL}/${item.product.images[0]}`
+                              : `${API_BASE_URL}/images/placeholder.jpg`;
+                            const productName = item.product?.name || 'Product';
+                            
+                            return (
+                              <div key={item.id} className="order-item">
+                                <Link
+                                  to={`/products/${encodeURIComponent(productName)}`}
+                                  className="order-item-image-link"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <img
+                                    src={productImage}
+                                    alt={productName}
+                                    className="order-item-image"
+                                    onError={(e) => {
+                                      e.target.src = `${API_BASE_URL}/images/placeholder.jpg`;
+                                    }}
+                                  />
+                                </Link>
+                                <div className="order-item-info">
+                                  <Link
+                                    to={`/products/${encodeURIComponent(productName)}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <h4>{productName}</h4>
+                                  </Link>
+                                  <p>Quantity: {item.quantity}</p>
+                                </div>
+                                <div className="order-item-price">
+                                  <p>Price: {formatPrice(item.price)} each</p>
+                                  <p className="item-total">Total: {formatPrice(item.total)}</p>
+                                </div>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
                     </div>

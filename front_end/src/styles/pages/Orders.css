@@ -123,11 +123,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.order-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-item-image-link {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.order-item-image-link:hover {
+  transform: scale(1.05);
+}
+
+.order-item-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.order-item-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .order-item-info h4 {
   color: var(--text-primary);
   margin-bottom: 0.25rem;
+}
+
+.order-item-info h4 a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.order-item-info h4 a:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
 }
 
 .order-item-info p {

@@ -3,8 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from './LoadingSpinner';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, loading, isAdmin } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false, requireEmployee = false }) => {
+  const { isAuthenticated, loading, isAdmin, isEmployee } = useAuth();
 
   if (loading) {
     return (
@@ -19,6 +19,10 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   }
 
   if (requireAdmin && isAdmin && typeof isAdmin === 'function' && !isAdmin()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireEmployee && isEmployee && typeof isEmployee === 'function' && !isEmployee()) {
     return <Navigate to="/" replace />;
   }
 

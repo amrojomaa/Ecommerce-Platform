@@ -71,8 +71,17 @@
   height: 150px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   border: 3px solid var(--primary-color);
   box-shadow: var(--shadow);
+  /* Optimize image rendering for quality - use auto for smooth photos */
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .profile-image-upload {
@@ -120,6 +129,30 @@
   cursor: not-allowed;
 }
 
+.delete-image-btn {
+  background-color: var(--error-color, #dc3545);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delete-image-btn:hover:not(:disabled) {
+  background-color: var(--error-hover, #c82333);
+  opacity: 0.9;
+}
+
+.delete-image-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .role-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -133,7 +166,12 @@
   color: white;
 }
 
-.role-badge.user {
+.role-badge.employee {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.role-badge.customer {
   background-color: var(--secondary-color);
   color: white;
 }

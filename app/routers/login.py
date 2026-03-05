@@ -41,6 +41,7 @@ def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
         country=user_data.country,
         city=user_data.city,
         street=user_data.street,
+        role="customer",  # All new signups are customers by default
         is_verified=False,
         verification_code=verification_code,
         verification_code_expires=verification_code_expires
@@ -232,11 +233,17 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                     user.provider = "google"
                     updated = True
                 
-                # Always update profile image from Google for Google users
+                # Only update profile image from Google if user doesn't have a custom image
+                # Custom images are stored locally (start with "images/"), Google images are URLs
                 if picture:
-                    user.profile_image = picture
-                    updated = True
-                    print(f"Updated profile_image for existing user: {picture}")
+                    # Check if user has a custom uploaded image (local file path)
+                    has_custom_image = user.profile_image and user.profile_image.startswith('images/')
+                    
+                    # Only update if user doesn't have a custom image
+                    # (profile_image is None or it's still a Google URL)
+                    if not has_custom_image:
+                        user.profile_image = picture
+                        updated = True
                 
                 # Auto-verify OAuth users
                 if not user.is_verified:
@@ -246,7 +253,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                 if updated:
                     db.commit()
                     db.refresh(user)
-                    print(f"Updated existing user: {user.email}")
             else:
                 # Create new user
                 print(f"Creating new user with email: {email}")
@@ -258,6 +264,7 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                     provider="google",
                     google_id=google_id,
                     profile_image=picture if picture else None,  # Save Google profile image
+                    role="customer",  # All new OAuth signups are customers by default
                     is_verified=True  # Auto-verify OAuth users
                 )
                 db.add(user)
@@ -282,8 +289,13 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                 detail="Failed to create or retrieve user"
             )
         
+        # Increment token_version to invalidate all previous sessions
+        user.token_version = (user.token_version or 0) + 1
+        db.commit()
+        db.refresh(user)
+        
         # Generate JWT token
-        token = OAuth2.create_access_token(data={"user_id": user.id})
+        token = OAuth2.create_access_token(data={"user_id": user.id}, token_version=user.token_version)
         
         print(f"Google auth successful for user: {user.email}, returning token")
         return {
@@ -320,7 +332,12 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         if not utils.verify(user_credentials.password, getuser.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="this is password error")
         
-        token = OAuth2.create_access_token(data = {"user_id": getuser.id})
+        # Increment token_version to invalidate all previous sessions
+        getuser.token_version = (getuser.token_version or 0) + 1
+        db.commit()
+        db.refresh(getuser)
+        
+        token = OAuth2.create_access_token(data = {"user_id": getuser.id}, token_version=getuser.token_version)
 
         return {"access_token" : token , 
                 "token_type" : 'bearer',

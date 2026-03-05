@@ -74,6 +74,27 @@
 
 .admin-link {
   color: var(--warning-color);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-badge {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .navbar-user {
@@ -86,6 +107,48 @@
   font-size: 25px;
 }
 
+.cart-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wishlist-link {
+  position: relative;
+}
+
+.wishlist-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.wishlist-icon {
+  font-size: 25px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.wishlist-link:hover .wishlist-icon {
+  color: var(--error-color);
+}
+
+.wishlist-badge {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  background-color: var(--error-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .profile-image-wrapper {
   display: flex;
   align-items: center;
@@ -94,13 +157,22 @@
 }
 
 .navbar-profile-image {
+  max-width: 40px;
+  max-height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   border: 2px solid var(--primary-color);
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .navbar-profile-image:hover {

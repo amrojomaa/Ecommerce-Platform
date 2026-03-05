@@ -14,6 +14,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -44,24 +45,40 @@ const Profile = () => {
         password: '',
         confirmPassword: '',
       });
-      // Reset preview when user changes
-      setPreviewImage(null);
+      // Only reset preview if user's profile_image has actually changed
+      // This prevents clearing the preview when user object updates for other reasons
+      // We'll reset it manually after successful upload
     }
-  }, [user]);
+  }, [user?.email, user?.first_name, user?.last_name, user?.phone, user?.country, user?.city, user?.street]);
   
   const getProfileImageUrl = () => {
+    // If preview image exists (during upload), use it
     if (previewImage) {
       return previewImage;
     }
-    if (user?.profile_image) {
-      // Check if it's already a full URL (e.g., Google profile image)
-      if (user.profile_image.startsWith('http://') || user.profile_image.startsWith('https://')) {
-        return user.profile_image;
-      }
-      // Otherwise, it's a relative path from our server
-      return `${API_BASE_URL}/${user.profile_image}`;
+    
+    // Return default if no user
+    if (!user) {
+      return defaultProfileImage;
     }
-    return defaultProfileImage;
+    
+    // Check if profile_image exists and is not empty/null
+    const profileImage = user.profile_image;
+    
+    if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
+      return defaultProfileImage;
+    }
+    
+    // Check if it's already a full URL (e.g., Google profile image)
+    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+      return profileImage;
+    }
+    
+    // Normalize path - remove leading slash if present to avoid double slashes
+    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
+    // Construct full URL for uploaded images
+    const imageUrl = `${API_BASE_URL}/${normalizedPath}`;
+    return imageUrl;
   };
   
   const handleImageChange = (e) => {
@@ -69,16 +86,19 @@ const Profile = () => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        // toast.error('Please select an image file');
-        alert('Please select an image file');
+        toast.error('Please select an image file');
+        setHasSelectedFile(false);
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        // toast.error('Image size should be less than 5MB');
-        alert('Image size should be less than 5MB');
+        toast.error('Image size should be less than 5MB');
+        setHasSelectedFile(false);
         return;
       }
+      
+      // Mark that a file has been selected
+      setHasSelectedFile(true);
       
       // Create preview
       const reader = new FileReader();
@@ -86,14 +106,15 @@ const Profile = () => {
         setPreviewImage(reader.result);
       };
       reader.readAsDataURL(file);
+    } else {
+      setHasSelectedFile(false);
     }
   };
   
   const handleImageUpload = async () => {
     const file = fileInputRef.current?.files[0];
     if (!file) {
-      // toast.error('Please select an image');
-      alert('Please select an image');
+      toast.error('Please select an image');
       return;
     }
     
@@ -108,18 +129,43 @@ const Profile = () => {
         },
       });
       
-      // toast.success('Profile image updated successfully!');
-      alert('Profile image updated successfully!');
+      toast.success('Profile image updated successfully!');
       // Refresh user data
       await fetchUserInfo();
       setPreviewImage(null);
+      setHasSelectedFile(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
-      // toast.error(error.response?.data?.detail || error.message || 'Failed to upload image');
-      alert(error.response?.data?.detail || error.message || 'Failed to upload image');
+      toast.error(error.response?.data?.detail || error.message || 'Failed to upload image');
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete your profile image? It will be reset to default.')) {
+      return;
+    }
+
+    setImageLoading(true);
+    try {
+      await http.delete(USER_ENDPOINTS.DELETE_PROFILE_IMAGE);
+      
+      toast.success('Profile image deleted successfully!');
+      // Refresh user data
+      await fetchUserInfo();
+      setPreviewImage(null);
+      setHasSelectedFile(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || error.message || 'Failed to delete image');
     } finally {
       setImageLoading(false);
     }
@@ -177,8 +223,7 @@ const Profile = () => {
       }
 
       await http.put(USER_ENDPOINTS.UPDATE_ME, updateData);
-      // toast.success('Profile updated successfully!');
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       
       // Refresh user data
       await fetchUserInfo();
@@ -190,8 +235,7 @@ const Profile = () => {
         confirmPassword: '',
       });
     } catch (error) {
-      // toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
-      alert(error.response?.data?.detail || error.message || 'Failed to update profile');
+      toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -220,11 +264,18 @@ const Profile = () => {
           <div className="profile-image-section">
             <div className="profile-image-container">
               <img 
+                key={`profile-${user?.id || 'no-user'}-${user?.profile_image || 'default'}`}
                 src={getProfileImageUrl()} 
                 alt="Profile" 
                 className="profile-image-display"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
-                  e.target.src = defaultProfileImage;
+                  console.error('Profile image failed to load. URL:', e.target.src, 'User profile_image field:', user?.profile_image);
+                  // Always fallback to default image on error
+                  if (e.target.src !== defaultProfileImage) {
+                    e.target.src = defaultProfileImage;
+                  }
                 }}
               />
             </div>
@@ -240,7 +291,7 @@ const Profile = () => {
               <label htmlFor="profile-image-input" className="image-upload-label">
                 Choose Image
               </label>
-              {previewImage && (
+              {hasSelectedFile && (
                 <button
                   type="button"
                   onClick={handleImageUpload}
@@ -253,7 +304,24 @@ const Profile = () => {
                       Uploading...
                     </>
                   ) : (
-                    'Upload Image'
+                    'Update Image'
+                  )}
+                </button>
+              )}
+              {user?.profile_image && !hasSelectedFile && (
+                <button
+                  type="button"
+                  onClick={handleDeleteImage}
+                  className="delete-image-btn"
+                  disabled={imageLoading}
+                >
+                  {imageLoading ? (
+                    <>
+                      <LoadingSpinner size="small" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Image'
                   )}
                 </button>
               )}

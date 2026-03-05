@@ -1,8 +1,14 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
+from enum import Enum
 
 # from pydantic.types import conint
+
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    EMPLOYEE = "employee"
+    CUSTOMER = "customer"
 
 class FilterProducts(BaseModel):
     name: Optional[str] = None
@@ -69,6 +75,15 @@ class UserBase(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
+    role: Optional[str] = "customer"  # Default role for new users
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v is not None and v not in ["admin", "employee", "customer"]:
+            raise ValueError('Role must be one of: admin, employee, customer')
+        return v
+    
     class Config:
         orm_mode = True
 
@@ -82,11 +97,20 @@ class UserUpdate(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
+    role: Optional[str] = None  # Role can be updated by admin
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v is not None and v not in ["admin", "employee", "customer"]:
+            raise ValueError('Role must be one of: admin, employee, customer')
+        return v
+    
     class Config:
         orm_mode = True
 
 class User(BaseModel):
-    # id: int
+    id: int
     email: EmailStr
     first_name: str
     last_name: str
@@ -95,8 +119,16 @@ class User(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
-    role: str
+    role: str  # admin, employee, or customer
+    is_verified: bool
     created_at: datetime
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v not in ["admin", "employee", "customer"]:
+            raise ValueError('Role must be one of: admin, employee, customer')
+        return v
 
     class Config:
         orm_mode = True
@@ -104,6 +136,7 @@ class User(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[int] = None
+    token_version: Optional[int] = 0
 
 
 class AddCart(BaseModel):
@@ -122,6 +155,7 @@ class ShowCartOut(BaseModel):
         orm_mode = True
 
 class ShowCart(BaseModel):
+    id: int
     product: ShowCartOut
     quantity: int
     total: float
@@ -152,6 +186,25 @@ class Updateoutputcart(BaseModel):
 
 class Orderitemname(BaseModel):
     name: str
+    images: Optional[List[str]] = Field(default_factory=list)
+    
+    @field_validator('images', mode='before')
+    @classmethod
+    def convert_images(cls, v):
+        """Convert DBProductImage objects to image_path strings"""
+        if v is None:
+            return []
+        if isinstance(v, list):
+            # If list contains DBProductImage objects, extract image_path
+            if len(v) > 0 and hasattr(v[0], 'image_path'):
+                return [img.image_path for img in v]
+            # If already strings, return as is
+            return v
+        return []
+    
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True
 
  
 # class OrderItemResponse(BaseModel):
@@ -302,6 +355,16 @@ class ResetPassword(BaseModel):
     verification_code: str
     new_password: str
 
+class UserRoleUpdate(BaseModel):
+    role: str
+    
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, v):
+        if v not in ["admin", "employee", "customer"]:
+            raise ValueError('Role must be one of: admin, employee, customer')
+        return v
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -317,3 +380,189 @@ class ChatResponse(BaseModel):
 class ClearChatRequest(BaseModel):
     session_id: Optional[str] = None
 
+
+# Wishlist Schemas
+class AddWishlist(BaseModel):
+    product_name: str
+
+
+class WishlistProductOut(BaseModel):
+    name: str
+    price: float
+    category_name: Optional[str] = None
+    description: Optional[str] = None
+    images: Optional[List[str]] = []
+
+
+class WishlistItemOut(BaseModel):
+    id: int
+    product: WishlistProductOut
+
+    class Config:
+        orm_mode = True
+
+
+class WishlistResponse(BaseModel):
+    items: List[WishlistItemOut]
+
+    class Config:
+        orm_mode = True
+
+
+# Ticket Schemas
+class TicketStatus(str, Enum):
+    IN_PROGRESS = "In Progress"
+    RESOLVED = "Resolved"
+    CLOSED = "Closed"
+
+
+class TicketCreate(BaseModel):
+    title: str
+    description: str
+
+
+class TicketResponseUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketResponseMessage(BaseModel):
+    id: int
+    message: str
+    created_at: datetime
+    user: TicketResponseUser
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketBase(BaseModel):
+    id: int
+    title: str
+    description: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    customer_id: int
+    employee_id: Optional[int] = None
+    customer: TicketResponseUser
+    employee: Optional[TicketResponseUser] = None
+    responses: List[TicketResponseMessage] = []
+    assigned_by: Optional[int] = None
+    assigned_at: Optional[datetime] = None
+    pending_delete: Optional[bool] = False
+    delete_requested_by: Optional[int] = None
+    delete_requested_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class TicketAssign(BaseModel):
+    employee_id: int
+
+
+class TicketStatusUpdate(BaseModel):
+    status: str
+    
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        if v not in ["In Progress", "Resolved", "Closed"]:
+            raise ValueError('Status must be one of: In Progress, Resolved, Closed')
+        return v
+
+
+class TicketResponseCreate(BaseModel):
+    message: str
+
+
+# Comment Schemas
+class CommentCreate(BaseModel):
+    content: str
+    product_id: Optional[int] = None  # Optional since it comes from URL path
+
+
+class CommentUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    profile_image: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class CommentDisplay(BaseModel):
+    id: int
+    content: str
+    sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
+    created_at: datetime
+    user: CommentUser
+    
+    class Config:
+        from_attributes = True
+
+
+# Rating Schemas
+class RatingCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating must be between 1 and 5")
+    product_id: Optional[int] = None  # Optional since it comes from URL path
+
+
+class RatingUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    
+    class Config:
+        from_attributes = True
+
+
+class RatingDisplay(BaseModel):
+    id: int
+    rating: int
+    created_at: datetime
+    updated_at: datetime
+    user: RatingUser
+    
+    class Config:
+        from_attributes = True
+
+
+class ProductRatingSummary(BaseModel):
+    average_rating: float
+    total_ratings: int
+    user_rating: Optional[int] = None  # Current user's rating if authenticated
+    
+    class Config:
+        from_attributes = True
+
+
+# Admin Settings Schemas
+class LowStockThresholdUpdate(BaseModel):
+    threshold: int = Field(..., ge=1, description="Low stock threshold must be at least 1")
+
+
+class LowStockThresholdResponse(BaseModel):
+    threshold: int
+    
+    class Config:
+        from_attributes = True
+
+
+# Sentiment Analytics Schemas
+class ProductSentimentAnalytics(BaseModel):
+    product_id: int
+    total_reviews: int
+    positive_count: int
+    neutral_count: int
+    negative_count: int
+    
+    class Config:
+        from_attributes = True

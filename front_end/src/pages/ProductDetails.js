@@ -7,7 +7,11 @@ import { PRODUCT_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
+import { useWishlist } from '../hooks/useWishlist';
 import LoadingSpinner from '../components/LoadingSpinner';
+import CommentSection from '../components/CommentSection';
+import StarRating from '../components/StarRating';
+import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
 
 const ProductDetails = () => {
@@ -15,6 +19,7 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -50,8 +55,7 @@ const ProductDetails = () => {
       console.log('Product data:', response.data);
     } catch (error) {
       console.error('Error fetching product:', error);
-      // toast.error('Product not found');
-      alert('Product not found');
+      toast.error('Product not found');
       navigate('/products');
     } finally {
       setLoading(false);
@@ -60,8 +64,7 @@ const ProductDetails = () => {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      // toast.info('Please login to add items to cart');
-      alert('Please login to add items to cart');
+      toast.info('Please login to add items to cart');
       navigate('/login');
       return;
     }
@@ -70,14 +73,24 @@ const ProductDetails = () => {
     const result = await addToCart(product.name, quantity);
     
     if (result.success) {
-      // toast.success(`Added ${quantity} ${product.name} to cart!`);
-      alert(`Added ${quantity} ${product.name} to cart!`);
+      toast.success(`Added ${quantity} ${product.name} to cart!`);
       // Animation feedback
     } else {
-      // toast.error(result.error || 'Failed to add to cart');
-      alert(result.error || 'Failed to add to cart');
+      toast.error(result.error || 'Failed to add to cart');
     }
     setAddingToCart(false);
+  };
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    
+    if (isInWishlist(product.name)) {
+      removeFromWishlist(product.name);
+      toast.success(`${product.name} removed from wishlist`);
+    } else {
+      addToWishlist(product);
+      toast.success(`${product.name} added to wishlist`);
+    }
   };
 
   if (loading) {
@@ -109,6 +122,21 @@ const ProductDetails = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
+        {/* Back Button */}
+        <motion.button
+          className="back-button"
+          onClick={() => navigate('/products')}
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label="Back to products"
+        >
+          <FaArrowLeft />
+          <span>Back to Products</span>
+        </motion.button>
+
         <div className="product-details-grid">
           {/* Image Gallery */}
           <div className="product-images">
@@ -171,6 +199,17 @@ const ProductDetails = () => {
             </motion.div>
 
             <motion.div
+              className="product-rating"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.45 }}
+            >
+              {product && product.id && (
+                <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
+              )}
+            </motion.div>
+
+            <motion.div
               className="product-stock"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -202,6 +241,24 @@ const ProductDetails = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
+              {isAuthenticated && (
+                <div className="wishlist-button-container">
+                  <motion.button
+                    className={`wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                    onClick={handleToggleWishlist}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    title={isInWishlist(product.name) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  >
+                    {isInWishlist(product.name) ? (
+                      <FaHeart className="wishlist-icon-filled" />
+                    ) : (
+                      <FaRegHeart className="wishlist-icon-outline" />
+                    )}
+                    <span>{isInWishlist(product.name) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
+                  </motion.button>
+                </div>
+              )}
               <div className="add-to-cart-container">
                 <div className="quantity-controls">
                   <label>Quantity:</label>
@@ -256,6 +313,17 @@ const ProductDetails = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Comments Section */}
+        {product && product.id && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <CommentSection productId={product.id} />
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

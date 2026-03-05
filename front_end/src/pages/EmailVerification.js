@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
@@ -107,7 +108,7 @@ const EmailVerification = () => {
     const result = await verifyEmail(email, code);
 
     if (result.success) {
-      alert(result.message || 'Email verified successfully!');
+      toast.success(result.message || 'Email verified successfully!');
       navigate('/login');
     } else {
       setError(result.error || 'Verification failed. Please try again.');

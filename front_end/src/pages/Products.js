@@ -6,11 +6,18 @@ import { PRODUCT_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { useAuth } from '../hooks/useAuth';
+import { useWishlist } from '../hooks/useWishlist';
+import { useCart } from '../hooks/useCart';
+import StarRating from '../components/StarRating';
+import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 
 const Products = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,9 +47,6 @@ const Products = () => {
     try {
       let response;
       
-      // Use filter endpoint only if authenticated AND filters are applied
-      // if (isAuthenticated && (searchTerm || selectedCategory || minPrice || maxPrice)) {
-      //   const endpoint = PRODUCT_ENDPOINTS.FILTER_USER;
       // Check if filters are applied
       const hasFilters = (searchTerm || selectedCategory || minPrice || maxPrice);
       
@@ -57,21 +61,39 @@ const Products = () => {
         if (minPrice) params.min_price = minPrice;
         if (maxPrice) params.max_price = maxPrice;
         
-        response = await http.get(endpoint, { params });
+        try {
+          response = await http.get(endpoint, { params });
+          const fetchedProducts = response.data;
+          setProducts(fetchedProducts);
+          
+          // Extract unique categories
+          const uniqueCategories = [...new Set(fetchedProducts.map(p => p.category_name))];
+          setCategories(uniqueCategories);
+        } catch (error) {
+          // Handle 404 - no products found
+          if (error.response?.status === 404 || error.status === 404) {
+            setProducts([]);
+            setCategories([]);
+          } else {
+            console.error('Error fetching products:', error);
+            // On other errors, keep existing products or set empty
+            setProducts([]);
+          }
+        }
       } else {
         // Use regular endpoint when no filters
         const endpoint = PRODUCT_ENDPOINTS.ALL;
         response = await http.get(endpoint);
+        const fetchedProducts = response.data;
+        setProducts(fetchedProducts);
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(fetchedProducts.map(p => p.category_name))];
+        setCategories(uniqueCategories);
       }
-      
-      const fetchedProducts = response.data;
-      setProducts(fetchedProducts);
-      
-      // Extract unique categories
-      const uniqueCategories = [...new Set(fetchedProducts.map(p => p.category_name))];
-      setCategories(uniqueCategories);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -211,6 +233,7 @@ const Products = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
                     whileHover={{ y: -5 }}
+                    className="product-card-wrapper"
                   >
                     <Link
                       to={`/products/${encodeURIComponent(product.name)}`}
@@ -222,15 +245,62 @@ const Products = () => {
                             ? `http://localhost:8000/${product.images[0]}`
                             : `http://localhost:8000/images/placeholder.jpg`}
                           alt={product.name}
+                          style={{ objectFit: 'cover' }}
                           // onError={(e) => {
                           //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
                           // }}
                         />
+                        {isAuthenticated && (
+                          <button
+                            className={`product-wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (isInWishlist(product.name)) {
+                                removeFromWishlist(product.name);
+                              } else {
+                                addToWishlist(product);
+                              }
+                            }}
+                            title={isInWishlist(product.name) ? 'Remove from wishlist' : 'Add to wishlist'}
+                          >
+                            {isInWishlist(product.name) ? (
+                              <FaHeart className="wishlist-icon-filled" />
+                            ) : (
+                              <FaRegHeart className="wishlist-icon-outline" />
+                            )}
+                          </button>
+                        )}
                       </div>
                       <div className="product-info">
                         <h3>{product.name}</h3>
                         <p className="product-category">{product.category_name}</p>
-                        <p className="product-price">{formatPrice(product.price)}</p>
+                        {product.id && (
+                          <div className="product-rating-container">
+                            <StarRating productId={product.id} showLabel={false} interactive={false} size="small" />
+                          </div>
+                        )}
+                        <div className="product-price-container">
+                          <p className="product-price">{formatPrice(product.price)}</p>
+                          {isAuthenticated && (
+                            <button
+                              className="product-add-to-cart-btn"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await addToCart(product.name, 1);
+                                  toast.success('Product added to cart!');
+                                } catch (error) {
+                                  toast.error(error.response?.data?.detail || 'Failed to add to cart');
+                                }
+                              }}
+                              title="Add to cart"
+                            >
+                              <FaShoppingCart />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </Link>
                   </motion.div>

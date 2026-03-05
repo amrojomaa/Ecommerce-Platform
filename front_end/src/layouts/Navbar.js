@@ -87,15 +87,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../hooks/useTheme';
+import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import '../styles/layouts/Navbar.css';
 import { MdDarkMode, MdLightMode } from "react-icons/md";
-import { FaShoppingCart, FaSignOutAlt } from "react-icons/fa";
+import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
 import API_BASE_URL from '../config/api';
+import { useWishlist } from '../hooks/useWishlist';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const { getCartItemCount } = useCart();
+  const { getWishlistItemCount } = useWishlist();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { unreadCount: unreadTicketsCount } = useUnreadTickets();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -107,6 +111,7 @@ const Navbar = () => {
   };
 
   const cartItemCount = getCartItemCount();
+  const wishlistItemCount = getWishlistItemCount();
   
   // Safety check for isAdmin
   const checkIsAdmin = () => {
@@ -117,16 +122,42 @@ const Navbar = () => {
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
   
   const getProfileImageUrl = () => {
-    if (user?.profile_image) {
-      // Check if it's already a full URL (e.g., Google profile image)
-      if (user.profile_image.startsWith('http://') || user.profile_image.startsWith('https://')) {
-        return user.profile_image;
-      }
-      // Otherwise, it's a relative path from our server
-      return `${API_BASE_URL}/${user.profile_image}`;
+    // Return default if no user
+    if (!user) {
+      return defaultProfileImage;
     }
-    return defaultProfileImage;
+    
+    // Check if profile_image exists and is not empty/null
+    const profileImage = user.profile_image;
+    
+    if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
+      return defaultProfileImage;
+    }
+    
+    // Check if it's already a full URL (e.g., Google profile image)
+    // Handle both http:// and https:// URLs
+    if (typeof profileImage === 'string' && (profileImage.startsWith('http://') || profileImage.startsWith('https://'))) {
+      // For Google images, ensure we use the correct format
+      // Google URLs sometimes need to be modified to work properly
+      let imageUrl = profileImage;
+      
+      // If it's a Googleusercontent URL, make sure it's accessible
+      if (imageUrl.includes('googleusercontent.com')) {
+        // Remove any size restrictions that might cause issues (=s96-c)
+        // Or keep them if they work - Google images should work as-is
+        // The URL format is usually fine, but we can modify if needed
+      }
+      
+      return imageUrl;
+    }
+    
+    // Normalize path - remove leading slash if present to avoid double slashes
+    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
+    // Construct full URL for uploaded images
+    const imageUrl = `${API_BASE_URL}/${normalizedPath}`;
+    return imageUrl;
   };
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -177,12 +208,39 @@ const Navbar = () => {
                   )}
                 </div>
               </Link>
+              <Link to="/wishlist" className="navbar-link wishlist-link">
+                <div className="wishlist-icon-wrapper">
+                  <FaHeart className="wishlist-icon" />
+                  {wishlistItemCount > 0 && (
+                  <span className="wishlist-badge">{wishlistItemCount}</span>
+                  )}
+                </div>
+              </Link>
               <Link to="/orders" className="navbar-link">
                 My Orders
               </Link>
+              {user?.role === 'customer' && (
+                <Link to="/tickets" className="navbar-link">
+                  <span>Tickets</span>
+                  {unreadTicketsCount > 0 && (
+                    <span className="admin-badge">{unreadTicketsCount}</span>
+                  )}
+                </Link>
+              )}
               {checkIsAdmin() && (
                 <Link to="/admin" className="navbar-link admin-link">
-                  Admin
+                  <span>Admin</span>
+                  {unreadTicketsCount > 0 && (
+                    <span className="admin-badge">{unreadTicketsCount}</span>
+                  )}
+                </Link>
+              )}
+              {user?.role === 'employee' && !checkIsAdmin() && (
+                <Link to="/employee" className="navbar-link">
+                  <span>Employee</span>
+                  {unreadTicketsCount > 0 && (
+                    <span className="admin-badge">{unreadTicketsCount}</span>
+                  )}
                 </Link>
               )}
               <div className="navbar-user" ref={profileDropdownRef}>
@@ -192,11 +250,18 @@ const Navbar = () => {
                   onMouseEnter={() => setProfileDropdownOpen(true)}
                 >
                   <img 
+                    key={`${user?.id || 'no-user'}-${user?.profile_image || 'default'}`}
                     src={getProfileImageUrl()} 
                     alt="Profile" 
                     className="navbar-profile-image"
+                    loading="eager"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
                     onError={(e) => {
-                      e.target.src = defaultProfileImage;
+                      // Always fallback to default image on error
+                      if (e.target.src !== defaultProfileImage) {
+                        e.target.src = defaultProfileImage;
+                      }
                     }}
                   />
                 </div>
@@ -266,15 +331,28 @@ const Navbar = () => {
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
                 Cart ({cartItemCount})
               </Link>
+              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
+                Wishlist ({wishlistItemCount})
+              </Link>
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
                 My Orders
               </Link>
+              {user?.role === 'customer' && (
+                <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
+                  Tickets {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                </Link>
+              )}
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                 Profile
               </Link>
               {checkIsAdmin() && (
                 <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                  Admin
+                  Admin {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                </Link>
+              )}
+              {user?.role === 'employee' && !checkIsAdmin() && (
+                <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
+                  Employee {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
                 </Link>
               )}
               <div className="mobile-user-info">

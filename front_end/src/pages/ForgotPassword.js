@@ -22,8 +22,7 @@ const ForgotPassword = () => {
       const result = await forgotPassword(email);
       
       if (result?.success) {
-        // toast.success(result.message || 'Verification code sent to your email');
-        alert(result.message || 'Verification code sent to your email');
+        toast.success(result.message || 'Verification code sent to your email');
         // Navigate to verify reset code page with email
         navigate('/verify-reset-code', {
           state: {
@@ -33,14 +32,12 @@ const ForgotPassword = () => {
         });
       } else {
         setError(result?.error || 'Failed to send verification code');
-        // toast.error(result?.error || 'Failed to send verification code');
-        alert(result?.error || 'Failed to send verification code');
+        toast.error(result?.error || 'Failed to send verification code');
       }
     } catch (err) {
       console.error("FORGOT PASSWORD ERROR:", err);
       setError('Something went wrong. Please try again.');
-      // toast.error('Something went wrong. Please try again.');
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     }
 
     setLoading(false);

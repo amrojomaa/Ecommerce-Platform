@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric
+from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -31,6 +31,8 @@ class DBProduct(Base):
     items = relationship("DBCartItem", back_populates="product")
     category = relationship("DBCategory", back_populates="products")
     images = relationship("DBProductImage", back_populates="product", cascade="all, delete-orphan")
+    comments = relationship("DBComment", back_populates="product", cascade="all, delete-orphan")
+    ratings = relationship("DBProductRating", back_populates="product", cascade="all, delete-orphan")
 
     # published = Column(Boolean, server_default='TRUE', nullable=False)
 
@@ -56,19 +58,27 @@ class DBUser(Base):
     country = Column(String, nullable=True)
     city = Column(String, nullable=True)
     street = Column(String, nullable=True)
-    role = Column(String, nullable=False, server_default="user")
+    role = Column(String, nullable=False, server_default="customer")
     is_verified = Column(Boolean, nullable=False, server_default='FALSE')
     verification_code = Column(String, nullable=True)
     verification_code_expires = Column(TIMESTAMP(timezone=True), nullable=True)
     provider = Column(String, nullable=False, server_default="email")  # 'email' or 'google'
     google_id = Column(String, nullable=True, unique=True)  # Google user ID
     profile_image = Column(String, nullable=True)  # Profile image path
+    token_version = Column(Integer, nullable=False, server_default=text('0'))  # Token version for session invalidation
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text('now()'))
     
     cart = relationship("DBCart", back_populates="user", cascade="all, delete",
                         uselist=False) #one cart per user
     order = relationship("DBOrder", back_populates="user", cascade="all, delete")
+    wishlist = relationship("DBWishlist", back_populates="user", cascade="all, delete",
+                           uselist=False) #one wishlist per user
+    customer_tickets = relationship("DBTicket", foreign_keys="DBTicket.customer_id", back_populates="customer", cascade="all, delete")
+    employee_tickets = relationship("DBTicket", foreign_keys="DBTicket.employee_id", back_populates="employee")
+    ticket_responses = relationship("DBTicketResponse", back_populates="user", cascade="all, delete")
+    comments = relationship("DBComment", back_populates="user", cascade="all, delete")
+    ratings = relationship("DBProductRating", back_populates="user", cascade="all, delete")
 
 
 
@@ -130,3 +140,109 @@ class DBOrderItem(Base):
 
     order = relationship("DBOrder", back_populates="orderitems")
     product = relationship("DBProduct")
+
+
+class DBWishlist(Base):
+    __tablename__ = "wishlists"
+    id = Column(Integer, primary_key=True, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                        nullable=False, server_default=text('now()'))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    user = relationship("DBUser", back_populates="wishlist")
+    items = relationship("DBWishlistItem", back_populates="wishlist", cascade="all, delete")
+
+
+class DBWishlistItem(Base):
+    __tablename__ = "wishlist_items"
+    id = Column(Integer, primary_key=True, nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    product = relationship("DBProduct")
+    wishlist_id = Column(Integer, ForeignKey("wishlists.id", ondelete="CASCADE"), nullable=False)
+    wishlist = relationship("DBWishlist", back_populates="items")
+    created_at = Column(TIMESTAMP(timezone=True),
+                        nullable=False, server_default=text('now()'))
+
+
+class DBTicket(Base):
+    __tablename__ = "tickets"
+    id = Column(Integer, primary_key=True, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    status = Column(String, nullable=False, server_default="In Progress")
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    
+    customer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    customer = relationship("DBUser", foreign_keys=[customer_id])
+    
+    employee_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    employee = relationship("DBUser", foreign_keys=[employee_id])
+    
+    # Assignment tracking
+    assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    # Delete request fields
+    pending_delete = Column(Boolean, nullable=False, server_default='FALSE')
+    delete_requested_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    delete_requested_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    
+    # Track who last updated the ticket (for notification purposes)
+    last_updated_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    responses = relationship("DBTicketResponse", back_populates="ticket", cascade="all, delete-orphan")
+
+
+class DBTicketResponse(Base):
+    __tablename__ = "ticket_responses"
+    id = Column(Integer, primary_key=True, nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    
+    ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    ticket = relationship("DBTicket", back_populates="responses")
+    
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("DBUser")
+
+
+class DBComment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, nullable=False)
+    content = Column(String, nullable=False)
+    sentiment = Column(String, nullable=True)  # 'positive', 'neutral', or 'negative'
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    product = relationship("DBProduct", back_populates="comments")
+    
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("DBUser", back_populates="comments")
+
+
+class DBProductRating(Base):
+    __tablename__ = "product_ratings"
+    id = Column(Integer, primary_key=True, nullable=False)
+    rating = Column(Integer, nullable=False)  # 1-5 stars
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
+    product = relationship("DBProduct", back_populates="ratings")
+    
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("DBUser", back_populates="ratings")
+    
+    # Ensure one rating per user per product
+    __table_args__ = (
+        UniqueConstraint('user_id', 'product_id', name='unique_user_product_rating'),
+    )
+
+
+class DBAdminSettings(Base):
+    __tablename__ = "admin_settings"
+    id = Column(Integer, primary_key=True, nullable=False)
+    setting_key = Column(String, nullable=False, unique=True)
+    setting_value = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))

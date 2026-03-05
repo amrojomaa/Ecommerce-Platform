@@ -5,10 +5,19 @@ import http from '../services/http';
 import { PRODUCT_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
 import { ProductCardSkeleton } from '../components/Skeleton';
+import { useWishlist } from '../hooks/useWishlist';
+import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../hooks/useCart';
+import StarRating from '../components/StarRating';
+import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import '../styles/pages/Home.css';
 
 const Home = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,6 +136,7 @@ const Home = () => {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 whileHover={{ y: -5 }}
+                className="product-card-wrapper"
               >
                 <Link
                   to={`/products/${encodeURIComponent(product.name)}`}
@@ -138,15 +148,62 @@ const Home = () => {
                         ? `http://localhost:8000/${product.images[0]}`
                         : `http://localhost:8000/images/placeholder.jpg`}
                       alt={product.name}
+                      style={{ objectFit: 'cover' }}
                       // onError={(e) => {
                       //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
                       // }}
                     />
+                    {isAuthenticated && (
+                      <button
+                        className={`product-wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (isInWishlist(product.name)) {
+                            removeFromWishlist(product.name);
+                          } else {
+                            addToWishlist(product);
+                          }
+                        }}
+                        title={isInWishlist(product.name) ? 'Remove from wishlist' : 'Add to wishlist'}
+                      >
+                        {isInWishlist(product.name) ? (
+                          <FaHeart className="wishlist-icon-filled" />
+                        ) : (
+                          <FaRegHeart className="wishlist-icon-outline" />
+                        )}
+                      </button>
+                    )}
                   </div>
                   <div className="product-info">
                     <h3>{product.name}</h3>
                     <p className="product-category">{product.category_name}</p>
-                    <p className="product-price">{formatPrice(product.price)}</p>
+                    {product.id && (
+                      <div className="product-rating-container">
+                        <StarRating productId={product.id} showLabel={false} interactive={false} size="small" />
+                      </div>
+                    )}
+                    <div className="product-price-container">
+                      <p className="product-price">{formatPrice(product.price)}</p>
+                      {isAuthenticated && (
+                        <button
+                          className="product-add-to-cart-btn"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            try {
+                              await addToCart(product.name, 1);
+                              toast.success('Product added to cart!');
+                            } catch (error) {
+                              toast.error(error.response?.data?.detail || 'Failed to add to cart');
+                            }
+                          }}
+                          title="Add to cart"
+                        >
+                          <FaShoppingCart />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </Link>
               </motion.div>

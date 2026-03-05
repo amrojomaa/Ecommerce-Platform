@@ -41,10 +41,18 @@ http.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         
+        // Dispatch event to notify AuthContext about session invalidation
+        window.dispatchEvent(new CustomEvent('session-invalidated', { 
+          detail: { reason: 'Session expired or logged in from another device' } 
+        }));
+        
         // Only redirect if not already on auth pages
         const currentPath = window.location.pathname;
         if (currentPath !== '/login' && currentPath !== '/signup') {
-          window.location.href = '/login';
+          // Use setTimeout to allow event handlers to process first
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
         }
       }
       // If no token existed OR it's an auth endpoint, this is a login failure - let it pass through

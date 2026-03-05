@@ -40,14 +40,14 @@ const Login = () => {
       console.log("LOGIN RESULT:", result);
   
       if (result?.success) {
-        // alert('Login successful');
+        toast.success('Login successful');
         navigate('/');
       } else {
-        alert(result?.error || 'Login failed');
+        toast.error(result?.error || 'Login failed');
       }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
-      alert("Something went wrong");
+      toast.error("Something went wrong");
     }
   
     setLoading(false);
@@ -59,20 +59,20 @@ const Login = () => {
       try {
         const result = await loginWithGoogle(tokenResponse.access_token);
         if (result?.success) {
-          // alert('Login successful');
+          toast.success('Login successful');
           navigate('/');
         } else {
-          alert(result?.error || 'Google login failed');
+          toast.error(result?.error || 'Google login failed');
         }
       } catch (err) {
         console.error("GOOGLE LOGIN ERROR:", err);
-        alert("Something went wrong with Google login");
+        toast.error("Something went wrong with Google login");
       } finally {
         setGoogleLoading(false);
       }
     },
     onError: () => {
-      alert('Google login failed. Please try again.');
+      toast.error('Google login failed. Please try again.');
       setGoogleLoading(false);
     },
     scope: 'profile email', // Explicitly request profile and email scopes to get profile picture

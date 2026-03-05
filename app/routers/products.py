@@ -36,9 +36,17 @@ def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depe
     if prod.category:
         query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
     if prod.min_price:
-        query = query.filter(models.DBProduct.price >= prod.min_price)
+        try:
+            min_price = float(prod.min_price)
+            query = query.filter(models.DBProduct.price >= min_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid min_price
     if prod.max_price:
-        query = query.filter(models.DBProduct.price <= prod.max_price)
+        try:
+            max_price = float(prod.max_price)
+            query = query.filter(models.DBProduct.price <= max_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid max_price
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
@@ -52,9 +60,17 @@ def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session =
     if prod.category:
         query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
     if prod.min_price:
-        query = query.filter(models.DBProduct.price >= prod.min_price)
+        try:
+            min_price = float(prod.min_price)
+            query = query.filter(models.DBProduct.price >= min_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid min_price
     if prod.max_price:
-        query = query.filter(models.DBProduct.price <= prod.max_price)
+        try:
+            max_price = float(prod.max_price)
+            query = query.filter(models.DBProduct.price <= max_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid max_price
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
@@ -68,9 +84,17 @@ def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session 
     if prod.category:
         query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
     if prod.min_price:
-        query = query.filter(models.DBProduct.price >= prod.min_price)
+        try:
+            min_price = float(prod.min_price)
+            query = query.filter(models.DBProduct.price >= min_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid min_price
     if prod.max_price:
-        query = query.filter(models.DBProduct.price <= prod.max_price)
+        try:
+            max_price = float(prod.max_price)
+            query = query.filter(models.DBProduct.price <= max_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid max_price
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")

@@ -24,8 +24,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (cartItems.length === 0) {
-      // toast.info('Your cart is empty');
-      alert('Your cart is empty');
+      toast.info('Your cart is empty');
       navigate('/cart');
     }
   }, [cartItems, navigate]);
@@ -41,8 +40,7 @@ const Checkout = () => {
     e.preventDefault();
     
     if (!formData.address || !formData.city || !formData.zipCode) {
-      // toast.error('Please fill in all required fields');
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -51,8 +49,7 @@ const Checkout = () => {
       // Create order via checkout endpoint
       await http.post(ORDER_ENDPOINTS.CHECKOUT);
       
-      // toast.success('Order placed successfully!');
-      alert('Order placed successfully!');
+      toast.success('Order placed successfully!');
       
       // Clear cart after successful order
       if (cartItems[0]?.cart_id) {
@@ -64,8 +61,7 @@ const Checkout = () => {
         navigate('/orders');
       }, 1500);
     } catch (error) {
-      // toast.error(error.message || 'Failed to place order. Please try again.');
-      alert(error.message || 'Failed to place order. Please try again.');
+      toast.error(error.message || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -108,8 +108,7 @@ const Signup = () => {
         } 
       });
     } else {
-      // toast.error(result.error || 'Signup failed');
-      alert(result.error || 'Signup failed');
+      toast.error(result.error || 'Signup failed');
     }
     
     setLoading(false);
@@ -121,20 +120,20 @@ const Signup = () => {
       try {
         const result = await loginWithGoogle(tokenResponse.access_token);
         if (result?.success) {
-          alert('Account created and logged in successfully');
+          toast.success('Account created and logged in successfully');
           navigate('/');
         } else {
-          alert(result?.error || 'Google signup failed');
+          toast.error(result?.error || 'Google signup failed');
         }
       } catch (err) {
         console.error("GOOGLE SIGNUP ERROR:", err);
-        alert("Something went wrong with Google signup");
+        toast.error("Something went wrong with Google signup");
       } finally {
         setGoogleLoading(false);
       }
     },
     onError: () => {
-      alert('Google signup failed. Please try again.');
+      toast.error('Google signup failed. Please try again.');
       setGoogleLoading(false);
     },
     scope: 'profile email', // Explicitly request profile and email scopes to get profile picture

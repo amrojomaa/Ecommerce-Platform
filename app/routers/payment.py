@@ -1,7 +1,7 @@
 import os
 import stripe
 from fastapi import HTTPException, status, Depends, APIRouter
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
@@ -75,6 +75,9 @@ def confirm_payment(
         if payment_confirm.order_id:
             order = (
                 db.query(models.DBOrder)
+                .options(
+                    selectinload(models.DBOrder.orderitems).joinedload(models.DBOrderItem.product)
+                )
                 .filter(
                     models.DBOrder.id == payment_confirm.order_id,
                     models.DBOrder.user_id == current_user.id
@@ -88,8 +91,21 @@ def confirm_payment(
                     detail="Order not found"
                 )
             
-            # Update order status to paid
-            order.status = "paid"
+            # Only decrease stock if status is not already "paid"
+            if order.status != "paid":
+                # Decrease stock for each order item
+                for order_item in order.orderitems:
+                    product = order_item.product
+                    if product.quantity < order_item.quantity:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Insufficient stock for product {product.name}. Available: {product.quantity}, Requested: {order_item.quantity}"
+                        )
+                    product.quantity -= order_item.quantity
+                
+                # Update order status to paid
+                order.status = "paid"
+            
             db.commit()
         
         return {

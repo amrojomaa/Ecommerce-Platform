@@ -108,8 +108,7 @@ const VerifyResetCode = () => {
     const result = await verifyResetCode(email, code);
 
     if (result.success) {
-      // toast.success(result.message || 'Verification code is valid');
-      alert(result.message || 'Verification code is valid');
+      toast.success(result.message || 'Verification code is valid');
       // Navigate to reset password page with email and code
       navigate('/reset-password', {
         state: {
@@ -119,8 +118,7 @@ const VerifyResetCode = () => {
       });
     } else {
       setError(result.error || 'Invalid verification code. Please try again.');
-      // toast.error(result.error || 'Invalid verification code');
-      alert(result.error || 'Invalid verification code');
+      toast.error(result.error || 'Invalid verification code');
       // Clear code on error
       setVerificationCode(['', '', '', '', '', '']);
       document.getElementById('code-0')?.focus();

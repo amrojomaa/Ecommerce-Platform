@@ -18,15 +18,20 @@ const Cart = () => {
     fetchCart,
   } = useCart();
 
-  useEffect(() => {
-    fetchCart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // useEffect(() => {
+  //   fetchCart();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   const handleQuantityChange = async (itemId, newQuantity) => {
-    if (newQuantity < 1) {
-      await handleRemoveItem(itemId);
+    if (!itemId) {
+      toast.error('Invalid item ID');
       return;
+    }
+    
+    // Ensure minimum quantity is 1
+    if (newQuantity < 1) {
+      newQuantity = 1;
     }
     
     const result = await updateCartItem(itemId, newQuantity);
@@ -38,6 +43,11 @@ const Cart = () => {
   };
 
   const handleRemoveItem = async (itemId) => {
+    if (!itemId) {
+      toast.error('Invalid item ID');
+      return;
+    }
+    
     const result = await removeCartItem(itemId);
     if (result.success) {
       toast.success('Item removed from cart');
@@ -113,15 +123,30 @@ const Cart = () => {
 
                 <div className="cart-item-quantity">
                   <button
-                    onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const currentQuantity = item.quantity || 1;
+                      if (currentQuantity > 1) {
+                        handleQuantityChange(item.id, currentQuantity - 1);
+                      }
+                    }}
                     className="quantity-btn"
+                    disabled={loading || (item.quantity || 1) <= 1}
                   >
                     -
                   </button>
                   <span className="quantity-value">{item.quantity || 1}</span>
                   <button
-                    onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleQuantityChange(item.id, (item.quantity || 1) + 1);
+                    }}
                     className="quantity-btn"
+                    disabled={loading}
                   >
                     +
                   </button>
@@ -134,9 +159,15 @@ const Cart = () => {
                 </div>
 
                 <button
-                  onClick={() => handleRemoveItem(item.id)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveItem(item.id);
+                  }}
                   className="remove-item-btn"
                   aria-label="Remove item"
+                  disabled={loading}
                 >
                   ×
                 </button>

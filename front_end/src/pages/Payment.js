@@ -8,6 +8,7 @@ import {
   useElements
 } from '@stripe/react-stripe-js';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import http from '../services/http';
 import { PAYMENT_ENDPOINTS, ORDER_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
@@ -68,7 +69,7 @@ const PaymentForm = ({ amount, orderId, onSuccess }) => {
           order_id: orderId
         });
 
-        alert('Payment successful!');
+        toast.success('Payment successful!');
         onSuccess();
       }
     } catch (err) {
@@ -154,12 +155,12 @@ const Payment = () => {
           }
         } else {
           // If no amount provided, redirect to orders
-          alert('No order information found');
+          toast.error('No order information found');
           navigate('/orders');
         }
       } catch (error) {
         console.error('Error initializing payment:', error);
-        alert('Failed to initialize payment. Please try again.');
+        toast.error('Failed to initialize payment. Please try again.');
         navigate('/orders');
       } finally {
         setLoading(false);

@@ -38,6 +38,13 @@ export const CART_ENDPOINTS = {
   CLEAR: '/clearcart/{Cart_id}',
 };
 
+// Wishlist endpoints
+export const WISHLIST_ENDPOINTS = {
+  ADD: '/addtowishlist',
+  GET: '/showmewishlist',
+  DELETE_ITEM: '/deletewishlist/{item_id}',
+};
+
 // Order endpoints
 export const ORDER_ENDPOINTS = {
   CHECKOUT: '/checkout',
@@ -68,9 +75,11 @@ export const USER_ENDPOINTS = {
   ME: '/users/me/information',
   UPDATE_ME: '/users/me',
   UPLOAD_PROFILE_IMAGE: '/users/me/profile-image',
+  DELETE_PROFILE_IMAGE: '/users/me/profile-image',
   ALL: '/users/all',
   BY_ID: '/users/{id}',
   UPDATE: '/users/{id}',
+  UPDATE_ROLE: '/users/{id}/role',
   DELETE: '/users/{id}',
 };
 
@@ -83,6 +92,48 @@ export const IMAGE_ENDPOINTS = {
 export const AI_ASSISTANT_ENDPOINTS = {
   CHAT: '/ai-assistant/chat',
   CLEAR: '/ai-assistant/chat/clear',
+};
+
+// Ticket endpoints
+export const TICKET_ENDPOINTS = {
+  CREATE: '/tickets/create',
+  MY: '/tickets/my',
+  ALL: '/tickets/all',
+  ASSIGNED: '/tickets/assigned',
+  BY_ID: '/tickets/{ticket_id}',
+  ASSIGN: '/tickets/{ticket_id}/assign',
+  UPDATE_STATUS: '/tickets/{ticket_id}/status',
+  ADD_RESPONSE: '/tickets/{ticket_id}/response',
+  UNREAD_COUNT: '/tickets/unread/count',
+  REQUEST_DELETE: '/tickets/{ticket_id}/request-delete',
+  DELETE: '/tickets/{ticket_id}',
+  PENDING_DELETES: '/tickets/pending-deletes',
+  APPROVE_DELETE: '/tickets/{ticket_id}/approve-delete',
+  REJECT_DELETE: '/tickets/{ticket_id}/reject-delete',
+};
+
+// Comment endpoints
+export const COMMENT_ENDPOINTS = {
+  GET_PRODUCT: '/products/{product_id}/comments',
+  CREATE: '/products/{product_id}/comments',
+  DELETE: '/comments/{comment_id}',
+  ALL: '/comments/all', // Admin only
+  SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only
+  BACKFILL_SENTIMENT: '/comments/backfill-sentiment', // Admin only
+};
+
+// Rating endpoints
+export const RATING_ENDPOINTS = {
+  GET_PRODUCT: '/products/{product_id}/rating',
+  CREATE_OR_UPDATE: '/products/{product_id}/rating',
+  DELETE: '/products/{product_id}/rating',
+  ALL: '/ratings/all', // Admin only
+};
+
+// Admin Settings endpoints
+export const ADMIN_SETTINGS_ENDPOINTS = {
+  GET_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',
+  UPDATE_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',
 };
 
 // Helper function to replace path parameters

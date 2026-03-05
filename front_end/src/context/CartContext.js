@@ -12,17 +12,86 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [grandTotal, setGrandTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  // Load cart from API when authenticated
-  useEffect(() => {
-    if (isAuthenticated()) {
-      fetchCart();
-    } else {
-      // Load from localStorage if not authenticated (guest cart)
-      loadCartFromStorage();
+  // Get current user ID from localStorage
+  const getCurrentUserId = () => {
+    try {
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        return userData.id || userData.email; // Use ID or email as identifier
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
     }
+    return null;
+  };
+
+  // Watch for token and user changes
+  useEffect(() => {
+    const checkUserChange = () => {
+      const token = localStorage.getItem('token');
+      const userId = getCurrentUserId();
+      
+      // If no token, clear cart
+      if (!token) {
+        if (currentUserId !== null) {
+          setCartItems([]);
+          setGrandTotal(0);
+          setCurrentUserId(null);
+          loadCartFromStorage();
+        }
+        return;
+      }
+      
+      // If user changed, clear cart and fetch new user's cart
+      if (userId && userId !== currentUserId) {
+        setCartItems([]);
+        setGrandTotal(0);
+        setCurrentUserId(userId);
+        fetchCart();
+        return;
+      }
+      
+      // If same user but no cart loaded yet, fetch it
+      if (token && userId && currentUserId === null && cartItems.length === 0) {
+        setCurrentUserId(userId);
+        fetchCart();
+        return;
+      }
+    };
+
+    // Check immediately
+    checkUserChange();
+
+    // Listen for storage changes (when user logs in/out in another tab)
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        checkUserChange();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Listen for custom auth events (for same-tab login/logout)
+    const handleAuthChange = () => {
+      checkUserChange();
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+
+    // Also check periodically for same-tab changes (since storage event doesn't fire in same tab)
+    // Reduced frequency to every 2 seconds to be less resource-intensive
+    const interval = setInterval(checkUserChange, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth-change', handleAuthChange);
+      clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUserId]);
 
   const loadCartFromStorage = () => {
     try {
@@ -41,7 +110,7 @@ export const CartProvider = ({ children }) => {
     if (!isAuthenticated()) return;
     
     setLoading(true);
-    try {
+    try { 
       const response = await http.get(CART_ENDPOINTS.GET);
       const cartData = response.data;
       
@@ -94,39 +163,92 @@ export const CartProvider = ({ children }) => {
   const updateCartItem = async (itemId, quantity) => {
     if (!isAuthenticated()) return { success: false, error: 'Please login' };
 
-    setLoading(true);
+    // Optimistically update local state first for instant feedback
+    const previousItems = [...cartItems];
+    setCartItems(prevItems => {
+      const updated = prevItems.map(item => {
+        if (item.id === itemId) {
+          const newTotal = (item.product?.price || 0) * quantity;
+          return { ...item, quantity: quantity, total: newTotal };
+        }
+        return item;
+      });
+      
+      // Recalculate grand total
+      const newGrandTotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
+      setGrandTotal(newGrandTotal);
+      
+      return updated;
+    });
+
+    // Don't show loading for quick updates - makes it feel instant
     try {
-      await http.put(CART_ENDPOINTS.UPDATE.replace('{item_id}', itemId), {
+      const response = await http.put(CART_ENDPOINTS.UPDATE.replace('{item_id}', itemId), {
         quantity: quantity,
       });
       
-      await fetchCart();
+      // Update with server response to ensure accuracy
+      const updatedData = response.data;
+      setCartItems(prevItems => {
+        const updated = prevItems.map(item => {
+          if (item.id === itemId) {
+            return {
+              ...item,
+              quantity: updatedData.quantity,
+              total: updatedData.total,
+              product: {
+                ...item.product,
+                ...updatedData.product
+              }
+            };
+          }
+          return item;
+        });
+        
+        // Recalculate grand total from server data
+        const newGrandTotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
+        setGrandTotal(newGrandTotal);
+        
+        return updated;
+      });
+      
       return { success: true };
     } catch (error) {
+      // On error, revert to previous state and refetch to sync with server
+      setCartItems(previousItems);
+      await fetchCart();
       return {
         success: false,
         error: error.message || 'Failed to update cart item',
       };
-    } finally {
-      setLoading(false);
     }
   };
 
   const removeCartItem = async (itemId) => {
     if (!isAuthenticated()) return { success: false, error: 'Please login' };
 
-    setLoading(true);
+    // Optimistically remove from local state first for instant feedback
+    const previousItems = [...cartItems];
+    setCartItems(prevItems => {
+      const updated = prevItems.filter(item => item.id !== itemId);
+      // Recalculate grand total from remaining items
+      const newGrandTotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
+      setGrandTotal(newGrandTotal);
+      return updated;
+    });
+
+    // Don't show loading for quick deletes - makes it feel instant
     try {
       await http.delete(CART_ENDPOINTS.DELETE_ITEM.replace('{item_id}', itemId));
-      await fetchCart();
       return { success: true };
     } catch (error) {
+      // On error, revert to previous state and refetch to sync with server
+      setCartItems(previousItems);
+      await fetchCart();
       return {
         success: false,
         error: error.message || 'Failed to remove item from cart',
       };
-    } finally {
-      setLoading(false);
     }
   };
 

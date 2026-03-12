@@ -216,7 +216,6 @@ const AdminUsers = () => {
           <span>Admin: {users.filter(u => u.role === 'admin').length}</span>
           <span>Employee: {users.filter(u => u.role === 'employee').length}</span>
           <span>Customer: {users.filter(u => u.role === 'customer').length}</span>
-          <span>Driver: {users.filter(u => u.role === 'driver').length}</span>
         </div>
       </div>
 
@@ -246,12 +245,6 @@ const AdminUsers = () => {
             onClick={() => setRoleFilter('customer')}
           >
             Customer
-          </button>
-          <button
-            className={roleFilter === 'driver' ? 'active' : ''}
-            onClick={() => setRoleFilter('driver')}
-          >
-            Driver
           </button>
         </div>
       </div>

@@ -1,0 +1,155 @@
+.admin-orders {
+  width: 100%;
+}
+
+.admin-orders h1 {
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.admin-orders-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+.empty-orders {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-orders p {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-orders .note {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.orders-table-container {
+  overflow-x: auto;
+  background-color: var(--surface);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table thead {
+  background-color: var(--background);
+}
+
+.orders-table th {
+  padding: 1rem;
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.orders-table td {
+  padding: 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.orders-table tbody tr:hover {
+  background-color: var(--background);
+}
+
+.order-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-created {
+  background-color: #6c757d;
+  color: white;
+}
+
+.status-paid {
+  background-color: #28a745;
+  color: white;
+}
+
+.status-shipped {
+  background-color: #007bff;
+  color: white;
+}
+
+.status-delivered {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.status-cancelled {
+  background-color: #dc3545;
+  color: white;
+}
+
+.status-assigned {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-picked_up {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.status-delivering {
+  background-color: #00BCD4;
+  color: white;
+}
+
+.status-available {
+  background-color: #FF9800;
+  color: white;
+}
+.status-select {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.status-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-select:hover:not(:disabled) {
+  border-color: var(--primary-color);
+}
+
+.no-action {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .orders-table-container {
+    overflow-x: scroll;
+  }
+
+  .orders-table {
+    min-width: 600px;
+  }
+}

@@ -134,6 +134,33 @@ export const RATING_ENDPOINTS = {
 export const ADMIN_SETTINGS_ENDPOINTS = {
   GET_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',
   UPDATE_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',
+  GET_WAREHOUSE_ADDRESS: '/admin/settings/warehouse-address',
+  UPDATE_WAREHOUSE_ADDRESS: '/admin/settings/warehouse-address',
+};
+
+// Delivery / Driver endpoints
+export const DELIVERY_ENDPOINTS = {
+  AVAILABLE_JOBS: '/delivery/available-jobs',
+  ACCEPT_JOB: '/delivery/jobs/{job_id}/accept',
+  DECLINE_JOB: '/delivery/jobs/{job_id}/decline',
+  PICKUP_JOB: '/delivery/jobs/{job_id}/pickup',
+  DELIVER_JOB: '/delivery/jobs/{job_id}/deliver',
+  UPLOAD_PHOTO: '/delivery/jobs/{job_id}/photo',
+  REPORT_ISSUE: '/delivery/jobs/{job_id}/report-issue',
+  UPDATE_LOCATION: '/delivery/location',
+  GET_LOCATION: '/delivery/location/{driver_id}',
+  ACTIVE_JOBS: '/delivery/jobs/active',
+  JOB_HISTORY: '/delivery/jobs/history',
+  EARNINGS: '/delivery/earnings',
+  EARNINGS_HISTORY: '/delivery/earnings/history',
+  PAYOUT: '/delivery/earnings/payout',
+  CREATE_JOB: '/delivery/create-job',
+  ALL_JOBS: '/delivery/all-jobs',
+  JOB_DETAILS: '/delivery/jobs/{job_id}/details',
+  GET_CHAT: '/delivery/jobs/{job_id}/chat',
+  SEND_CHAT: '/delivery/jobs/{job_id}/chat',
+  WS_CHAT: '/delivery/jobs/{job_id}/ws/chat',
+  GET_JOB_BY_ORDER: '/delivery/jobs/by-order/{order_id}',
 };
 
 // Helper function to replace path parameters

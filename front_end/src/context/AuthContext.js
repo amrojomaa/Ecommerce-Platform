@@ -328,6 +328,10 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'employee' || user?.role === 'admin';
   };
 
+  const isDriver = () => {
+    return user?.role === 'driver';
+  };
+
   const value = {
     user,
     loading,
@@ -339,6 +343,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAdmin,
     isEmployee,
+    isDriver,
     fetchUserInfo,
     forgotPassword,
     verifyResetCode,

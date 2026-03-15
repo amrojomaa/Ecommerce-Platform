@@ -243,6 +243,11 @@ const Navbar = () => {
                   )}
                 </Link>
               )}
+              {user?.role === 'driver' && (
+                <Link to="/driver" className="navbar-link">
+                  <span>Driver</span>
+                </Link>
+              )}
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div 
                   className="profile-image-wrapper"
@@ -353,6 +358,11 @@ const Navbar = () => {
               {user?.role === 'employee' && !checkIsAdmin() && (
                 <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
                   Employee {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                </Link>
+              )}
+              {user?.role === 'driver' && (
+                <Link to="/driver" onClick={() => setMobileMenuOpen(false)}>
+                  Driver
                 </Link>
               )}
               <div className="mobile-user-info">

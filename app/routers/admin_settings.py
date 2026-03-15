@@ -69,3 +69,58 @@ def update_low_stock_threshold(
     db.refresh(setting)
     
     return {"threshold": threshold_update.threshold}
+
+
+# ─── Warehouse Address ────────────────────────────────────────────────────────
+
+DEFAULT_WAREHOUSE_ADDRESS = "Store Warehouse, Amman, Jordan"
+
+
+@router.get("/warehouse-address", response_model=schemas.WarehouseAddressResponse)
+def get_warehouse_address(
+    db: Session = Depends(get_db),
+    admin_user = Depends(require_admin)
+):
+    """Get the current warehouse address setting"""
+    setting = db.query(models.DBAdminSettings).filter(
+        models.DBAdminSettings.setting_key == "warehouse_address"
+    ).first()
+
+    if not setting:
+        default_setting = models.DBAdminSettings(
+            setting_key="warehouse_address",
+            setting_value=DEFAULT_WAREHOUSE_ADDRESS
+        )
+        db.add(default_setting)
+        db.commit()
+        db.refresh(default_setting)
+        return {"address": DEFAULT_WAREHOUSE_ADDRESS}
+
+    return {"address": setting.setting_value}
+
+
+@router.put("/warehouse-address", response_model=schemas.WarehouseAddressResponse)
+def update_warehouse_address(
+    address_update: schemas.WarehouseAddressUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(require_admin)
+):
+    """Update the warehouse address setting"""
+    setting = db.query(models.DBAdminSettings).filter(
+        models.DBAdminSettings.setting_key == "warehouse_address"
+    ).first()
+
+    if not setting:
+        setting = models.DBAdminSettings(
+            setting_key="warehouse_address",
+            setting_value=address_update.address
+        )
+        db.add(setting)
+    else:
+        setting.setting_value = address_update.address
+        setting.updated_at = text('now()')
+
+    db.commit()
+    db.refresh(setting)
+
+    return {"address": address_update.address}

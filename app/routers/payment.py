@@ -7,7 +7,7 @@ from app import models, schemas
 from app import OAuth2
 
 # Initialize Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_51QEXAMPLE")  # Replace with your Stripe secret key
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 router = APIRouter(
     tags=['Payment']
@@ -105,6 +105,10 @@ def confirm_payment(
                 
                 # Update order status to paid
                 order.status = "paid"
+                
+                # Automatically create a delivery job for the paid order
+                from .delivery import internal_create_delivery_job
+                internal_create_delivery_job(order.id, db)
             
             db.commit()
         

@@ -4,12 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 import traceback
 import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
 
 models.Base.metadata.create_all(bind=engine)
 print("Data Base connected successfully!")
@@ -91,5 +95,6 @@ app.include_router(ticket.router)
 app.include_router(comment.router)
 app.include_router(rating.router)
 app.include_router(admin_settings.router)
+app.include_router(delivery.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

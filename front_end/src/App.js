@@ -44,11 +44,20 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetails from './pages/admin/AdminUserDetails';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminComments from './pages/admin/AdminComments';
+import AdminDeliveries from './pages/admin/AdminDeliveries';
 
 //Pages - Employee
 import EmployeeLayout from './layouts/EmployeeLayout';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import EmployeeTickets from './pages/employee/EmployeeTickets';
+
+//Pages - Driver
+import DriverLayout from './layouts/DriverLayout';
+import DriverDashboard from './pages/driver/DriverDashboard';
+import DriverMap from './pages/driver/DriverMap';
+import DriverActiveJob from './pages/driver/DriverActiveJob';
+import DriverJobHistory from './pages/driver/DriverJobHistory';
+import DriverEarnings from './pages/driver/DriverEarnings';
 
 // Styles
 import './styles/App.css';
@@ -88,6 +97,7 @@ function App() {
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="orders" element={<AdminOrders />} />
+                    <Route path="deliveries" element={<AdminDeliveries />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="users/:id" element={<AdminUserDetails />} />
                     <Route path="tickets" element={<AdminTickets />} />
@@ -99,7 +109,15 @@ function App() {
                     <Route path="tickets" element={<EmployeeTickets />} />
         </Route>
 
-        {/* <Route path="*" element={<Navigate to="/" />} /> */}
+        <Route path="/driver" element={<ProtectedRoute requireDriver={true}><DriverLayout /></ProtectedRoute>}>
+                    <Route index element={<DriverDashboard />} />
+                    <Route path="map" element={<DriverMap />} />
+                    <Route path="active" element={<DriverActiveJob />} />
+                    <Route path="history" element={<DriverJobHistory />} />
+                    <Route path="earnings" element={<DriverEarnings />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />

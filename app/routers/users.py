@@ -3,6 +3,7 @@ import shutil
 import string
 from fastapi import File, HTTPException, UploadFile, status, Depends, Query
 from fastapi import APIRouter
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.routers.admin import require_admin
 from ..database import get_db
@@ -133,15 +134,22 @@ def update_user_role(
 @router.delete("/users/{id}",  status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin), current_user: int = Depends(OAuth2.get_current_user)):
 
-    deleteuser = db.query(models.DBUser).filter(models.DBUser.id == id)
-    if deleteuser.first() is None:
+    user_to_delete = db.query(models.DBUser).filter(models.DBUser.id == id).first()
+    if user_to_delete is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     if (current_user.id == id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You're admin dont delete yoreself")
-    
-    deleteuser.delete(synchronize_session=False)
-    db.commit()
+
+    try:
+        db.delete(user_to_delete)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete user because related records still reference this user."
+        )
 
 
 

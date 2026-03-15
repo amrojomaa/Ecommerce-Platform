@@ -8,6 +8,7 @@ import { ProductCardSkeleton } from '../components/Skeleton';
 import { useAuth } from '../hooks/useAuth';
 import { useWishlist } from '../hooks/useWishlist';
 import { useCart } from '../hooks/useCart';
+import { useLanguage } from '../hooks/useLanguage';
 import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -16,6 +17,7 @@ import '../styles/pages/Products.css';
 const Products = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { language, t } = useLanguage();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,9 +121,9 @@ const Products = () => {
         return sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
       case 'name':
       default:
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        return sorted.sort((a, b) => a.name.localeCompare(b.name, language === 'ar' ? 'ar' : 'en'));
     }
-  }, [products, sortBy]);
+  }, [products, sortBy, language]);
 
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -138,20 +140,20 @@ const Products = () => {
   return (
     <div className="products-page">
       <div className="products-header">
-        <h1>Products</h1>
-        <p>Discover our amazing collection</p>
+        <h1>{t('products', 'Products')}</h1>
+        <p>{t('discoverCollection', 'Discover our amazing collection')}</p>
       </div>
 
       <div className="products-container">
         {/* Filters Sidebar */}
         <aside className="filters-sidebar">
-          <h3>Filters</h3>
+          <h3>{t('filters', 'Filters')}</h3>
           
           <div className="filter-group">
-            <label>Search</label>
+            <label>{t('search', 'Search')}</label>
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t('searchProducts', 'Search products...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && applyFilters()}
@@ -159,12 +161,12 @@ const Products = () => {
           </div>
 
           <div className="filter-group">
-            <label>Category</label>
+            <label>{t('category', 'Category')}</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
-              <option value="">All Categories</option>
+              <option value="">{t('allCategories', 'All Categories')}</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
@@ -174,18 +176,18 @@ const Products = () => {
           </div>
 
           <div className="filter-group">
-            <label>Price Range</label>
+            <label>{t('priceRange', 'Price Range')}</label>
             <div className="price-inputs">
               <input
                 type="number"
-                placeholder="Min"
+                placeholder={t('min', 'Min')}
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
               />
               <span>-</span>
               <input
                 type="number"
-                placeholder="Max"
+                placeholder={t('max', 'Max')}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
               />
@@ -193,7 +195,7 @@ const Products = () => {
           </div>
 
           <button onClick={applyFilters} className="apply-filters-btn">
-            Apply Filters
+            {t('applyFilters', 'Apply Filters')}
           </button>
         </aside>
 
@@ -201,14 +203,15 @@ const Products = () => {
         <main className="products-main">
           <div className="products-toolbar">
             <p className="products-count">
-              {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found
+              {sortedProducts.length}{' '}
+              {sortedProducts.length === 1 ? t('productFound', 'product found') : t('productsFound', 'products found')}
             </p>
             <div className="sort-controls">
-              <label>Sort by:</label>
+              <label>{t('sortBy', 'Sort by:')}</label>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="name">Name</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
+                <option value="name">{t('name', 'Name')}</option>
+                <option value="price-low">{t('priceLowToHigh', 'Price: Low to High')}</option>
+                <option value="price-high">{t('priceHighToLow', 'Price: High to Low')}</option>
               </select>
             </div>
           </div>
@@ -221,7 +224,7 @@ const Products = () => {
             </div>
           ) : paginatedProducts.length === 0 ? (
             <div className="empty-state">
-              <p>No products found. Try adjusting your filters.</p>
+              <p>{t('noProductsFound', 'No products found. Try adjusting your filters.')}</p>
             </div>
           ) : (
             <>
@@ -262,7 +265,11 @@ const Products = () => {
                                 addToWishlist(product);
                               }
                             }}
-                            title={isInWishlist(product.name) ? 'Remove from wishlist' : 'Add to wishlist'}
+                            title={
+                              isInWishlist(product.name)
+                                ? t('removeFromWishlist', 'Remove from wishlist')
+                                : t('addToWishlist', 'Add to wishlist')
+                            }
                           >
                             {isInWishlist(product.name) ? (
                               <FaHeart className="wishlist-icon-filled" />
@@ -290,12 +297,12 @@ const Products = () => {
                                 e.stopPropagation();
                                 try {
                                   await addToCart(product.name, 1);
-                                  toast.success('Product added to cart!');
+                                  toast.success(t('addedToCartSuccess', 'Product added to cart!'));
                                 } catch (error) {
-                                  toast.error(error.response?.data?.detail || 'Failed to add to cart');
+                                  toast.error(error.response?.data?.detail || t('addToCartFailed', 'Failed to add to cart'));
                                 }
                               }}
-                              title="Add to cart"
+                              title={t('addToCart', 'Add to cart')}
                             >
                               <FaShoppingCart />
                             </button>
@@ -315,7 +322,7 @@ const Products = () => {
                     disabled={currentPage === 1}
                     className="pagination-btn"
                   >
-                    Previous
+                    {t('previous', 'Previous')}
                   </button>
                   {[...Array(totalPages)].map((_, i) => {
                     const page = i + 1;
@@ -343,7 +350,7 @@ const Products = () => {
                     disabled={currentPage === totalPages}
                     className="pagination-btn"
                   >
-                    Next
+                    {t('next', 'Next')}
                   </button>
                 </div>
               )}

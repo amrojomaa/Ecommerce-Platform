@@ -74,11 +74,33 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+html[dir='rtl'] .sidebar {
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+}
+
+html[dir='rtl'] .sidebar-link {
+  border-left: none;
+  border-right: 3px solid transparent;
+}
+
+html[dir='rtl'] .sidebar-link.active {
+  border-right-color: var(--primary-color);
+}
+
+html[dir='rtl'] .sidebar-badge {
+  right: auto;
+  left: 1.5rem;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     min-height: auto;
     border-right: none;
+    border-left: none;
     border-bottom: 1px solid var(--border-color);
     position: relative;
     top: 0;
@@ -92,12 +114,14 @@
 
   .sidebar-link {
     border-left: none;
+    border-right: none;
     border-bottom: 3px solid transparent;
     white-space: nowrap;
   }
 
   .sidebar-link.active {
     border-left: none;
+    border-right: none;
     border-bottom-color: var(--primary-color);
   }
 }

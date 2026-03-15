@@ -4,11 +4,13 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
+import { useLanguage } from '../../hooks/useLanguage';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminDashboard.css';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -105,7 +107,7 @@ const AdminDashboard = () => {
   const handleUpdateThreshold = async () => {
     const newThreshold = parseInt(thresholdInput);
     if (isNaN(newThreshold) || newThreshold < 1) {
-      toast.error('Please enter a valid number greater than 0');
+      toast.error(t('enterValidNumber', 'Please enter a valid number greater than 0'));
       return;
     }
 
@@ -116,12 +118,12 @@ const AdminDashboard = () => {
       });
       setLowStockThreshold(newThreshold);
       setShowThresholdModal(false);
-      toast.success('Low stock threshold updated successfully');
+      toast.success(t('lowStockThresholdUpdated', 'Low stock threshold updated successfully'));
       // Refetch stats with new threshold
       await fetchStats();
     } catch (error) {
       console.error('Error updating threshold:', error);
-      toast.error(error.response?.data?.detail || 'Failed to update threshold');
+      toast.error(error.response?.data?.detail || t('failedUpdateThreshold', 'Failed to update threshold'));
     } finally {
       setUpdatingThreshold(false);
     }
@@ -137,28 +139,28 @@ const AdminDashboard = () => {
 
   const statCards = [
     {
-      title: 'Total Products',
+      title: t('totalProducts', 'Total Products'),
       value: stats.totalProducts,
       icon: '📦',
       color: '#4CAF50',
       path: '/admin/products',
     },
     {
-      title: 'Total Orders',
+      title: t('totalOrders', 'Total Orders'),
       value: stats.totalOrders,
       icon: '📋',
       color: '#2196F3',
       path: '/admin/orders',
     },
     {
-      title: 'Total Revenue',
+      title: t('totalRevenue', 'Total Revenue'),
       value: `$${stats.totalRevenue.toFixed(2)}`,
       icon: '💰',
       color: '#FF9800',
       path: '/admin/orders?filter=revenue',
     },
     {
-      title: 'Low Stock Items',
+      title: t('lowStockItems', 'Low Stock Items'),
       value: stats.lowStockProducts,
       icon: '⚠️',
       color: '#F44336',
@@ -169,7 +171,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      <h1>Admin Dashboard</h1>
+      <h1>{t('adminDashboard', 'Admin Dashboard')}</h1>
       
       <div className="stats-grid">
         {statCards.map((stat, index) => (
@@ -195,7 +197,7 @@ const AdminDashboard = () => {
               <p>{stat.title}</p>
               {stat.threshold && (
                 <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
-                  Threshold: {'<'} {stat.threshold}
+                  {t('threshold', 'Threshold')}: {'<'} {stat.threshold}
                 </p>
               )}
             </div>
@@ -220,7 +222,7 @@ const AdminDashboard = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
-                title="Configure threshold"
+                title={t('configureThreshold', 'Configure threshold')}
               >
                 ⚙️
               </button>
@@ -264,13 +266,13 @@ const AdminDashboard = () => {
               width: '90%',
             }}
           >
-            <h2 style={{ marginBottom: '1rem' }}>Configure Low Stock Threshold</h2>
+            <h2 style={{ marginBottom: '1rem' }}>{t('configureLowStockThreshold', 'Configure Low Stock Threshold')}</h2>
             <p style={{ marginBottom: '1rem', color: '#666' }}>
-              Set the minimum quantity threshold for low stock alerts. Products with quantity below this value will be marked as low stock.
+              {t('lowStockThresholdDescription', 'Set the minimum quantity threshold for low stock alerts. Products with quantity below this value will be marked as low stock.')}
             </p>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                Threshold Value
+                {t('thresholdValue', 'Threshold Value')}
               </label>
               <input
                 type="number"
@@ -284,10 +286,10 @@ const AdminDashboard = () => {
                   borderRadius: '0.25rem',
                   fontSize: '1rem',
                 }}
-                placeholder="Enter threshold"
+                placeholder={t('enterThreshold', 'Enter threshold')}
               />
               <small style={{ color: '#666', display: 'block', marginTop: '0.25rem' }}>
-                Current threshold: {lowStockThreshold}
+                {t('currentThreshold', 'Current threshold')}: {lowStockThreshold}
               </small>
             </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -302,7 +304,7 @@ const AdminDashboard = () => {
                 }}
                 disabled={updatingThreshold}
               >
-                Cancel
+                {t('cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleUpdateThreshold}
@@ -317,7 +319,7 @@ const AdminDashboard = () => {
                   opacity: updatingThreshold ? 0.6 : 1,
                 }}
               >
-                {updatingThreshold ? 'Updating...' : 'Update'}
+                {updatingThreshold ? t('updating', 'Updating...') : t('update', 'Update')}
               </button>
             </div>
           </motion.div>
@@ -330,8 +332,8 @@ const AdminDashboard = () => {
           whileTap={{ scale: 0.98 }}
         >
           <Link to="/admin/products" className="dashboard-action-card">
-            <h3>Manage Products</h3>
-            <p>Add, edit, or delete products</p>
+            <h3>{t('manageProducts', 'Manage Products')}</h3>
+            <p>{t('addEditDeleteProducts', 'Add, edit, or delete products')}</p>
           </Link>
         </motion.div>
 
@@ -340,8 +342,8 @@ const AdminDashboard = () => {
           whileTap={{ scale: 0.98 }}
         >
           <Link to="/admin/categories" className="dashboard-action-card">
-            <h3>Manage Categories</h3>
-            <p>Organize your product categories</p>
+            <h3>{t('manageCategories', 'Manage Categories')}</h3>
+            <p>{t('organizeProductCategories', 'Organize your product categories')}</p>
           </Link>
         </motion.div>
 
@@ -350,8 +352,8 @@ const AdminDashboard = () => {
           whileTap={{ scale: 0.98 }}
         >
           <Link to="/admin/orders" className="dashboard-action-card">
-            <h3>View Orders</h3>
-            <p>Monitor customer orders</p>
+            <h3>{t('viewOrders', 'View Orders')}</h3>
+            <p>{t('monitorCustomerOrders', 'Monitor customer orders')}</p>
           </Link>
         </motion.div>
       </div>

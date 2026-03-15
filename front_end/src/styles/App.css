@@ -43,6 +43,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+html[dir='rtl'] body {
+  direction: rtl;
+  text-align: right;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -94,6 +99,31 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+html[dir='rtl'] input,
+html[dir='rtl'] textarea,
+html[dir='rtl'] select {
+  text-align: right;
+}
+
+/* Toast Notification Styles - Add spacing below toast messages */
+.Toastify__toast-container {
+  top: 85px !important;
+}
+
+.Toastify__toast-container--top-right {
+  top: 85px !important;
+  right: 1em !important;
+}
+
+html[dir='rtl'] .Toastify__toast-container--top-right {
+  right: auto !important;
+  left: 1em !important;
+}
+
+.Toastify__toast {
+  margin-bottom: 24px !important;
 }
 
 /* Links */

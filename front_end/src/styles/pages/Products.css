@@ -290,6 +290,20 @@
   border-color: var(--primary-color);
 }
 
+html[dir='rtl'] .product-wishlist-btn {
+  right: auto;
+  left: 0.75rem;
+}
+
+html[dir='rtl'] .product-price {
+  text-align: left;
+}
+
+html[dir='rtl'] .product-add-to-cart-btn {
+  margin-left: 0;
+  margin-right: 0.75rem;
+}
+
 @media (max-width: 1024px) {
   .products-container {
     grid-template-columns: 1fr;

@@ -5,11 +5,15 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatPrice } from '../../utils/helpers';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDialog } from '../../hooks/useDialog';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import '../../styles/pages/admin/AdminProducts.css';
 
 const AdminProducts = () => {
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [allProducts, setAllProducts] = useState([]); // Store all products
@@ -73,7 +77,7 @@ const AdminProducts = () => {
       // Fetch sentiment analytics for all products
       await fetchSentimentAnalytics(response.data);
     } catch (error) {
-      toast.error('Failed to fetch products');
+      toast.error(t('failedFetchProducts', 'Failed to fetch products'));
     } finally {
       setLoading(false);
     }
@@ -124,7 +128,7 @@ const AdminProducts = () => {
     // Check total images count (existing + new)
     const totalImages = images.length + files.length;
     if (totalImages > 3) {
-      toast.error('Maximum 3 images allowed. Please remove some images first.');
+      toast.error(t('maxThreeImagesHint', 'Maximum 3 images allowed. Please remove some images first.'));
       e.target.value = ''; // Reset file input
       return;
     }
@@ -145,9 +149,9 @@ const AdminProducts = () => {
       const responses = await Promise.all(uploadPromises);
       const uploadedImages = responses.map(r => r.data.filename);
       setImages([...images, ...uploadedImages]);
-      toast.success('Images uploaded successfully');
+      toast.success(t('imagesUploadedSuccessfully', 'Images uploaded successfully'));
     } catch (error) {
-      toast.error('Failed to upload images');
+      toast.error(t('failedUploadImages', 'Failed to upload images'));
     } finally {
       setUploading(false);
       e.target.value = ''; // Reset file input
@@ -163,12 +167,12 @@ const AdminProducts = () => {
     
     // Validate images: must have at least 1 image
     if (images.length < 1) {
-      toast.error('At least one image is required');
+      toast.error(t('atLeastOneImageRequired', 'At least one image is required'));
       return;
     }
     
     if (images.length > 3) {
-      toast.error('Maximum 3 images allowed');
+      toast.error(t('maxThreeImages', 'Maximum 3 images allowed'));
       return;
     }
     
@@ -182,23 +186,23 @@ const AdminProducts = () => {
       
       if (editingProduct) {
         if (!editingProduct.id) {
-          toast.error('Error: Product ID is missing. Please refresh and try again.');
+          toast.error(t('productIdMissing', 'Error: Product ID is missing. Please refresh and try again.'));
           return;
         }
         await http.put(
           PRODUCT_ENDPOINTS.UPDATE.replace('{id}', editingProduct.id),
           productData
         );
-        toast.success('Product updated successfully');
+        toast.success(t('productUpdatedSuccessfully', 'Product updated successfully'));
       } else {
         await http.post(PRODUCT_ENDPOINTS.CREATE, productData);
-        toast.success('Product created successfully');
+        toast.success(t('productCreatedSuccessfully', 'Product created successfully'));
       }
       
       resetForm();
       await fetchProducts();
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save product';
+      const errorMessage = error.response?.data?.detail || error.message || t('failedSaveProduct', 'Failed to save product');
       toast.error(errorMessage);
     }
   };
@@ -218,16 +222,21 @@ const AdminProducts = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
+    const confirmed = await showConfirm({
+      message: t('confirmDeleteProduct', 'Are you sure you want to delete this product?'),
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await http.delete(PRODUCT_ENDPOINTS.DELETE.replace('{id}', id));
-      toast.success('Product deleted successfully');
+      toast.success(t('productDeletedSuccessfully', 'Product deleted successfully'));
       await fetchProducts();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete product');
+      toast.error(error.message || t('failedDeleteProduct', 'Failed to delete product'));
     }
   };
 
@@ -248,7 +257,7 @@ const AdminProducts = () => {
     <div className="admin-products">
       <div className="admin-products-header">
         <div>
-          <h1>Manage Products</h1>
+          <h1>{t('manageProducts', 'Manage Products')}</h1>
           {isLowStockFilter && (
             <p style={{ 
               color: '#F44336', 
@@ -256,7 +265,7 @@ const AdminProducts = () => {
               fontSize: '0.9rem',
               fontWeight: '500'
             }}>
-              ⚠️ Showing low stock items (quantity {'<'} {lowStockThreshold})
+              ⚠️ {t('showingLowStockItems', 'Showing low stock items')} ({t('quantity', 'quantity')} {'<'} {lowStockThreshold})
             </p>
           )}
         </div>
@@ -269,7 +278,7 @@ const AdminProducts = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          + Add Product
+          + {t('addProduct', 'Add Product')}
         </motion.button>
       </div>
 
@@ -287,8 +296,8 @@ const AdminProducts = () => {
         }}>
           <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
             {isLowStockFilter 
-              ? 'No low stock items found. All products have sufficient inventory.' 
-              : 'No products found.'}
+              ? t('noLowStockItems', 'No low stock items found. All products have sufficient inventory.')
+              : t('noProductsFound', 'No products found.')}
           </p>
           {isLowStockFilter && (
             <button
@@ -303,7 +312,7 @@ const AdminProducts = () => {
                 fontSize: '1rem'
               }}
             >
-              Show All Products
+              {t('showAllProducts', 'Show All Products')}
             </button>
           )}
         </div>
@@ -332,10 +341,10 @@ const AdminProducts = () => {
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category_name}</p>
                 <p className="product-price">{formatPrice(product.price)}</p>
-                <p className="product-stock">Stock: {product.quantity}</p>
+                <p className="product-stock">{t('stock', 'Stock')}: {product.quantity}</p>
                 {sentimentAnalytics[product.id] && (
                   <div className="sentiment-analytics">
-                    <p className="sentiment-title">Review Sentiment:</p>
+                    <p className="sentiment-title">{t('reviewSentiment', 'Review Sentiment')}:</p>
                     <div className="sentiment-stats">
                       <span className="sentiment-positive">
                         👍 {sentimentAnalytics[product.id].positive_count}
@@ -370,7 +379,7 @@ const AdminProducts = () => {
                           />
                         </div>
                         <p className="sentiment-total">
-                          Total: {sentimentAnalytics[product.id].total_reviews} reviews
+                          {t('total', 'Total')}: {sentimentAnalytics[product.id].total_reviews} {t('reviews', 'reviews')}
                         </p>
                       </div>
                     )}
@@ -381,18 +390,18 @@ const AdminProducts = () => {
                 <button 
                   onClick={() => navigate(`/admin/comments/product/${product.id}`)} 
                   className="reviews-btn"
-                  title="View Reviews"
+                  title={t('viewReviews', 'View Reviews')}
                 >
-                  Reviews
+                  {t('reviews', 'Reviews')}
                 </button>
                 <button onClick={() => handleEdit(product)} className="edit-btn">
-                  Edit
+                  {t('edit', 'Edit')}
                 </button>
                 <button
                   onClick={() => handleDelete(product.id)}
                   className="delete-btn"
                 >
-                  Delete
+                  {t('delete', 'Delete')}
                 </button>
               </div>
             </motion.div>
@@ -416,11 +425,11 @@ const AdminProducts = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+              <h2>{editingProduct ? t('editProduct', 'Edit Product') : t('addNewProduct', 'Add New Product')}</h2>
               
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Product Name *</label>
+                  <label>{t('productName', 'Product Name')} *</label>
                   <input
                     type="text"
                     name="name"
@@ -431,7 +440,7 @@ const AdminProducts = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Description *</label>
+                  <label>{t('description', 'Description')} *</label>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -443,7 +452,7 @@ const AdminProducts = () => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Price *</label>
+                    <label>{t('price', 'Price')} *</label>
                     <input
                       type="number"
                       name="price"
@@ -456,7 +465,7 @@ const AdminProducts = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Quantity *</label>
+                    <label>{t('quantity', 'Quantity')} *</label>
                     <input
                       type="number"
                       name="quantity"
@@ -469,7 +478,7 @@ const AdminProducts = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Category Name *</label>
+                  <label>{t('categoryName', 'Category Name')} *</label>
                   <select
                     name="category_name"
                     value={formData.category_name}
@@ -477,7 +486,7 @@ const AdminProducts = () => {
                     required
                     className="category-select"
                   >
-                    <option value="">Select a category</option>
+                    <option value="">{t('selectCategory', 'Select a category')}</option>
                     {categories.map((category) => (
                       <option key={category.name} value={category.name}>
                         {category.name}
@@ -487,7 +496,7 @@ const AdminProducts = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Product Images * (1-3 images required)</label>
+                  <label>{t('productImagesRequired', 'Product Images * (1-3 images required)')}</label>
                   <input
                     type="file"
                     multiple
@@ -496,10 +505,10 @@ const AdminProducts = () => {
                     disabled={uploading || images.length >= 3}
                   />
                   <small className="image-hint">
-                    {images.length === 0 && 'At least 1 image is required. '}
-                    {images.length > 0 && `${images.length}/3 images selected. `}
-                    {images.length < 3 && 'You can add more images.'}
-                    {images.length >= 3 && 'Maximum 3 images reached.'}
+                    {images.length === 0 && `${t('atLeastOneImageRequired', 'At least 1 image is required.')} `}
+                    {images.length > 0 && `${images.length}/3 ${t('imagesSelected', 'images selected')}. `}
+                    {images.length < 3 && t('canAddMoreImages', 'You can add more images.')}
+                    {images.length >= 3 && t('maxImagesReached', 'Maximum 3 images reached.')}
                   </small>
                   {uploading && <LoadingSpinner size="small" />}
                   {images.length > 0 && (
@@ -511,7 +520,7 @@ const AdminProducts = () => {
                             type="button"
                             onClick={() => handleRemoveImage(idx)}
                             className="remove-image-btn"
-                            title="Remove image"
+                            title={t('removeImage', 'Remove image')}
                           >
                             ×
                           </button>
@@ -523,10 +532,10 @@ const AdminProducts = () => {
 
                 <div className="modal-actions">
                   <button type="button" onClick={resetForm} className="cancel-btn">
-                    Cancel
+                    {t('cancel', 'Cancel')}
                   </button>
                   <button type="submit" className="save-btn">
-                    {editingProduct ? 'Update' : 'Create'}
+                    {editingProduct ? t('update', 'Update') : t('create', 'Create')}
                   </button>
                 </div>
               </form>

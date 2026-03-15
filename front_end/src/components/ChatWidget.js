@@ -4,14 +4,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import http from '../services/http';
 import { AI_ASSISTANT_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
+import { useLanguage } from '../hooks/useLanguage';
 import '../styles/components/ChatWidget.css';
 
 const ChatWidget = () => {
+  const { t } = useLanguage();
+
+  const getWelcomeMessage = () =>
+    t(
+      'aiWelcomeMessage',
+      "Hello! I'm your AI shopping assistant. I can help you find products or answer questions. How can I assist you today?"
+    );
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hello! I'm your AI shopping assistant. I can help you find products or answer questions. How can I assist you today?",
+      content: getWelcomeMessage(),
       products: []
     }
   ]);
@@ -67,7 +76,10 @@ const ChatWidget = () => {
       console.error('Error sending message:', error);
       const errorMessage = {
         role: 'assistant',
-        content: "I apologize, but I'm having trouble processing your request right now. Please try again later.",
+        content: t(
+          'aiErrorMessage',
+          "I apologize, but I'm having trouble processing your request right now. Please try again later."
+        ),
         products: []
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -91,7 +103,7 @@ const ChatWidget = () => {
       setMessages([
         {
           role: 'assistant',
-          content: "Chat cleared! How can I help you today?",
+          content: t('aiChatClearedMessage', 'Chat cleared! How can I help you today?'),
           products: []
         }
       ]);
@@ -108,7 +120,7 @@ const ChatWidget = () => {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        aria-label="Toggle chat"
+        aria-label={t('toggleChat', 'Toggle chat')}
       >
         {isOpen ? '✕' : '💬'}
       </motion.button>
@@ -126,19 +138,19 @@ const ChatWidget = () => {
             {/* Chat Header */}
             <div className="chat-header">
               <div className="chat-header-content">
-                <h3>AI Shopping Assistant</h3>
+                <h3>{t('aiShoppingAssistant', 'AI Shopping Assistant')}</h3>
                 <div className="chat-header-actions">
                   <button
                     onClick={clearChat}
                     className="chat-clear-button"
-                    title="Clear chat"
+                    title={t('clearChat', 'Clear chat')}
                   >
                     🗑️
                   </button>
                   <button
                     onClick={() => setIsOpen(false)}
                     className="chat-close-button"
-                    title="Close chat"
+                    title={t('closeChat', 'Close chat')}
                   >
                     ✕
                   </button>
@@ -160,7 +172,7 @@ const ChatWidget = () => {
                   {/* Product Cards */}
                   {msg.products && msg.products.length > 0 && (
                     <div className="product-recommendations">
-                      <h4>Recommended Products:</h4>
+                      <h4>{t('recommendedProducts', 'Recommended Products')}:</h4>
                       <div className="product-cards-grid">
                         {msg.products.map((product) => (
                           <motion.div
@@ -219,7 +231,7 @@ const ChatWidget = () => {
                 ref={inputRef}
                 type="text"
                 className="chat-input"
-                placeholder="Type your message..."
+                placeholder={t('typeYourMessage', 'Type your message...')}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}

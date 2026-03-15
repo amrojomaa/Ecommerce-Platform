@@ -18,11 +18,11 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireEmployee = fals
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && isAdmin && typeof isAdmin === 'function' && !isAdmin()) {
+  if (requireAdmin && typeof isAdmin === 'function' && !isAdmin()) {
     return <Navigate to="/" replace />;
   }
 
-  if (requireEmployee && isEmployee && typeof isEmployee === 'function' && !isEmployee()) {
+  if (requireEmployee && typeof isEmployee === 'function' && !isEmployee()) {
     return <Navigate to="/" replace />;
   }
 

@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Error fetching user info:', error);
+        console.error('Error fetching user info');
       logout();
     } finally {
       setLoading(false);
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
         // Fetch fresh user info from server (this will update user state)
         fetchUserInfo();
       } catch (error) {
-        console.error('Error parsing user data:', error);
+        console.error('Error parsing user data');
         logout();
       }
     } else {
@@ -58,7 +58,6 @@ export const AuthProvider = ({ children }) => {
   // Listen for session invalidation events from HTTP interceptor
   useEffect(() => {
     const handleSessionInvalidated = () => {
-      console.log('Session invalidated event received');
       logout();
     };
 
@@ -106,7 +105,6 @@ export const AuthProvider = ({ children }) => {
           
           // Check if role changed
           if (previousRole && previousRole !== newRole) {
-            console.log(`Role changed from ${previousRole} to ${newRole}`);
             // Dispatch event to notify components about role change
             window.dispatchEvent(new CustomEvent('user-role-changed', { 
               detail: { 
@@ -126,7 +124,6 @@ export const AuthProvider = ({ children }) => {
         // The HTTP interceptor will handle clearing the token and redirecting
         // We just need to ensure logout is called
         if (error.response?.status === 401 || error.status === 401) {
-          console.log('Session invalidated - user logged in from another browser');
           // The interceptor will clear the token, but we should also call logout
           // to update the React state
           if (!localStorage.getItem('token')) {
@@ -144,8 +141,8 @@ export const AuthProvider = ({ children }) => {
     // This ensures browser2 gets the latest profile image from browser1
     checkAndUpdateUser();
     
-    // Then check periodically every 2 seconds to quickly detect changes
-    const sessionCheckInterval = setInterval(checkAndUpdateUser, 2000);
+    // Periodic sync to detect cross-tab/session changes without high-frequency polling.
+    const sessionCheckInterval = setInterval(checkAndUpdateUser, 30000);
 
     return () => {
       clearInterval(sessionCheckInterval);

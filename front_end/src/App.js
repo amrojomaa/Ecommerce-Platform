@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -9,6 +9,8 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { DialogProvider } from './context/DialogContext';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -21,6 +23,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
+import AddComment from './pages/AddComment';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Payment from './pages/Payment';
@@ -52,13 +55,16 @@ import EmployeeTickets from './pages/employee/EmployeeTickets';
 
 // Styles
 import './styles/App.css';
+import './styles/rtl.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <LanguageProvider>
     <ThemeProvider>
+    <DialogProvider>
     <AuthProvider>
       <CartProvider>
       <WishlistProvider>
@@ -69,6 +75,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="products" element={<Products />} />
           <Route path="products/:name" element={<ProductDetails />} />
+          <Route path="products/:name/add-comment" element={<ProtectedRoute><AddComment /></ProtectedRoute>} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="verify-email" element={<EmailVerification />} />
@@ -102,12 +109,17 @@ function App() {
         {/* <Route path="*" element={<Navigate to="/" />} /> */}
 
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000}
+      />
     </Router>
     </WishlistProvider>
     </CartProvider>
     </AuthProvider>
+    </DialogProvider>
     </ThemeProvider>
+    </LanguageProvider>
     </GoogleOAuthProvider>
   );
 }

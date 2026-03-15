@@ -5,10 +5,12 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
+import { useLanguage } from '../../hooks/useLanguage';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminUsers.css';
 
 const AdminUsers = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -21,6 +23,7 @@ const AdminUsers = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [blocking, setBlocking] = useState(null);
 
   // Default profile image (same as Profile page and Navbar)
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
@@ -176,6 +179,38 @@ const AdminUsers = () => {
     }
   };
 
+  const handleBlockUser = async (user, blockStatus) => {
+    setBlocking(user.id);
+    try {
+      await http.patch(
+        buildUrl(USER_ENDPOINTS.BLOCK, { id: user.id }),
+        { is_blocked: blockStatus }
+      );
+      
+      // Update the user in users list
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === user.id ? { ...u, is_blocked: blockStatus } : u
+        )
+      );
+      
+      // Update filteredUsers
+      setFilteredUsers(prevFilteredUsers => 
+        prevFilteredUsers.map(u => 
+          u.id === user.id ? { ...u, is_blocked: blockStatus } : u
+        )
+      );
+      
+      toast.success(`User ${blockStatus ? 'blocked' : 'unblocked'} successfully`);
+    } catch (error) {
+      console.error('Error blocking/unblocking user:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to update user status';
+      toast.error(errorMessage);
+    } finally {
+      setBlocking(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -199,6 +234,15 @@ const AdminUsers = () => {
     }
   };
 
+  const getRoleLabel = (role) => {
+    const roleMap = {
+      admin: t('admin', 'Admin'),
+      employee: t('employee', 'Employee'),
+      customer: t('customer', 'Customer'),
+    };
+    return roleMap[role] || role;
+  };
+
   if (loading) {
     return (
       <div className="admin-users-loading">
@@ -210,41 +254,41 @@ const AdminUsers = () => {
   return (
     <div className="admin-users">
       <div className="admin-users-header">
-        <h1>Manage Users</h1>
+        <h1>{t('manageUsers', 'Manage Users')}</h1>
         <div className="users-stats">
-          <span>Total: {users.length}</span>
-          <span>Admin: {users.filter(u => u.role === 'admin').length}</span>
-          <span>Employee: {users.filter(u => u.role === 'employee').length}</span>
-          <span>Customer: {users.filter(u => u.role === 'customer').length}</span>
+          <span>{t('total', 'Total')}: {users.length}</span>
+          <span>{t('admin', 'Admin')}: {users.filter(u => u.role === 'admin').length}</span>
+          <span>{t('employee', 'Employee')}: {users.filter(u => u.role === 'employee').length}</span>
+          <span>{t('customer', 'Customer')}: {users.filter(u => u.role === 'customer').length}</span>
         </div>
       </div>
 
       <div className="filter-section">
-        <label>Filter by Role:</label>
+        <label>{t('filterByRole', 'Filter by Role')}:</label>
         <div className="filter-buttons">
           <button
             className={roleFilter === 'all' ? 'active' : ''}
             onClick={() => setRoleFilter('all')}
           >
-            All
+            {t('all', 'All')}
           </button>
           <button
             className={roleFilter === 'admin' ? 'active' : ''}
             onClick={() => setRoleFilter('admin')}
           >
-            Admin
+            {t('admin', 'Admin')}
           </button>
           <button
             className={roleFilter === 'employee' ? 'active' : ''}
             onClick={() => setRoleFilter('employee')}
           >
-            Employee
+            {t('employee', 'Employee')}
           </button>
           <button
             className={roleFilter === 'customer' ? 'active' : ''}
             onClick={() => setRoleFilter('customer')}
           >
-            Customer
+            {t('customer', 'Customer')}
           </button>
         </div>
       </div>
@@ -253,19 +297,20 @@ const AdminUsers = () => {
         <table className="users-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Verified</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th>{t('id', 'ID')}</th>
+              <th>{t('name', 'Name')}</th>
+              <th>{t('email', 'Email')}</th>
+              <th>{t('role', 'Role')}</th>
+              <th>{t('verified', 'Verified')}</th>
+              <th>{t('status', 'Status')}</th>
+              <th>{t('created', 'Created')}</th>
+              <th>{t('actions', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="7" className="no-users">
+                <td colSpan="8" className="no-users">
                   No users found
                 </td>
               </tr>
@@ -302,12 +347,17 @@ const AdminUsers = () => {
                   <td>{user.email}</td>
                   <td>
                     <span className={getRoleBadgeClass(user.role)}>
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </span>
                   </td>
                   <td>
                     <span className={user.is_verified ? 'verified' : 'not-verified'}>
-                      {user.is_verified ? '✓ Verified' : '✗ Not Verified'}
+                      {user.is_verified ? `✓ ${t('verified', 'Verified')}` : `✗ ${t('notVerified', 'Not Verified')}`}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={user.is_blocked ? 'blocked' : 'not-blocked'}>
+                      {user.is_blocked ? `🚫 ${t('blocked', 'Blocked')}` : `✓ ${t('active', 'Active')}`}
                     </span>
                   </td>
                   <td>{formatDate(user.created_at)}</td>
@@ -319,9 +369,22 @@ const AdminUsers = () => {
                           e.stopPropagation();
                           handleRoleChange(user);
                         }}
-                        disabled={updating || deleting}
+                        disabled={updating || deleting || blocking === user.id}
                       >
-                        Change Role
+                        {t('changeRole', 'Change Role')}
+                      </button>
+                      <button
+                        className={user.is_blocked ? "unblock-user-btn" : "block-user-btn"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBlockUser(user, !user.is_blocked);
+                        }}
+                        disabled={updating || deleting || blocking === user.id}
+                      >
+                        {blocking === user.id 
+                          ? (user.is_blocked ? t('unblocking', 'Unblocking...') : t('blocking', 'Blocking...'))
+                          : (user.is_blocked ? t('unblock', 'Unblock') : t('block', 'Block'))
+                        }
                       </button>
                       <button
                         className="delete-user-btn"
@@ -329,7 +392,7 @@ const AdminUsers = () => {
                           e.stopPropagation();
                           handleDeleteClick(user);
                         }}
-                        disabled={updating || deleting}
+                        disabled={updating || deleting || blocking === user.id}
                       >
                         Delete
                       </button>
@@ -358,7 +421,7 @@ const AdminUsers = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2>Change User Role</h2>
+              <h2>{t('changeUserRole', 'Change User Role')}</h2>
               <div className="user-info">
                 <p><strong>User:</strong> {selectedUser.first_name} {selectedUser.last_name}</p>
                 <p><strong>Email:</strong> {selectedUser.email}</p>
@@ -376,9 +439,9 @@ const AdminUsers = () => {
                   onChange={(e) => setNewRole(e.target.value)}
                   disabled={updating}
                 >
-                  <option value="admin">Admin</option>
-                  <option value="employee">Employee</option>
-                  <option value="customer">Customer</option>
+                  <option value="admin">{t('admin', 'Admin')}</option>
+                  <option value="employee">{t('employee', 'Employee')}</option>
+                  <option value="customer">{t('customer', 'Customer')}</option>
                 </select>
               </div>
 
@@ -395,7 +458,7 @@ const AdminUsers = () => {
                   onClick={handleUpdateRole}
                   disabled={updating || selectedUser.role === newRole}
                 >
-                  {updating ? 'Updating...' : 'Update Role'}
+                  {updating ? t('updating', 'Updating...') : t('updateRole', 'Update Role')}
                 </button>
               </div>
             </motion.div>

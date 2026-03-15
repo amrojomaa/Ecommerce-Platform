@@ -36,6 +36,20 @@
   color: var(--primary-color);
 }
 
+.language-switch-btn {
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.language-switch-btn:hover {
+  background-color: var(--primary-hover);
+}
+
 .footer-bottom {
   margin-top: 2rem;
   padding-top: 2rem;

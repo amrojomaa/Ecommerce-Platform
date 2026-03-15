@@ -6,12 +6,15 @@ from sqlalchemy.exc import IntegrityError
 from app.routers.admin import require_admin
 from ..database import get_db
 from typing import List
+import logging
 
 
 router = APIRouter(
     # prefix="/products",
     tags=['Products']
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_product_with_images(product: models.DBProduct) -> dict:
@@ -228,9 +231,10 @@ def update_product(product: schemas.ProductBase, id :int, db: Session = Depends 
         return schemas.ProductBase(**get_product_with_images(updated_product))
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error updating product: {str(e)}")
+        logger.exception("Error updating product")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error updating product")
 
 
 @router.delete("/products/{id}",  status_code=status.HTTP_204_NO_CONTENT)
@@ -273,11 +277,12 @@ def delete_product(id :int, db: Session = Depends (get_db), admin_user = Depends
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot delete product due to database constraints: {error_msg}"
         )
-    except Exception as e:
+    except Exception:
         db.rollback()
+        logger.exception("Error deleting product")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error deleting product: {str(e)}"
+            detail="Error deleting product"
         )
 
 

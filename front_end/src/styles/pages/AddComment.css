@@ -1,0 +1,130 @@
+.add-comment-page {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.add-comment-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.add-comment-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+}
+
+.add-comment-title {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.add-comment-subtitle {
+  margin: 0.5rem 0 1.5rem;
+  color: var(--text-secondary);
+}
+
+.add-comment-existing-msg {
+  margin: 0 0 1rem;
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.add-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.add-comment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-comment-field label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.add-comment-stars {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.add-comment-star-btn {
+  border: none;
+  background: transparent;
+  color: #b7bcc9;
+  font-size: 1.7rem;
+  cursor: pointer;
+  padding: 0.1rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.add-comment-star-btn:hover {
+  transform: scale(1.08);
+}
+
+.add-comment-star-btn.active {
+  color: #f5b301;
+}
+
+.add-comment-field textarea {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  background: var(--background);
+  color: var(--text-primary);
+  padding: 0.85rem 1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.add-comment-counter {
+  align-self: flex-end;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.add-comment-submit-btn {
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--primary-color);
+  color: #fff;
+  padding: 0.85rem 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.add-comment-submit-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.add-comment-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-comment-loading {
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

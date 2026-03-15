@@ -6,10 +6,14 @@ import http from '../../services/http';
 import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import { formatDate } from '../../utils/helpers';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDialog } from '../../hooks/useDialog';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminComments.css';
 
 const AdminComments = () => {
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const { productId } = useParams();
   const navigate = useNavigate();
   const [comments, setComments] = useState([]);
@@ -19,7 +23,6 @@ const AdminComments = () => {
   const [loading, setLoading] = useState(true);
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
   const [deleting, setDeleting] = useState(null);
-  const [backfilling, setBackfilling] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -93,7 +96,12 @@ const AdminComments = () => {
   };
 
   const handleDelete = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    const confirmed = await showConfirm({
+      message: 'Are you sure you want to delete this comment?',
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -111,35 +119,13 @@ const AdminComments = () => {
     }
   };
 
-  const handleBackfillSentiment = async () => {
-    if (!selectedProductId) return;
-    
-    const productName = selectedProduct?.name || 'this product';
-    if (!window.confirm(`This will analyze sentiment for all reviews of "${productName}" that don't have sentiment values. Continue?`)) {
-      return;
-    }
-
-    setBackfilling(true);
-    try {
-      const response = await http.post(COMMENT_ENDPOINTS.BACKFILL_SENTIMENT, null, {
-        params: { product_id: selectedProductId }
-      });
-      toast.success(response.data.message || `Updated ${response.data.updated} reviews`);
-      await fetchComments();
-    } catch (error) {
-      toast.error('Failed to backfill sentiment: ' + (error.response?.data?.detail || error.message));
-    } finally {
-      setBackfilling(false);
-    }
-  };
-
   const getSentimentBadge = (sentiment) => {
     if (!sentiment) return null;
     
     const badges = {
-      positive: { text: 'Positive', class: 'sentiment-badge-positive', icon: '👍' },
-      neutral: { text: 'Neutral', class: 'sentiment-badge-neutral', icon: '😐' },
-      negative: { text: 'Negative', class: 'sentiment-badge-negative', icon: '👎' }
+      positive: { text: t('positive', 'Positive'), class: 'sentiment-badge-positive', icon: '👍' },
+      neutral: { text: t('neutral', 'Neutral'), class: 'sentiment-badge-neutral', icon: '😐' },
+      negative: { text: t('negative', 'Negative'), class: 'sentiment-badge-negative', icon: '👎' }
     };
 
     const badge = badges[sentiment.toLowerCase()];
@@ -189,17 +175,17 @@ const AdminComments = () => {
   return (
     <div className="admin-comments">
       <div className="admin-comments-header">
-        <h1>Manage Reviews</h1>
+        <h1>{t('manageReviews', 'Manage Reviews')}</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="product-selector">
-            <label htmlFor="product-select">Select Product:</label>
+            <label htmlFor="product-select">{t('selectProduct', 'Select Product')}:</label>
             <select
               id="product-select"
               value={selectedProductId || ''}
               onChange={handleProductChange}
               className="product-select"
             >
-              <option value="">-- All Products --</option>
+              <option value="">{t('allProductsOption', '-- All Products --')}</option>
               {products.map(product => (
                 <option key={product.id} value={product.id}>
                   {product.name}
@@ -207,39 +193,30 @@ const AdminComments = () => {
               ))}
             </select>
           </div>
-          {selectedProductId && (
-            <button
-              className="backfill-sentiment-btn"
-              onClick={handleBackfillSentiment}
-              disabled={backfilling}
-            >
-              {backfilling ? 'Analyzing...' : 'Analyze Sentiment for This Product'}
-            </button>
-          )}
           <div className="sentiment-filters">
           <button
             className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
             onClick={() => setSentimentFilter('all')}
           >
-            All ({counts.all})
+            {t('all', 'All')} ({counts.all})
           </button>
           <button
             className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
             onClick={() => setSentimentFilter('positive')}
           >
-            Positive ({counts.positive})
+            {t('positive', 'Positive')} ({counts.positive})
           </button>
           <button
             className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
             onClick={() => setSentimentFilter('neutral')}
           >
-            Neutral ({counts.neutral})
+            {t('neutral', 'Neutral')} ({counts.neutral})
           </button>
           <button
             className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
             onClick={() => setSentimentFilter('negative')}
           >
-            Negative ({counts.negative})
+            {t('negative', 'Negative')} ({counts.negative})
           </button>
           </div>
         </div>
@@ -265,7 +242,7 @@ const AdminComments = () => {
           {filteredComments.map((comment, index) => (
             <motion.div
               key={comment.id}
-              className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''}`}
+              className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''} ${comment.sentiment === 'positive' ? 'positive-review' : ''}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -302,7 +279,7 @@ const AdminComments = () => {
                     onClick={() => handleDelete(comment.id)}
                     disabled={deleting === comment.id}
                   >
-                    {deleting === comment.id ? <LoadingSpinner size="small" /> : 'Delete'}
+                    {deleting === comment.id ? <LoadingSpinner size="small" /> : t('delete', 'Delete')}
                   </button>
                 </div>
               </div>
@@ -315,7 +292,7 @@ const AdminComments = () => {
                     color: 'var(--text-secondary)',
                     fontStyle: 'italic'
                   }}>
-                    Product: {selectedProduct.name}
+                    {t('product', 'Product')}: {selectedProduct.name}
                   </p>
                 )}
               </div>

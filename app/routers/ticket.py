@@ -249,6 +249,90 @@ def add_ticket_response(
     return new_response
 
 
+@router.patch("/tickets/{ticket_id}/response/{response_id}", response_model=schemas.TicketResponseMessage)
+def update_ticket_response(
+    ticket_id: int,
+    response_id: int,
+    response_update: schemas.TicketResponseUpdate,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """Update a ticket response - Only the user who created it can update"""
+    ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found"
+        )
+    
+    ticket_response = db.query(models.DBTicketResponse).filter(
+        models.DBTicketResponse.id == response_id,
+        models.DBTicketResponse.ticket_id == ticket_id
+    ).first()
+    
+    if not ticket_response:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Response not found"
+        )
+    
+    # Only the user who created the response can update it
+    if ticket_response.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only edit your own responses"
+        )
+    
+    ticket_response.message = response_update.message
+    ticket.updated_at = datetime.now(timezone.utc)
+    ticket.last_updated_by = current_user.id
+    db.commit()
+    db.refresh(ticket_response)
+    
+    return ticket_response
+
+
+@router.delete("/tickets/{ticket_id}/response/{response_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_ticket_response(
+    ticket_id: int,
+    response_id: int,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """Delete a ticket response - Only the user who created it can delete"""
+    ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found"
+        )
+    
+    ticket_response = db.query(models.DBTicketResponse).filter(
+        models.DBTicketResponse.id == response_id,
+        models.DBTicketResponse.ticket_id == ticket_id
+    ).first()
+    
+    if not ticket_response:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Response not found"
+        )
+    
+    # Only the user who created the response can delete it
+    if ticket_response.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own responses"
+        )
+    
+    db.delete(ticket_response)
+    ticket.updated_at = datetime.now(timezone.utc)
+    ticket.last_updated_by = current_user.id
+    db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/tickets/unread/count")
 def get_unread_ticket_count(
     last_viewed: Optional[str] = Query(None, description="ISO format timestamp of when tickets were last viewed"),

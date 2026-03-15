@@ -7,10 +7,14 @@ import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import API_BASE_URL from '../config/api';
+import { useLanguage } from '../hooks/useLanguage';
+import { useDialog } from '../hooks/useDialog';
 import '../styles/pages/Profile.css';
 
 const Profile = () => {
   const { user, fetchUserInfo } = useAuth();
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
@@ -147,7 +151,12 @@ const Profile = () => {
 
   const handleDeleteImage = async () => {
     // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete your profile image? It will be reset to default.')) {
+    const confirmed = await showConfirm({
+      message: 'Are you sure you want to delete your profile image? It will be reset to default.',
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -239,6 +248,14 @@ const Profile = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getLocalizedRole = (role) => {
+    const normalizedRole = (role || '').toLowerCase();
+    if (normalizedRole === 'admin') return t('admin', 'Admin');
+    if (normalizedRole === 'employee') return t('employee', 'Employee');
+    if (normalizedRole === 'customer') return t('customer', 'Customer');
+    return role || '';
   };
 
   if (!user) {
@@ -351,8 +368,8 @@ const Profile = () => {
             </div>
           )}
           <div className="info-item">
-            <label>Role:</label>
-            <span className={`role-badge ${user.role}`}>{user.role}</span>
+            <label>{t('role', 'Role')}:</label>
+            <span className={`role-badge ${user.role}`}>{getLocalizedRole(user.role)}</span>
           </div>
           <div className="info-item">
             <label>Member Since:</label>
@@ -407,7 +424,7 @@ const Profile = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="Enter your phone number"
+              placeholder={t('enterPhoneNumber', 'Enter your phone number')}
             />
           </div>
 
@@ -419,7 +436,7 @@ const Profile = () => {
               name="country"
               value={formData.country}
               onChange={handleChange}
-              placeholder="Enter your country"
+              placeholder={t('enterYourCountry', 'Enter your country')}
             />
           </div>
 
@@ -431,7 +448,7 @@ const Profile = () => {
               name="city"
               value={formData.city}
               onChange={handleChange}
-              placeholder="Enter your city"
+              placeholder={t('enterYourCity', 'Enter your city')}
             />
           </div>
 
@@ -443,19 +460,19 @@ const Profile = () => {
               name="street"
               value={formData.street}
               onChange={handleChange}
-              placeholder="Enter your street address"
+              placeholder={t('enterStreetAddress', 'Enter your street address')}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">New Password (leave blank to keep current)</label>
+            <label htmlFor="password">{t('newPasswordKeepCurrent', 'New Password (leave blank to keep current)')}</label>
             <input
               type="password"
               id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter new password"
+              placeholder={t('enterNewPassword', 'Enter new password')}
               className={errors.password ? 'error' : ''}
             />
             {errors.password && (
@@ -465,14 +482,14 @@ const Profile = () => {
 
           {formData.password && (
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm New Password</label>
+              <label htmlFor="confirmPassword">{t('confirmNewPassword', 'Confirm New Password')}</label>
               <input
                 type="password"
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm new password"
+                placeholder={t('confirmNewPasswordPlaceholder', 'Confirm new password')}
                 className={errors.confirmPassword ? 'error' : ''}
               />
               {errors.confirmPassword && (

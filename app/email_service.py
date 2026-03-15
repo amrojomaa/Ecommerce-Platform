@@ -5,6 +5,7 @@ from typing import Optional
 import os
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -15,6 +16,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
+logger = logging.getLogger(__name__)
 
 
 def send_verification_email(email: str, verification_code: str, first_name: str) -> bool:
@@ -64,14 +66,11 @@ def send_verification_email(email: str, verification_code: str, first_name: str)
         server.quit()
         
         return True
-    except Exception as e:
-        # Log the error (you can use proper logging here)
-        #print(f"Error sending email: {str(e)}")
-        # For development, you might want to raise an exception
-        # For production, you might want to return False and log the error
+    except Exception:
+        logger.exception("Failed to send verification email")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send verification email: {str(e)}"
+            detail="Failed to send verification email"
         )
 
 def send_password_reset_email(email: str, verification_code: str, first_name: str) -> bool:
@@ -116,8 +115,9 @@ def send_password_reset_email(email: str, verification_code: str, first_name: st
         server.quit()
         
         return True
-    except Exception as e:
+    except Exception:
+        logger.exception("Failed to send password reset email")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send password reset email: {str(e)}"
+            detail="Failed to send password reset email"
         )

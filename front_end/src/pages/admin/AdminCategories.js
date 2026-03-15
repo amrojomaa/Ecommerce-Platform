@@ -3,10 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { CATEGORY_ENDPOINTS } from '../../config/api';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDialog } from '../../hooks/useDialog';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminCategories.css';
 
 const AdminCategories = () => {
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -26,7 +30,7 @@ const AdminCategories = () => {
       const response = await http.get(CATEGORY_ENDPOINTS.ALL);
       setCategories(response.data);
     } catch (error) {
-      toast.error('Failed to fetch categories');
+      toast.error(t('failedFetchCategories', 'Failed to fetch categories'));
     } finally {
       setLoading(false);
     }
@@ -48,16 +52,16 @@ const AdminCategories = () => {
           CATEGORY_ENDPOINTS.UPDATE.replace('{id}', editingCategory.id),
           formData
         );
-        toast.success('Category updated successfully');
+        toast.success(t('categoryUpdatedSuccessfully', 'Category updated successfully'));
       } else {
         await http.post(CATEGORY_ENDPOINTS.CREATE, formData);
-        toast.success('Category created successfully');
+        toast.success(t('categoryCreatedSuccessfully', 'Category created successfully'));
       }
       
       resetForm();
       fetchCategories();
     } catch (error) {
-      toast.error(error.message || 'Failed to save category');
+      toast.error(error.message || t('failedSaveCategory', 'Failed to save category'));
     }
   };
 
@@ -71,16 +75,21 @@ const AdminCategories = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) {
+    const confirmed = await showConfirm({
+      message: t('confirmDeleteCategory', 'Are you sure you want to delete this category?'),
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
     try {
       await http.delete(CATEGORY_ENDPOINTS.DELETE.replace('{id}', id));
-      toast.success('Category deleted successfully');
+      toast.success(t('categoryDeletedSuccessfully', 'Category deleted successfully'));
       fetchCategories();
     } catch (error) {
-      toast.error(error.message || 'Failed to delete category');
+      toast.error(error.message || t('failedDeleteCategory', 'Failed to delete category'));
     }
   };
 
@@ -96,7 +105,7 @@ const AdminCategories = () => {
   return (
     <div className="admin-categories">
       <div className="admin-categories-header">
-        <h1>Manage Categories</h1>
+        <h1>{t('manageCategories', 'Manage Categories')}</h1>
         <motion.button
           className="add-category-btn"
           onClick={() => {
@@ -106,7 +115,7 @@ const AdminCategories = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          + Add Category
+          + {t('addCategory', 'Add Category')}
         </motion.button>
       </div>
 
@@ -133,13 +142,13 @@ const AdminCategories = () => {
                   onClick={() => handleEdit(category)}
                   className="edit-btn"
                 >
-                  Edit
+                  {t('edit', 'Edit')}
                 </button>
                 <button
                   onClick={() => handleDelete(category.id)}
                   className="delete-btn"
                 >
-                  Delete
+                  {t('delete', 'Delete')}
                 </button>
               </div>
             </motion.div>
@@ -164,12 +173,12 @@ const AdminCategories = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <h2>
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
+                {editingCategory ? t('editCategory', 'Edit Category') : t('addNewCategory', 'Add New Category')}
               </h2>
               
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Category Name *</label>
+                  <label>{t('categoryName', 'Category Name')} *</label>
                   <input
                     type="text"
                     name="name"
@@ -180,7 +189,7 @@ const AdminCategories = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Description *</label>
+                  <label>{t('description', 'Description')} *</label>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -196,10 +205,10 @@ const AdminCategories = () => {
                     onClick={resetForm}
                     className="cancel-btn"
                   >
-                    Cancel
+                    {t('cancel', 'Cancel')}
                   </button>
                   <button type="submit" className="save-btn">
-                    {editingCategory ? 'Update' : 'Create'}
+                    {editingCategory ? t('update', 'Update') : t('create', 'Create')}
                   </button>
                 </div>
               </form>

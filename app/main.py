@@ -10,18 +10,20 @@ import logging
 from .database import SessionLocal, engine, get_db
 from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings
+from .config import settings
 
-models.Base.metadata.create_all(bind=engine)
-print("Data Base connected successfully!")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+if settings.auto_create_tables:
+    models.Base.metadata.create_all(bind=engine)
+    logger.warning("AUTO_CREATE_TABLES is enabled. Disable this in production and use migrations instead.")
+else:
+    logger.info("AUTO_CREATE_TABLES is disabled. Expecting managed schema migrations.")
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-]
+origins = settings.cors_origins
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,13 +63,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Catch all other exceptions (including 500 errors) to ensure CORS headers are added
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    # Log the full traceback for debugging
-    logging.error(f"Unhandled exception: {exc}")
-    logging.error(traceback.format_exc())
+    logger.error("Unhandled exception")
+    logger.error(traceback.format_exc())
     
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": "Internal server error"}
     )
     # Add CORS headers manually
     origin = request.headers.get("origin")
@@ -77,6 +78,11 @@ async def general_exception_handler(request: Request, exc: Exception):
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "*"
     return response
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 app.include_router(products.router)
 app.include_router(users.router)

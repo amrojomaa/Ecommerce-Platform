@@ -60,6 +60,17 @@ def create_comment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Product not found"
         )
+
+    # Enforce one comment per user per product
+    existing_comment = db.query(models.DBComment).filter(
+        models.DBComment.product_id == product_id,
+        models.DBComment.user_id == current_user.id
+    ).first()
+    if existing_comment:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already added a comment for this product"
+        )
     
     # Use product_id from URL path (ignore product_id in body if provided)
     # Analyze sentiment of the comment
@@ -110,6 +121,44 @@ def delete_comment(
     db.commit()
     
     return None
+
+
+@router.put("/comments/{comment_id}", response_model=schemas.CommentDisplay)
+def update_comment(
+    comment_id: int,
+    comment_update: schemas.CommentUpdate,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """
+    Update a comment. Users can update their own comments, admins can update any comment.
+    """
+    comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if comment.user_id != current_user.id and user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to edit this comment"
+        )
+
+    comment.content = comment_update.content
+    comment.sentiment = analyze_sentiment(comment_update.content)
+    db.commit()
+    db.refresh(comment)
+
+    return comment
 
 
 @router.get("/comments/all", response_model=List[schemas.CommentDisplay])
@@ -254,9 +303,9 @@ def backfill_sentiment_for_comments(
             "total": len(comments_without_sentiment),
             "errors": errors
         }
-    except Exception as e:
+    except Exception:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error committing sentiment updates: {str(e)}"
+            detail="Error committing sentiment updates"
         )

@@ -59,6 +59,33 @@ def get_product_rating(
     )
 
 
+@router.get("/products/{product_id}/ratings", response_model=list[schemas.RatingDisplay])
+def get_product_ratings(
+    product_id: int,
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500)
+):
+    """
+    Get all ratings for a product. Public endpoint.
+    """
+    product = db.query(models.DBProduct).filter(models.DBProduct.id == product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+
+    ratings = db.query(models.DBProductRating)\
+        .filter(models.DBProductRating.product_id == product_id)\
+        .order_by(desc(models.DBProductRating.created_at))\
+        .offset(skip)\
+        .limit(limit)\
+        .all()
+
+    return ratings
+
+
 @router.post("/products/{product_id}/rating", response_model=schemas.RatingDisplay, status_code=status.HTTP_201_CREATED)
 def create_or_update_rating(
     product_id: int,

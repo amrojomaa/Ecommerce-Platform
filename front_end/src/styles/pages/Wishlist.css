@@ -12,8 +12,35 @@
 
 .wishlist-container h1 {
   font-size: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
   color: var(--text-primary);
+}
+
+.wishlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.clear-wishlist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.clear-wishlist-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .empty-wishlist {
@@ -151,7 +178,17 @@
   transform: scale(1.1);
 }
 
+html[dir='rtl'] .remove-wishlist-btn {
+  right: auto;
+  left: 1rem;
+}
+
 @media (max-width: 768px) {
+  .wishlist-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .wishlist-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;

@@ -147,3 +147,13 @@ def clear_cart(Cart_id: int, db: Session = Depends(get_db), current_user: schema
     # db.delete(items)
     db.commit()
 
+
+@router.delete("/clearcart", status_code=status.HTTP_204_NO_CONTENT)
+def clear_current_user_cart(db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+    cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
+    if not cart:
+        return None
+
+    db.query(models.DBCartItem).filter(models.DBCartItem.cart_id == cart.id).delete(synchronize_session=False)
+    db.commit()
+    return None

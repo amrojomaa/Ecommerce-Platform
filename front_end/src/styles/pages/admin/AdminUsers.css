@@ -1,7 +1,10 @@
 .admin-users {
-  width: 100%;
+  width: 1140px;
   padding: 2rem;
+  margin-left: -52px;
 }
+
+
 
 .admin-users-loading {
   display: flex;
@@ -234,6 +237,41 @@
 }
 
 .delete-user-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.block-user-btn,
+.unblock-user-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.block-user-btn {
+  background-color: #f59e0b;
+}
+
+.block-user-btn:hover:not(:disabled) {
+  background-color: #d97706;
+  transform: translateY(-2px);
+}
+
+.unblock-user-btn {
+  background-color: #16a34a;
+}
+
+.unblock-user-btn:hover:not(:disabled) {
+  background-color: #15803d;
+  transform: translateY(-2px);
+}
+
+.block-user-btn:disabled,
+.unblock-user-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

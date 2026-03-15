@@ -5,10 +5,12 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { ORDER_ENDPOINTS } from '../../config/api';
 import { formatPrice, formatDate } from '../../utils/helpers';
+import { useLanguage } from '../../hooks/useLanguage';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminOrders.css';
 
 const AdminOrders = () => {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [allOrders, setAllOrders] = useState([]); // Store all orders for filtering
@@ -109,6 +111,20 @@ const AdminOrders = () => {
 
   const orderStatuses = ['all', 'revenue', 'created', 'paid', 'shipped', 'delivered', 'cancelled'];
 
+  const getOrderStatusLabel = (status) => {
+    const normalized = (status || 'created').toLowerCase();
+    const statusMap = {
+      created: t('statusCreated', 'created'),
+      paid: t('statusPaid', 'paid'),
+      shipped: t('statusShipped', 'shipped'),
+      delivered: t('statusDelivered', 'delivered'),
+      cancelled: t('statusCancelled', 'cancelled'),
+      all: t('all', 'All'),
+      revenue: t('revenue', 'Revenue'),
+    };
+    return statusMap[normalized] || status;
+  };
+
   const handleStatusChange = async (orderId, newStatus) => {
     setUpdatingOrderId(orderId);
     try {
@@ -131,11 +147,11 @@ const AdminOrders = () => {
       );
       
       setSelectedStatus({ ...selectedStatus, [orderId]: '' });
-      toast.success('Order status updated successfully');
+      toast.success(t('orderStatusUpdatedSuccessfully', 'Order status updated successfully'));
     } catch (error) {
       console.error('Error updating order status:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to update order status';
-      toast.error(`Failed to update order status: ${errorMsg}`);
+      const errorMsg = error.response?.data?.detail || error.message || t('failedUpdateOrderStatus', 'Failed to update order status');
+      toast.error(`${t('failedUpdateOrderStatus', 'Failed to update order status')}: ${errorMsg}`);
     } finally {
       setUpdatingOrderId(null);
     }
@@ -152,9 +168,9 @@ const AdminOrders = () => {
   return (
     <div className="admin-orders">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>All Orders</h1>
+        <h1>{t('allOrders', 'All Orders')}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <label htmlFor="status-filter" style={{ fontWeight: '500' }}>Filter by Status:</label>
+          <label htmlFor="status-filter" style={{ fontWeight: '500' }}>{t('filterByStatus', 'Filter by Status')}:</label>
           <select
             id="status-filter"
             value={statusFilter}
@@ -170,13 +186,13 @@ const AdminOrders = () => {
           >
             {orderStatuses.map(status => (
               <option key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {getOrderStatusLabel(status)}
               </option>
             ))}
           </select>
           {statusFilter !== 'all' && (
             <span style={{ color: '#666', fontSize: '14px' }}>
-              ({orders.length} {orders.length === 1 ? 'order' : 'orders'})
+              ({orders.length} {orders.length === 1 ? t('order', 'order') : t('orders', 'orders')})
             </span>
           )}
         </div>
@@ -249,13 +265,13 @@ const AdminOrders = () => {
           <table className="orders-table">
             <thead>
               <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>Items</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t('orderId', 'Order ID')}</th>
+                <th>{t('customer', 'Customer')}</th>
+                <th>{t('date', 'Date')}</th>
+                <th>{t('items', 'Items')}</th>
+                <th>{t('total', 'Total')}</th>
+                <th>{t('status', 'Status')}</th>
+                <th>{t('actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +296,7 @@ const AdminOrders = () => {
                   <td>{formatPrice(order.total_amount)}</td>
                   <td>
                     <span className={`order-status status-${order.status || 'created'}`}>
-                      {order.status || 'created'}
+                      {getOrderStatusLabel(order.status || 'created')}
                     </span>
                   </td>
                   <td>
@@ -295,15 +311,15 @@ const AdminOrders = () => {
                         disabled={updatingOrderId === order.id}
                         className="status-select"
                       >
-                        <option value="">Change status...</option>
+                        <option value="">{t('changeStatus', 'Change status')}...</option>
                         {getAvailableStatuses(order.status || 'created').map(status => (
                           <option key={status} value={status}>
-                            {status}
+                            {getOrderStatusLabel(status)}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <span className="no-action">No actions</span>
+                      <span className="no-action">{t('noActions', 'No actions')}</span>
                     )}
                   </td>
                 </motion.tr>

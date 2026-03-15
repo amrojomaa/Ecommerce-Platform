@@ -4,17 +4,22 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { formatPrice } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
+import { useLanguage } from '../hooks/useLanguage';
+import { useDialog } from '../hooks/useDialog';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Cart.css';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
+  const { showConfirm } = useDialog();
   const {
     cartItems,
     grandTotal,
     loading,
     updateCartItem,
     removeCartItem,
+    clearCart,
     fetchCart,
   } = useCart();
 
@@ -25,7 +30,7 @@ const Cart = () => {
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (!itemId) {
-      toast.error('Invalid item ID');
+      toast.error(t('invalidItemId', 'Invalid item ID'));
       return;
     }
     
@@ -36,29 +41,47 @@ const Cart = () => {
     
     const result = await updateCartItem(itemId, newQuantity);
     if (result.success) {
-      toast.success('Cart updated');
+      toast.success(t('cartUpdated', 'Cart updated'));
     } else {
-      toast.error(result.error || 'Failed to update cart');
+      toast.error(result.error || t('failedUpdateCart', 'Failed to update cart'));
     }
   };
 
   const handleRemoveItem = async (itemId) => {
     if (!itemId) {
-      toast.error('Invalid item ID');
+      toast.error(t('invalidItemId', 'Invalid item ID'));
       return;
     }
     
     const result = await removeCartItem(itemId);
     if (result.success) {
-      toast.success('Item removed from cart');
+      toast.success(t('itemRemovedFromCart', 'Item removed from cart'));
     } else {
-      toast.error(result.error || 'Failed to remove item');
+      toast.error(result.error || t('failedRemoveCartItem', 'Failed to remove item'));
+    }
+  };
+
+  const handleClearCart = async () => {
+    if (cartItems.length === 0) return;
+
+    const confirmed = await showConfirm({
+      message: t('clearCartQuestion', 'Are you sure you want to delete all items from cart?'),
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) return;
+
+    const result = await clearCart();
+    if (result.success) {
+      toast.success(t('cartClearedSuccessfully', 'Cart cleared successfully'));
+    } else {
+      toast.error(result.error || t('failedClearCart', 'Failed to clear cart'));
     }
   };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty');
+      toast.error(t('yourCartIsEmpty', 'Your cart is empty'));
       return;
     }
     navigate('/checkout');
@@ -73,8 +96,19 @@ const Cart = () => {
   }
 
   return (
-    <div className="cart-page">
-      <h1>Shopping Cart</h1>
+    <div className="cart-page" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="cart-header">
+        <h1>{t('shoppingCart', 'Shopping Cart')}</h1>
+        {cartItems.length > 0 && (
+          <button
+            type="button"
+            className="clear-cart-btn"
+            onClick={handleClearCart}
+          >
+            {t('clearCart', 'Delete All')}
+          </button>
+        )}
+      </div>
       
       {cartItems.length === 0 ? (
         <motion.div
@@ -82,9 +116,9 @@ const Cart = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p>Your cart is empty</p>
+          <p>{t('yourCartIsEmpty', 'Your cart is empty')}</p>
           <Link to="/products" className="continue-shopping-btn">
-            Continue Shopping
+            {t('continueShopping', 'Continue Shopping')}
           </Link>
         </motion.div>
       ) : (
@@ -103,7 +137,7 @@ const Cart = () => {
                     src={item.product?.images && item.product.images.length > 0
                       ? `http://localhost:8000/${item.product.images[0]}`
                       : `http://localhost:8000/images/placeholder.jpg`}
-                    alt={item.product?.name || 'Product'}
+                    alt={item.product?.name || t('product', 'Product')}
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';
                     }}
@@ -113,7 +147,7 @@ const Cart = () => {
                 <div className="cart-item-info">
                   <h3>
                     <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
-                      {item.product?.name || 'Product'}
+                      {item.product?.name || t('product', 'Product')}
                     </Link>
                   </h3>
                   <p className="cart-item-price">
@@ -184,15 +218,15 @@ const Cart = () => {
             >
               <h2>Order Summary</h2>
               <div className="summary-row">
-                <span>Subtotal:</span>
+                <span>{t('subtotal', 'Subtotal')}:</span>
                 <span>{formatPrice(grandTotal)}</span>
               </div>
               <div className="summary-row">
-                <span>Shipping:</span>
-                <span>Free</span>
+                <span>{t('shipping', 'Shipping')}:</span>
+                <span>{t('free', 'Free')}</span>
               </div>
               <div className="summary-row total">
-                <span>Total:</span>
+                <span>{t('total', 'Total')}:</span>
                 <span>{formatPrice(grandTotal)}</span>
               </div>
               <motion.button
@@ -201,10 +235,10 @@ const Cart = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Proceed to Checkout
+                {t('proceedToCheckout', 'Proceed to Checkout')}
               </motion.button>
               <Link to="/products" className="continue-shopping-link">
-                Continue Shopping
+                {t('continueShopping', 'Continue Shopping')}
               </Link>
             </motion.div>
           </div>

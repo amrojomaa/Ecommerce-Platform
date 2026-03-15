@@ -23,7 +23,7 @@ export const WishlistProvider = ({ children }) => {
         return userData.id || userData.email; // Use ID or email as identifier
       }
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      console.error('Error parsing user data');
     }
     return null;
   };
@@ -78,8 +78,8 @@ export const WishlistProvider = ({ children }) => {
 
     window.addEventListener('auth-change', handleAuthChange);
 
-    // Also check periodically for same-tab changes
-    const interval = setInterval(checkUserChange, 2000);
+    // Periodic sync; auth-change/storage events handle fast-path updates.
+    const interval = setInterval(checkUserChange, 30000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -117,7 +117,7 @@ export const WishlistProvider = ({ children }) => {
       if (error.status === 404) {
         setWishlistItems([]);
       } else {
-        console.error('Error fetching wishlist:', error);
+        console.error('Error fetching wishlist');
       }
     } finally {
       setLoading(false);
@@ -227,8 +227,27 @@ export const WishlistProvider = ({ children }) => {
     return wishlistItems.length;
   };
 
-  const clearWishlist = () => {
+  const clearWishlist = async () => {
+    if (!isAuthenticated()) {
+      setWishlistItems([]);
+      return { success: true };
+    }
+
+    const previousItems = [...wishlistItems];
     setWishlistItems([]);
+    setLoading(true);
+    try {
+      await http.delete(WISHLIST_ENDPOINTS.CLEAR);
+      return { success: true };
+    } catch (error) {
+      setWishlistItems(previousItems);
+      return {
+        success: false,
+        error: error.message || 'Failed to clear wishlist',
+      };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {

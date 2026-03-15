@@ -4,11 +4,13 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import { validateEmail } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
 
 const Signup = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { signup, loginWithGoogle, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
@@ -52,27 +54,27 @@ const Signup = () => {
     const newErrors = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('emailRequired', 'Email is required');
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = t('validEmailRequired', 'Please enter a valid email');
     }
 
     if (!formData.first_name) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = t('firstNameRequired', 'First name is required');
     }
 
     if (!formData.last_name) {
-      newErrors.last_name = 'Last name is required';
+      newErrors.last_name = t('lastNameRequired', 'Last name is required');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('passwordRequired', 'Password is required');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('passwordMinLength', 'Password must be at least 6 characters');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordsNotMatch', 'Passwords do not match');
     }
 
     setErrors(newErrors);
@@ -108,7 +110,7 @@ const Signup = () => {
         } 
       });
     } else {
-      toast.error(result.error || 'Signup failed');
+      toast.error(result.error || t('signupFailed', 'Signup failed'));
     }
     
     setLoading(false);
@@ -120,20 +122,20 @@ const Signup = () => {
       try {
         const result = await loginWithGoogle(tokenResponse.access_token);
         if (result?.success) {
-          toast.success('Account created and logged in successfully');
+          toast.success(t('accountCreatedLoggedIn', 'Account created and logged in successfully'));
           navigate('/');
         } else {
-          toast.error(result?.error || 'Google signup failed');
+          toast.error(result?.error || t('googleSignupFailed', 'Google signup failed'));
         }
       } catch (err) {
         console.error("GOOGLE SIGNUP ERROR:", err);
-        toast.error("Something went wrong with Google signup");
+        toast.error(t('googleSignupSomethingWrong', 'Something went wrong with Google signup'));
       } finally {
         setGoogleLoading(false);
       }
     },
     onError: () => {
-      toast.error('Google signup failed. Please try again.');
+      toast.error(t('googleSignupTryAgain', 'Google signup failed. Please try again.'));
       setGoogleLoading(false);
     },
     scope: 'profile email', // Explicitly request profile and email scopes to get profile picture
@@ -147,13 +149,13 @@ const Signup = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1>Sign Up</h1>
-        <p>Create a new account to get started.</p>
+        <h1>{t('signUp', 'Sign Up')}</h1>
+        <p>{t('createNewAccount', 'Create a new account to get started.')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="first_name">First Name</label>
+              <label htmlFor="first_name">{t('firstName', 'First Name')}</label>
               <input
                 type="text"
                 id="first_name"
@@ -161,14 +163,14 @@ const Signup = () => {
                 value={formData.first_name}
                 onChange={handleChange}
                 required
-                placeholder="Enter your first name"
+                placeholder={t('enterFirstName', 'Enter your first name')}
                 className={errors.first_name ? 'error' : ''}
               />
               {errors.first_name && <span className="error-message">{errors.first_name}</span>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="last_name">Last Name</label>
+              <label htmlFor="last_name">{t('lastName', 'Last Name')}</label>
               <input
                 type="text"
                 id="last_name"
@@ -176,7 +178,7 @@ const Signup = () => {
                 value={formData.last_name}
                 onChange={handleChange}
                 required
-                placeholder="Enter your last name"
+                placeholder={t('enterLastName', 'Enter your last name')}
                 className={errors.last_name ? 'error' : ''}
               />
               {errors.last_name && <span className="error-message">{errors.last_name}</span>}
@@ -184,7 +186,7 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('email', 'Email')}</label>
             <input
               type="email"
               id="email"
@@ -192,64 +194,64 @@ const Signup = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
+              placeholder={t('enterYourEmail', 'Enter your email')}
               className={errors.email ? 'error' : ''}
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="phone">Phone (Optional)</label>
+            <label htmlFor="phone">{t('phoneOptional', 'Phone (Optional)')}</label>
             <input
               type="tel"
               id="phone"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="Enter your phone number"
+              placeholder={t('enterPhoneNumber', 'Enter your phone number')}
             />
           </div>
 
           <div className="form-row form-row-three">
             <div className="form-group">
-              <label htmlFor="country">Country (Optional)</label>
+              <label htmlFor="country">{t('countryOptional', 'Country (Optional)')}</label>
               <input
                 type="text"
                 id="country"
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
-                placeholder="Enter your country"
+                placeholder={t('enterYourCountry', 'Enter your country')}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="city">City (Optional)</label>
+              <label htmlFor="city">{t('cityOptional', 'City (Optional)')}</label>
               <input
                 type="text"
                 id="city"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                placeholder="Enter your city"
+                placeholder={t('enterYourCity', 'Enter your city')}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="street">Street (Optional)</label>
+              <label htmlFor="street">{t('streetOptional', 'Street (Optional)')}</label>
               <input
                 type="text"
                 id="street"
                 name="street"
                 value={formData.street}
                 onChange={handleChange}
-                placeholder="Enter your street address"
+                placeholder={t('enterStreetAddress', 'Enter your street address')}
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('password', 'Password')}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
@@ -258,14 +260,14 @@ const Signup = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="Enter your password"
+                placeholder={t('enterYourPassword', 'Enter your password')}
                 className={errors.password ? 'error' : ''}
               />
               <button
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t('hidePassword', 'Hide password') : t('showPassword', 'Show password')}
               >
                 {showPassword ? (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -284,7 +286,7 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{t('confirmPassword', 'Confirm Password')}</label>
             <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? "text" : "password"}
@@ -293,14 +295,14 @@ const Signup = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                placeholder="Confirm your password"
+                placeholder={t('confirmYourPassword', 'Confirm your password')}
                 className={errors.confirmPassword ? 'error' : ''}
               />
               <button
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                aria-label={showConfirmPassword ? t('hidePassword', 'Hide password') : t('showPassword', 'Show password')}
               >
                 {showConfirmPassword ? (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -329,17 +331,17 @@ const Signup = () => {
               {loading ? (
                 <>
                   <LoadingSpinner size="small" />
-                  Creating account...
+                  {t('creatingAccount', 'Creating account...')}
                 </>
               ) : (
-                'Sign Up'
+                t('signUp', 'Sign Up')
               )}
             </button>
           </motion.div>
         </form>
 
         <div className="auth-divider">
-          <span>OR</span>
+          <span>{t('or', 'OR')}</span>
         </div>
 
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -352,7 +354,7 @@ const Signup = () => {
             {googleLoading ? (
               <>
                 <LoadingSpinner size="small" />
-                Signing up...
+                {t('signingUp', 'Signing up...')}
               </>
             ) : (
               <>
@@ -364,14 +366,14 @@ const Signup = () => {
                     <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853"/>
                   </g>
                 </svg>
-                Continue with Google
+                {t('continueWithGoogle', 'Continue with Google')}
               </>
             )}
           </button>
         </motion.div>
 
         <p className="auth-link">
-          Already have an account? <Link to="/login">Login</Link>
+          {t('alreadyHaveAccount', 'Already have an account?')} <Link to="/login">{t('login', 'Login')}</Link>
         </p>
       </motion.div>
     </div>

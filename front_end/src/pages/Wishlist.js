@@ -1,18 +1,47 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useWishlist } from '../hooks/useWishlist';
 import { formatPrice } from '../utils/helpers';
+import { useLanguage } from '../hooks/useLanguage';
+import { useDialog } from '../hooks/useDialog';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import API_BASE_URL from '../config/api';
 import '../styles/pages/Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlistItems, removeFromWishlist } = useWishlist();
+  const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlist();
+  const { t, isRTL } = useLanguage();
+  const { showConfirm } = useDialog();
 
-  const handleRemove = (productName) => {
-    if (window.confirm(`Remove ${productName} from wishlist?`)) {
-      removeFromWishlist(productName);
+  const openRemoveConfirm = async (productName) => {
+    const confirmed = await showConfirm({
+      message: `${t('remove', 'Remove')} ${productName} ${t('fromWishlistQuestion', 'from wishlist?')}`,
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) return;
+
+    const result = await removeFromWishlist(productName);
+    if (!result?.success) {
+      toast.error(result?.error || t('failedRemoveWishlist', 'Failed to remove item from wishlist'));
+    }
+  };
+
+  const openClearConfirm = async () => {
+    if (!wishlistItems.length) return;
+
+    const confirmed = await showConfirm({
+      message: t('clearWishlistQuestion', 'Are you sure you want to delete all items from wishlist?'),
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) return;
+
+    const result = await clearWishlist();
+    if (!result?.success) {
+      toast.error(result?.error || t('failedClearWishlist', 'Failed to clear wishlist'));
     }
   };
 
@@ -27,13 +56,13 @@ const Wishlist = () => {
     return (
       <div className="wishlist-page">
         <div className="wishlist-container">
-          <h1>My Wishlist</h1>
+          <h1>{t('myWishlist', 'My Wishlist')}</h1>
           <div className="empty-wishlist">
             <FaHeart className="empty-icon" />
-            <h2>Your wishlist is empty</h2>
-            <p>Start adding products you love to your wishlist!</p>
+            <h2>{t('wishlistEmpty', 'Your wishlist is empty')}</h2>
+            <p>{t('wishlistStartAdding', 'Start adding products you love to your wishlist!')}</p>
             <Link to="/products" className="browse-products-btn">
-              Browse Products
+              {t('browseProducts', 'Browse Products')}
             </Link>
           </div>
         </div>
@@ -42,9 +71,20 @@ const Wishlist = () => {
   }
 
   return (
-    <div className="wishlist-page">
+    <div className="wishlist-page" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="wishlist-container">
-        <h1>My Wishlist ({wishlistItems.length})</h1>
+        <div className="wishlist-header">
+          <h1>{t('myWishlist', 'My Wishlist')} ({wishlistItems.length})</h1>
+          <button
+            className="clear-wishlist-btn"
+            onClick={openClearConfirm}
+            type="button"
+            title={t('clearWishlist', 'Delete All')}
+          >
+            <FaTrash />
+            <span>{t('clearWishlist', 'Delete All')}</span>
+          </button>
+        </div>
         <div className="wishlist-grid">
           {wishlistItems.map((product, index) => (
             <motion.div
@@ -77,9 +117,9 @@ const Wishlist = () => {
                 className="remove-wishlist-btn"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleRemove(product.name);
+                  openRemoveConfirm(product.name);
                 }}
-                title="Remove from wishlist"
+                title={t('removeFromWishlist', 'Remove from wishlist')}
               >
                 <FaTrash />
               </button>

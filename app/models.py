@@ -66,6 +66,7 @@ class DBUser(Base):
     google_id = Column(String, nullable=True, unique=True)  # Google user ID
     profile_image = Column(String, nullable=True)  # Profile image path
     token_version = Column(Integer, nullable=False, server_default=text('0'))  # Token version for session invalidation
+    is_blocked = Column(Boolean, nullable=False, server_default='FALSE')  # Block user from logging in
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text('now()'))
     

@@ -11,16 +11,26 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
 import httpx
+import logging
+from app.config import settings
+from app.rate_limiter import auth_rate_limit_dependency
 
 router = APIRouter(
      tags=['Login']
+)
+
+logger = logging.getLogger(__name__)
+
+auth_rate_limit = auth_rate_limit_dependency(
+    max_requests=settings.auth_rate_limit_count,
+    window_seconds=settings.auth_rate_limit_window_seconds,
 )
 
 def generate_verification_code() -> str:
     """Generate a 6-digit verification code"""
     return str(random.randint(100000, 999999))
 
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
+@router.post("/signup", status_code=status.HTTP_201_CREATED, dependencies=[Depends(auth_rate_limit)])
 def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
     users = db.query(models.DBUser).filter(models.DBUser.email == user_data.email).first()
     if users:
@@ -60,9 +70,7 @@ def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
             first_name=user_data.first_name
         )
     except Exception as e:
-        # If email fails, still return success but log the error
-        # You might want to handle this differently based on your requirements
-        print(f"Failed to send verification email: {str(e)}")
+        logger.warning("Failed to send verification email: %s", str(e))
         email_sent = False
     
     # Prepare response
@@ -71,18 +79,14 @@ def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
         "email": user_data.email
     }
     
-    # If email wasn't sent (e.g., SMTP not configured), include code in response for development
-    if not email_sent:
-        print(f"\n{'='*60}")
-        print(f"EMAIL NOT SENT - SMTP not configured")
-        print(f"Verification code for {user_data.email}: {verification_code}")
-        print(f"{'='*60}\n")
+    # Never expose verification codes outside development.
+    if not email_sent and settings.allow_dev_verification_code and not settings.is_production:
         response_data["verification_code"] = verification_code
-        response_data["message"] = "Account created successfully. Email service not configured. Use the verification code below."
+        response_data["message"] = "Account created successfully. Email service not configured in development."
     
     return response_data 
 
-@router.post("/verify-email")
+@router.post("/verify-email", dependencies=[Depends(auth_rate_limit)])
 def verify_email(verification_data: schemas.EmailVerification, db: Session = Depends(get_db)):
     """Verify user email with 6-digit code"""
     try:
@@ -142,14 +146,11 @@ def verify_email(verification_data: schemas.EmailVerification, db: Session = Dep
         return {"message": "Email verified successfully"}
     except HTTPException:
         raise
-    except Exception as e:
-        # Log the error for debugging
-        print(f"Error in verify_email: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in verify_email")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during verification: {str(e)}"
+            detail="An error occurred during verification"
         )
 
 @router.post("/auth/google")
@@ -179,8 +180,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                         detail="Invalid Google token"
                     )
                 user_info = response.json()
-                # Debug: Print full user info to see what Google returns
-                print(f"Full Google user_info: {user_info}")
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -201,10 +200,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         if not last_name or last_name.strip() == '':
             last_name = email.split('@')[0] if email else 'User'
         
-        # Debug: Print user info to see what Google returns
-        print(f"Google user info - email: {email}, first_name: {first_name}, last_name: {last_name}, picture: {picture}, google_id: {google_id}")
-        print(f"Available fields in user_info: {list(user_info.keys())}")
-        
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -213,11 +208,10 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         
         # Use email as fallback if google_id is not available (shouldn't happen, but just in case)
         if not google_id:
-            print(f"Warning: Google ID not found, using email as identifier. Available fields: {list(user_info.keys())}")
             # Use email hash as google_id fallback
             import hashlib
             google_id = hashlib.md5(email.encode()).hexdigest()
-            print(f"Generated fallback google_id: {google_id}")
+            logger.warning("Google ID not found; using generated fallback for user %s", email)
         
         # Check if user exists
         user = db.query(models.DBUser).filter(
@@ -226,6 +220,13 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         
         try:
             if user:
+                # Check if user is blocked
+                if user.is_blocked:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Your account has been blocked. Please contact the administrator."
+                    )
+                
                 # User exists - update Google ID and provider if not set
                 updated = False
                 if not user.google_id:
@@ -255,7 +256,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                     db.refresh(user)
             else:
                 # Create new user
-                print(f"Creating new user with email: {email}")
                 user = models.DBUser(
                     email=email,
                     password=None,  # No password for OAuth users
@@ -270,16 +270,12 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                 db.add(user)
                 db.commit()
                 db.refresh(user)
-                print(f"Successfully created new user: {user.email}, ID: {user.id}, profile_image: {user.profile_image}")
         except Exception as db_error:
             db.rollback()
-            error_msg = f"Database error during user creation/update: {str(db_error)}"
-            print(error_msg)
-            import traceback
-            traceback.print_exc()
+            logger.exception("Database error during Google auth upsert")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create/update user: {str(db_error)}"
+                detail="Failed to create/update user"
             )
         
         # Verify user was created/retrieved successfully
@@ -297,7 +293,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         # Generate JWT token
         token = OAuth2.create_access_token(data={"user_id": user.id}, token_version=user.token_version)
         
-        print(f"Google auth successful for user: {user.email}, returning token")
         return {
             "access_token": token,
             "token_type": "bearer"
@@ -305,22 +300,26 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         
     except HTTPException:
         raise
-    except Exception as e:
-        error_msg = f"Error in google_auth: {str(e)}"
-        print(error_msg)
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in google_auth")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during Google authentication: {str(e)}"
+            detail="An error occurred during Google authentication"
         )
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(auth_rate_limit)])
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db)): 
     try:
         getuser = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
         if not getuser :
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="this is email not a found ")
+
+        # Check if user is blocked
+        if getuser.is_blocked:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been blocked. Please contact the administrator."
+            )
 
         # Check if user is OAuth user (no password)
         if getuser.provider == "google" or not getuser.password:
@@ -346,18 +345,14 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
                 }
     except HTTPException:
         raise
-    except Exception as e:
-        # Log the actual error for debugging
-        print(f"Login error: {str(e)}")
-        print(f"Error type: {type(e).__name__}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Login error")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail="Internal server error"
         )
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", dependencies=[Depends(auth_rate_limit)])
 def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Request password reset - sends verification code to email"""
     try:
@@ -396,7 +391,7 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
                 first_name=user.first_name
             )
         except Exception as e:
-            print(f"Failed to send password reset email: {str(e)}")
+            logger.warning("Failed to send password reset email: %s", str(e))
             email_sent = False
         
         # Prepare response
@@ -405,29 +400,22 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
             "email": request.email
         }
         
-        # If email wasn't sent (e.g., SMTP not configured), include code in response for development
-        if not email_sent:
-            print(f"\n{'='*60}")
-            print(f"EMAIL NOT SENT - SMTP not configured")
-            print(f"Password reset code for {user.email}: {verification_code}")
-            print(f"{'='*60}\n")
+        if not email_sent and settings.allow_dev_verification_code and not settings.is_production:
             response_data["verification_code"] = verification_code
-            response_data["message"] = "Password reset code generated. Email service not configured. Use the verification code below."
+            response_data["message"] = "Password reset code generated. Email service not configured in development."
         
         return response_data
         
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error in forgot_password: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in forgot_password")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred"
         )
 
-@router.post("/verify-reset-code")
+@router.post("/verify-reset-code", dependencies=[Depends(auth_rate_limit)])
 def verify_reset_code(verification_data: schemas.VerifyResetCode, db: Session = Depends(get_db)):
     """Verify password reset code"""
     try:
@@ -472,16 +460,14 @@ def verify_reset_code(verification_data: schemas.VerifyResetCode, db: Session = 
         
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error in verify_reset_code: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in verify_reset_code")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred"
         )
 
-@router.post("/reset-password")
+@router.post("/reset-password", dependencies=[Depends(auth_rate_limit)])
 def reset_password(reset_data: schemas.ResetPassword, db: Session = Depends(get_db)):
     """Reset password with verified code"""
     try:
@@ -534,11 +520,9 @@ def reset_password(reset_data: schemas.ResetPassword, db: Session = Depends(get_
         
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error in reset_password: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in reset_password")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred"
         )

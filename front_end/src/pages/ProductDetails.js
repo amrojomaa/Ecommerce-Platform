@@ -321,7 +321,7 @@ const ProductDetails = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <CommentSection productId={product.id} />
+            <CommentSection productId={product.id} productName={product.name} />
           </motion.div>
         )}
       </motion.div>

@@ -1,0 +1,60 @@
+.app-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.app-dialog-modal {
+  width: min(360px, 100%);
+  min-height: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.app-dialog-modal h3 {
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+}
+
+.app-dialog-modal p {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.app-dialog-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.app-dialog-confirm-btn,
+.app-dialog-cancel-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.app-dialog-confirm-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.app-dialog-cancel-btn {
+  background: var(--border-color);
+  color: var(--text-primary);
+}

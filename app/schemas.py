@@ -121,6 +121,7 @@ class User(BaseModel):
     profile_image: Optional[str] = None
     role: str  # admin, employee, or customer
     is_verified: bool
+    is_blocked: bool
     created_at: datetime
     
     @field_validator('role')
@@ -321,8 +322,7 @@ class AdminOrderResponse(BaseModel):
 #     token_type: str
 
 class PaymentIntentCreate(BaseModel):
-    amount: float
-    order_id: Optional[int] = None
+    order_id: int
     currency: str = "usd"
 
 class PaymentIntentResponse(BaseModel):
@@ -426,6 +426,7 @@ class TicketResponseUser(BaseModel):
     first_name: str
     last_name: str
     email: str
+    profile_image: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -482,10 +483,22 @@ class TicketResponseCreate(BaseModel):
     message: str
 
 
+class TicketResponseUpdate(BaseModel):
+    message: str
+
+
+class UserBlockUpdate(BaseModel):
+    is_blocked: bool
+
+
 # Comment Schemas
 class CommentCreate(BaseModel):
     content: str
     product_id: Optional[int] = None  # Optional since it comes from URL path
+
+
+class CommentUpdate(BaseModel):
+    content: str
 
 
 class CommentUser(BaseModel):

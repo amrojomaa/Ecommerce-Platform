@@ -18,9 +18,15 @@
   margin-left: 250px;
 }
 
+html[dir='rtl'] .admin-content {
+  margin-left: 0;
+  margin-right: 250px;
+}
+
 @media (max-width: 768px) {
   .admin-content {
     padding: 1rem;
     margin-left: 0;
+    margin-right: 0;
   }
 }

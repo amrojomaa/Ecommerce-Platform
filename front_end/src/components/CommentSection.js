@@ -1,28 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
-import { COMMENT_ENDPOINTS, buildUrl } from '../config/api';
+import { COMMENT_ENDPOINTS, RATING_ENDPOINTS, buildUrl } from '../config/api';
 import API_BASE_URL from '../config/api';
 import { useAuth } from '../hooks/useAuth';
-import { FaTrash, FaUserCircle } from 'react-icons/fa';
+import { useDialog } from '../hooks/useDialog';
+import { useLanguage } from '../hooks/useLanguage';
+import { FaEdit, FaStar, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../styles/components/CommentSection.css';
 
-const CommentSection = ({ productId }) => {
+const CommentSection = ({ productId, productName }) => {
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newComment, setNewComment] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [sortOrder, setSortOrder] = useState('latest');
+  const [ratingsByUser, setRatingsByUser] = useState({});
   
   const INITIAL_COMMENTS_COUNT = 3;
 
   useEffect(() => {
     if (productId) {
       fetchComments();
+      fetchProductRatings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
   const fetchComments = async (skip = 0, limit = INITIAL_COMMENTS_COUNT) => {
@@ -56,51 +64,22 @@ const CommentSection = ({ productId }) => {
     }
   };
 
-  const handleSubmitComment = async (e) => {
-    e.preventDefault();
-    
-    if (!newComment.trim()) {
-      toast.error('Please enter a comment');
-      return;
-    }
-
+  const handleAddCommentClick = () => {
     if (!isAuthenticated) {
-      toast.info('Please login to post a comment');
+      toast.info('Please login to add a comment');
+      navigate('/login');
       return;
     }
-
-    setSubmitting(true);
-    try {
-      const response = await http.post(
-        buildUrl(COMMENT_ENDPOINTS.CREATE, { product_id: productId }),
-        {
-          content: newComment.trim(),
-          product_id: productId
-        }
-      );
-      
-      // Add new comment at the beginning (newest first) - appears at the top of all comments
-      // The new comment will be the first item in the array, so it displays above all others
-      setComments(prev => [response.data, ...prev]);
-      setNewComment('');
-      // Ensure the new comment is visible by showing initial view
-      setShowAll(false);
-      // Scroll to top of comments section to show the new comment
-      const commentsSection = document.querySelector('.comments-list');
-      if (commentsSection) {
-        commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      toast.success('Comment posted successfully!');
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      toast.error(error.response?.data?.detail || 'Failed to post comment');
-    } finally {
-      setSubmitting(false);
-    }
+    navigate(`/products/${encodeURIComponent(productName)}/add-comment`);
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    const confirmed = await showConfirm({
+      message: 'Are you sure you want to delete this comment?',
+      confirmText: 'OK',
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -111,6 +90,26 @@ const CommentSection = ({ productId }) => {
     } catch (error) {
       console.error('Error deleting comment:', error);
       toast.error(error.response?.data?.detail || 'Failed to delete comment');
+    }
+  };
+
+  const fetchProductRatings = async () => {
+    try {
+      const response = await http.get(
+        buildUrl(RATING_ENDPOINTS.GET_PRODUCT_RATINGS, { product_id: productId }),
+        { params: { skip: 0, limit: 500 } }
+      );
+
+      const ratingsMap = {};
+      (response.data || []).forEach((ratingItem) => {
+        if (ratingItem?.user?.id) {
+          ratingsMap[ratingItem.user.id] = ratingItem.rating;
+        }
+      });
+      setRatingsByUser(ratingsMap);
+    } catch (error) {
+      console.error('Error fetching ratings by user:', error);
+      setRatingsByUser({});
     }
   };
 
@@ -201,26 +200,76 @@ const CommentSection = ({ productId }) => {
     return `${API_BASE_URL}/${normalizedPath}`;
   };
 
+  const sortedComments = [...comments].sort((a, b) => {
+    const aDate = new Date(a.created_at).getTime();
+    const bDate = new Date(b.created_at).getTime();
+    return sortOrder === 'latest' ? bDate - aDate : aDate - bDate;
+  });
+
   // When showAll is true, display all comments; otherwise show only first 3
-  const displayedComments = showAll 
-    ? comments  // Show all comments when "View All" is clicked
-    : comments.slice(0, INITIAL_COMMENTS_COUNT); // Show only first 3 initially
+  const displayedComments = showAll
+    ? sortedComments
+    : sortedComments.slice(0, INITIAL_COMMENTS_COUNT);
+
   const canDelete = (comment) => {
     if (!isAuthenticated || !user) return false;
     return comment.user.id === user.id || (user.role && user.role === 'admin');
   };
 
+  const canEdit = (comment) => {
+    if (!isAuthenticated || !user) return false;
+    return comment.user.id === user.id;
+  };
+
+  const renderUserRating = (commentUserId) => {
+    const userRating = ratingsByUser[commentUserId];
+    if (!userRating) return null;
+
+    return (
+      <div className="comment-user-rating" aria-label={`User rating: ${userRating} out of 5`}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <FaStar
+            key={`rating-${commentUserId}-${star}`}
+            className={star <= userRating ? 'rating-star filled' : 'rating-star'}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="comment-section">
-      <h3 className="comment-section-title">Comments & Reviews</h3>
+      <div className="comment-section-header">
+        <h3 className="comment-section-title">{t('commentsAndReviews', 'Comments & Reviews')}</h3>
+        <button
+          type="button"
+          className="comment-add-btn"
+          onClick={handleAddCommentClick}
+        >
+          {t('addComment', 'Add a Comment')}
+        </button>
+      </div>
+
+      <div className="comment-filter-row">
+        <label htmlFor="comment-sort">{t('sort', 'Sort:')}</label>
+        <select
+          id="comment-sort"
+          className="comment-sort-select"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+        >
+          <option value="latest">{t('latest', 'Latest')}</option>
+          <option value="oldest">{t('oldest', 'Oldest')}</option>
+        </select>
+      </div>
       
       {/* Comments List */}
       <div className="comments-list">
         {loading ? (
-          <div className="comments-loading">Loading comments...</div>
+          <div className="comments-loading">{t('loadingComments', 'Loading comments...')}</div>
         ) : displayedComments.length === 0 ? (
           <div className="comments-empty">
-            <p>No comments yet. Be the first to comment!</p>
+            <p>{t('noCommentsYet', 'No comments yet. Be the first to comment!')}</p>
           </div>
         ) : (
           <>
@@ -250,20 +299,32 @@ const CommentSection = ({ productId }) => {
                       <span className="comment-username">
                         {comment.user.first_name} {comment.user.last_name}
                       </span>
+                      {renderUserRating(comment.user.id)}
                       <span className="comment-date">
                         {formatDate(comment.created_at)}
                       </span>
                     </div>
                   </div>
-                  {canDelete(comment) && (
-                    <button
-                      className="comment-delete-btn"
-                      onClick={() => handleDeleteComment(comment.id)}
-                      title="Delete comment"
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
+                  <div className="comment-actions">
+                    {canEdit(comment) && (
+                      <button
+                        className="comment-edit-btn"
+                        onClick={() => navigate(`/products/${encodeURIComponent(productName)}/add-comment`)}
+                        title={t('editCommentAndRating', 'Edit comment and rating')}
+                      >
+                        <FaEdit />
+                      </button>
+                    )}
+                    {canDelete(comment) && (
+                      <button
+                        className="comment-delete-btn"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        title={t('deleteComment', 'Delete comment')}
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="comment-content">
                   {comment.content}
@@ -278,64 +339,13 @@ const CommentSection = ({ productId }) => {
                   className="comment-view-all-btn"
                   onClick={handleViewAll}
                 >
-                  {showAll ? 'Show Less' : `View All Comments (${comments.length})`}
+                  {showAll ? t('showLess', 'Show Less') : t('viewAllComments', 'View All Comments')}
                 </button>
               </div>
             )}
           </>
         )}
       </div>
-
-      {/* Comment Form - Only for authenticated users - Positioned below all comments */}
-      {isAuthenticated && user && (
-        <motion.form
-          className="comment-form"
-          onSubmit={handleSubmitComment}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="comment-form-header">
-            <div className="comment-form-user">
-              <img
-                key={`${user.id}-${user.profile_image || 'default'}`}
-                src={getProfileImageUrl(user.profile_image)}
-                alt={`${user.first_name || ''} ${user.last_name || ''}`}
-                className="comment-user-avatar"
-                onError={(e) => {
-                  // Always fallback to default image on error
-                  if (e.target.src !== defaultProfileImage) {
-                    e.target.src = defaultProfileImage;
-                  }
-                }}
-              />
-              <span className="comment-form-username">
-                {user.first_name || ''} {user.last_name || ''}
-              </span>
-            </div>
-          </div>
-          <textarea
-            className="comment-input"
-            placeholder="Write your comment or review..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            rows={4}
-            maxLength={500}
-          />
-          <div className="comment-form-footer">
-            <span className="comment-char-count">
-              {newComment.length}/500
-            </span>
-            <button
-              type="submit"
-              className="comment-submit-btn"
-              disabled={submitting || !newComment.trim()}
-            >
-              {submitting ? 'Posting...' : 'Post Comment'}
-            </button>
-          </div>
-        </motion.form>
-      )}
     </div>
   );
 };

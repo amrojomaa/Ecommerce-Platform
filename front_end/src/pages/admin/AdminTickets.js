@@ -5,9 +5,15 @@ import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
+import { useAuth } from '../../hooks/useAuth';
+import { useLanguage } from '../../hooks/useLanguage';
+import { useDialog } from '../../hooks/useDialog';
+import API_BASE_URL from '../../config/api';
 import '../../styles/pages/admin/AdminTickets.css';
 
 const AdminTickets = () => {
+  const { t } = useLanguage();
+  const { showConfirm } = useDialog();
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -26,7 +32,25 @@ const AdminTickets = () => {
   const [deleting, setDeleting] = useState(null);
   const [approvingDelete, setApprovingDelete] = useState(null);
   const [rejectingDelete, setRejectingDelete] = useState(null);
+  const [editingResponseId, setEditingResponseId] = useState(null);
+  const [editingMessage, setEditingMessage] = useState('');
+  const [deletingResponseId, setDeletingResponseId] = useState(null);
   const { markAsViewed } = useUnreadTickets();
+  const { user } = useAuth();
+
+  // Default profile image
+  const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
+
+  const getProfileImageUrl = (profileImage) => {
+    if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
+      return defaultProfileImage;
+    }
+    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+      return profileImage;
+    }
+    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
+    return `${API_BASE_URL}/${normalizedPath}`;
+  };
 
   useEffect(() => {
     fetchTickets();
@@ -173,8 +197,66 @@ const AdminTickets = () => {
     }
   };
 
+  const handleEditResponse = (response) => {
+    setEditingResponseId(response.id);
+    setEditingMessage(response.message);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingResponseId(null);
+    setEditingMessage('');
+  };
+
+  const handleUpdateResponse = async (ticketId, responseId) => {
+    if (!editingMessage.trim()) {
+      toast.error('Please enter a message');
+      return;
+    }
+
+    try {
+      const url = buildUrl(TICKET_ENDPOINTS.UPDATE_RESPONSE, { ticket_id: ticketId, response_id: responseId });
+      await http.patch(url, { message: editingMessage });
+      toast.success('Response updated successfully');
+      setEditingResponseId(null);
+      setEditingMessage('');
+      fetchTickets();
+    } catch (error) {
+      console.error('Error updating response:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update response');
+    }
+  };
+
+  const handleDeleteResponse = async (ticketId, responseId) => {
+    const confirmed = await showConfirm({
+      message: 'Are you sure you want to delete this response?',
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingResponseId(responseId);
+    try {
+      const url = buildUrl(TICKET_ENDPOINTS.DELETE_RESPONSE, { ticket_id: ticketId, response_id: responseId });
+      await http.delete(url);
+      toast.success('Response deleted successfully');
+      fetchTickets();
+    } catch (error) {
+      console.error('Error deleting response:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete response');
+    } finally {
+      setDeletingResponseId(null);
+    }
+  };
+
   const handleDeleteTicket = async (ticketId) => {
-    if (!window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+    const confirmed = await showConfirm({
+      message: 'Are you sure you want to delete this ticket? This action cannot be undone.',
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -194,7 +276,12 @@ const AdminTickets = () => {
   };
 
   const handleApproveDelete = async (ticketId) => {
-    if (!window.confirm('Approve and delete this ticket?')) {
+    const confirmed = await showConfirm({
+      message: 'Approve and delete this ticket?',
+      confirmText: t('ok', 'OK'),
+      cancelText: t('cancel', 'Cancel'),
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -366,7 +453,7 @@ const AdminTickets = () => {
 
                     <div className="ticket-actions">
                       <div className="action-group">
-                        <label>Assign to Employee:</label>
+                        <label>{t('assignToEmployee', 'Assign to Employee')}:</label>
                         <select
                           value={ticket.employee_id || ''}
                           onChange={(e) => {
@@ -375,7 +462,7 @@ const AdminTickets = () => {
                             }
                           }}
                         >
-                          <option value="">Select Employee</option>
+                          <option value="">{t('selectEmployee', 'Select Employee')}</option>
                           {employees.map(emp => (
                             <option key={emp.id} value={emp.id}>
                               {emp.first_name} {emp.last_name} ({emp.email})
@@ -385,7 +472,7 @@ const AdminTickets = () => {
                       </div>
 
                       <div className="action-group">
-                        <label>Update Status:</label>
+                        <label>{t('updateStatus', 'Update Status')}:</label>
                         <select
                           value={ticket.status}
                           onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
@@ -399,22 +486,82 @@ const AdminTickets = () => {
                     </div>
 
                     <div className="ticket-responses">
-                      <h4>Responses ({ticket.responses?.length || 0})</h4>
+                      <h4>{t('responses', 'Responses')} ({ticket.responses?.length || 0})</h4>
                       {ticket.responses && ticket.responses.length > 0 ? (
                         <div className="responses-list">
-                          {ticket.responses.map((response) => (
-                            <div key={response.id} className="response-item">
-                              <div className="response-header">
-                                <span className="response-author">
-                                  {response.user.first_name} {response.user.last_name}
-                                </span>
-                                <span className="response-date">
-                                  {formatDate(response.created_at)}
-                                </span>
+                          {ticket.responses.map((response) => {
+                            const isOwnResponse = user && response.user.id === user.id;
+                            const isEditing = editingResponseId === response.id;
+                            return (
+                              <div key={response.id} className="response-item">
+                                <div className="response-header">
+                                  <div className="response-author-info">
+                                    <img
+                                      src={getProfileImageUrl(response.user.profile_image)}
+                                      alt={`${response.user.first_name} ${response.user.last_name}`}
+                                      className="response-avatar"
+                                      onError={(e) => {
+                                        if (e.target.src !== defaultProfileImage) {
+                                          e.target.src = defaultProfileImage;
+                                        }
+                                      }}
+                                    />
+                                    <span className="response-author">
+                                      {response.user.first_name} {response.user.last_name}
+                                    </span>
+                                  </div>
+                                  <div className="response-header-right">
+                                    <span className="response-date">
+                                      {formatDate(response.created_at)}
+                                    </span>
+                                    {isOwnResponse && !isEditing && (
+                                      <div className="response-actions">
+                                        <button
+                                          className="edit-response-btn"
+                                          onClick={() => handleEditResponse(response)}
+                                          disabled={deletingResponseId === response.id}
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          className="delete-response-btn"
+                                          onClick={() => handleDeleteResponse(ticket.id, response.id)}
+                                          disabled={deletingResponseId === response.id}
+                                        >
+                                          {deletingResponseId === response.id ? 'Deleting...' : 'Delete'}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                {isEditing ? (
+                                  <div className="edit-response-form">
+                                    <textarea
+                                      value={editingMessage}
+                                      onChange={(e) => setEditingMessage(e.target.value)}
+                                      rows="3"
+                                    />
+                                    <div className="edit-response-actions">
+                                      <button
+                                        className="save-edit-btn"
+                                        onClick={() => handleUpdateResponse(ticket.id, response.id)}
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        className="cancel-edit-btn"
+                                        onClick={handleCancelEdit}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="response-message">{response.message}</p>
+                                )}
                               </div>
-                              <p className="response-message">{response.message}</p>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="no-responses">No responses yet.</p>
@@ -480,13 +627,13 @@ const AdminTickets = () => {
       {showAssignModal && (
         <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Assign Ticket</h2>
-            <p>Assign ticket "{selectedTicket?.title}" to an employee:</p>
+            <h2>{t('assignTicket', 'Assign Ticket')}</h2>
+            <p>{t('assignTicketToEmployee', 'Assign ticket')} "{selectedTicket?.title}" {t('toAnEmployee', 'to an employee')}:</p>
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
             >
-              <option value="">Select Employee</option>
+              <option value="">{t('selectEmployee', 'Select Employee')}</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>
                   {emp.first_name} {emp.last_name} ({emp.email})
@@ -494,12 +641,12 @@ const AdminTickets = () => {
               ))}
             </select>
             <div className="modal-actions">
-              <button onClick={() => setShowAssignModal(false)}>Cancel</button>
+              <button onClick={() => setShowAssignModal(false)}>{t('cancel', 'Cancel')}</button>
               <button
                 onClick={handleConfirmAssign}
                 disabled={assigning || !selectedEmployeeId}
               >
-                {assigning ? 'Assigning...' : 'Assign'}
+                {assigning ? t('assigning', 'Assigning...') : t('assign', 'Assign')}
               </button>
             </div>
           </div>

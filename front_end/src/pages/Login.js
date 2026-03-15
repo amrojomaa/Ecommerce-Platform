@@ -4,10 +4,12 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
 
 const Login = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { login, loginWithGoogle, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
@@ -37,17 +39,15 @@ const Login = () => {
 
     try {
       const result = await login(formData.email, formData.password);
-      console.log("LOGIN RESULT:", result);
   
       if (result?.success) {
-        toast.success('Login successful');
+        toast.success(t('loginSuccessful', 'Login successful'));
         navigate('/');
       } else {
-        toast.error(result?.error || 'Login failed');
+        toast.error(result?.error || t('loginFailed', 'Login failed'));
       }
     } catch (err) {
-      console.error("LOGIN ERROR:", err);
-      toast.error("Something went wrong");
+      toast.error(t('somethingWentWrong', 'Something went wrong'));
     }
   
     setLoading(false);
@@ -59,20 +59,19 @@ const Login = () => {
       try {
         const result = await loginWithGoogle(tokenResponse.access_token);
         if (result?.success) {
-          toast.success('Login successful');
+          toast.success(t('loginSuccessful', 'Login successful'));
           navigate('/');
         } else {
-          toast.error(result?.error || 'Google login failed');
+          toast.error(result?.error || t('googleLoginFailed', 'Google login failed'));
         }
       } catch (err) {
-        console.error("GOOGLE LOGIN ERROR:", err);
-        toast.error("Something went wrong with Google login");
+        toast.error(t('googleLoginSomethingWrong', 'Something went wrong with Google login'));
       } finally {
         setGoogleLoading(false);
       }
     },
     onError: () => {
-      toast.error('Google login failed. Please try again.');
+      toast.error(t('googleLoginTryAgain', 'Google login failed. Please try again.'));
       setGoogleLoading(false);
     },
     scope: 'profile email', // Explicitly request profile and email scopes to get profile picture
@@ -86,12 +85,12 @@ const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1>Login</h1>
-        <p>Welcome back! Please login to your account.</p>
+        <h1>{t('login', 'Login')}</h1>
+        <p>{t('welcomeBackLogin', 'Welcome back! Please login to your account.')}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('email', 'Email')}</label>
             <input
               type="email"
               id="email"
@@ -99,15 +98,15 @@ const Login = () => {
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
+              placeholder={t('enterYourEmail', 'Enter your email')}
             />
           </div>
 
           <div className="form-group">
             <div className="password-header">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">{t('password', 'Password')}</label>
               <Link to="/forgot-password" className="forgot-password-link">
-                Forgot your password?
+                {t('forgotYourPassword', 'Forgot your password?')}
               </Link>
             </div>
             <div className="password-input-wrapper">
@@ -118,13 +117,13 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="Enter your password"
+                placeholder={t('enterYourPassword', 'Enter your password')}
               />
               <button
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t('hidePassword', 'Hide password') : t('showPassword', 'Show password')}
               >
                 {showPassword ? (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -150,17 +149,17 @@ const Login = () => {
               {loading ? (
                 <>
                   <LoadingSpinner size="small" />
-                  Logging in...
+                  {t('loggingIn', 'Logging in...')}
                 </>
               ) : (
-                'Login'
+                t('login', 'Login')
               )}
             </button>
           </motion.div>
         </form>
 
         <div className="auth-divider">
-          <span>OR</span>
+          <span>{t('or', 'OR')}</span>
         </div>
 
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -173,7 +172,7 @@ const Login = () => {
             {googleLoading ? (
               <>
                 <LoadingSpinner size="small" />
-                Signing in...
+                {t('signingIn', 'Signing in...')}
               </>
             ) : (
               <>
@@ -185,14 +184,14 @@ const Login = () => {
                     <path d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.45 15.98 5.48 18 9 18z" fill="#34A853"/>
                   </g>
                 </svg>
-                Continue with Google
+                {t('continueWithGoogle', 'Continue with Google')}
               </>
             )}
           </button>
         </motion.div>
 
         <p className="auth-link">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          {t('dontHaveAccount', "Don't have an account?")} <Link to="/signup">{t('signUp', 'Sign Up')}</Link>
         </p>
       </motion.div>
     </div>

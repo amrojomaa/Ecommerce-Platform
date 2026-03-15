@@ -36,6 +36,7 @@ export const CART_ENDPOINTS = {
   UPDATE: '/updatecart/{item_id}',
   DELETE_ITEM: '/deletecart/{item_id}',
   CLEAR: '/clearcart/{Cart_id}',
+  CLEAR_ALL: '/clearcart',
 };
 
 // Wishlist endpoints
@@ -43,6 +44,7 @@ export const WISHLIST_ENDPOINTS = {
   ADD: '/addtowishlist',
   GET: '/showmewishlist',
   DELETE_ITEM: '/deletewishlist/{item_id}',
+  CLEAR: '/clearwishlist',
 };
 
 // Order endpoints
@@ -80,6 +82,7 @@ export const USER_ENDPOINTS = {
   BY_ID: '/users/{id}',
   UPDATE: '/users/{id}',
   UPDATE_ROLE: '/users/{id}/role',
+  BLOCK: '/users/{id}/block',
   DELETE: '/users/{id}',
 };
 
@@ -104,6 +107,8 @@ export const TICKET_ENDPOINTS = {
   ASSIGN: '/tickets/{ticket_id}/assign',
   UPDATE_STATUS: '/tickets/{ticket_id}/status',
   ADD_RESPONSE: '/tickets/{ticket_id}/response',
+  UPDATE_RESPONSE: '/tickets/{ticket_id}/response/{response_id}',
+  DELETE_RESPONSE: '/tickets/{ticket_id}/response/{response_id}',
   UNREAD_COUNT: '/tickets/unread/count',
   REQUEST_DELETE: '/tickets/{ticket_id}/request-delete',
   DELETE: '/tickets/{ticket_id}',
@@ -116,6 +121,7 @@ export const TICKET_ENDPOINTS = {
 export const COMMENT_ENDPOINTS = {
   GET_PRODUCT: '/products/{product_id}/comments',
   CREATE: '/products/{product_id}/comments',
+  UPDATE: '/comments/{comment_id}',
   DELETE: '/comments/{comment_id}',
   ALL: '/comments/all', // Admin only
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only
@@ -125,6 +131,7 @@ export const COMMENT_ENDPOINTS = {
 // Rating endpoints
 export const RATING_ENDPOINTS = {
   GET_PRODUCT: '/products/{product_id}/rating',
+  GET_PRODUCT_RATINGS: '/products/{product_id}/ratings',
   CREATE_OR_UPDATE: '/products/{product_id}/rating',
   DELETE: '/products/{product_id}/rating',
   ALL: '/ratings/all', // Admin only

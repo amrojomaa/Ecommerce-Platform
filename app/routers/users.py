@@ -9,12 +9,15 @@ from ..database import get_db
 from app import models, utils, schemas
 from app import OAuth2
 from typing import List, Optional
+import logging
 
 
 router = APIRouter(
     # prefix="/users",
     tags=['Users']
 )
+
+logger = logging.getLogger(__name__)
 
 
 # @router.post("/users/create", status_code=status.HTTP_201_CREATED, response_model = schemas.User)
@@ -88,14 +91,19 @@ def update_me(user: schemas.UserUpdate, db: Session = Depends (get_db), current_
 
 
 @router.put("/users/{id}", response_model=schemas.User)
-def update_user(user: schemas.UserBase, id :int, db: Session = Depends (get_db), ):#admin_user = Depends(require_admin)):
-    user.password = utils.hash(user.password)
+def update_user(user: schemas.UserUpdate, id: int, db: Session = Depends(get_db), admin_user=Depends(require_admin)):
+    update_data = user.dict(exclude_unset=True)
+    if update_data.get("password"):
+        update_data["password"] = utils.hash(update_data["password"])
+    else:
+        update_data.pop("password", None)
+
     updateuser = db.query(models.DBUser).filter(models.DBUser.id == id)
     update = updateuser.first()
     if update == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
-    updateuser.update(user.dict(), synchronize_session=False)
+    updateuser.update(update_data, synchronize_session=False)
     db.commit()
     return updateuser.first()
 
@@ -236,7 +244,7 @@ def upload_profile_image(image: UploadFile = File(...), db: Session = Depends(ge
         pass
     except Exception as e:
         # If image processing fails, continue with original image
-        print(f"Warning: Could not process image: {e}")
+        logger.warning("Could not process image: %s", e)
 
     # Update user's profile_image
     updateuser = db.query(models.DBUser).filter(models.DBUser.id == current_user.id)
@@ -271,10 +279,41 @@ def delete_profile_image(db: Session = Depends(get_db), current_user: int = Depe
                 os.remove(user.profile_image)
             except Exception as e:
                 # Log error but don't fail - we'll still clear the database field
-                print(f"Error deleting profile image file: {e}")
+                logger.warning("Error deleting profile image file: %s", e)
     
     # Set profile_image to None
     user.profile_image = None
     db.commit()
     
     return None
+
+
+@router.patch("/users/{id}/block", response_model=schemas.User)
+def block_user(
+    id: int,
+    block_update: schemas.UserBlockUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(require_admin),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """Block or unblock a user - Admin only"""
+    user = db.query(models.DBUser).filter(models.DBUser.id == id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    # Prevent admin from blocking themselves
+    if current_user.id == id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot block or unblock yourself"
+        )
+    
+    # Update the blocked status
+    user.is_blocked = block_update.is_blocked
+    # Increment token_version to invalidate all sessions if blocking
+    if block_update.is_blocked:
+        user.token_version = (user.token_version or 0) + 1
+    db.commit()
+    db.refresh(user)
+    
+    return user

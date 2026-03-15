@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
         return userData.id || userData.email; // Use ID or email as identifier
       }
     } catch (error) {
-      console.error('Error parsing user data:', error);
+      console.error('Error parsing user data');
     }
     return null;
   };
@@ -81,9 +81,8 @@ export const CartProvider = ({ children }) => {
 
     window.addEventListener('auth-change', handleAuthChange);
 
-    // Also check periodically for same-tab changes (since storage event doesn't fire in same tab)
-    // Reduced frequency to every 2 seconds to be less resource-intensive
-    const interval = setInterval(checkUserChange, 2000);
+    // Periodic sync; rely on events for instant updates.
+    const interval = setInterval(checkUserChange, 30000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -127,7 +126,7 @@ export const CartProvider = ({ children }) => {
         setCartItems([]);
         setGrandTotal(0);
       } else {
-        console.error('Error fetching cart:', error);
+        console.error('Error fetching cart');
       }
     } finally {
       setLoading(false);
@@ -252,15 +251,24 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const clearCart = async (cartId) => {
+  const clearCart = async (cartId = null) => {
     if (!isAuthenticated()) return { success: false, error: 'Please login' };
 
+    const previousItems = [...cartItems];
+    const previousGrandTotal = grandTotal;
+    setCartItems([]);
+    setGrandTotal(0);
     setLoading(true);
     try {
-      await http.delete(CART_ENDPOINTS.CLEAR.replace('{Cart_id}', cartId));
-      await fetchCart();
+      if (cartId) {
+        await http.delete(CART_ENDPOINTS.CLEAR.replace('{Cart_id}', cartId));
+      } else {
+        await http.delete(CART_ENDPOINTS.CLEAR_ALL);
+      }
       return { success: true };
     } catch (error) {
+      setCartItems(previousItems);
+      setGrandTotal(previousGrandTotal);
       return {
         success: false,
         error: error.message || 'Failed to clear cart',

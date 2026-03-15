@@ -172,7 +172,22 @@
 .response-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.response-author-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.response-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .response-author {
@@ -189,6 +204,112 @@
   color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
+}
+
+.response-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.response-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-response-btn,
+.delete-response-btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.edit-response-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.edit-response-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  opacity: 0.9;
+}
+
+.delete-response-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-response-btn:hover:not(:disabled) {
+  background: #c82333;
+  opacity: 0.9;
+}
+
+.edit-response-btn:disabled,
+.delete-response-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-response-form {
+  margin-top: 0.5rem;
+}
+
+.edit-response-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--bg-color);
+  color: var(--text-color);
+  resize: vertical;
+  margin-bottom: 0.75rem;
+}
+
+.edit-response-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.edit-response-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.save-edit-btn,
+.cancel-edit-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.save-edit-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.save-edit-btn:hover {
+  background: var(--primary-hover);
+}
+
+.cancel-edit-btn {
+  background: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.cancel-edit-btn:hover {
+  background: var(--hover-bg);
 }
 
 .no-responses {

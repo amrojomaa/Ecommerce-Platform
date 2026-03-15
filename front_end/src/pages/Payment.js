@@ -16,8 +16,8 @@ import { useCart } from '../hooks/useCart';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Payment.css';
 
-// Initialize Stripe - Replace with your publishable key
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QEXAMPLE');
+const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 const PaymentForm = ({ amount, orderId, onSuccess }) => {
   const stripe = useStripe();
@@ -38,7 +38,6 @@ const PaymentForm = ({ amount, orderId, onSuccess }) => {
     try {
       // Create payment intent
       const intentResponse = await http.post(PAYMENT_ENDPOINTS.CREATE_INTENT, {
-        amount: amount,
         order_id: orderId,
         currency: 'usd'
       });
@@ -190,6 +189,14 @@ const Payment = () => {
       navigate('/orders');
     }, 1500);
   };
+
+  if (!stripePromise) {
+    return (
+      <div className="payment-loading">
+        <p>Stripe is not configured. Please contact support.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

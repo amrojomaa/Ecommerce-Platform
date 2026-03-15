@@ -88,6 +88,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../hooks/useTheme';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
+import { useLanguage } from '../hooks/useLanguage';
 import '../styles/layouts/Navbar.css';
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
@@ -99,8 +100,10 @@ const Navbar = () => {
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { t, language, toggleLanguage } = useLanguage();
   const { unreadCount: unreadTicketsCount } = useUnreadTickets();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef(null);
@@ -108,6 +111,16 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmedSearch = searchTerm.trim();
+    if (trimmedSearch) {
+      navigate(`/products?search=${encodeURIComponent(trimmedSearch)}`);
+      return;
+    }
+    navigate('/products');
   };
 
   const cartItemCount = getCartItemCount();
@@ -185,13 +198,27 @@ const Navbar = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
           <span style={{ display: 'inline-block' }}>
-            E-Commerce
+            {t('brand', 'E-Commerce')}
           </span>
         </Link>
 
+        <form className="navbar-search-form" onSubmit={handleSearchSubmit}>
+          <input
+            type="search"
+            className="navbar-search-input"
+            placeholder={t('searchProducts', 'Search products...')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label={t('search', 'Search')}
+          />
+          <button type="submit" className="navbar-search-btn">
+            {t('search', 'Search')}
+          </button>
+        </form>
+
         <div className="navbar-menu">
           <Link to="/products" className="navbar-link">
-            Products
+            {t('products', 'Products')}
           </Link>
           
           {isAuthenticated ? (
@@ -217,11 +244,11 @@ const Navbar = () => {
                 </div>
               </Link>
               <Link to="/orders" className="navbar-link">
-                My Orders
+                {t('myOrders', 'My Orders')}
               </Link>
               {user?.role === 'customer' && (
                 <Link to="/tickets" className="navbar-link">
-                  <span>Tickets</span>
+                  <span>{t('tickets', 'Tickets')}</span>
                   {unreadTicketsCount > 0 && (
                     <span className="admin-badge">{unreadTicketsCount}</span>
                   )}
@@ -229,7 +256,7 @@ const Navbar = () => {
               )}
               {checkIsAdmin() && (
                 <Link to="/admin" className="navbar-link admin-link">
-                  <span>Admin</span>
+                  <span>{t('admin', 'Admin')}</span>
                   {unreadTicketsCount > 0 && (
                     <span className="admin-badge">{unreadTicketsCount}</span>
                   )}
@@ -237,7 +264,7 @@ const Navbar = () => {
               )}
               {user?.role === 'employee' && !checkIsAdmin() && (
                 <Link to="/employee" className="navbar-link">
-                  <span>Employee</span>
+                  <span>{t('employee', 'Employee')}</span>
                   {unreadTicketsCount > 0 && (
                     <span className="admin-badge">{unreadTicketsCount}</span>
                   )}
@@ -268,13 +295,19 @@ const Navbar = () => {
                 {profileDropdownOpen && (
                   <div className="profile-dropdown">
                     <div className="dropdown-item email-item">
-                      <span className="dropdown-label">Email:</span>
+                      <span className="dropdown-label">{t('email', 'Email')}:</span>
                       <span className="dropdown-value">{user?.email}</span>
                     </div>
                     <Link to="/profile"  className="dropdown-item"
                       onClick={() => setProfileDropdownOpen(false)}>
-                      Profile
+                      {t('profile', 'Profile')}
                     </Link>
+                    <button
+                      onClick={toggleLanguage}
+                      className="dropdown-item language-dropdown-btn"
+                    >
+                      {`${t('language', 'Language')}: ${language === 'ar' ? 'Arabic' : 'English'}`}
+                    </button>
                     <button 
                       onClick={() => {
                         setProfileDropdownOpen(false);
@@ -283,7 +316,7 @@ const Navbar = () => {
                       className="dropdown-item logout-dropdown-btn"
                     >
                       <FaSignOutAlt className="logout-icon" />
-                      Logout
+                      {t('logout', 'Logout')}
                     </button>
                   </div>
                 )}
@@ -292,10 +325,10 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login" className="navbar-link">
-                Login
+                {t('login', 'Login')}
               </Link>
               <Link to="/signup" className="navbar-link signup-link">
-                Sign Up
+                {t('signUp', 'Sign Up')}
               </Link>
             </>
           )}
@@ -324,49 +357,49 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="mobile-menu">
           <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
-            Products
+            {t('products', 'Products')}
           </Link>
           {isAuthenticated ? (
             <>
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
-                Cart ({cartItemCount})
+                {`${t('cart', 'Cart')} (${cartItemCount})`}
               </Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
-                Wishlist ({wishlistItemCount})
+                {`${t('wishlist', 'Wishlist')} (${wishlistItemCount})`}
               </Link>
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
-                My Orders
+                {t('myOrders', 'My Orders')}
               </Link>
               {user?.role === 'customer' && (
                 <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
-                  Tickets {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                  {t('tickets', 'Tickets')} {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
                 </Link>
               )}
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                Profile
+                {t('profile', 'Profile')}
               </Link>
               {checkIsAdmin() && (
                 <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                  Admin {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                  {t('admin', 'Admin')} {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
                 </Link>
               )}
               {user?.role === 'employee' && !checkIsAdmin() && (
                 <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
-                  Employee {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                  {t('employee', 'Employee')} {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
                 </Link>
               )}
               <div className="mobile-user-info">
                 <span>{user?.email}</span>
               </div>
-              <button onClick={handleLogout}>Logout</button>
+              <button onClick={handleLogout}>{t('logout', 'Logout')}</button>
             </>
           ) : (
             <>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                Login
+                {t('login', 'Login')}
               </Link>
               <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                Sign Up
+                {t('signUp', 'Sign Up')}
               </Link>
             </>
           )}

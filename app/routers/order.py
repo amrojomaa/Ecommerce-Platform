@@ -6,6 +6,7 @@ from ..database import get_db
 from app import models, schemas
 from app import OAuth2
 from app.routers.admin import require_admin
+import logging
 
 
 def get_order_item_with_images(order_item: models.DBOrderItem) -> dict:
@@ -31,6 +32,8 @@ router = APIRouter(
     # prefix="/users",
     tags=['Odrer']
 )
+
+logger = logging.getLogger(__name__)
 
 @router.post("/checkout", response_model=schemas.OrderResponse)
 def checkout(db: Session = Depends(get_db), current_user  = Depends(OAuth2.get_current_user)):
@@ -242,13 +245,11 @@ def get_all_orders(
         )
         
         return orders
-    except Exception as e:
-        import traceback
-        print(f"Error in get_all_orders: {str(e)}")
-        print(traceback.format_exc())
+    except Exception:
+        logger.exception("Error in get_all_orders")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching orders: {str(e)}"
+            detail="Error fetching orders"
         )
 
 

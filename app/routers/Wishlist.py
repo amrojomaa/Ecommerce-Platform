@@ -97,3 +97,17 @@ def delete_wishlist_item(item_id: int, db: Session = Depends(get_db),
     db.delete(wishlist_item)
     db.commit()
     return None
+
+
+@router.delete("/clearwishlist", status_code=status.HTTP_204_NO_CONTENT)
+def clear_wishlist(db: Session = Depends(get_db),
+                   current_user: schemas.User = Depends(OAuth2.get_current_user)):
+    wishlist = db.query(models.DBWishlist).filter(models.DBWishlist.user_id == current_user.id).first()
+    if not wishlist:
+        return None
+
+    db.query(models.DBWishlistItem).filter(
+        models.DBWishlistItem.wishlist_id == wishlist.id
+    ).delete(synchronize_session=False)
+    db.commit()
+    return None

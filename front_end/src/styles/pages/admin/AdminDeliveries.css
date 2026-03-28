@@ -1,0 +1,270 @@
+.admin-deliveries {
+  width: 100%;
+}
+
+.admin-deliveries h1 {
+  margin-bottom: 0;
+  color: var(--text-primary);
+}
+
+.admin-deliveries-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+.admin-deliveries-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.deliveries-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deliveries-filter label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-filter-select {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.filter-count {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.empty-deliveries {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-deliveries p {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.show-all-btn,
+.retry-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.show-all-btn:hover,
+.retry-btn:hover {
+  background-color: #1976D2;
+}
+
+.deliveries-table-container {
+  overflow-x: auto;
+  background-color: var(--surface);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.deliveries-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.deliveries-table thead {
+  background-color: var(--background);
+}
+
+.deliveries-table th {
+  padding: 1rem;
+  text-align: left;
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.deliveries-table td {
+  padding: 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.deliveries-table tbody tr.delivery-row:hover {
+  background-color: var(--background);
+}
+
+.deliveries-table tbody tr.delivery-row.expanded {
+  background-color: var(--background);
+}
+
+.address-cell {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.payment-cell {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.no-driver {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Delivery status badges */
+.delivery-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-available {
+  background-color: #FF9800;
+  color: white;
+}
+
+.status-assigned {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-picked_up {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.status-delivering {
+  background-color: #00BCD4;
+  color: white;
+}
+
+/* Expanded row */
+.expanded-row td {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.job-expanded-details {
+  padding: 1.5rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detail-card {
+  background-color: var(--background);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.detail-card h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.detail-card p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.detail-card .coords {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.issue-alert {
+  background-color: #fff3e0;
+  border-left: 4px solid #FF9800;
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+  color: #e65100;
+}
+
+.issue-alert p {
+  margin: 0.5rem 0 0;
+  color: #bf360c;
+}
+
+.expanded-items {
+  margin-top: 1rem;
+}
+
+.expanded-items h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.item-tag {
+  background-color: var(--background);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .admin-deliveries-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .deliveries-table-container {
+    overflow-x: scroll;
+  }
+
+  .deliveries-table {
+    min-width: 800px;
+  }
+}

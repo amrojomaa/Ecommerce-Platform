@@ -80,16 +80,17 @@ const AdminOrders = () => {
   };
 
   const getAvailableStatuses = (currentStatus) => {
-    const statuses = ['created', 'paid', 'shipped', 'delivered', 'cancelled'];
-    
     // Admin can change:
     // - paid → shipped
     // - shipped → delivered
     // - any status → cancelled
+    // Delivery statuses (assigned, picked_up, delivering) are set by drivers — admin can only cancel
     if (currentStatus === 'paid') {
       return ['shipped', 'cancelled'];
     } else if (currentStatus === 'shipped') {
       return ['delivered', 'cancelled'];
+    } else if (['assigned', 'picked_up', 'delivering'].includes(currentStatus)) {
+      return ['cancelled'];
     } else {
       return ['cancelled'];
     }
@@ -107,7 +108,7 @@ const AdminOrders = () => {
     }
   };
 
-  const orderStatuses = ['all', 'revenue', 'created', 'paid', 'shipped', 'delivered', 'cancelled'];
+  const orderStatuses = ['all', 'revenue', 'created', 'paid', 'assigned', 'picked_up', 'delivering', 'shipped', 'delivered', 'cancelled'];
 
   const handleStatusChange = async (orderId, newStatus) => {
     setUpdatingOrderId(orderId);

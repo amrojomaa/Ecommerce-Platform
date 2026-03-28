@@ -172,6 +172,41 @@ const EmployeeTickets = () => {
                       </div>
                     </div>
 
+                    {/* Delivery Info (if ticket has related order delivery data) */}
+                    {ticket.order_delivery && (
+                      <div className="ticket-delivery-info">
+                        <h4>🚚 Delivery Information</h4>
+                        <div className="delivery-info-grid">
+                          <div className="delivery-info-item">
+                            <span className="delivery-info-label">Status:</span>
+                            <span className={`status-badge status-${ticket.order_delivery.status}`}>
+                              {ticket.order_delivery.status?.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          {ticket.order_delivery.driver_name && (
+                            <div className="delivery-info-item">
+                              <span className="delivery-info-label">Driver:</span>
+                              <span>{ticket.order_delivery.driver_name}</span>
+                            </div>
+                          )}
+                          {ticket.order_delivery.delivery_address && (
+                            <div className="delivery-info-item">
+                              <span className="delivery-info-label">Delivery Address:</span>
+                              <span>{ticket.order_delivery.delivery_address}</span>
+                            </div>
+                          )}
+                        </div>
+                        {ticket.order_delivery.issue_type && (
+                          <div className="delivery-issue-alert">
+                            <strong>⚠️ Driver Issue:</strong> {ticket.order_delivery.issue_type.replace(/_/g, ' ')}
+                            {ticket.order_delivery.issue_description && (
+                              <p>{ticket.order_delivery.issue_description}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="ticket-responses">
                       <h4>Responses ({ticket.responses?.length || 0})</h4>
                       {ticket.responses && ticket.responses.length > 0 ? (

@@ -33,7 +33,18 @@ router = APIRouter(
 )
 
 @router.post("/checkout", response_model=schemas.OrderResponse)
-def checkout(db: Session = Depends(get_db), current_user  = Depends(OAuth2.get_current_user)):
+def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depends(get_db), current_user  = Depends(OAuth2.get_current_user)):
+
+    if checkout_data:
+        user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+        if user:
+            user.street = checkout_data.address
+            user.city = checkout_data.city
+            if checkout_data.country:
+                user.country = checkout_data.country
+            if checkout_data.phone:
+                user.phone = checkout_data.phone
+            db.commit()
 
     cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
     if not cart or not cart.items:
@@ -267,7 +278,7 @@ def update_order_status(
     - any status → cancelled
     """
     # Validate status value
-    valid_statuses = ["created", "paid", "shipped", "delivered", "cancelled"]
+    valid_statuses = ["created", "paid", "shipped", "delivered", "cancelled", "assigned", "picked_up", "delivering"]
     if status_update.status not in valid_statuses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -312,12 +323,16 @@ def update_order_status(
             product = order_item.product
             product.quantity -= order_item.quantity
         order.status = new_status
-    # If changing to cancelled from paid/shipped/delivered, restore stock
-    elif new_status == "cancelled" and current_status in ["paid", "shipped", "delivered"]:
+    # If changing to cancelled from paid or delivery states, restore stock
+    elif new_status == "cancelled" and current_status in ["paid", "shipped", "delivered", "assigned", "picked_up", "delivering"]:
         for order_item in order.orderitems:
             product = order_item.product
             product.quantity += order_item.quantity
         order.status = new_status
+        # Handle delivery job cancellation if any
+        delivery_job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.order_id == order.id).first()
+        if delivery_job and delivery_job.status not in ["delivered", "cancelled"]:
+            delivery_job.status = "cancelled"
     # Allow cancellation from created status (no stock to restore)
     elif new_status == "cancelled" and current_status == "created":
         order.status = new_status
@@ -326,6 +341,16 @@ def update_order_status(
         order.status = new_status
     # Allow shipped → delivered
     elif current_status == "shipped" and new_status == "delivered":
+        order.status = new_status
+    # Allow assigned → picked_up → delivering → delivered (these are usually handled via delivery module but just in case)
+    elif current_status == "assigned" and new_status == "picked_up":
+        order.status = new_status
+    elif current_status == "picked_up" and new_status == "delivering":
+        order.status = new_status
+    elif current_status == "delivering" and new_status == "delivered":
+        order.status = new_status
+    # Allow picked_up -> delivered directly (some drivers might skip delivering status)
+    elif current_status == "picked_up" and new_status == "delivered":
         order.status = new_status
     else:
         raise HTTPException(
@@ -336,5 +361,10 @@ def update_order_status(
     
     db.commit()
     db.refresh(order)
+    
+    # If order is paid, create a delivery job
+    if new_status == "paid":
+        from app.routers.delivery import internal_create_delivery_job
+        internal_create_delivery_job(order.id, db)
     
     return order

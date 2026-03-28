@@ -38,7 +38,7 @@ const Checkout = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.address || !formData.city || !formData.zipCode) {
       toast.error('Please fill in all required fields');
       return;
@@ -46,16 +46,16 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      // Create order via checkout endpoint
-      await http.post(ORDER_ENDPOINTS.CHECKOUT);
-      
+      // Create order via checkout endpoint and send formData
+      await http.post(ORDER_ENDPOINTS.CHECKOUT, formData);
+
       toast.success('Order placed successfully!');
-      
+
       // Clear cart after successful order
       if (cartItems[0]?.cart_id) {
         await clearCart(cartItems[0].cart_id);
       }
-      
+
       // Redirect to orders page
       setTimeout(() => {
         navigate('/orders');
@@ -70,7 +70,7 @@ const Checkout = () => {
   return (
     <div className="checkout-page">
       <h1>Checkout</h1>
-      
+
       <div className="checkout-container">
         <motion.form
           className="checkout-form"
@@ -79,7 +79,7 @@ const Checkout = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <h2>Shipping Information</h2>
-          
+
           <div className="form-group">
             <label htmlFor="address">Address *</label>
             <input
@@ -177,7 +177,7 @@ const Checkout = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <h2>Order Summary</h2>
-          
+
           <div className="order-items">
             {cartItems.map((item) => (
               <div key={item.id} className="order-item">

@@ -71,7 +71,7 @@ class DBUser(Base):
     
     cart = relationship("DBCart", back_populates="user", cascade="all, delete",
                         uselist=False) #one cart per user
-    order = relationship("DBOrder", back_populates="user", cascade="all, delete")
+    order = relationship("DBOrder", foreign_keys="DBOrder.user_id", back_populates="user", cascade="all, delete")
     wishlist = relationship("DBWishlist", back_populates="user", cascade="all, delete",
                            uselist=False) #one wishlist per user
     customer_tickets = relationship("DBTicket", foreign_keys="DBTicket.customer_id", back_populates="customer", cascade="all, delete")
@@ -123,9 +123,12 @@ class DBOrder(Base):
     total_amount = Column(Float, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String, nullable=False, server_default="created")
+    driver_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    user = relationship("DBUser", back_populates="order")
+    user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
+    driver = relationship("DBUser", foreign_keys=[driver_id])
     orderitems = relationship("DBOrderItem", back_populates="order", cascade="all, delete")
+    delivery_job = relationship("DBDeliveryJob", back_populates="order", uselist=False)
 
 
 class DBOrderItem(Base):
@@ -246,3 +249,74 @@ class DBAdminSettings(Base):
     setting_value = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+
+class DBDeliveryJob(Base):
+    __tablename__ = "delivery_jobs"
+    id = Column(Integer, primary_key=True, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True)
+    driver_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String, nullable=False, server_default="available")  # available, assigned, picked_up, delivering, delivered, cancelled
+    pickup_address = Column(String, nullable=True)
+    pickup_latitude = Column(Float, nullable=True)
+    pickup_longitude = Column(Float, nullable=True)
+    delivery_address = Column(String, nullable=True)
+    delivery_latitude = Column(Float, nullable=True)
+    delivery_longitude = Column(Float, nullable=True)
+    payment_amount = Column(Float, nullable=False, server_default=text('0'))
+    issue_type = Column(String, nullable=True)
+    issue_description = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    order = relationship("DBOrder", back_populates="delivery_job")
+    driver = relationship("DBUser", foreign_keys=[driver_id])
+    photos = relationship("DBDeliveryPhoto", back_populates="delivery_job", cascade="all, delete-orphan")
+    messages = relationship("DBDeliveryChatMessage", back_populates="delivery_job", cascade="all, delete-orphan")
+
+
+class DBDeliveryChatMessage(Base):
+    __tablename__ = "delivery_chat_messages"
+    id = Column(Integer, primary_key=True, nullable=False)
+    delivery_job_id = Column(Integer, ForeignKey("delivery_jobs.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    delivery_job = relationship("DBDeliveryJob", back_populates="messages")
+    sender = relationship("DBUser", foreign_keys=[sender_id])
+
+
+class DBDriverLocation(Base):
+    __tablename__ = "driver_locations"
+    id = Column(Integer, primary_key=True, nullable=False)
+    driver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    driver = relationship("DBUser", foreign_keys=[driver_id])
+
+
+class DBDeliveryPhoto(Base):
+    __tablename__ = "delivery_photos"
+    id = Column(Integer, primary_key=True, nullable=False)
+    delivery_job_id = Column(Integer, ForeignKey("delivery_jobs.id", ondelete="CASCADE"), nullable=False)
+    photo_type = Column(String, nullable=False)  # 'pickup' or 'delivery'
+    image_path = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    delivery_job = relationship("DBDeliveryJob", back_populates="photos")
+
+
+class DBDriverEarning(Base):
+    __tablename__ = "driver_earnings"
+    id = Column(Integer, primary_key=True, nullable=False)
+    driver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    delivery_job_id = Column(Integer, ForeignKey("delivery_jobs.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Float, nullable=False)
+    status = Column(String, nullable=False, server_default="pending")  # 'pending', 'paid'
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    driver = relationship("DBUser", foreign_keys=[driver_id])
+    delivery_job = relationship("DBDeliveryJob", foreign_keys=[delivery_job_id])

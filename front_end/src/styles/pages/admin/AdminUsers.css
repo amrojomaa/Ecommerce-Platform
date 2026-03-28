@@ -175,6 +175,11 @@
   color: white;
 }
 
+.role-badge.driver {
+  background-color: #14b8a6;
+  color: white;
+}
+
 .role-badge.customer {
   background-color: var(--secondary-color);
   color: white;

@@ -8,7 +8,7 @@ import '../../styles/pages/driver/DriverActiveJob.css';
 
 const DriverActiveJob = () => {
   const [jobs, setJobs] = useState([]);
-  const [activeJob, setActiveJob] = useState(null);
+  const [activeJobId, setActiveJobId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
@@ -35,16 +35,18 @@ const DriverActiveJob = () => {
 
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const activeJob = jobs.find((job) => job.id === activeJobId) || jobs[0] || null;
 
   const fetchActiveJobs = useCallback(async () => {
     try {
       const response = await http.get(DELIVERY_ENDPOINTS.ACTIVE_JOBS);
-      setJobs(response.data);
-      if (response.data.length > 0) {
-        setActiveJob(response.data[0]);
-      } else {
-        setActiveJob(null);
-      }
+      const activeJobs = response.data || [];
+      setJobs(activeJobs);
+      setActiveJobId((prevId) => {
+        if (activeJobs.length === 0) return null;
+        if (prevId && activeJobs.some((job) => job.id === prevId)) return prevId;
+        return activeJobs[0].id;
+      });
     } catch (error) {
       console.error('Error fetching active jobs:', error);
     } finally {
@@ -89,6 +91,7 @@ const DriverActiveJob = () => {
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || !activeJob) return;
+    let isCancelled = false;
 
     const initMap = () => {
       try {
@@ -104,6 +107,8 @@ const DriverActiveJob = () => {
         const centerLng = activeJob.pickup_longitude || 35.9;
 
         const map = L.map(mapRef.current).setView([centerLat, centerLng], 13);
+        // Register map instance immediately so async callbacks can draw routes safely.
+        mapInstanceRef.current = map;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,
@@ -137,6 +142,8 @@ const DriverActiveJob = () => {
 
         const hasPickup = typeof activeJob.pickup_latitude === 'number' && typeof activeJob.pickup_longitude === 'number';
         const hasDelivery = typeof activeJob.delivery_latitude === 'number' && typeof activeJob.delivery_longitude === 'number';
+        const isPickedUpState = activeJob.status === 'picked_up' || activeJob.status === 'delivering';
+        const isMapActive = () => !isCancelled && mapInstanceRef.current === map;
 
         const drawRoute = (startLat, startLng, endLat, endLng) => {
           const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
@@ -144,6 +151,7 @@ const DriverActiveJob = () => {
           fetch(osrmUrl)
             .then(res => res.json())
             .then(data => {
+              if (!isMapActive()) return;
               if (data.routes && data.routes.length > 0) {
                 const routeCoordinates = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
                 L.polyline(routeCoordinates, { color: '#3b82f6', weight: 5, opacity: 0.8 }).addTo(map);
@@ -155,22 +163,32 @@ const DriverActiveJob = () => {
             })
             .catch(err => {
               console.error("Error fetching route:", err);
+              if (!isMapActive()) return;
               L.polyline([[startLat, startLng], [endLat, endLng]], { color: '#3b82f6', weight: 4, dashArray: '10, 10' }).addTo(map);
               map.fitBounds([[startLat, startLng], [endLat, endLng]], { padding: [50, 50] });
             });
         };
 
         if (navigator.geolocation) {
+          // Show pickup -> customer route immediately after pickup status update.
+          if (isPickedUpState && hasPickup && hasDelivery) {
+            drawRoute(
+              activeJob.pickup_latitude,
+              activeJob.pickup_longitude,
+              activeJob.delivery_latitude,
+              activeJob.delivery_longitude
+            );
+          }
+
           navigator.geolocation.getCurrentPosition((pos) => {
-            if (!mapInstanceRef.current) return;
+            if (!isMapActive()) return;
             
             let driverLat = pos.coords.latitude;
             let driverLng = pos.coords.longitude;
 
             // If the driver implies they picked up the order, their starting origin is the pickup location.
             // This prevents the GPS from placing them somewhere else and drawing an inaccurate route.
-            const isPickedUp = activeJob.status === 'picked_up' || activeJob.status === 'delivering';
-            if (isPickedUp && hasPickup) {
+            if (isPickedUpState && hasPickup) {
               driverLat = activeJob.pickup_latitude;
               driverLng = activeJob.pickup_longitude;
             }
@@ -181,23 +199,25 @@ const DriverActiveJob = () => {
               iconSize: [40, 40],
               iconAnchor: [20, 20],
             });
-            L.marker([driverLat, driverLng], { icon: driverIcon }).addTo(map).bindPopup(isPickedUp ? 'Picked Up From Here' : 'Your Location');
+            L.marker([driverLat, driverLng], { icon: driverIcon }).addTo(map).bindPopup(isPickedUpState ? 'Picked Up From Here' : 'Your Location');
 
             if (activeJob.status === 'assigned' && hasPickup) {
               drawRoute(driverLat, driverLng, activeJob.pickup_latitude, activeJob.pickup_longitude);
-            } else if (isPickedUp && hasDelivery) {
-              drawRoute(driverLat, driverLng, activeJob.delivery_latitude, activeJob.delivery_longitude);
+            } else if (isPickedUpState && hasPickup && hasDelivery) {
+              // After pickup, always show the route from pickup point to customer location.
+              drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
             } else if (hasPickup && hasDelivery) {
               drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
             }
           }, (err) => {
+             if (!isMapActive()) return;
              if (hasPickup && hasDelivery) drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
           }, { enableHighAccuracy: true });
         } else {
+          if (!isMapActive()) return;
           if (hasPickup && hasDelivery) drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
         }
 
-        mapInstanceRef.current = map;
       } catch (err) {
         console.error("Map initialization error:", err);
       }
@@ -231,6 +251,7 @@ const DriverActiveJob = () => {
     }
 
     return () => {
+      isCancelled = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -244,10 +265,12 @@ const DriverActiveJob = () => {
     try {
       const response = await http.patch(buildUrl(DELIVERY_ENDPOINTS.PICKUP_JOB, { job_id: activeJob.id }));
       toast.success('Order marked as picked up!');
-      setActiveJob(response.data);
+      setJobs((prevJobs) => prevJobs.map((job) => (job.id === response.data.id ? response.data : job)));
+      setActiveJobId(response.data.id);
       fetchActiveJobs();
     } catch (error) {
-      toast.error(error.message || 'Failed to update status');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update status';
+      toast.error(errorMessage);
       fetchActiveJobs();
     } finally {
       setUpdating(false);
@@ -258,12 +281,13 @@ const DriverActiveJob = () => {
     if (!activeJob) return;
     setUpdating(true);
     try {
-      const response = await http.patch(buildUrl(DELIVERY_ENDPOINTS.DELIVER_JOB, { job_id: activeJob.id }));
+      await http.patch(buildUrl(DELIVERY_ENDPOINTS.DELIVER_JOB, { job_id: activeJob.id }));
       toast.success('Order delivered successfully! 🎉');
-      setActiveJob(null);
+      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== activeJob.id));
       fetchActiveJobs();
     } catch (error) {
-      toast.error(error.message || 'Failed to update status');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update status';
+      toast.error(errorMessage);
       fetchActiveJobs();
     } finally {
       setUpdating(false);
@@ -349,6 +373,26 @@ const DriverActiveJob = () => {
   return (
     <div className="active-job-page">
       <h1>Active Delivery</h1>
+      {jobs.length > 1 && (
+        <div className="info-card">
+          <h3>Your Active Orders ({jobs.length})</h3>
+          <div className="photo-actions">
+            {jobs.map((job) => (
+              <button
+                key={job.id}
+                className="btn-photo"
+                style={{
+                  border: job.id === activeJob?.id ? '2px solid var(--primary-color)' : undefined,
+                  fontWeight: job.id === activeJob?.id ? '700' : '500',
+                }}
+                onClick={() => setActiveJobId(job.id)}
+              >
+                #{job.order_id} ({(job.status || 'assigned').replace('_', ' ')})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Status stepper */}
       <div className="status-stepper">

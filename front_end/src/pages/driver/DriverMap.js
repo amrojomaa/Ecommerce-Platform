@@ -141,7 +141,8 @@ const DriverMap = () => {
       setSelectedJob(null);
       fetchJobs();
     } catch (error) {
-      toast.error(error.message || 'Failed to accept job');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to accept job';
+      toast.error(errorMessage);
     } finally {
       setAccepting(false);
     }

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 
@@ -16,6 +17,23 @@ from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
 
 models.Base.metadata.create_all(bind=engine)
+
+
+def apply_schema_patches() -> None:
+    """Apply additive schema patches for existing databases."""
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS driver_id INTEGER
+                REFERENCES users(id) ON DELETE SET NULL
+                """
+            )
+        )
+
+
+apply_schema_patches()
 print("Data Base connected successfully!")
 
 app = FastAPI()

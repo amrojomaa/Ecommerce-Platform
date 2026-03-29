@@ -1,9 +1,10 @@
 import os
 import re
+import string
 from typing import List, Optional, Dict
 from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_
 from ..database import get_db
 from app import models, schemas
 import google.generativeai as genai
@@ -21,15 +22,21 @@ if gemini_api_key:
 # In-memory session storage (in production, use Redis or database)
 chat_sessions: Dict[str, Dict] = {}
 
+# Avoid calling list_models() on every chat message (latency + possible quota noise)
+_resolved_gemini_model: Optional[str] = None
+
 
 def get_available_gemini_model() -> Optional[str]:
     """
     Try to find an available Gemini model by listing available models.
     Returns the first working model name or None.
     """
+    global _resolved_gemini_model
     if not gemini_api_key:
         return None
-    
+    if _resolved_gemini_model:
+        return _resolved_gemini_model
+
     # Try to list available models first
     try:
         available_models = genai.list_models()
@@ -54,17 +61,20 @@ def get_available_gemini_model() -> Optional[str]:
         # Find first preferred model that's available
         for preferred in preferred_models:
             if preferred in model_names_list:
-                return preferred
+                _resolved_gemini_model = preferred
+                return _resolved_gemini_model
         
         # If none found, return first available model
         if model_names_list:
-            return model_names_list[0]
+            _resolved_gemini_model = model_names_list[0]
+            return _resolved_gemini_model
     except Exception as e:
         # If listing fails, fallback to default
         pass
     
     # Fallback: return default model name (most common)
-    return "gemini-pro"
+    _resolved_gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    return _resolved_gemini_model
 
 
 def classify_intent(message: str, last_message: Optional[str] = None) -> str:
@@ -73,6 +83,12 @@ def classify_intent(message: str, last_message: Optional[str] = None) -> str:
     Returns: 'product' or 'conversation'
     """
     message_lower = message.lower()
+
+    # Price / budget questions should hit the catalog, not Gemini (saves quota + accurate stock)
+    if re.search(r'\$\s*\d+', message_lower):
+        return 'product'
+    if re.search(r'\b(?:under|below|less\s+than)\s*\$?\s*\d+', message_lower):
+        return 'product'
     
     # Product-related keywords
     product_keywords = [
@@ -96,6 +112,17 @@ def classify_intent(message: str, last_message: Optional[str] = None) -> str:
     # Check for price patterns
     if any(re.search(pattern, message_lower) for pattern in price_patterns):
         return 'product'
+
+    # Existence / availability questions (often no word "product")
+    existence_patterns = [
+        r'\bdo you have\b',
+        r'\bhave you got\b',
+        r'\bdo you (?:sell|carry|stock)\b',
+        r'\bis there (?:a|an|any)\s+\w+\s+(?:called|named)\b',
+        r'\b(?:in stock|available|carry)\b',
+    ]
+    if any(re.search(p, message_lower) for p in existence_patterns):
+        return 'product'
     
     # Check for follow-up product queries
     if last_message:
@@ -114,6 +141,55 @@ def classify_intent(message: str, last_message: Optional[str] = None) -> str:
     return 'conversation'
 
 
+# Words to ignore when inferring a product name from free text
+_NAME_STOP_WORDS = frozenset({
+    'show', 'find', 'search', 'want', 'need', 'looking', 'for', 'the', 'a', 'an', 'is', 'are',
+    'there', 'here', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'when', 'where',
+    'why', 'how', 'do', 'does', 'did', 'have', 'has', 'had', 'can', 'could', 'would', 'should',
+    'will', 'with', 'from', 'your', 'our', 'any', 'some', 'about', 'into', 'onto', 'called',
+    'named', 'product', 'products', 'item', 'items', 'like', 'just', 'also', 'only', 'very',
+    'much', 'more', 'most', 'other', 'please', 'tell', 'me', 'know', 'if', 'we', 'you', 'they',
+    'book', 'books', 'something', 'anything', 'store', 'shop', 'inventory', 'stock', 'still',
+    'price', 'prices', 'priced', 'pricing', 'cost', 'costs', 'buck', 'bucks', 'usd', 'pay', 'budget',
+    'dollar', 'dollars', 'than', 'less', 'under', 'below', 'max', 'maximum',
+    'cheap', 'cheaper', 'cheapest', 'expensive', 'lowest', 'highest',
+})
+
+_PRICE_NOISE_TOKENS = frozenset(
+    _NAME_STOP_WORDS
+    | {'price', 'prices', 'priced', 'pricing', 'cost', 'costs', 'buck', 'bucks', 'usd', 'dollar', 'dollars', 'pay', 'budget', 'under', 'below', 'max', 'maximum'}
+)
+
+
+def extract_explicit_product_title(text: str) -> Optional[str]:
+    """
+    Pull the product title from phrases like 'product called X', 'named X', or quoted titles.
+    """
+    t = text.strip()
+    patterns = [
+        r'(?:product|products|item|items|book|books)\s+called\s+(.+)$',
+        r'(?:product|products|item|items|book|books)\s+named\s+(.+)$',
+        r'\bcalled\s+(.+)$',
+        r'\bnamed\s+(.+)$',
+        r'\btitled\s+(.+)$',
+    ]
+    for p in patterns:
+        m = re.search(p, t, re.IGNORECASE | re.DOTALL)
+        if not m:
+            continue
+        name = m.group(1).strip()
+        name = name.strip('"\'' + string.whitespace)
+        name = name.rstrip('?.!').strip()
+        name = re.sub(r'\s+', ' ', name)
+        if len(name) >= 2:
+            return name
+    # Quoted string anywhere in the message
+    mq = re.search(r'["\']([^"\']{2,})["\']', t)
+    if mq:
+        return mq.group(1).strip()
+    return None
+
+
 def extract_product_intent(message: str) -> Dict:
     """
     Extract product search parameters from user message.
@@ -124,8 +200,25 @@ def extract_product_intent(message: str) -> Dict:
         'name': None,
         'category': None,
         'min_price': None,
-        'max_price': None
+        'max_price': None,
+        'max_price_inclusive': True,
+        'exact_price': None,
     }
+
+    # Exact price queries, e.g.:
+    # "with a price 50$", "price is $50", "priced 50", "for 50$"
+    exact_price_match = re.search(
+        r'\b(?:price|priced|cost|costs?)\s*(?:is|=|of|at)?\s*\$?\s*(\d+)\s*\$?\b',
+        message_lower
+    )
+    if not exact_price_match:
+        exact_price_match = re.search(r'\bfor\s*\$?\s*(\d+)\s*\$?\b', message_lower)
+    if exact_price_match:
+        exact_price = float(exact_price_match.group(1))
+        intent['exact_price'] = exact_price
+        intent['min_price'] = exact_price
+        intent['max_price'] = exact_price
+        intent['max_price_inclusive'] = True
     
     # Extract category keywords
     categories = ['sofa', 'sofas', 'chair', 'chairs', 'table', 'tables', 'furniture']
@@ -141,33 +234,50 @@ def extract_product_intent(message: str) -> Dict:
     
     # Extract price limits
     price_patterns = [
-        (r'\$(\d+)', lambda m: float(m.group(1))),
-        (r'(\d+)\s*dollars?', lambda m: float(m.group(1))),
-        (r'(\d+)\s*usd', lambda m: float(m.group(1))),
-        (r'under\s*(\d+)', lambda m: float(m.group(1))),
-        (r'below\s*(\d+)', lambda m: float(m.group(1))),
-        (r'less\s*than\s*(\d+)', lambda m: float(m.group(1))),
-        (r'max\s*(\d+)', lambda m: float(m.group(1))),
-        (r'maximum\s*(\d+)', lambda m: float(m.group(1))),
-        (r'cheap', lambda m: 100.0),  # Default cheap threshold
+        # pattern, extractor, inclusive?
+        (r'\$(\d+)', lambda m: float(m.group(1)), True),
+        (r'(\d+)\s*\$', lambda m: float(m.group(1)), True),
+        (r'(\d+)\s*dollars?', lambda m: float(m.group(1)), True),
+        (r'(\d+)\s*usd', lambda m: float(m.group(1)), True),
+        (r'under\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
+        (r'below\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
+        (r'less\s*than\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
+        (r'max\s*\$?\s*(\d+)', lambda m: float(m.group(1)), True),
+        (r'maximum\s*\$?\s*(\d+)', lambda m: float(m.group(1)), True),
+        (r'cheap', lambda m: 100.0, True),  # Default cheap threshold
     ]
     
-    for pattern, extractor in price_patterns:
+    for pattern, extractor, inclusive in price_patterns:
         match = re.search(pattern, message_lower)
         if match:
             price = extractor(match)
             if intent['max_price'] is None or price < intent['max_price']:
                 intent['max_price'] = price
+                intent['max_price_inclusive'] = inclusive
+
+    explicit = extract_explicit_product_title(message)
+    if explicit:
+        intent['name'] = explicit
+        return intent
     
-    # Extract product name (simple keyword matching)
-    words = message_lower.split()
-    product_names = []
-    for word in words:
-        if len(word) > 3 and word not in ['show', 'find', 'search', 'want', 'need', 'looking', 'for']:
-            product_names.append(word)
-    
-    if product_names:
-        intent['name'] = ' '.join(product_names[:2])  # Take first 2 words
+    # Infer name from meaningful words (avoid "there product" from "Is there a product called …")
+    words = re.findall(r"[a-z0-9]+(?:'[a-z]+)?", message_lower)
+    significant = []
+    for w in words:
+        if w in _NAME_STOP_WORDS or len(w) < 2:
+            continue
+        significant.append(w)
+    if significant:
+        intent['name'] = ' '.join(significant[:12])
+
+    # "priced under $15" should not search name LIKE "%priced 15%" — only apply price filters
+    if intent.get('max_price') is not None or intent.get('min_price') is not None:
+        if intent.get('name'):
+            tokens = intent['name'].lower().split()
+            if tokens and all(
+                t in _PRICE_NOISE_TOKENS or (t.isdigit() and len(t) <= 6) for t in tokens
+            ):
+                intent['name'] = None
     
     return intent
 
@@ -176,7 +286,7 @@ def search_products(db: Session, intent: Dict) -> List[models.DBProduct]:
     """
     Search products based on extracted intent.
     """
-    query = db.query(models.DBProduct)
+    query = db.query(models.DBProduct).options(joinedload(models.DBProduct.images))
     
     filters = []
     
@@ -186,14 +296,17 @@ def search_products(db: Session, intent: Dict) -> List[models.DBProduct]:
     if intent['category']:
         filters.append(models.DBProduct.category_name.ilike(f"%{intent['category']}%"))
     
-    if intent['max_price']:
-        filters.append(models.DBProduct.price <= intent['max_price'])
+    if intent['max_price'] is not None:
+        if intent.get('max_price_inclusive', True):
+            filters.append(models.DBProduct.price <= intent['max_price'])
+        else:
+            filters.append(models.DBProduct.price < intent['max_price'])
     
     if intent['min_price']:
         filters.append(models.DBProduct.price >= intent['min_price'])
     
     if filters:
-        query = query.filter(or_(*filters))
+        query = query.filter(and_(*filters))
     
     # Limit results to 10 products
     products = query.limit(10).all()
@@ -253,11 +366,23 @@ def get_conversation_response(message: str, conversation_history: List[Dict] = N
         return response.text.strip()
     
     except Exception as e:
-        # More detailed error message for debugging
         error_msg = str(e)
-        if "404" in error_msg or "not found" in error_msg.lower():
-            return f"I apologize, but the AI model is not available. Please check your API key and ensure you have access to Gemini models. Error: {error_msg}"
-        return f"I apologize, but I'm having trouble processing your request right now. Please try again later. Error: {error_msg}"
+        el = error_msg.lower()
+        if "429" in error_msg or "quota" in el or "resource exhausted" in el or ("rate" in el and "limit" in el):
+            return (
+                "The AI chat service has hit its usage limit right now (free tier is capped). "
+                "You can still find products using the shop search and filters. "
+                "For price questions like “under $15”, the assistant will search the catalog directly—try sending your message again, or wait a minute and retry."
+            )
+        if "404" in error_msg or "not found" in el:
+            return (
+                "I can't reach the configured AI model right now. "
+                "Please check your Gemini API key and model access in Google AI Studio."
+            )
+        return (
+            "I'm having trouble reaching the AI service. Please try again in a moment, "
+            "or use the Products page to search the store."
+        )
 
 
 def get_product_with_images(product: models.DBProduct) -> dict:
@@ -305,11 +430,101 @@ async def chat(
     
     # Classify intent
     intent_type = classify_intent(message, last_message)
+    ml = message.lower()
+    if intent_type != 'product' and (
+        re.search(r'\$\s*\d+', ml) or re.search(r'\b(?:under|below|less\s+than)\s*\$?\s*\d+', ml)
+    ):
+        intent_type = 'product'
     
     response_text = ""
     products = []
     
     if intent_type == 'product':
+        # Direct handling for category list questions.
+        if re.search(r'\b(categories|category)\b', message.lower()):
+            categories = (
+                db.query(models.DBCategory)
+                .order_by(models.DBCategory.name.asc())
+                .all()
+            )
+            if categories:
+                category_names = ", ".join([c.name for c in categories])
+                response_text = f"Available categories are: {category_names}."
+            else:
+                response_text = "I couldn't find any categories because the catalog is currently empty."
+
+            session["last_intent"] = {"name": None, "category": None, "min_price": None, "max_price": None}
+            session["last_message"] = message
+            session["messages"].append({"role": "user", "content": message})
+            session["messages"].append({"role": "assistant", "content": response_text})
+            if len(session["messages"]) > 100:
+                session["messages"] = session["messages"][-100:]
+            return {
+                "message": response_text,
+                "products": [],
+                "session_id": session_id
+            }
+
+        # Direct handling for "cheapest" style questions.
+        if re.search(r'\b(cheapest|lowest(?:\s+priced|\s+price)?)\b', message.lower()):
+            cheapest_products = (
+                db.query(models.DBProduct)
+                .options(joinedload(models.DBProduct.images))
+                .order_by(models.DBProduct.price.asc())
+                .limit(1)
+                .all()
+            )
+            if cheapest_products:
+                cheapest = cheapest_products[0]
+                response_text = (
+                    f"The cheapest product is {cheapest.name} at ${float(cheapest.price):.2f}."
+                )
+                products = [schemas.Product(**get_product_with_images(cheapest))]
+            else:
+                response_text = "I couldn't find any products because the catalog is currently empty."
+
+            session["last_intent"] = {"name": None, "category": None, "min_price": None, "max_price": None}
+            session["last_message"] = message
+            session["messages"].append({"role": "user", "content": message})
+            session["messages"].append({"role": "assistant", "content": response_text})
+            if len(session["messages"]) > 100:
+                session["messages"] = session["messages"][-100:]
+            return {
+                "message": response_text,
+                "products": products,
+                "session_id": session_id
+            }
+
+        # Direct handling for "most expensive" style questions.
+        if re.search(r'\b(most\s+expensive|highest(?:\s+priced|\s+price)?)\b', message.lower()):
+            expensive_products = (
+                db.query(models.DBProduct)
+                .options(joinedload(models.DBProduct.images))
+                .order_by(models.DBProduct.price.desc())
+                .limit(1)
+                .all()
+            )
+            if expensive_products:
+                priciest = expensive_products[0]
+                response_text = (
+                    f"The most expensive product is {priciest.name} at ${float(priciest.price):.2f}."
+                )
+                products = [schemas.Product(**get_product_with_images(priciest))]
+            else:
+                response_text = "I couldn't find any products because the catalog is currently empty."
+
+            session["last_intent"] = {"name": None, "category": None, "min_price": None, "max_price": None}
+            session["last_message"] = message
+            session["messages"].append({"role": "user", "content": message})
+            session["messages"].append({"role": "assistant", "content": response_text})
+            if len(session["messages"]) > 100:
+                session["messages"] = session["messages"][-100:]
+            return {
+                "message": response_text,
+                "products": products,
+                "session_id": session_id
+            }
+
         # Extract product intent
         intent = extract_product_intent(message)
         
@@ -341,7 +556,28 @@ async def chat(
             else:
                 response_text = f"I found {len(found_products)} product(s) for you: {', '.join(product_names)}"
         else:
-            response_text = "I couldn't find any products matching your criteria. Could you try different search terms?"
+            if intent.get("max_price") is not None:
+                # Give a precise, helpful response for budget queries.
+                cheapest_products = (
+                    db.query(models.DBProduct)
+                    .options(joinedload(models.DBProduct.images))
+                    .order_by(models.DBProduct.price.asc())
+                    .limit(3)
+                    .all()
+                )
+                if cheapest_products:
+                    min_price = float(cheapest_products[0].price)
+                    cheap_names = ", ".join([p.name for p in cheapest_products[:3]])
+                    response_text = (
+                        f"I couldn't find products under ${intent['max_price']:.2f}. "
+                        f"The lowest priced item currently is ${min_price:.2f}. "
+                        f"Here are affordable options: {cheap_names}."
+                    )
+                    products = [schemas.Product(**get_product_with_images(p)) for p in cheapest_products]
+                else:
+                    response_text = "I couldn't find any products because the catalog is currently empty."
+            else:
+                response_text = "I couldn't find any products matching your criteria. Could you try different search terms?"
     else:
         # General conversation - use OpenAI
         conversation_history = session.get("messages", [])

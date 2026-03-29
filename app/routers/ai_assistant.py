@@ -161,6 +161,21 @@ _PRICE_NOISE_TOKENS = frozenset(
 )
 
 
+def _is_price_like_token(token: str) -> bool:
+    """
+    Return True for numeric/price tokens that should never become product name terms.
+    Examples: "100", "$100", "100.50", "100usd"
+    """
+    t = token.strip().lower()
+    if not t:
+        return False
+    if re.fullmatch(r'\$?\d+(?:\.\d+)?(?:usd|dollars?|bucks?)?', t):
+        return True
+    if re.fullmatch(r'\d+(?:\.\d+)?\$', t):
+        return True
+    return False
+
+
 def extract_explicit_product_title(text: str) -> Optional[str]:
     """
     Pull the product title from phrases like 'product called X', 'named X', or quoted titles.
@@ -232,28 +247,37 @@ def extract_product_intent(message: str) -> Dict:
                 intent['category'] = 'table'
             break
     
-    # Extract price limits
-    price_patterns = [
-        # pattern, extractor, inclusive?
-        (r'\$(\d+)', lambda m: float(m.group(1)), True),
-        (r'(\d+)\s*\$', lambda m: float(m.group(1)), True),
-        (r'(\d+)\s*dollars?', lambda m: float(m.group(1)), True),
-        (r'(\d+)\s*usd', lambda m: float(m.group(1)), True),
-        (r'under\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
-        (r'below\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
-        (r'less\s*than\s*\$?\s*(\d+)', lambda m: float(m.group(1)), False),
-        (r'max\s*\$?\s*(\d+)', lambda m: float(m.group(1)), True),
-        (r'maximum\s*\$?\s*(\d+)', lambda m: float(m.group(1)), True),
-        (r'cheap', lambda m: 100.0, True),  # Default cheap threshold
-    ]
-    
-    for pattern, extractor, inclusive in price_patterns:
-        match = re.search(pattern, message_lower)
-        if match:
-            price = extractor(match)
-            if intent['max_price'] is None or price < intent['max_price']:
-                intent['max_price'] = price
-                intent['max_price_inclusive'] = inclusive
+    # Extract price limits with strict/inclusive precedence.
+    # If strict terms are present ("under", "below", "less than"), keep strict (<) semantics.
+    if intent['exact_price'] is None:
+        strict_price_patterns = [
+            r'under\s*\$?\s*(\d+)',
+            r'below\s*\$?\s*(\d+)',
+            r'less\s*than\s*\$?\s*(\d+)',
+        ]
+        inclusive_price_patterns = [
+            r'\$(\d+)',
+            r'(\d+)\s*\$',
+            r'(\d+)\s*dollars?',
+            r'(\d+)\s*usd',
+            r'max\s*\$?\s*(\d+)',
+            r'maximum\s*\$?\s*(\d+)',
+        ]
+
+        strict_prices: List[float] = []
+        for pattern in strict_price_patterns:
+            strict_prices.extend(float(m.group(1)) for m in re.finditer(pattern, message_lower))
+
+        inclusive_prices: List[float] = []
+        for pattern in inclusive_price_patterns:
+            inclusive_prices.extend(float(m.group(1)) for m in re.finditer(pattern, message_lower))
+
+        if strict_prices:
+            intent['max_price'] = min(strict_prices)
+            intent['max_price_inclusive'] = False
+        elif inclusive_prices:
+            intent['max_price'] = min(inclusive_prices)
+            intent['max_price_inclusive'] = True
 
     explicit = extract_explicit_product_title(message)
     if explicit:
@@ -261,10 +285,14 @@ def extract_product_intent(message: str) -> Dict:
         return intent
     
     # Infer name from meaningful words (avoid "there product" from "Is there a product called …")
-    words = re.findall(r"[a-z0-9]+(?:'[a-z]+)?", message_lower)
+    words = re.findall(r"[a-z0-9$]+(?:'[a-z]+)?", message_lower)
     significant = []
     for w in words:
         if w in _NAME_STOP_WORDS or len(w) < 2:
+            continue
+        if _is_price_like_token(w):
+            continue
+        if w.isdigit():
             continue
         significant.append(w)
     if significant:

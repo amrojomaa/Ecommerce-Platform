@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
-from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status, Depends, UploadFile, File
+from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status, Depends, UploadFile, File, Form
 from fastapi import APIRouter
 from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
@@ -28,6 +28,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
     order = job.order
     customer = order.user if order else None
     items = []
+    photos = []
     if order and order.orderitems:
         for oi in order.orderitems:
             images = []
@@ -44,6 +45,15 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
                 "total": float(oi.total),
             })
 
+    if job.photos:
+        for photo in job.photos:
+            photos.append({
+                "id": photo.id,
+                "photo_type": photo.photo_type,
+                "image_path": photo.image_path,
+                "created_at": photo.created_at,
+            })
+
     return {
         "id": job.id,
         "order_id": job.order_id,
@@ -56,7 +66,10 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
         "delivery_latitude": job.delivery_latitude,
         "delivery_longitude": job.delivery_longitude,
         "payment_amount": job.payment_amount,
+        "issue_type": job.issue_type,
         "issue_description": job.issue_description,
+        "issue_resolved": bool(job.issue_resolved),
+        "issue_resolved_at": job.issue_resolved_at,
         "created_at": job.created_at,
         "updated_at": job.updated_at,
         "customer": {
@@ -68,6 +81,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
             "street": customer.street,
         } if customer else None,
         "items": items,
+        "photos": photos,
     }
 
 
@@ -81,8 +95,46 @@ def _load_job_query(db: Session):
             .selectinload(models.DBOrder.orderitems)
             .joinedload(models.DBOrderItem.product)
             .selectinload(models.DBProduct.images),
+            selectinload(models.DBDeliveryJob.photos),
+            joinedload(models.DBDeliveryJob.driver),
         )
     )
+
+
+def _clear_issue_report(db: Session, job: models.DBDeliveryJob):
+    """Clear issue-related data so it does not persist beyond this job lifecycle."""
+    if not job:
+        return
+
+    job.issue_type = None
+    job.issue_description = None
+    job.issue_resolved = False
+    job.issue_resolved_at = None
+    job.issue_resolved_by = None
+
+    issue_photos = (
+        db.query(models.DBDeliveryPhoto)
+        .filter(
+            models.DBDeliveryPhoto.delivery_job_id == job.id,
+            models.DBDeliveryPhoto.photo_type == "issue",
+        )
+        .all()
+    )
+    for photo in issue_photos:
+        if photo.image_path and os.path.exists(photo.image_path):
+            try:
+                os.remove(photo.image_path)
+            except OSError:
+                pass
+
+    db.query(models.DBDeliveryPhoto).filter(
+        models.DBDeliveryPhoto.delivery_job_id == job.id,
+        models.DBDeliveryPhoto.photo_type == "issue",
+    ).delete(synchronize_session=False)
+
+    db.query(models.DBDeliveryIssueMessage).filter(
+        models.DBDeliveryIssueMessage.delivery_job_id == job.id
+    ).delete(synchronize_session=False)
 
 
 # ─── Available Jobs ──────────────────────────────────────────────────────────
@@ -144,6 +196,7 @@ def decline_job(
 
     # If driver previously accepted then declines, set back to available
     if job.status == "assigned" and job.driver_id == current_user.id:
+        _clear_issue_report(db, job)
         job.status = "available"
         job.driver_id = None
         job.updated_at = datetime.now(timezone.utc)
@@ -196,6 +249,7 @@ def mark_delivered(
     if job.status not in ("picked_up", "delivering"):
         raise HTTPException(status_code=400, detail=f"Cannot deliver from status '{job.status}'")
 
+    _clear_issue_report(db, job)
     job.status = "delivered"
     job.updated_at = datetime.now(timezone.utc)
     if job.order:
@@ -225,8 +279,8 @@ def upload_photo(
     db: Session = Depends(get_db),
     current_user=Depends(require_driver),
 ):
-    if photo_type not in ("pickup", "delivery"):
-        raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
+    if photo_type not in ("pickup", "delivery", "issue"):
+        raise HTTPException(status_code=400, detail="photo_type must be 'pickup', 'delivery', or 'issue'")
 
     job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
@@ -261,10 +315,13 @@ def upload_photo(
 @router.post("/jobs/{job_id}/report-issue", response_model=schemas.DeliveryJobResponse)
 def report_issue(
     job_id: int,
-    report: schemas.IssueReport,
+    issue_type: str = Form(...),
+    description: Optional[str] = Form(None),
+    photo: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(require_driver),
 ):
+    report = schemas.IssueReport(issue_type=issue_type, description=description)
     job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -273,10 +330,147 @@ def report_issue(
 
     job.issue_type = report.issue_type
     job.issue_description = report.description
+    job.issue_resolved = False
+    job.issue_resolved_at = None
+    job.issue_resolved_by = None
+    job.updated_at = datetime.now(timezone.utc)
+
+    if photo is not None:
+        upload_dir = os.path.join("images", "delivery")
+        os.makedirs(upload_dir, exist_ok=True)
+        ext = os.path.splitext(photo.filename)[1] if photo.filename else ".jpg"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(upload_dir, filename)
+
+        with open(filepath, "wb") as f:
+            content = photo.file.read()
+            f.write(content)
+
+        issue_photo = models.DBDeliveryPhoto(
+            delivery_job_id=job_id,
+            photo_type="issue",
+            image_path=filepath,
+        )
+        db.add(issue_photo)
+
+    db.commit()
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    return _job_to_response(job)
+
+
+def _ensure_issue_chat_access(job: models.DBDeliveryJob, user: models.DBUser):
+    if user.role == "admin":
+        return
+    if user.role == "driver" and job.driver_id == user.id:
+        return
+    raise HTTPException(status_code=403, detail="Not authorized for issue discussion")
+
+
+@router.get("/jobs/{job_id}/issue-messages", response_model=List[schemas.DeliveryIssueMessageResponse])
+def get_issue_messages(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    _ensure_issue_chat_access(job, user)
+
+    messages = (
+        db.query(models.DBDeliveryIssueMessage)
+        .options(joinedload(models.DBDeliveryIssueMessage.sender))
+        .filter(models.DBDeliveryIssueMessage.delivery_job_id == job_id)
+        .order_by(models.DBDeliveryIssueMessage.created_at.asc())
+        .all()
+    )
+
+    return [
+        {
+            "id": msg.id,
+            "delivery_job_id": msg.delivery_job_id,
+            "sender_id": msg.sender_id,
+            "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
+            "sender_role": msg.sender.role if msg.sender else None,
+            "message": msg.message,
+            "created_at": msg.created_at,
+        }
+        for msg in messages
+    ]
+
+
+@router.post("/jobs/{job_id}/issue-messages", response_model=schemas.DeliveryIssueMessageResponse)
+def send_issue_message(
+    job_id: int,
+    payload: schemas.DeliveryIssueMessageCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    _ensure_issue_chat_access(job, user)
+
+    if not job.issue_type:
+        raise HTTPException(status_code=400, detail="No active issue report for this job")
+
+    new_msg = models.DBDeliveryIssueMessage(
+        delivery_job_id=job_id,
+        sender_id=user.id,
+        message=payload.message,
+    )
+    db.add(new_msg)
+    db.commit()
+    db.refresh(new_msg)
+
+    return {
+        "id": new_msg.id,
+        "delivery_job_id": new_msg.delivery_job_id,
+        "sender_id": new_msg.sender_id,
+        "sender_name": f"{user.first_name} {user.last_name}",
+        "sender_role": user.role,
+        "message": new_msg.message,
+        "created_at": new_msg.created_at,
+    }
+
+
+@router.patch("/jobs/{job_id}/issue/resolve", response_model=schemas.AdminDeliveryJobResponse)
+def resolve_issue(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not job.issue_type:
+        raise HTTPException(status_code=400, detail="No issue report found for this job")
+
+    job.issue_resolved = True
+    job.issue_resolved_at = datetime.now(timezone.utc)
+    job.issue_resolved_by = current_user.id
     job.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(job)
-    return _job_to_response(job)
+
+    response = _job_to_response(job)
+    if job.driver:
+        response["driver_name"] = f"{job.driver.first_name} {job.driver.last_name}"
+    else:
+        response["driver_name"] = None
+    response["issue_type"] = job.issue_type
+    return response
 
 
 # ─── Driver Location ─────────────────────────────────────────────────────────

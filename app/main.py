@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 
@@ -15,7 +16,40 @@ from .database import SessionLocal, engine, get_db
 from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
 
+
+def apply_schema_updates():
+    """Apply lightweight schema updates for existing databases."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+            ALTER TABLE delivery_jobs
+                ADD COLUMN IF NOT EXISTS issue_resolved BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS issue_resolved_at TIMESTAMPTZ,
+                ADD COLUMN IF NOT EXISTS issue_resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS delivery_issue_messages (
+                id SERIAL PRIMARY KEY,
+                delivery_job_id INTEGER NOT NULL REFERENCES delivery_jobs(id) ON DELETE CASCADE,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                message VARCHAR NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_issue_messages_delivery_job_id
+            ON delivery_issue_messages(delivery_job_id)
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_issue_messages_created_at
+            ON delivery_issue_messages(created_at)
+        """))
+
+
 models.Base.metadata.create_all(bind=engine)
+apply_schema_updates()
 print("Data Base connected successfully!")
 
 app = FastAPI()

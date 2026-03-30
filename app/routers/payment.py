@@ -181,15 +181,12 @@ def confirm_payment(
             product.quantity -= order_item.quantity
 
         order.status = "paid"
-            product.quantity -= order_item.quantity
-
-        order.status = "paid"
 
         # Automatically create a delivery job for the paid order.
         from .delivery import internal_create_delivery_job
         internal_create_delivery_job(order.id, db)
 
-            db.commit()
+        db.commit()
         
         return {
             "status": "success",

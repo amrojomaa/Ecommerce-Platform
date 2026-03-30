@@ -192,6 +192,8 @@ const AdminUsers = () => {
         return 'role-badge admin';
       case 'employee':
         return 'role-badge employee';
+      case 'driver':
+        return 'role-badge driver';
       case 'customer':
         return 'role-badge customer';
       default:
@@ -215,6 +217,7 @@ const AdminUsers = () => {
           <span>Total: {users.length}</span>
           <span>Admin: {users.filter(u => u.role === 'admin').length}</span>
           <span>Employee: {users.filter(u => u.role === 'employee').length}</span>
+          <span>Driver: {users.filter(u => u.role === 'driver').length}</span>
           <span>Customer: {users.filter(u => u.role === 'customer').length}</span>
         </div>
       </div>
@@ -239,6 +242,12 @@ const AdminUsers = () => {
             onClick={() => setRoleFilter('employee')}
           >
             Employee
+          </button>
+          <button
+            className={roleFilter === 'driver' ? 'active' : ''}
+            onClick={() => setRoleFilter('driver')}
+          >
+            Driver
           </button>
           <button
             className={roleFilter === 'customer' ? 'active' : ''}
@@ -378,6 +387,7 @@ const AdminUsers = () => {
                 >
                   <option value="admin">Admin</option>
                   <option value="employee">Employee</option>
+                  <option value="driver">Driver</option>
                   <option value="customer">Customer</option>
                 </select>
               </div>

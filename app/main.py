@@ -49,7 +49,23 @@ def apply_schema_updates():
 
 
 models.Base.metadata.create_all(bind=engine)
-apply_schema_updates()
+
+
+def apply_schema_patches() -> None:
+    """Apply additive schema patches for existing databases."""
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS driver_id INTEGER
+                REFERENCES users(id) ON DELETE SET NULL
+                """
+            )
+        )
+
+
+apply_schema_patches()
 print("Data Base connected successfully!")
 
 app = FastAPI()

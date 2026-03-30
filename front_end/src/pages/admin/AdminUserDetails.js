@@ -95,6 +95,8 @@ const AdminUserDetails = () => {
         return 'role-badge admin';
       case 'employee':
         return 'role-badge employee';
+      case 'driver':
+        return 'role-badge driver';
       case 'customer':
         return 'role-badge customer';
       default:

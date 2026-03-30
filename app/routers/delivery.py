@@ -53,6 +53,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
                 "image_path": photo.image_path,
                 "created_at": photo.created_at,
             })
+    effective_payment_amount = float(order.total_amount) if order and order.total_amount is not None else float(job.payment_amount or 0)
 
     return {
         "id": job.id,
@@ -67,6 +68,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
         "delivery_longitude": job.delivery_longitude,
         "payment_amount": job.payment_amount,
         "issue_type": job.issue_type,
+        "payment_amount": effective_payment_amount,
         "issue_description": job.issue_description,
         "issue_resolved": bool(job.issue_resolved),
         "issue_resolved_at": job.issue_resolved_at,
@@ -162,11 +164,21 @@ def accept_job(
     db: Session = Depends(get_db),
     current_user=Depends(require_driver),
 ):
-    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    # Lock the row to avoid race conditions when multiple drivers try to accept at once.
+    job = (
+        db.query(models.DBDeliveryJob)
+        .filter(models.DBDeliveryJob.id == job_id)
+        .with_for_update()
+        .first()
+    )
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    # Idempotent success: if this same driver already accepted the job, return it.
+    if job.status == "assigned" and job.driver_id == current_user.id:
+        loaded = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+        return _job_to_response(loaded)
     if job.status != "available":
-        raise HTTPException(status_code=400, detail="Job is no longer available")
+        raise HTTPException(status_code=400, detail=f"Job is no longer available (current status: {job.status})")
 
     job.status = "assigned"
     job.driver_id = current_user.id
@@ -178,8 +190,8 @@ def accept_job(
         job.order.status = "assigned"
 
     db.commit()
-    db.refresh(job)
-    return _job_to_response(job)
+    loaded = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    return _job_to_response(loaded)
 
 
 @router.post("/jobs/{job_id}/decline", response_model=schemas.DeliveryJobResponse)
@@ -256,10 +268,11 @@ def mark_delivered(
         job.order.status = "delivered"
 
     # Create earning record
+    earning_amount = float(job.order.total_amount) if job.order and job.order.total_amount is not None else float(job.payment_amount or 0)
     earning = models.DBDriverEarning(
         driver_id=current_user.id,
         delivery_job_id=job.id,
-        amount=job.payment_amount,
+        amount=earning_amount,
         status="pending",
     )
     db.add(earning)
@@ -705,8 +718,8 @@ def internal_create_delivery_job(
     if existing:
         return existing
 
-    # Calculate delivery fee (10% of order total, min $5)
-    delivery_fee = max(5.0, float(order.total_amount) * 0.10)
+    # Driver payment mirrors the order amount.
+    delivery_fee = float(order.total_amount)
 
     # Determine delivery details from customer
     if not delivery_address:

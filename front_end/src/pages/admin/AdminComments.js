@@ -20,6 +20,7 @@ const AdminComments = () => {
   const [filteredComments, setFilteredComments] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState(productId ? parseInt(productId) : null);
+  const [productSearch, setProductSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
   const [deleting, setDeleting] = useState(null);
@@ -32,6 +33,7 @@ const AdminComments = () => {
     if (selectedProductId) {
       fetchComments();
     } else {
+      setLoading(false);
       setComments([]);
       setFilteredComments([]);
     }
@@ -73,16 +75,9 @@ const AdminComments = () => {
     }
   };
 
-  const handleProductChange = (e) => {
-    const productId = e.target.value ? parseInt(e.target.value) : null;
+  const handleProductSelect = (productId) => {
     setSelectedProductId(productId);
-    
-    // Update URL if product is selected
-    if (productId) {
-      navigate(`/admin/comments/product/${productId}`, { replace: true });
-    } else {
-      navigate('/admin/comments', { replace: true });
-    }
+    navigate(`/admin/comments/product/${productId}`, { replace: true });
   };
 
   const filterComments = () => {
@@ -168,9 +163,27 @@ const AdminComments = () => {
     return `${API_BASE_URL}/${normalizedPath}`;
   };
 
+  const getProductImageUrl = (product) => {
+    const firstImage = product?.images?.[0];
+    if (!firstImage || typeof firstImage !== 'string') {
+      return null;
+    }
+    if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+      return firstImage;
+    }
+    const normalizedPath = firstImage.startsWith('/') ? firstImage.slice(1) : firstImage;
+    return `${API_BASE_URL}/${normalizedPath}`;
+  };
+
   const counts = getSentimentCounts();
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+  const visibleProducts = selectedProductId
+    ? products.filter((product) => product.id === selectedProductId)
+    : filteredProducts;
 
   return (
     <div className="admin-comments">
@@ -178,48 +191,82 @@ const AdminComments = () => {
         <h1>{t('manageReviews', 'Manage Reviews')}</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="product-selector">
-            <label htmlFor="product-select">{t('selectProduct', 'Select Product')}:</label>
-            <select
-              id="product-select"
-              value={selectedProductId || ''}
-              onChange={handleProductChange}
-              className="product-select"
+            <label htmlFor="product-search">{t('searchProduct', 'Search Product')}:</label>
+            <input
+              id="product-search"
+              type="text"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              className="product-search-input"
+              placeholder={t('searchByProductName', 'Search by product name...')}
+            />
+          </div>
+          {selectedProductId && (
+            <button
+              className="clear-product-btn"
+              onClick={() => {
+                setSelectedProductId(null);
+                navigate('/admin/comments', { replace: true });
+              }}
             >
-              <option value="">{t('allProductsOption', '-- All Products --')}</option>
-              {products.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="sentiment-filters">
-          <button
-            className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setSentimentFilter('all')}
-          >
-            {t('all', 'All')} ({counts.all})
-          </button>
-          <button
-            className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
-            onClick={() => setSentimentFilter('positive')}
-          >
-            {t('positive', 'Positive')} ({counts.positive})
-          </button>
-          <button
-            className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
-            onClick={() => setSentimentFilter('neutral')}
-          >
-            {t('neutral', 'Neutral')} ({counts.neutral})
-          </button>
-          <button
-            className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
-            onClick={() => setSentimentFilter('negative')}
-          >
-            {t('negative', 'Negative')} ({counts.negative})
-          </button>
-          </div>
+              {t('clearProduct', 'Clear Product')}
+            </button>
+          )}
+          {selectedProductId && (
+            <div className="sentiment-filters">
+              <button
+                className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setSentimentFilter('all')}
+              >
+                {t('all', 'All')} ({counts.all})
+              </button>
+              <button
+                className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
+                onClick={() => setSentimentFilter('positive')}
+              >
+                {t('positive', 'Positive')} ({counts.positive})
+              </button>
+              <button
+                className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
+                onClick={() => setSentimentFilter('neutral')}
+              >
+                {t('neutral', 'Neutral')} ({counts.neutral})
+              </button>
+              <button
+                className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
+                onClick={() => setSentimentFilter('negative')}
+              >
+                {t('negative', 'Negative')} ({counts.negative})
+              </button>
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="products-grid">
+        {visibleProducts.map((product) => (
+          <button
+            key={product.id}
+            className={`product-card-btn ${selectedProductId === product.id ? 'selected' : ''}`}
+            onClick={() => handleProductSelect(product.id)}
+          >
+            <div className="product-card-image-wrap">
+              {getProductImageUrl(product) ? (
+                <img
+                  src={getProductImageUrl(product)}
+                  alt={product.name}
+                  className="product-card-image"
+                />
+              ) : (
+                <div className="product-card-image-placeholder">No Image</div>
+              )}
+            </div>
+            <div className="product-card-title">{product.name}</div>
+            <div className="product-card-meta">
+              ${Number(product.price || 0).toFixed(2)}
+            </div>
+          </button>
+        ))}
       </div>
 
       {loading ? (

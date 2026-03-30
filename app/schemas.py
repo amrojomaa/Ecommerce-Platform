@@ -9,6 +9,7 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     EMPLOYEE = "employee"
     CUSTOMER = "customer"
+    DRIVER = "driver"
 
 class FilterProducts(BaseModel):
     name: Optional[str] = None
@@ -80,8 +81,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer"]:
-            raise ValueError('Role must be one of: admin, employee, customer')
+        if v is not None and v not in ["admin", "employee", "customer", "driver"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver')
         return v
     
     class Config:
@@ -102,8 +103,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer"]:
-            raise ValueError('Role must be one of: admin, employee, customer')
+        if v is not None and v not in ["admin", "employee", "customer", "driver"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver')
         return v
     
     class Config:
@@ -127,8 +128,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer"]:
-            raise ValueError('Role must be one of: admin, employee, customer')
+        if v not in ["admin", "employee", "customer", "driver"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver')
         return v
 
     class Config:
@@ -243,6 +244,14 @@ class OrderResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CheckoutRequest(BaseModel):
+    address: str
+    city: str
+    state: Optional[str] = None
+    zipCode: Optional[str] = None
+    country: Optional[str] = None
+    phone: Optional[str] = None
 
 
 class OrderUserInfo(BaseModel):
@@ -361,8 +370,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer"]:
-            raise ValueError('Role must be one of: admin, employee, customer')
+        if v not in ["admin", "employee", "customer", "driver"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver')
         return v
 
 
@@ -577,5 +586,165 @@ class ProductSentimentAnalytics(BaseModel):
     neutral_count: int
     negative_count: int
     
+    class Config:
+        from_attributes = True
+
+
+# Delivery / Driver Schemas
+class DeliveryJobStatus(str, Enum):
+    AVAILABLE = "available"
+    ASSIGNED = "assigned"
+    PICKED_UP = "picked_up"
+    DELIVERING = "delivering"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class DriverLocationUpdate(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class DriverLocationResponse(BaseModel):
+    driver_id: int
+    latitude: float
+    longitude: float
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryChatMessageResponse(BaseModel):
+    id: int
+    delivery_job_id: int
+    sender_id: int
+    sender_name: Optional[str] = None
+    message: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryChatMessageCreate(BaseModel):
+    message: str
+
+
+class DeliveryJobCustomer(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    city: Optional[str] = None
+    street: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryJobItemResponse(BaseModel):
+    id: int
+    product: Orderitemname
+    quantity: int
+    price: float
+    total: float
+
+    class Config:
+        from_attributes = True
+
+
+class DeliveryJobResponse(BaseModel):
+    id: int
+    order_id: int
+    driver_id: Optional[int] = None
+    status: str
+    pickup_address: Optional[str] = None
+    pickup_latitude: Optional[float] = None
+    pickup_longitude: Optional[float] = None
+    delivery_address: Optional[str] = None
+    delivery_latitude: Optional[float] = None
+    delivery_longitude: Optional[float] = None
+    payment_amount: float
+    issue_description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    customer: Optional[DeliveryJobCustomer] = None
+    items: List[DeliveryJobItemResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class IssueReport(BaseModel):
+    issue_type: str  # 'customer_not_home', 'incorrect_address', 'damaged_items', 'other'
+    description: Optional[str] = None
+
+    @field_validator('issue_type')
+    @classmethod
+    def validate_issue_type(cls, v):
+        valid = ['customer_not_home', 'incorrect_address', 'damaged_items', 'other']
+        if v not in valid:
+            raise ValueError(f'issue_type must be one of: {", ".join(valid)}')
+        return v
+
+
+class EarningsSummary(BaseModel):
+    today: float = 0.0
+    this_week: float = 0.0
+    this_month: float = 0.0
+    total: float = 0.0
+    total_deliveries: int = 0
+    pending_payout: float = 0.0
+
+
+class EarningRecord(BaseModel):
+    id: int
+    delivery_job_id: int
+    amount: float
+    status: str  # 'pending', 'paid'
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PayoutRequest(BaseModel):
+    amount: Optional[float] = None  # None = request all pending
+
+
+# Warehouse Address Settings
+class WarehouseAddressUpdate(BaseModel):
+    address: str = Field(..., min_length=1, description="Warehouse address string")
+
+
+class WarehouseAddressResponse(BaseModel):
+    address: str
+
+    class Config:
+        from_attributes = True
+
+
+# Admin delivery job response with driver name
+class AdminDeliveryJobResponse(BaseModel):
+    id: int
+    order_id: int
+    driver_id: Optional[int] = None
+    driver_name: Optional[str] = None
+    status: str
+    pickup_address: Optional[str] = None
+    pickup_latitude: Optional[float] = None
+    pickup_longitude: Optional[float] = None
+    delivery_address: Optional[str] = None
+    delivery_latitude: Optional[float] = None
+    delivery_longitude: Optional[float] = None
+    payment_amount: float
+    issue_type: Optional[str] = None
+    issue_description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    customer: Optional[DeliveryJobCustomer] = None
+    items: List[DeliveryJobItemResponse] = []
+
     class Config:
         from_attributes = True

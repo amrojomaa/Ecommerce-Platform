@@ -99,6 +99,25 @@
   color: white;
 }
 
+.status-assigned {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-picked_up {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.status-delivering {
+  background-color: #00BCD4;
+  color: white;
+}
+
+.status-available {
+  background-color: #FF9800;
+  color: white;
+}
 .status-select {
   padding: 0.5rem;
   border-radius: 0.5rem;

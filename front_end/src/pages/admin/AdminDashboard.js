@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
-import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
+import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, DELIVERY_ENDPOINTS } from '../../config/api';
 import { useLanguage } from '../../hooks/useLanguage';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminDashboard.css';
@@ -16,6 +16,7 @@ const AdminDashboard = () => {
     totalOrders: 0,
     totalRevenue: 0,
     lowStockProducts: 0,
+    activeDeliveries: 0,
   });
   const [loading, setLoading] = useState(true);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
@@ -80,11 +81,24 @@ const AdminDashboard = () => {
         // Continue with 0 values if orders fetch fails
       }
       
+      // Fetch active deliveries count
+      let activeDeliveries = 0;
+      try {
+        const deliveriesResponse = await http.get(DELIVERY_ENDPOINTS.ALL_JOBS);
+        const deliveriesData = Array.isArray(deliveriesResponse.data) ? deliveriesResponse.data : [];
+        activeDeliveries = deliveriesData.filter(j => 
+          ['available', 'assigned', 'picked_up', 'delivering'].includes(j.status)
+        ).length;
+      } catch (deliveryError) {
+        console.error('Error fetching deliveries:', deliveryError);
+      }
+
       setStats({
         totalProducts: products.length,
         totalOrders: totalOrders,
         totalRevenue: totalRevenue,
         lowStockProducts: lowStock,
+        activeDeliveries: activeDeliveries,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -166,6 +180,13 @@ const AdminDashboard = () => {
       color: '#F44336',
       path: '/admin/products?filter=lowstock',
       threshold: lowStockThreshold,
+    },
+    {
+      title: 'Active Deliveries',
+      value: stats.activeDeliveries,
+      icon: '🚚',
+      color: '#9C27B0',
+      path: '/admin/deliveries',
     },
   ];
 

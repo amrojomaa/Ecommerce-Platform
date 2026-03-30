@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import http from '../services/http';
-import { ORDER_ENDPOINTS } from '../config/api';
+import { ORDER_ENDPOINTS, DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
 import { formatPrice, formatDate } from '../utils/helpers';
 import { useLanguage } from '../hooks/useLanguage';
 import { useDialog } from '../hooks/useDialog';
 import LoadingSpinner from '../components/LoadingSpinner';
+import DeliveryChatModal from '../components/DeliveryChatModal';
 import API_BASE_URL from '../config/api';
 import '../styles/pages/Orders.css';
 
@@ -18,6 +19,19 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [activeChatJobId, setActiveChatJobId] = useState(null);
+  
+  const token = localStorage.getItem('token');
+  const getUserIdFromToken = () => {
+      if (!token) return null;
+      try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return payload.user_id;
+      } catch (e) {
+          return null;
+      }
+  };
+  const currentUserId = getUserIdFromToken();
 
   const getOrderStatusLabel = (status) => {
     const normalized = (status || 'created').toLowerCase();
@@ -211,6 +225,57 @@ const Orders = () => {
                       </div>
                     </div>
 
+                    {/* Delivery Tracking (for orders in delivery flow) */}
+                    {['paid', 'assigned', 'picked_up', 'delivering', 'delivered'].includes(order.status) && (
+                      <div className="order-info-section delivery-tracking-section">
+                        <h4>🚚 Delivery Tracking</h4>
+                        <div className="delivery-stepper">
+                          {['paid', 'assigned', 'picked_up', 'delivering', 'delivered'].map((step, idx) => {
+                            const stepLabels = { paid: 'Order Paid', assigned: 'Driver Assigned', picked_up: 'Picked Up', delivering: 'On The Way', delivered: 'Delivered' };
+                            const stepIcons = { paid: '💳', assigned: '👤', picked_up: '📦', delivering: '🚚', delivered: '✅' };
+                            const allSteps = ['paid', 'assigned', 'picked_up', 'delivering', 'delivered'];
+                            const currentIdx = allSteps.indexOf(order.status);
+                            const isActive = idx <= currentIdx;
+                            const isCurrent = idx === currentIdx;
+                            return (
+                              <div key={step} className={`stepper-step ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}`}>
+                                <span className="stepper-icon">{stepIcons[step]}</span>
+                                <span className="stepper-label">{stepLabels[step]}</span>
+                                {idx < allSteps.length - 1 && <span className={`stepper-line ${idx < currentIdx ? 'active' : ''}`} />}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {order.delivery_address && (
+                          <div className="info-row">
+                            <span className="info-label">Delivery Address:</span>
+                            <span className="info-value">{order.delivery_address}</span>
+                          </div>
+                        )}
+                        {/* Only show chat if order has active delivery job that driver has accepted */}
+                        {['assigned', 'picked_up', 'delivering'].includes(order.status) && (
+                          <div style={{ marginTop: '15px' }}>
+                             <button 
+                                className="btn-primary-action" 
+                                style={{ backgroundColor: '#10b981', padding: '8px 16px', borderRadius: '4px', color: 'white', border: 'none', cursor: 'pointer' }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    // Make API call to get delivery job ID for this order
+                                    const response = await http.get(buildUrl(DELIVERY_ENDPOINTS.GET_JOB_BY_ORDER, { order_id: order.id }));
+                                    setActiveChatJobId(response.data.id);
+                                  } catch (error) {
+                                    toast.error("Could not load chat. Try again later.");
+                                  }
+                                }}
+                             >
+                                💬 Chat with Driver
+                             </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="order-products-section">
                       <h4>{t('products', 'Products')} ({orderItems.length})</h4>
                       <div className="order-items">
@@ -264,6 +329,16 @@ const Orders = () => {
             );
           })}
         </div>
+      )}
+      {activeChatJobId && (
+         <DeliveryChatModal
+            isOpen={!!activeChatJobId}
+            onClose={() => setActiveChatJobId(null)}
+            jobId={activeChatJobId}
+            token={token}
+            currentUserId={currentUserId}
+            isDriver={false}
+         />
       )}
     </div>
   );

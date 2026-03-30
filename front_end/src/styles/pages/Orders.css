@@ -397,6 +397,113 @@
   display: inline-block;
 }
 
+.status-assigned {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-picked_up {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.status-delivering {
+  background-color: #00BCD4;
+  color: white;
+}
+
+.status-available {
+  background-color: #FF9800;
+  color: white;
+}
+
+/* Delivery Tracking Stepper */
+.delivery-tracking-section {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  background-color: var(--background);
+}
+
+.delivery-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  flex: 1;
+  z-index: 1;
+}
+
+.stepper-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background-color: var(--surface);
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.stepper-step.active .stepper-icon {
+  border-color: #4CAF50;
+  background-color: #e8f5e9;
+}
+
+.stepper-step.current .stepper-icon {
+  border-color: #2196F3;
+  background-color: #e3f2fd;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.1); }
+}
+
+.stepper-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  font-weight: 500;
+}
+
+.stepper-step.active .stepper-label {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.stepper-step.current .stepper-label {
+  color: #2196F3;
+  font-weight: 600;
+}
+
+.stepper-line {
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 20px);
+  width: calc(100% - 40px);
+  height: 2px;
+  background-color: var(--border-color);
+  transition: background-color 0.3s ease;
+}
+
+.stepper-line.active {
+  background-color: #4CAF50;
+}
+
 @media (max-width: 768px) {
   .order-actions {
     width: 100%;

@@ -1,0 +1,35 @@
+.driver-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.driver-container {
+  display: flex;
+  flex: 1;
+  margin-top: 80px;
+  min-height: calc(100vh - 80px);
+}
+
+.driver-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: hidden;
+  background: var(--bg-color);
+  margin-left: 250px;
+  min-height: calc(100vh - 80px);
+}
+
+@media (max-width: 768px) {
+  .driver-container {
+    flex-direction: column;
+    margin-top: 0;
+  }
+
+  .driver-content {
+    padding: 1rem;
+    margin-left: 0;
+    min-height: auto;
+    max-height: none;
+  }
+}

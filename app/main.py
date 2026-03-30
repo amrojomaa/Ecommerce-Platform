@@ -4,12 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import text
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 import traceback
 import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
 from .config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +25,24 @@ if settings.auto_create_tables:
     logger.warning("AUTO_CREATE_TABLES is enabled. Disable this in production and use migrations instead.")
 else:
     logger.info("AUTO_CREATE_TABLES is disabled. Expecting managed schema migrations.")
+
+
+def apply_schema_patches() -> None:
+    """Apply additive schema patches for existing databases."""
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS driver_id INTEGER
+                REFERENCES users(id) ON DELETE SET NULL
+                """
+            )
+        )
+
+
+apply_schema_patches()
+logger.info("Database connected successfully.")
 
 app = FastAPI()
 
@@ -97,5 +120,6 @@ app.include_router(ticket.router)
 app.include_router(comment.router)
 app.include_router(rating.router)
 app.include_router(admin_settings.router)
+app.include_router(delivery.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

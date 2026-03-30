@@ -405,6 +405,73 @@
   cursor: not-allowed;
 }
 
+/* Delivery Info in Tickets */
+.ticket-delivery-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.ticket-delivery-info h4 {
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.delivery-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.delivery-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.delivery-info-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.delivery-issue-alert {
+  margin-top: 0.75rem;
+  background-color: #fff3e0;
+  border-left: 4px solid #FF9800;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  color: #e65100;
+  font-size: 0.875rem;
+}
+
+.delivery-issue-alert p {
+  margin: 0.5rem 0 0;
+  color: #bf360c;
+}
+
+.status-assigned {
+  background-color: #2196F3;
+  color: white;
+}
+
+.status-picked_up {
+  background-color: #9C27B0;
+  color: white;
+}
+
+.status-delivering {
+  background-color: #00BCD4;
+  color: white;
+}
+
+.status-available {
+  background-color: #FF9800;
+  color: white;
+}
+
 .delete-pending {
   padding: 1rem;
   background: #fff3cd;

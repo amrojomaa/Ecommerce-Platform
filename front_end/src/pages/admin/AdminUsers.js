@@ -227,6 +227,8 @@ const AdminUsers = () => {
         return 'role-badge admin';
       case 'employee':
         return 'role-badge employee';
+      case 'driver':
+        return 'role-badge driver';
       case 'customer':
         return 'role-badge customer';
       default:
@@ -238,6 +240,7 @@ const AdminUsers = () => {
     const roleMap = {
       admin: t('admin', 'Admin'),
       employee: t('employee', 'Employee'),
+      driver: t('driver', 'Driver'),
       customer: t('customer', 'Customer'),
     };
     return roleMap[role] || role;
@@ -259,6 +262,7 @@ const AdminUsers = () => {
           <span>{t('total', 'Total')}: {users.length}</span>
           <span>{t('admin', 'Admin')}: {users.filter(u => u.role === 'admin').length}</span>
           <span>{t('employee', 'Employee')}: {users.filter(u => u.role === 'employee').length}</span>
+          <span>{t('driver', 'Driver')}: {users.filter(u => u.role === 'driver').length}</span>
           <span>{t('customer', 'Customer')}: {users.filter(u => u.role === 'customer').length}</span>
         </div>
       </div>
@@ -283,6 +287,12 @@ const AdminUsers = () => {
             onClick={() => setRoleFilter('employee')}
           >
             {t('employee', 'Employee')}
+          </button>
+          <button
+            className={roleFilter === 'driver' ? 'active' : ''}
+            onClick={() => setRoleFilter('driver')}
+          >
+            Driver
           </button>
           <button
             className={roleFilter === 'customer' ? 'active' : ''}
@@ -441,6 +451,7 @@ const AdminUsers = () => {
                 >
                   <option value="admin">{t('admin', 'Admin')}</option>
                   <option value="employee">{t('employee', 'Employee')}</option>
+                  <option value="driver">{t('driver', 'Driver')}</option>
                   <option value="customer">{t('customer', 'Customer')}</option>
                 </select>
               </div>

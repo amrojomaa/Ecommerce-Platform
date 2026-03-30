@@ -4,6 +4,7 @@ import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
+import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/driver/DriverActiveJob.css';
 
 const DriverActiveJob = () => {
@@ -14,9 +15,16 @@ const DriverActiveJob = () => {
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueType, setIssueType] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
+  const [issuePhotoFile, setIssuePhotoFile] = useState(null);
+  const [issuePhotoPreview, setIssuePhotoPreview] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
+  const [selectedPhotoPreview, setSelectedPhotoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [issueMessages, setIssueMessages] = useState([]);
+  const [issueMessageText, setIssueMessageText] = useState('');
+  const [issueChatLoading, setIssueChatLoading] = useState(false);
+  const [issueSending, setIssueSending] = useState(false);
   
   const token = localStorage.getItem('token');
   // Hacky way to get driver ID if not stored in auth context directly, parse JWT if needed
@@ -63,6 +71,28 @@ const DriverActiveJob = () => {
     }, 30000);
     return () => clearInterval(pollInterval);
   }, [fetchActiveJobs]);
+
+  useEffect(() => {
+    if (!photoFile) {
+      setSelectedPhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(photoFile);
+    setSelectedPhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [photoFile]);
+
+  useEffect(() => {
+    if (!issuePhotoFile) {
+      setIssuePhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(issuePhotoFile);
+    setIssuePhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [issuePhotoFile]);
 
   // Update location periodically
   useEffect(() => {
@@ -307,6 +337,7 @@ const DriverActiveJob = () => {
       );
       toast.success(`${type === 'pickup' ? 'Pickup' : 'Delivery'} photo uploaded!`);
       setPhotoFile(null);
+      fetchActiveJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to upload photo');
     } finally {
@@ -317,19 +348,70 @@ const DriverActiveJob = () => {
   const handleReportIssue = async () => {
     if (!activeJob || !issueType) return;
     try {
-      await http.post(buildUrl(DELIVERY_ENDPOINTS.REPORT_ISSUE, { job_id: activeJob.id }), {
-        issue_type: issueType,
-        description: issueDescription,
+      const formData = new FormData();
+      formData.append('issue_type', issueType);
+      formData.append('description', issueDescription || '');
+      if (issuePhotoFile) {
+        formData.append('photo', issuePhotoFile);
+      }
+
+      await http.post(buildUrl(DELIVERY_ENDPOINTS.REPORT_ISSUE, { job_id: activeJob.id }), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Issue reported');
       setShowIssueModal(false);
       setIssueType('');
       setIssueDescription('');
+      setIssuePhotoFile(null);
+      setIssuePhotoPreview('');
       fetchActiveJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to report issue');
     }
   };
+
+  const handleIssuePhotoChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setIssuePhotoFile(file);
+  };
+
+  const fetchIssueMessages = useCallback(async (jobId) => {
+    if (!jobId) return;
+    setIssueChatLoading(true);
+    try {
+      const response = await http.get(buildUrl(DELIVERY_ENDPOINTS.ISSUE_MESSAGES, { job_id: jobId }));
+      setIssueMessages(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setIssueMessages([]);
+    } finally {
+      setIssueChatLoading(false);
+    }
+  }, []);
+
+  const handleSendIssueMessage = async () => {
+    if (!activeJob?.id || !issueMessageText.trim()) return;
+    setIssueSending(true);
+    try {
+      const response = await http.post(
+        buildUrl(DELIVERY_ENDPOINTS.ISSUE_MESSAGES, { job_id: activeJob.id }),
+        { message: issueMessageText.trim() }
+      );
+      setIssueMessages((prev) => [...prev, response.data]);
+      setIssueMessageText('');
+    } catch (error) {
+      toast.error(error.message || 'Failed to send issue message');
+    } finally {
+      setIssueSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeJob?.id && activeJob?.issue_type) {
+      fetchIssueMessages(activeJob.id);
+      return;
+    }
+    setIssueMessages([]);
+  }, [activeJob?.id, activeJob?.issue_type, fetchIssueMessages]);
 
   const getStatusSteps = () => {
     const steps = [
@@ -369,6 +451,10 @@ const DriverActiveJob = () => {
   }
 
   const statusSteps = getStatusSteps();
+  const allPhotos = Array.isArray(activeJob.photos) ? activeJob.photos : [];
+  const pickupPhotos = allPhotos.filter((photo) => photo.photo_type === 'pickup');
+  const deliveryPhotos = allPhotos.filter((photo) => photo.photo_type === 'delivery');
+  const issuePhotos = allPhotos.filter((photo) => photo.photo_type === 'issue');
 
   return (
     <div className="active-job-page">
@@ -462,9 +548,14 @@ const DriverActiveJob = () => {
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files[0])}
+              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
               className="photo-input"
             />
+            {selectedPhotoPreview && (
+              <div className="selected-photo-preview">
+                <img src={selectedPhotoPreview} alt="Selected upload" />
+              </div>
+            )}
             {photoFile && (
               <div className="photo-actions">
                 <button
@@ -483,7 +574,89 @@ const DriverActiveJob = () => {
                 </button>
               </div>
             )}
+
+            {(pickupPhotos.length > 0 || deliveryPhotos.length > 0 || issuePhotos.length > 0) && (
+              <div className="uploaded-photos-wrap">
+                <h4>Uploaded Photos</h4>
+                <div className="uploaded-photos-grid">
+                  {pickupPhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`pickup-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Pickup proof" />
+                      <span>Pickup</span>
+                    </div>
+                  ))}
+                  {deliveryPhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`delivery-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Delivery proof" />
+                      <span>Delivery</span>
+                    </div>
+                  ))}
+                  {issuePhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`issue-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Issue photo" />
+                      <span>Issue</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {activeJob.issue_type && (
+            <div className="info-card issue-summary-card">
+              <h3>⚠️ Reported Issue</h3>
+              {activeJob.issue_resolved && <p className="issue-resolved-badge">Solved by admin</p>}
+              <p className="issue-type-label">{activeJob.issue_type.replace(/_/g, ' ')}</p>
+              {activeJob.issue_description && <p>{activeJob.issue_description}</p>}
+              {issuePhotos.length > 0 && (
+                <div className="issue-photo-preview-grid">
+                  {issuePhotos.map((photo) => (
+                    <img key={`summary-issue-${photo.id}`} src={getImageUrl(photo.image_path)} alt="Issue preview" />
+                  ))}
+                </div>
+              )}
+
+              <div className="issue-thread-box">
+                <h4>Issue Discussion (Admin ↔ Driver)</h4>
+                {issueChatLoading ? (
+                  <p className="issue-thread-empty">Loading discussion...</p>
+                ) : issueMessages.length === 0 ? (
+                  <p className="issue-thread-empty">No messages yet.</p>
+                ) : (
+                  <div className="issue-thread-list">
+                    {issueMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`issue-thread-message ${msg.sender_id === currentUserId ? 'mine' : ''}`}
+                      >
+                        <div className="issue-thread-meta">
+                          <strong>{msg.sender_name || 'User'}</strong>
+                          <span>{msg.sender_role || 'user'} • {new Date(msg.created_at).toLocaleString()}</span>
+                        </div>
+                        <p>{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!activeJob.issue_resolved ? (
+                  <div className="issue-thread-input-wrap">
+                    <input
+                      type="text"
+                      value={issueMessageText}
+                      onChange={(e) => setIssueMessageText(e.target.value)}
+                      placeholder="Write a message to admin..."
+                    />
+                    <button onClick={handleSendIssueMessage} disabled={issueSending || !issueMessageText.trim()}>
+                      {issueSending ? 'Sending...' : 'Send'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="issue-thread-closed">Discussion closed because issue is marked solved.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="action-buttons">
@@ -535,6 +708,21 @@ const DriverActiveJob = () => {
               onChange={(e) => setIssueDescription(e.target.value)}
               className="issue-description"
             />
+            <div className="issue-photo-upload-wrap">
+              <label htmlFor="issue-photo">Optional photo</label>
+              <input
+                id="issue-photo"
+                type="file"
+                accept="image/*"
+                onChange={handleIssuePhotoChange}
+                className="issue-photo-input"
+              />
+              {issuePhotoPreview && (
+                <div className="issue-photo-preview">
+                  <img src={issuePhotoPreview} alt="Issue upload preview" />
+                </div>
+              )}
+            </div>
             <button onClick={handleReportIssue} className="btn-submit-issue" disabled={!issueType}>
               Submit Report
             </button>

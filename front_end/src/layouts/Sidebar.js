@@ -2,12 +2,14 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
+import { useDeliveryIssueCount } from '../hooks/useDeliveryIssueCount';
 import '../styles/layouts/Sidebar.css';
 
 const Sidebar = () => {
   const location = useLocation();
   const { isDarkMode } = useTheme();
   const { unreadCount } = useUnreadTickets();
+  const { issueCount } = useDeliveryIssueCount();
 
   const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
@@ -28,6 +30,7 @@ const Sidebar = () => {
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const isTickets = item.path === '/admin/tickets';
+          const isDeliveries = item.path === '/admin/deliveries';
           return (
             <Link
               key={item.path}
@@ -38,6 +41,9 @@ const Sidebar = () => {
               <span>{item.label}</span>
               {isTickets && unreadCount > 0 && (
                 <span className="sidebar-badge">{unreadCount}</span>
+              )}
+              {isDeliveries && issueCount > 0 && (
+                <span className="sidebar-badge sidebar-badge-deliveries">{issueCount}</span>
               )}
             </Link>
           );

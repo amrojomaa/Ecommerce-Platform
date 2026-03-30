@@ -226,6 +226,185 @@
   gap: 0.5rem;
 }
 
+.selected-photo-preview {
+  margin-bottom: 0.75rem;
+}
+
+.selected-photo-preview img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.uploaded-photos-wrap {
+  margin-top: 0.85rem;
+}
+
+.uploaded-photos-wrap h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.uploaded-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.uploaded-photo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.uploaded-photo-card img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.uploaded-photo-card span {
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.issue-summary-card {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.issue-type-label {
+  color: #ef4444 !important;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.issue-resolved-badge {
+  display: inline-block;
+  margin-bottom: 0.45rem !important;
+  color: #065f46 !important;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.76rem !important;
+  font-weight: 700;
+}
+
+.issue-photo-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.issue-photo-preview-grid img {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.issue-thread-box {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.issue-thread-box h4 {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.issue-thread-empty,
+.issue-thread-closed {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.issue-thread-list {
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.issue-thread-message {
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+
+.issue-thread-message.mine {
+  border-color: rgba(139, 115, 85, 0.45);
+}
+
+.issue-thread-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.issue-thread-meta strong {
+  font-size: 0.76rem;
+  color: var(--text-primary);
+}
+
+.issue-thread-meta span {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.issue-thread-message p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.issue-thread-input-wrap {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.issue-thread-input-wrap input {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.83rem;
+}
+
+.issue-thread-input-wrap button {
+  border: 1px solid rgba(139, 115, 85, 0.4);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.issue-thread-input-wrap button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .btn-photo {
   flex: 1;
   padding: 0.5rem;
@@ -367,6 +546,30 @@
   font-size: 0.9rem;
   resize: vertical;
   margin-bottom: 1rem;
+}
+
+.issue-photo-upload-wrap {
+  margin-bottom: 1rem;
+}
+
+.issue-photo-upload-wrap label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.issue-photo-input {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.issue-photo-preview img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .btn-submit-issue {

@@ -262,6 +262,26 @@ class OrderUserInfo(BaseModel):
         from_attributes = True
 
 
+class DeliveryPhotoResponse(BaseModel):
+    id: int
+    photo_type: str
+    image_path: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminOrderDeliverySummary(BaseModel):
+    issue_type: Optional[str] = None
+    issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    photos: List[DeliveryPhotoResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
 class AdminOrderResponse(BaseModel):
     id: int
     created_at: datetime
@@ -269,6 +289,7 @@ class AdminOrderResponse(BaseModel):
     status: str
     items: List[OrderItemResponse] = Field(alias="orderitems")
     user: Optional[OrderUserInfo] = None
+    order_delivery: Optional[AdminOrderDeliverySummary] = Field(default=None, alias="delivery_job")
 
     class Config:
         from_attributes = True
@@ -653,11 +674,15 @@ class DeliveryJobResponse(BaseModel):
     delivery_latitude: Optional[float] = None
     delivery_longitude: Optional[float] = None
     payment_amount: float
+    issue_type: Optional[str] = None
     issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    issue_resolved_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None
     items: List[DeliveryJobItemResponse] = []
+    photos: List[DeliveryPhotoResponse] = []
 
     class Config:
         from_attributes = True
@@ -674,6 +699,23 @@ class IssueReport(BaseModel):
         if v not in valid:
             raise ValueError(f'issue_type must be one of: {", ".join(valid)}')
         return v
+
+
+class DeliveryIssueMessageCreate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=1000)
+
+
+class DeliveryIssueMessageResponse(BaseModel):
+    id: int
+    delivery_job_id: int
+    sender_id: int
+    sender_name: Optional[str] = None
+    sender_role: Optional[str] = None
+    message: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class EarningsSummary(BaseModel):
@@ -728,10 +770,13 @@ class AdminDeliveryJobResponse(BaseModel):
     payment_amount: float
     issue_type: Optional[str] = None
     issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    issue_resolved_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None
     items: List[DeliveryJobItemResponse] = []
+    photos: List[DeliveryPhotoResponse] = []
 
     class Config:
         from_attributes = True

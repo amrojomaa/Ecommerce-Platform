@@ -266,13 +266,18 @@ class DBDeliveryJob(Base):
     payment_amount = Column(Float, nullable=False, server_default=text('0'))
     issue_type = Column(String, nullable=True)
     issue_description = Column(String, nullable=True)
+    issue_resolved = Column(Boolean, nullable=False, server_default='FALSE')
+    issue_resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    issue_resolved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     order = relationship("DBOrder", back_populates="delivery_job")
     driver = relationship("DBUser", foreign_keys=[driver_id])
+    issue_resolver = relationship("DBUser", foreign_keys=[issue_resolved_by])
     photos = relationship("DBDeliveryPhoto", back_populates="delivery_job", cascade="all, delete-orphan")
     messages = relationship("DBDeliveryChatMessage", back_populates="delivery_job", cascade="all, delete-orphan")
+    issue_messages = relationship("DBDeliveryIssueMessage", back_populates="delivery_job", cascade="all, delete-orphan")
 
 
 class DBDeliveryChatMessage(Base):
@@ -320,3 +325,15 @@ class DBDriverEarning(Base):
 
     driver = relationship("DBUser", foreign_keys=[driver_id])
     delivery_job = relationship("DBDeliveryJob", foreign_keys=[delivery_job_id])
+
+
+class DBDeliveryIssueMessage(Base):
+    __tablename__ = "delivery_issue_messages"
+    id = Column(Integer, primary_key=True, nullable=False)
+    delivery_job_id = Column(Integer, ForeignKey("delivery_jobs.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    delivery_job = relationship("DBDeliveryJob", back_populates="issue_messages")
+    sender = relationship("DBUser", foreign_keys=[sender_id])

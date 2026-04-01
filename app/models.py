@@ -287,9 +287,29 @@ class DBDeliveryChatMessage(Base):
     sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    is_edited = Column(Boolean, nullable=False, server_default='FALSE')
+    is_deleted = Column(Boolean, nullable=False, server_default='FALSE')
 
     delivery_job = relationship("DBDeliveryJob", back_populates="messages")
     sender = relationship("DBUser", foreign_keys=[sender_id])
+    reactions = relationship("DBDeliveryChatReaction", back_populates="message_obj", cascade="all, delete-orphan")
+
+
+class DBDeliveryChatReaction(Base):
+    __tablename__ = "delivery_chat_reactions"
+    id = Column(Integer, primary_key=True, nullable=False)
+    message_id = Column(Integer, ForeignKey("delivery_chat_messages.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reaction = Column(String(16), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    message_obj = relationship("DBDeliveryChatMessage", back_populates="reactions")
+    user = relationship("DBUser", foreign_keys=[user_id])
+
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', name='uq_delivery_chat_reaction_message_user'),
+    )
 
 
 class DBDriverLocation(Base):

@@ -47,6 +47,29 @@ def apply_schema_updates():
             ON delivery_issue_messages(created_at)
         """))
 
+        conn.execute(text("""
+            ALTER TABLE delivery_chat_messages
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ,
+                ADD COLUMN IF NOT EXISTS is_edited BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS delivery_chat_reactions (
+                id SERIAL PRIMARY KEY,
+                message_id INTEGER NOT NULL REFERENCES delivery_chat_messages(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                reaction VARCHAR(16) NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT uq_delivery_chat_reaction_message_user UNIQUE (message_id, user_id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_chat_reactions_message_id
+            ON delivery_chat_reactions(message_id)
+        """))
+
 
 models.Base.metadata.create_all(bind=engine)
 apply_schema_updates()

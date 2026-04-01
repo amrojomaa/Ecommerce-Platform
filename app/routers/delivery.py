@@ -945,6 +945,82 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
+def _get_chat_job_or_404(db: Session, job_id: int) -> models.DBDeliveryJob:
+    job = (
+        db.query(models.DBDeliveryJob)
+        .options(joinedload(models.DBDeliveryJob.order))
+        .filter(models.DBDeliveryJob.id == job_id)
+        .first()
+    )
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+def _ensure_chat_access(job: models.DBDeliveryJob, user_id: int):
+    if job.driver_id == user_id:
+        return
+    if job.order and job.order.user_id == user_id:
+        return
+    raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+
+
+def _reaction_summary(
+    reactions: List[models.DBDeliveryChatReaction],
+    current_user_id: int,
+) -> List[dict]:
+    counts: Dict[str, int] = {}
+    my_reaction: Optional[str] = None
+
+    for reaction in reactions:
+        emoji = reaction.reaction
+        counts[emoji] = counts.get(emoji, 0) + 1
+        if reaction.user_id == current_user_id:
+            my_reaction = emoji
+
+    result = []
+    for emoji, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
+        result.append({
+            "emoji": emoji,
+            "count": count,
+            "reacted_by_me": emoji == my_reaction,
+        })
+    return result
+
+
+def _serialize_chat_message(msg: models.DBDeliveryChatMessage, current_user_id: int) -> dict:
+    return {
+        "id": msg.id,
+        "delivery_job_id": msg.delivery_job_id,
+        "sender_id": msg.sender_id,
+        "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
+        "message": msg.message,
+        "created_at": msg.created_at,
+        "updated_at": msg.updated_at,
+        "is_edited": bool(msg.is_edited),
+        "is_deleted": bool(msg.is_deleted),
+        "reactions": _reaction_summary(msg.reactions or [], current_user_id),
+    }
+
+
+def _load_chat_message_or_404(db: Session, job_id: int, message_id: int) -> models.DBDeliveryChatMessage:
+    msg = (
+        db.query(models.DBDeliveryChatMessage)
+        .options(
+            joinedload(models.DBDeliveryChatMessage.sender),
+            selectinload(models.DBDeliveryChatMessage.reactions),
+        )
+        .filter(
+            models.DBDeliveryChatMessage.id == message_id,
+            models.DBDeliveryChatMessage.delivery_job_id == job_id,
+        )
+        .first()
+    )
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return msg
+
 @router.get("/jobs/{job_id}/chat", response_model=List[schemas.DeliveryChatMessageResponse])
 def get_chat_history(
     job_id: int,
@@ -952,55 +1028,39 @@ def get_chat_history(
     current_user=Depends(OAuth2.get_current_user),
 ):
     """Get chat history for a delivery job."""
-    job = db.query(models.DBDeliveryJob).options(joinedload(models.DBDeliveryJob.order)).filter(models.DBDeliveryJob.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    # Check permission (must be driver or customer)
-    if job.driver_id != current_user.id and (not job.order or job.order.user_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+    job = _get_chat_job_or_404(db, job_id)
+    _ensure_chat_access(job, current_user.id)
 
     messages = (
         db.query(models.DBDeliveryChatMessage)
-        .options(joinedload(models.DBDeliveryChatMessage.sender))
+        .options(
+            joinedload(models.DBDeliveryChatMessage.sender),
+            selectinload(models.DBDeliveryChatMessage.reactions),
+        )
         .filter(models.DBDeliveryChatMessage.delivery_job_id == job_id)
         .order_by(models.DBDeliveryChatMessage.created_at.asc())
         .all()
     )
 
-    result = []
-    for msg in messages:
-        result.append({
-            "id": msg.id,
-            "delivery_job_id": msg.delivery_job_id,
-            "sender_id": msg.sender_id,
-            "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
-            "message": msg.message,
-            "created_at": msg.created_at
-        })
-    return result
+    return [_serialize_chat_message(msg, current_user.id) for msg in messages]
 
 
 @router.post("/jobs/{job_id}/chat", response_model=schemas.DeliveryChatMessageResponse)
-def send_chat_message(
+async def send_chat_message(
     job_id: int,
     payload: schemas.DeliveryChatMessageCreate,
     db: Session = Depends(get_db),
     current_user=Depends(OAuth2.get_current_user),
 ):
     """Send a chat message via REST (fallback when WebSocket is unavailable)."""
-    job = db.query(models.DBDeliveryJob).options(joinedload(models.DBDeliveryJob.order)).filter(models.DBDeliveryJob.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+    job = _get_chat_job_or_404(db, job_id)
 
     # Fetch the full user object for permission check and sender name
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Check permission (must be driver or customer)
-    if job.driver_id != user.id and (not job.order or job.order.user_id != user.id):
-        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+    _ensure_chat_access(job, user.id)
 
     new_msg = models.DBDeliveryChatMessage(
         delivery_job_id=job_id,
@@ -1011,14 +1071,56 @@ def send_chat_message(
     db.commit()
     db.refresh(new_msg)
 
-    return {
-        "id": new_msg.id,
-        "delivery_job_id": new_msg.delivery_job_id,
-        "sender_id": new_msg.sender_id,
-        "sender_name": f"{user.first_name} {user.last_name}",
-        "message": new_msg.message,
-        "created_at": new_msg.created_at,
-    }
+    new_msg = _load_chat_message_or_404(db, job_id, new_msg.id)
+    response_payload = _serialize_chat_message(new_msg, user.id)
+
+    await manager.broadcast(response_payload, job_id)
+
+    return response_payload
+
+
+
+@router.post("/jobs/{job_id}/chat/{message_id}/reactions", response_model=schemas.DeliveryChatMessageResponse)
+async def react_to_chat_message(
+    job_id: int,
+    message_id: int,
+    payload: schemas.DeliveryChatReactionCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    """React to any chat message. Sending the same reaction again removes it."""
+    job = _get_chat_job_or_404(db, job_id)
+    _ensure_chat_access(job, current_user.id)
+
+    msg = _load_chat_message_or_404(db, job_id, message_id)
+    if msg.is_deleted:
+        raise HTTPException(status_code=400, detail="Cannot react to a deleted message")
+    if msg.sender_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You can only react to the other participant's messages")
+
+    existing = db.query(models.DBDeliveryChatReaction).filter(
+        models.DBDeliveryChatReaction.message_id == message_id,
+        models.DBDeliveryChatReaction.user_id == current_user.id,
+    ).first()
+
+    if existing and existing.reaction == payload.reaction:
+        db.delete(existing)
+    elif existing:
+        existing.reaction = payload.reaction
+    else:
+        db.add(models.DBDeliveryChatReaction(
+            message_id=message_id,
+            user_id=current_user.id,
+            reaction=payload.reaction,
+        ))
+
+    db.commit()
+
+    refreshed = _load_chat_message_or_404(db, job_id, message_id)
+    response_payload = _serialize_chat_message(refreshed, current_user.id)
+    await manager.broadcast({"event": "reaction", "message": response_payload}, job_id)
+
+    return response_payload
 
 
 @router.websocket("/jobs/{job_id}/ws/chat")
@@ -1098,15 +1200,21 @@ async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
                 msg_db.commit()
                 msg_db.refresh(new_msg)
 
+                sender = msg_db.query(models.DBUser).filter(models.DBUser.id == sender_id).first()
+
                 broadcast_msg = {
                     "id": new_msg.id,
                     "delivery_job_id": job_id,
                     "sender_id": sender_id,
-                    "sender_name": sender_name,
+                    "sender_name": f"{sender.first_name} {sender.last_name}" if sender else sender_name,
                     "message": data,
                     "created_at": new_msg.created_at.isoformat()
                         if new_msg.created_at
                         else datetime.now(timezone.utc).isoformat(),
+                    "updated_at": None,
+                    "is_edited": False,
+                    "is_deleted": False,
+                    "reactions": [],
                 }
             except Exception as db_err:
                 print(f"Error saving chat message: {db_err}")
@@ -1119,6 +1227,10 @@ async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
                     "sender_name": sender_name,
                     "message": data,
                     "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": None,
+                    "is_edited": False,
+                    "is_deleted": False,
+                    "reactions": [],
                 }
             finally:
                 msg_db.close()

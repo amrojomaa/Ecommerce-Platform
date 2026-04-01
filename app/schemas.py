@@ -630,13 +630,31 @@ class DeliveryChatMessageResponse(BaseModel):
     sender_name: Optional[str] = None
     message: str
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    is_edited: bool = False
+    is_deleted: bool = False
+    reactions: List["DeliveryChatReactionSummary"] = []
 
     class Config:
         from_attributes = True
 
 
 class DeliveryChatMessageCreate(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class DeliveryChatMessageUpdate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class DeliveryChatReactionCreate(BaseModel):
+    reaction: str = Field(..., min_length=1, max_length=16)
+
+
+class DeliveryChatReactionSummary(BaseModel):
+    emoji: str
+    count: int
+    reacted_by_me: bool = False
 
 
 class DeliveryJobCustomer(BaseModel):

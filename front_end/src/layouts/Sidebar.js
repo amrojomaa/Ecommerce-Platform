@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../hooks/useTheme';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import { useDeliveryIssueCount } from '../hooks/useDeliveryIssueCount';
+import { useDeliveryPhotoCount } from '../hooks/useDeliveryPhotoCount';
 import '../styles/layouts/Sidebar.css';
 
 const Sidebar = () => {
@@ -10,6 +11,8 @@ const Sidebar = () => {
   const { isDarkMode } = useTheme();
   const { unreadCount } = useUnreadTickets();
   const { issueCount } = useDeliveryIssueCount();
+  const { photoCount } = useDeliveryPhotoCount();
+  const deliveriesNotificationCount = issueCount + photoCount;
 
   const menuItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
@@ -42,8 +45,8 @@ const Sidebar = () => {
               {isTickets && unreadCount > 0 && (
                 <span className="sidebar-badge">{unreadCount}</span>
               )}
-              {isDeliveries && issueCount > 0 && (
-                <span className="sidebar-badge sidebar-badge-deliveries">{issueCount}</span>
+              {isDeliveries && deliveriesNotificationCount > 0 && (
+                <span className="sidebar-badge sidebar-badge-deliveries">{deliveriesNotificationCount}</span>
               )}
             </Link>
           );

@@ -17,8 +17,10 @@ const DriverActiveJob = () => {
   const [issueDescription, setIssueDescription] = useState('');
   const [issuePhotoFile, setIssuePhotoFile] = useState(null);
   const [issuePhotoPreview, setIssuePhotoPreview] = useState('');
-  const [photoFile, setPhotoFile] = useState(null);
-  const [selectedPhotoPreview, setSelectedPhotoPreview] = useState('');
+  const [pickupPhotoFile, setPickupPhotoFile] = useState(null);
+  const [pickupPhotoPreview, setPickupPhotoPreview] = useState('');
+  const [deliveryPhotoFile, setDeliveryPhotoFile] = useState(null);
+  const [deliveryPhotoPreview, setDeliveryPhotoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [issueMessages, setIssueMessages] = useState([]);
@@ -73,15 +75,26 @@ const DriverActiveJob = () => {
   }, [fetchActiveJobs]);
 
   useEffect(() => {
-    if (!photoFile) {
-      setSelectedPhotoPreview('');
+    if (!pickupPhotoFile) {
+      setPickupPhotoPreview('');
       return;
     }
 
-    const objectUrl = URL.createObjectURL(photoFile);
-    setSelectedPhotoPreview(objectUrl);
+    const objectUrl = URL.createObjectURL(pickupPhotoFile);
+    setPickupPhotoPreview(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [photoFile]);
+  }, [pickupPhotoFile]);
+
+  useEffect(() => {
+    if (!deliveryPhotoFile) {
+      setDeliveryPhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(deliveryPhotoFile);
+    setDeliveryPhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [deliveryPhotoFile]);
 
   useEffect(() => {
     if (!issuePhotoFile) {
@@ -325,18 +338,25 @@ const DriverActiveJob = () => {
   };
 
   const handlePhotoUpload = async (type) => {
-    if (!photoFile || !activeJob) return;
+    if (!activeJob) return;
+    const selectedFile = type === 'pickup' ? pickupPhotoFile : deliveryPhotoFile;
+    if (!selectedFile) return;
+
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', photoFile);
+      formData.append('file', selectedFile);
       await http.post(
         buildUrl(DELIVERY_ENDPOINTS.UPLOAD_PHOTO, { job_id: activeJob.id }) + `?photo_type=${type}`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
       toast.success(`${type === 'pickup' ? 'Pickup' : 'Delivery'} photo uploaded!`);
-      setPhotoFile(null);
+      if (type === 'pickup') {
+        setPickupPhotoFile(null);
+      } else {
+        setDeliveryPhotoFile(null);
+      }
       fetchActiveJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to upload photo');
@@ -457,6 +477,11 @@ const DriverActiveJob = () => {
   const issuePhotos = allPhotos.filter((photo) => photo.photo_type === 'issue');
   const pickupChecked = !!activeJob.pickup_photo_checked;
   const deliveryChecked = !!activeJob.delivery_photo_checked;
+  const canMarkPickup = activeJob.status === 'assigned' && pickupPhotos.length > 0 && pickupChecked;
+  const canMarkDelivered = (activeJob.status === 'picked_up' || activeJob.status === 'delivering')
+    && deliveryPhotos.length > 0
+    && deliveryChecked;
+  const canUploadDeliveryProof = activeJob.status === 'picked_up' || activeJob.status === 'delivering';
 
   return (
     <div className="active-job-page">
@@ -559,34 +584,67 @@ const DriverActiveJob = () => {
                 Delivery: {deliveryPhotos.length === 0 ? 'No photo yet' : deliveryChecked ? 'Marked OK' : 'Pending admin check'}
               </div>
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-              className="photo-input"
-            />
-            {selectedPhotoPreview && (
-              <div className="selected-photo-preview">
-                <img src={selectedPhotoPreview} alt="Selected upload" />
-              </div>
-            )}
-            {photoFile && (
-              <div className="photo-actions">
-                <button
-                  onClick={() => handlePhotoUpload('pickup')}
-                  disabled={uploading}
-                  className="btn-photo"
-                >
-                  {uploading ? '...' : 'Upload as Pickup'}
-                </button>
-                <button
-                  onClick={() => handlePhotoUpload('delivery')}
-                  disabled={uploading}
-                  className="btn-photo"
-                >
-                  {uploading ? '...' : 'Upload as Delivery'}
-                </button>
-              </div>
+            <div className="proof-upload-block">
+              <h4>Pickup Proof</h4>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPickupPhotoFile(e.target.files?.[0] || null)}
+                className="photo-input"
+                disabled={pickupPhotos.length > 0}
+              />
+              {pickupPhotoPreview && (
+                <div className="selected-photo-preview">
+                  <img src={pickupPhotoPreview} alt="Pickup selected upload" />
+                </div>
+              )}
+              {pickupPhotoFile && (
+                <div className="photo-actions">
+                  <button
+                    onClick={() => handlePhotoUpload('pickup')}
+                    disabled={uploading || pickupPhotos.length > 0}
+                    className="btn-photo"
+                  >
+                    {pickupPhotos.length > 0 ? 'Pickup Already Uploaded' : (uploading ? '...' : 'Upload Pickup Proof')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="proof-upload-block">
+              <h4>Delivery Proof</h4>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setDeliveryPhotoFile(e.target.files?.[0] || null)}
+                className="photo-input"
+                disabled={deliveryPhotos.length > 0 || !canUploadDeliveryProof}
+              />
+              {deliveryPhotoPreview && (
+                <div className="selected-photo-preview">
+                  <img src={deliveryPhotoPreview} alt="Delivery selected upload" />
+                </div>
+              )}
+              {deliveryPhotoFile && (
+                <div className="photo-actions">
+                  <button
+                    onClick={() => handlePhotoUpload('delivery')}
+                    disabled={uploading || deliveryPhotos.length > 0 || !canUploadDeliveryProof}
+                    className="btn-photo"
+                  >
+                    {!canUploadDeliveryProof
+                      ? 'Finish Pickup First'
+                      : deliveryPhotos.length > 0
+                        ? 'Delivery Already Uploaded'
+                        : (uploading ? '...' : 'Upload Delivery Proof')}
+                  </button>
+                </div>
+              )}
+            </div>
+            {!canUploadDeliveryProof && (
+              <p className="action-help-text">
+                You can upload delivery proof only after pickup is completed.
+              </p>
             )}
 
             {(pickupPhotos.length > 0 || deliveryPhotos.length > 0 || issuePhotos.length > 0) && (
@@ -678,14 +736,24 @@ const DriverActiveJob = () => {
               💬 Chat with Customer
             </button>
             {activeJob.status === 'assigned' && (
-              <button onClick={handlePickup} disabled={updating} className="btn-primary-action">
+              <button onClick={handlePickup} disabled={updating || !canMarkPickup} className="btn-primary-action">
                 {updating ? 'Updating...' : '📦 Mark as Picked Up'}
               </button>
             )}
+            {activeJob.status === 'assigned' && !canMarkPickup && (
+              <p className="action-help-text">
+                Upload pickup proof and wait until admin marks it OK.
+              </p>
+            )}
             {(activeJob.status === 'picked_up' || activeJob.status === 'delivering') && (
-              <button onClick={handleDeliver} disabled={updating} className="btn-primary-action btn-deliver">
+              <button onClick={handleDeliver} disabled={updating || !canMarkDelivered} className="btn-primary-action btn-deliver">
                 {updating ? 'Updating...' : '🏠 Mark as Delivered'}
               </button>
+            )}
+            {(activeJob.status === 'picked_up' || activeJob.status === 'delivering') && !canMarkDelivered && (
+              <p className="action-help-text">
+                Upload delivery proof and wait until admin marks it OK.
+              </p>
             )}
             <button onClick={() => setShowIssueModal(true)} className="btn-report-issue">
               ⚠️ Report Issue

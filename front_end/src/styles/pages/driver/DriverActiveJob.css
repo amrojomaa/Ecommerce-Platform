@@ -254,6 +254,20 @@
   color: #065f46;
 }
 
+.proof-upload-block {
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: var(--background);
+}
+
+.proof-upload-block h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
 .photo-actions {
   display: flex;
   gap: 0.5rem;
@@ -491,6 +505,13 @@
 .btn-primary-action:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.action-help-text {
+  margin: -0.25rem 0 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .btn-report-issue {

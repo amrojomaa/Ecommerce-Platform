@@ -23,6 +23,17 @@ PHOTO_ACK_TYPES = {
 }
 
 
+def _job_has_photo_type(job: models.DBDeliveryJob, photo_type: str) -> bool:
+    return any(photo.photo_type == photo_type for photo in (job.photos or []))
+
+
+def _job_photo_type_checked(job: models.DBDeliveryJob, photo_type: str) -> bool:
+    ack_type = PHOTO_ACK_TYPES.get(photo_type)
+    if not ack_type:
+        return False
+    return _job_has_photo_type(job, ack_type)
+
+
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
 def _job_to_response(job: models.DBDeliveryJob) -> dict:
@@ -247,6 +258,10 @@ def mark_pickup(
         raise HTTPException(status_code=403, detail="Not your job")
     if job.status != "assigned":
         raise HTTPException(status_code=400, detail=f"Cannot pick up from status '{job.status}'")
+    if not _job_has_photo_type(job, "pickup"):
+        raise HTTPException(status_code=400, detail="Upload pickup proof photo first")
+    if not _job_photo_type_checked(job, "pickup"):
+        raise HTTPException(status_code=400, detail="Pickup proof photo must be checked by admin")
 
     job.status = "picked_up"
     job.updated_at = datetime.now(timezone.utc)
@@ -271,6 +286,10 @@ def mark_delivered(
         raise HTTPException(status_code=403, detail="Not your job")
     if job.status not in ("picked_up", "delivering"):
         raise HTTPException(status_code=400, detail=f"Cannot deliver from status '{job.status}'")
+    if not _job_has_photo_type(job, "delivery"):
+        raise HTTPException(status_code=400, detail="Upload delivery proof photo first")
+    if not _job_photo_type_checked(job, "delivery"):
+        raise HTTPException(status_code=400, detail="Delivery proof photo must be checked by admin")
 
     _clear_issue_report(db, job)
     job.status = "delivered"
@@ -311,6 +330,24 @@ def upload_photo(
         raise HTTPException(status_code=404, detail="Job not found")
     if job.driver_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not your job")
+
+    if photo_type == "delivery" and job.status not in ("picked_up", "delivering"):
+        raise HTTPException(
+            status_code=400,
+            detail="Delivery proof photo can be uploaded only after pickup is completed",
+        )
+
+    if photo_type in ("pickup", "delivery"):
+        existing_type_photo = (
+            db.query(models.DBDeliveryPhoto)
+            .filter(
+                models.DBDeliveryPhoto.delivery_job_id == job_id,
+                models.DBDeliveryPhoto.photo_type == photo_type,
+            )
+            .first()
+        )
+        if existing_type_photo:
+            raise HTTPException(status_code=400, detail=f"Only one {photo_type} proof photo is allowed")
 
     # Save file
     upload_dir = os.path.join("images", "delivery")

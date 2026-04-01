@@ -146,6 +146,7 @@ export const DELIVERY_ENDPOINTS = {
   PICKUP_JOB: '/delivery/jobs/{job_id}/pickup',
   DELIVER_JOB: '/delivery/jobs/{job_id}/deliver',
   UPLOAD_PHOTO: '/delivery/jobs/{job_id}/photo',
+  REVIEW_PHOTO: '/delivery/jobs/{job_id}/photo-review',
   REPORT_ISSUE: '/delivery/jobs/{job_id}/report-issue',
   ISSUE_MESSAGES: '/delivery/jobs/{job_id}/issue-messages',
   RESOLVE_ISSUE: '/delivery/jobs/{job_id}/issue/resolve',

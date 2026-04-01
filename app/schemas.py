@@ -678,6 +678,8 @@ class DeliveryJobResponse(BaseModel):
     issue_description: Optional[str] = None
     issue_resolved: bool = False
     issue_resolved_at: Optional[datetime] = None
+    pickup_photo_checked: bool = False
+    delivery_photo_checked: bool = False
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None
@@ -772,6 +774,8 @@ class AdminDeliveryJobResponse(BaseModel):
     issue_description: Optional[str] = None
     issue_resolved: bool = False
     issue_resolved_at: Optional[datetime] = None
+    pickup_photo_checked: bool = False
+    delivery_photo_checked: bool = False
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None

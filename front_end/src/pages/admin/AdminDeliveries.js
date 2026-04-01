@@ -15,16 +15,32 @@ const AdminDeliveries = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [showIssueOnly, setShowIssueOnly] = useState(false);
+  const [showProofOnly, setShowProofOnly] = useState(false);
   const [issueMessages, setIssueMessages] = useState([]);
   const [issueMessageText, setIssueMessageText] = useState('');
   const [issueChatLoading, setIssueChatLoading] = useState(false);
   const [issueSending, setIssueSending] = useState(false);
   const [resolvingIssue, setResolvingIssue] = useState(false);
+  const [reviewingPhotoType, setReviewingPhotoType] = useState(null);
 
   const hasOpenIssue = (job) => {
     const status = (job.status || '').toLowerCase();
     const isOpenStatus = status !== 'cancelled' && status !== 'delivered';
     return !!job.issue_type && isOpenStatus && !job.issue_resolved;
+  };
+
+  const hasProofPhotos = (job) => {
+    const status = (job.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'delivered') return false;
+
+    const photos = Array.isArray(job.photos) ? job.photos : [];
+    const hasPickup = photos.some(photo => photo.photo_type === 'pickup');
+    const hasDelivery = photos.some(photo => photo.photo_type === 'delivery');
+
+    const needsPickupReview = hasPickup && !job.pickup_photo_checked;
+    const needsDeliveryReview = hasDelivery && !job.delivery_photo_checked;
+
+    return needsPickupReview || needsDeliveryReview;
   };
 
   useEffect(() => {
@@ -44,11 +60,15 @@ const AdminDeliveries = () => {
         filtered = filtered.filter(hasOpenIssue);
       }
 
+      if (showProofOnly) {
+        filtered = filtered.filter(hasProofPhotos);
+      }
+
       setJobs(filtered);
     } else {
       setJobs([]);
     }
-  }, [statusFilter, allJobs, showIssueOnly]);
+  }, [statusFilter, allJobs, showIssueOnly, showProofOnly]);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -111,6 +131,23 @@ const AdminDeliveries = () => {
     }
   };
 
+  const handleReviewPhotoType = async (jobId, photoType) => {
+    setReviewingPhotoType(`${jobId}-${photoType}`);
+    try {
+      const response = await http.post(
+        `${buildUrl(DELIVERY_ENDPOINTS.REVIEW_PHOTO, { job_id: jobId })}?photo_type=${photoType}`
+      );
+
+      const updatedJob = response.data;
+      setAllJobs(prevJobs => prevJobs.map(job => (job.id === jobId ? updatedJob : job)));
+      toast.success(`${photoType === 'pickup' ? 'Pickup' : 'Delivery'} photos marked as OK`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || error.message || 'Failed to review photos');
+    } finally {
+      setReviewingPhotoType(null);
+    }
+  };
+
   useEffect(() => {
     if (!expandedJobId) {
       setIssueMessages([]);
@@ -129,6 +166,7 @@ const AdminDeliveries = () => {
 
   const deliveryStatuses = ['all', 'available', 'assigned', 'picked_up', 'delivering', 'delivered', 'cancelled'];
   const issueCount = allJobs.filter(hasOpenIssue).length;
+  const proofPhotoCount = allJobs.filter(hasProofPhotos).length;
 
   const getStatusLabel = (status) => {
     const labels = {
@@ -166,6 +204,7 @@ const AdminDeliveries = () => {
             className="notice-action-btn"
             onClick={() => {
               setShowIssueOnly(true);
+              setShowProofOnly(false);
               setStatusFilter('all');
               setExpandedJobId(null);
             }}
@@ -176,7 +215,44 @@ const AdminDeliveries = () => {
             <button
               type="button"
               className="notice-clear-btn"
-              onClick={() => setShowIssueOnly(false)}
+              onClick={() => {
+                setShowIssueOnly(false);
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
+      {proofPhotoCount > 0 && (
+        <div className="delivery-photo-notice" role="status" aria-live="polite">
+          <div className="notice-icon-wrap" aria-hidden="true">
+            <span className="notice-bell">📸</span>
+            <span className="notice-count">{proofPhotoCount}</span>
+          </div>
+          <div className="notice-text">
+            <strong>{proofPhotoCount}</strong> delivery {proofPhotoCount === 1 ? 'job has' : 'jobs have'} proof photos uploaded by drivers.
+          </div>
+          <button
+            type="button"
+            className="notice-action-btn"
+            onClick={() => {
+              setShowProofOnly(true);
+              setShowIssueOnly(false);
+              setStatusFilter('all');
+              setExpandedJobId(null);
+            }}
+          >
+            View photo orders
+          </button>
+          {showProofOnly && (
+            <button
+              type="button"
+              className="notice-clear-btn"
+              onClick={() => {
+                setShowProofOnly(false);
+              }}
             >
               Clear
             </button>
@@ -207,6 +283,9 @@ const AdminDeliveries = () => {
           )}
           {showIssueOnly && (
             <span className="issue-only-pill">Issue reports only</span>
+          )}
+          {showProofOnly && (
+            <span className="issue-only-pill photo-only-pill">Proof photos only</span>
           )}
         </div>
       </div>
@@ -260,7 +339,18 @@ const AdminDeliveries = () => {
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job, index) => (
+              {jobs.map((job, index) => {
+                const pickupPhotos = Array.isArray(job.photos)
+                  ? job.photos.filter(photo => photo.photo_type === 'pickup')
+                  : [];
+                const deliveryPhotos = Array.isArray(job.photos)
+                  ? job.photos.filter(photo => photo.photo_type === 'delivery')
+                  : [];
+                const issuePhotos = Array.isArray(job.photos)
+                  ? job.photos.filter(photo => photo.photo_type === 'issue')
+                  : [];
+
+                return (
                 <React.Fragment key={job.id}>
                   <motion.tr
                     initial={{ opacity: 0, y: 10 }}
@@ -287,6 +377,7 @@ const AdminDeliveries = () => {
                     <tr className="expanded-row">
                       <td colSpan="8">
                         <div className="job-expanded-details">
+                          <>
                           <div className="expanded-grid">
                             <div className="detail-card">
                               <h4>📦 Pickup</h4>
@@ -317,6 +408,83 @@ const AdminDeliveries = () => {
                               <p>{job.driver_name || 'Not assigned'}</p>
                             </div>
                           </div>
+                          {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (
+                            <div className="proof-photos-section">
+                              <h4>Delivery Proof Photos</h4>
+                              <div className="proof-photo-groups">
+                                {pickupPhotos.length > 0 && (
+                                  <div className="proof-photo-group">
+                                    <div className="proof-photo-group-header">
+                                      <h5>Picked Up</h5>
+                                      <button
+                                        type="button"
+                                        className="proof-ok-btn"
+                                        disabled={job.pickup_photo_checked || reviewingPhotoType === `${job.id}-pickup`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleReviewPhotoType(job.id, 'pickup');
+                                        }}
+                                      >
+                                        {job.pickup_photo_checked
+                                          ? 'Checked OK'
+                                          : reviewingPhotoType === `${job.id}-pickup`
+                                            ? 'Saving...'
+                                            : 'Mark OK'}
+                                      </button>
+                                    </div>
+                                    <div className="proof-photo-grid">
+                                      {pickupPhotos.map((photo) => (
+                                        <div className="proof-photo-card" key={`pickup-photo-${photo.id}`}>
+                                          <img
+                                            src={getImageUrl(photo.image_path)}
+                                            alt="Pickup proof"
+                                            className="proof-preview-photo"
+                                          />
+                                          <span>{formatDate(photo.created_at)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {deliveryPhotos.length > 0 && (
+                                  <div className="proof-photo-group">
+                                    <div className="proof-photo-group-header">
+                                      <h5>Delivered</h5>
+                                      <button
+                                        type="button"
+                                        className="proof-ok-btn"
+                                        disabled={job.delivery_photo_checked || reviewingPhotoType === `${job.id}-delivery`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleReviewPhotoType(job.id, 'delivery');
+                                        }}
+                                      >
+                                        {job.delivery_photo_checked
+                                          ? 'Checked OK'
+                                          : reviewingPhotoType === `${job.id}-delivery`
+                                            ? 'Saving...'
+                                            : 'Mark OK'}
+                                      </button>
+                                    </div>
+                                    <div className="proof-photo-grid">
+                                      {deliveryPhotos.map((photo) => (
+                                        <div className="proof-photo-card" key={`delivery-photo-${photo.id}`}>
+                                          <img
+                                            src={getImageUrl(photo.image_path)}
+                                            alt="Delivery proof"
+                                            className="proof-preview-photo"
+                                          />
+                                          <span>{formatDate(photo.created_at)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
                           {job.issue_type && (
                             <div className="issue-alert">
                               <strong>⚠️ Issue Reported:</strong> {job.issue_type.replace(/_/g, ' ')}
@@ -324,11 +492,9 @@ const AdminDeliveries = () => {
                                 <span className="issue-solved-pill">Solved</span>
                               )}
                               {job.issue_description && <p>{job.issue_description}</p>}
-                              {Array.isArray(job.photos) && job.photos.filter(photo => photo.photo_type === 'issue').length > 0 && (
+                              {issuePhotos.length > 0 && (
                                 <div className="issue-photo-strip">
-                                  {job.photos
-                                    .filter(photo => photo.photo_type === 'issue')
-                                    .map((photo) => (
+                                  {issuePhotos.map((photo) => (
                                       <img
                                         key={`issue-photo-${photo.id}`}
                                         src={getImageUrl(photo.image_path)}
@@ -396,12 +562,14 @@ const AdminDeliveries = () => {
                               </div>
                             </div>
                           )}
+                          </>
                         </div>
                       </td>
                     </tr>
                   )}
                 </React.Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

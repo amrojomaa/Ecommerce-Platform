@@ -17,6 +17,11 @@ router = APIRouter(
     tags=['Delivery']
 )
 
+PHOTO_ACK_TYPES = {
+    "pickup": "pickup_ok",
+    "delivery": "delivery_ok",
+}
+
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -45,8 +50,12 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
                 "total": float(oi.total),
             })
 
+    photo_types = set()
     if job.photos:
         for photo in job.photos:
+            photo_types.add(photo.photo_type)
+            if photo.photo_type not in ("pickup", "delivery", "issue"):
+                continue
             photos.append({
                 "id": photo.id,
                 "photo_type": photo.photo_type,
@@ -72,6 +81,8 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
         "issue_description": job.issue_description,
         "issue_resolved": bool(job.issue_resolved),
         "issue_resolved_at": job.issue_resolved_at,
+        "pickup_photo_checked": PHOTO_ACK_TYPES["pickup"] in photo_types,
+        "delivery_photo_checked": PHOTO_ACK_TYPES["delivery"] in photo_types,
         "created_at": job.created_at,
         "updated_at": job.updated_at,
         "customer": {
@@ -321,6 +332,61 @@ def upload_photo(
     db.commit()
 
     return {"message": "Photo uploaded", "image_path": filepath}
+
+
+@router.post("/jobs/{job_id}/photo-review", response_model=schemas.AdminDeliveryJobResponse)
+def mark_photo_reviewed(
+    job_id: int,
+    photo_type: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    if photo_type not in PHOTO_ACK_TYPES:
+        raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
+
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    ack_type = PHOTO_ACK_TYPES[photo_type]
+    existing_ack = (
+        db.query(models.DBDeliveryPhoto)
+        .filter(
+            models.DBDeliveryPhoto.delivery_job_id == job_id,
+            models.DBDeliveryPhoto.photo_type == ack_type,
+        )
+        .first()
+    )
+
+    if not existing_ack:
+        has_type_photo = (
+            db.query(models.DBDeliveryPhoto)
+            .filter(
+                models.DBDeliveryPhoto.delivery_job_id == job_id,
+                models.DBDeliveryPhoto.photo_type == photo_type,
+            )
+            .first()
+        )
+        if not has_type_photo:
+            raise HTTPException(status_code=400, detail=f"No {photo_type} photos found for this job")
+
+        db.add(
+            models.DBDeliveryPhoto(
+                delivery_job_id=job_id,
+                photo_type=ack_type,
+                image_path="__admin_ok__",
+            )
+        )
+        db.commit()
+
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    resp = _job_to_response(job)
+    if job.driver:
+        resp["driver_name"] = f"{job.driver.first_name} {job.driver.last_name}"
+    else:
+        resp["driver_name"] = None
+    resp["issue_type"] = job.issue_type
+    return resp
 
 
 # ─── Report Issue ─────────────────────────────────────────────────────────────

@@ -455,6 +455,8 @@ const DriverActiveJob = () => {
   const pickupPhotos = allPhotos.filter((photo) => photo.photo_type === 'pickup');
   const deliveryPhotos = allPhotos.filter((photo) => photo.photo_type === 'delivery');
   const issuePhotos = allPhotos.filter((photo) => photo.photo_type === 'issue');
+  const pickupChecked = !!activeJob.pickup_photo_checked;
+  const deliveryChecked = !!activeJob.delivery_photo_checked;
 
   return (
     <div className="active-job-page">
@@ -545,6 +547,18 @@ const DriverActiveJob = () => {
           {/* Photo upload */}
           <div className="info-card">
             <h3>📸 Upload Photo</h3>
+            <div className="photo-review-status">
+              <div
+                className={`photo-review-pill ${pickupPhotos.length === 0 ? 'waiting' : pickupChecked ? 'approved' : 'pending'}`}
+              >
+                Pickup: {pickupPhotos.length === 0 ? 'No photo yet' : pickupChecked ? 'Marked OK' : 'Pending admin check'}
+              </div>
+              <div
+                className={`photo-review-pill ${deliveryPhotos.length === 0 ? 'waiting' : deliveryChecked ? 'approved' : 'pending'}`}
+              >
+                Delivery: {deliveryPhotos.length === 0 ? 'No photo yet' : deliveryChecked ? 'Marked OK' : 'Pending admin check'}
+              </div>
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -582,13 +596,13 @@ const DriverActiveJob = () => {
                   {pickupPhotos.map((photo) => (
                     <div className="uploaded-photo-card" key={`pickup-${photo.id}`}>
                       <img src={getImageUrl(photo.image_path)} alt="Pickup proof" />
-                      <span>Pickup</span>
+                      <span>Pickup {pickupChecked ? '• Marked OK' : '• Pending'}</span>
                     </div>
                   ))}
                   {deliveryPhotos.map((photo) => (
                     <div className="uploaded-photo-card" key={`delivery-${photo.id}`}>
                       <img src={getImageUrl(photo.image_path)} alt="Delivery proof" />
-                      <span>Delivery</span>
+                      <span>Delivery {deliveryChecked ? '• Marked OK' : '• Pending'}</span>
                     </div>
                   ))}
                   {issuePhotos.map((photo) => (

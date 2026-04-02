@@ -77,6 +77,23 @@
   margin-bottom: 0.5rem;
 }
 
+.product-price-block {
+  margin-bottom: 0.5rem;
+}
+
+.product-price-original {
+  margin: 0;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+.product-price-discounted {
+  margin: 0.2rem 0 0;
+  color: #dc2626;
+  font-weight: 700;
+}
+
 .product-stock {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -242,6 +259,19 @@
   margin-top: 0.25rem;
   font-size: 0.875rem;
   color: var(--text-secondary);
+}
+
+.discount-settings {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.discount-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
 }
 
 .modal-actions {

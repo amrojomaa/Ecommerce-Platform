@@ -26,6 +26,7 @@ export const PRODUCT_ENDPOINTS = {
   FILTER_ADMIN: '/products/filter/admin',
   CREATE: '/products/create',
   UPDATE: '/products/{id}',
+  UPDATE_DISCOUNT: '/products/{id}/discount',
   DELETE: '/products/{id}',
 };
 

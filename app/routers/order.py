@@ -90,7 +90,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                     order_id=existing_order.id,
                     product_id=item.product_id,
                     quantity=item.quantity,
-                    price=float(item.product.price),
+                    price=float(item.product.final_price),
                     total=item.total
                 ))
                 cart_total += item.total
@@ -124,7 +124,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                 order_id=new_order.id,
                 product_id=item.product_id,
                 quantity=item.quantity,
-                price=float(item.product.price),
+                price=float(item.product.final_price),
                 total=item.total
             ))
 

@@ -20,6 +20,7 @@ const DriverMap = () => {
   const driverMarkerRef = useRef(null);
   const routeLayersRef = useRef([]);
   const routeRequestSeqRef = useRef(0);
+  const mapSessionRef = useRef(0);
 
   const toRadians = (value) => (value * Math.PI) / 180;
   const haversineDistanceKm = (startLat, startLng, endLat, endLng) => {
@@ -83,6 +84,7 @@ const DriverMap = () => {
     const L = window.L;
     if (!L) return;
 
+    const currentSession = ++mapSessionRef.current;
     const map = L.map(mapRef.current).setView([driverPosition.lat, driverPosition.lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -101,7 +103,31 @@ const DriverMap = () => {
     driverMarkerRef.current = L.marker([driverPosition.lat, driverPosition.lng], { icon: driverIcon }).addTo(map);
 
     return () => {
-      map.remove();
+      if (mapSessionRef.current === currentSession) {
+        mapSessionRef.current += 1;
+      }
+      routeRequestSeqRef.current += 1;
+      routeLayersRef.current.forEach((layer) => {
+        try {
+          layer.remove();
+        } catch (e) {}
+      });
+      routeLayersRef.current = [];
+      markersRef.current.forEach((marker) => {
+        try {
+          marker.remove();
+        } catch (e) {}
+      });
+      markersRef.current = [];
+      if (driverMarkerRef.current) {
+        try {
+          driverMarkerRef.current.remove();
+        } catch (e) {}
+        driverMarkerRef.current = null;
+      }
+      try {
+        map.remove();
+      } catch (e) {}
       mapInstanceRef.current = null;
     };
   }, [driverPosition]);
@@ -109,10 +135,14 @@ const DriverMap = () => {
   // Update markers when jobs change
   useEffect(() => {
     const L = window.L;
-    if (!L || !mapInstanceRef.current) return;
+    if (!L || !mapInstanceRef.current || !mapInstanceRef.current._loaded) return;
 
     // Clear old markers
-    markersRef.current.forEach((m) => m.remove());
+    markersRef.current.forEach((marker) => {
+      try {
+        marker.remove();
+      } catch (e) {}
+    });
     markersRef.current = [];
 
     jobs.forEach((job) => {
@@ -151,9 +181,19 @@ const DriverMap = () => {
   // Draw route paths for all jobs and collect per-job distance metrics
   useEffect(() => {
     const L = window.L;
-    if (!L || !mapInstanceRef.current || !driverPosition) return;
+    if (!L || !mapInstanceRef.current || !mapInstanceRef.current._loaded || !driverPosition) return;
 
-    routeLayersRef.current.forEach((layer) => layer.remove());
+    const activeSession = mapSessionRef.current;
+    const isMapValid = () =>
+      mapInstanceRef.current &&
+      mapInstanceRef.current._loaded &&
+      mapSessionRef.current === activeSession;
+
+    routeLayersRef.current.forEach((layer) => {
+      try {
+        layer.remove();
+      } catch (e) {}
+    });
     routeLayersRef.current = [];
 
     if (!jobs.length) {
@@ -172,11 +212,12 @@ const DriverMap = () => {
       try {
         const response = await fetch(osrmUrl);
         const data = await response.json();
-        if (requestSeq !== routeRequestSeqRef.current) {
+        if (requestSeq !== routeRequestSeqRef.current || !isMapValid()) {
           return null;
         }
         if (data.routes && data.routes.length > 0) {
           const routeCoordinates = data.routes[0].geometry.coordinates.map((coord) => [coord[1], coord[0]]);
+          if (!isMapValid()) return null;
           const layer = L.polyline(routeCoordinates, lineStyle).addTo(mapInstanceRef.current);
           return {
             layer,
@@ -187,6 +228,7 @@ const DriverMap = () => {
         console.error('Error fetching route:', error);
       }
 
+      if (!isMapValid()) return null;
       const fallbackLayer = L.polyline(
         [
           [startLat, startLng],
@@ -222,7 +264,7 @@ const DriverMap = () => {
           { color, weight: 4, opacity: 0.75, dashArray: '10, 10' }
         );
 
-        if (requestSeq !== routeRequestSeqRef.current) return;
+        if (requestSeq !== routeRequestSeqRef.current || !isMapValid()) return;
         if (!toPickup) return;
 
         newLayers.push(toPickup.layer);
@@ -242,7 +284,7 @@ const DriverMap = () => {
             { color, weight: 3, opacity: 0.5, dashArray: '7, 7' }
           );
 
-          if (requestSeq !== routeRequestSeqRef.current) return;
+          if (requestSeq !== routeRequestSeqRef.current || !isMapValid()) return;
           if (!pickupToDelivery) return;
           newLayers.push(pickupToDelivery.layer);
 
@@ -260,11 +302,16 @@ const DriverMap = () => {
         };
       }
 
+      if (!isMapValid()) return;
       routeLayersRef.current = newLayers;
       setRouteDistancesByJob(nextRouteDistancesByJob);
     };
 
     drawAllRoutes();
+
+    return () => {
+      routeRequestSeqRef.current += 1;
+    };
   }, [jobs, driverPosition]);
 
   // Derive closest job from warehouse (pickup) to delivery distance.
@@ -296,7 +343,7 @@ const DriverMap = () => {
 
   // Update driver marker position
   useEffect(() => {
-    if (driverMarkerRef.current && driverPosition) {
+    if (driverMarkerRef.current && driverPosition && mapInstanceRef.current && mapInstanceRef.current._loaded) {
       driverMarkerRef.current.setLatLng([driverPosition.lat, driverPosition.lng]);
     }
   }, [driverPosition]);
@@ -387,8 +434,10 @@ const DriverMap = () => {
                   className={`job-item ${selectedJob?.id === job.id ? 'selected' : ''} ${closestJobId === job.id ? 'closest-job-item' : ''}`}
                   onClick={() => {
                     setSelectedJob(job);
-                    if (mapInstanceRef.current && job.pickup_latitude) {
-                      mapInstanceRef.current.flyTo([job.pickup_latitude, job.pickup_longitude], 15);
+                    if (mapInstanceRef.current && mapInstanceRef.current._loaded && job.pickup_latitude) {
+                      try {
+                        mapInstanceRef.current.flyTo([job.pickup_latitude, job.pickup_longitude], 15);
+                      } catch (e) {}
                     }
                   }}
                 >

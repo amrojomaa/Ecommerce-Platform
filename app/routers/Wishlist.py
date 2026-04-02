@@ -9,11 +9,18 @@ from app import OAuth2
 
 def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem) -> dict:
     """Helper function to convert DBWishlistItem to dict with product images"""
+    original_price = float(wishlist_item.product.price)
+    discounted_price = float(wishlist_item.product.final_price)
+    has_discount = discounted_price < original_price
     return {
         "id": wishlist_item.id,
         "product": {
             "name": wishlist_item.product.name,
-            "price": float(wishlist_item.product.price),
+            "price": discounted_price,
+            "original_price": original_price,
+            "discounted_price": discounted_price,
+            "discount_enabled": bool(wishlist_item.product.discount_enabled),
+            "has_discount": has_discount,
             "category_name": wishlist_item.product.category_name,
             "description": wishlist_item.product.description,
             "images": [img.image_path for img in wishlist_item.product.images]

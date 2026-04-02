@@ -24,6 +24,9 @@ class DBProduct(Base):
     name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
+    discount_enabled = Column(Boolean, nullable=False, server_default='FALSE')
+    discount_type = Column(String, nullable=True)  # "percentage" or "fixed"
+    discount_value = Column(Numeric(10, 2), nullable=True, server_default=text('0'))
     quantity = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),nullable=False, server_default=text('now()'))
 
@@ -35,6 +38,29 @@ class DBProduct(Base):
     ratings = relationship("DBProductRating", back_populates="product", cascade="all, delete-orphan")
 
     # published = Column(Boolean, server_default='TRUE', nullable=False)
+
+    @property
+    def discounted_price(self):
+        original_price = float(self.price or 0)
+        if not self.discount_enabled:
+            return original_price
+
+        discount_value = float(self.discount_value or 0)
+        if self.discount_type == "percentage":
+            discount_amount = original_price * (discount_value / 100)
+        elif self.discount_type == "fixed":
+            discount_amount = discount_value
+        else:
+            discount_amount = 0
+
+        final_price = original_price - discount_amount
+        if final_price < 0:
+            final_price = 0
+        return round(final_price, 2)
+
+    @property
+    def final_price(self):
+        return self.discounted_price
 
 
 class DBProductImage(Base):
@@ -111,7 +137,7 @@ class DBCartItem(Base):
  
     @property
     def total(self):
-        return float(self.product.price * self.quantity)
+        return float(self.product.final_price * self.quantity)
     
 
 

@@ -87,6 +87,17 @@ def apply_schema_patches() -> None:
             )
         )
 
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS products
+                ADD COLUMN IF NOT EXISTS discount_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS discount_type VARCHAR,
+                ADD COLUMN IF NOT EXISTS discount_value NUMERIC(10, 2) DEFAULT 0
+                """
+            )
+        )
+
 
 apply_schema_patches()
 print("Data Base connected successfully!")

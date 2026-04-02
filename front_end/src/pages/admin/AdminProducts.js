@@ -24,6 +24,9 @@ const AdminProducts = () => {
     price: '',
     quantity: '',
     category_name: '',
+    discount_enabled: false,
+    discount_type: 'percentage',
+    discount_value: '',
   });
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -112,9 +115,10 @@ const AdminProducts = () => {
   };
 
   const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? checked : value,
     });
   };
 
@@ -173,11 +177,43 @@ const AdminProducts = () => {
     }
     
     try {
+      const basePrice = parseFloat(formData.price);
+      const discountEnabled = Boolean(formData.discount_enabled);
+      const discountType = formData.discount_type;
+      const rawDiscountValue = formData.discount_value;
+      const discountValue = parseFloat(rawDiscountValue);
+
+      if (discountEnabled) {
+        if (rawDiscountValue === '' || rawDiscountValue === null || rawDiscountValue === undefined) {
+          toast.error('Discount value is required when discount is enabled.');
+          return;
+        }
+        if (!['percentage', 'fixed'].includes(discountType)) {
+          toast.error('Please select a valid discount type.');
+          return;
+        }
+        if (Number.isNaN(discountValue) || discountValue <= 0) {
+          toast.error('Discount value must be greater than 0.');
+          return;
+        }
+        if (discountType === 'percentage' && discountValue > 100) {
+          toast.error('Percentage discount cannot be more than 100%.');
+          return;
+        }
+        if (discountType === 'fixed' && discountValue > basePrice) {
+          toast.error('Fixed discount cannot exceed the original price.');
+          return;
+        }
+      }
+
       const productData = {
         ...formData,
-        price: parseFloat(formData.price),
+        price: basePrice,
         quantity: parseInt(formData.quantity),
-        images: images
+        discount_enabled: discountEnabled,
+        discount_type: discountEnabled ? discountType : null,
+        discount_value: discountEnabled ? discountValue : 0,
+        images: images,
       };
       
       if (editingProduct) {
@@ -211,6 +247,9 @@ const AdminProducts = () => {
       price: product.price,
       quantity: product.quantity,
       category_name: product.category_name,
+      discount_enabled: Boolean(product.discount_enabled),
+      discount_type: product.discount_type || 'percentage',
+      discount_value: product.discount_value ?? '',
     });
     // Load existing images
     setImages(product.images || []);
@@ -238,6 +277,9 @@ const AdminProducts = () => {
       price: '',
       quantity: '',
       category_name: '',
+      discount_enabled: false,
+      discount_type: 'percentage',
+      discount_value: '',
     });
     setImages([]);
     setEditingProduct(null);
@@ -331,7 +373,14 @@ const AdminProducts = () => {
               <div className="product-info">
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category_name}</p>
-                <p className="product-price">{formatPrice(product.price)}</p>
+                {product.discount_enabled ? (
+                  <div className="product-price-block">
+                    <p className="product-price-original">{formatPrice(product.price)}</p>
+                    <p className="product-price-discounted">{formatPrice(product.discounted_price ?? product.price)}</p>
+                  </div>
+                ) : (
+                  <p className="product-price">{formatPrice(product.price)}</p>
+                )}
                 <p className="product-stock">Stock: {product.quantity}</p>
                 {sentimentAnalytics[product.id] && (
                   <div className="sentiment-analytics">
@@ -519,6 +568,48 @@ const AdminProducts = () => {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className="form-group discount-settings">
+                  <label className="discount-toggle">
+                    <input
+                      type="checkbox"
+                      name="discount_enabled"
+                      checked={formData.discount_enabled}
+                      onChange={handleInputChange}
+                    />
+                    Enable Discount
+                  </label>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Discount Type</label>
+                      <select
+                        name="discount_type"
+                        value={formData.discount_type}
+                        onChange={handleInputChange}
+                        disabled={!formData.discount_enabled}
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>
+                        Discount Value {formData.discount_type === 'percentage' ? '(%)' : '(Amount)'}
+                      </label>
+                      <input
+                        type="number"
+                        name="discount_value"
+                        value={formData.discount_value}
+                        onChange={handleInputChange}
+                        min="0"
+                        step="0.01"
+                        disabled={!formData.discount_enabled}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="modal-actions">

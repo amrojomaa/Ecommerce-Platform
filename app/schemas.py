@@ -34,6 +34,10 @@ class ProductBase(BaseModel):
     name: str
     description: str
     price: float
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discounted_price: Optional[float] = None
     quantity: int
     category_name: str
     images: Optional[List[str]] = []
@@ -46,6 +50,10 @@ class Product(BaseModel):
     name: str
     description: str
     price: float
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discounted_price: Optional[float] = None
     quantity: int
     category_name: str
     images: Optional[List[str]] = []
@@ -65,6 +73,12 @@ class Productname(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ProductDiscountUpdate(BaseModel):
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -148,6 +162,10 @@ class AddCart(BaseModel):
 class ShowCartOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     images: Optional[List[str]] = []
     # quantity: int
     # total: float
@@ -174,6 +192,10 @@ class Updateinputcart(BaseModel):
 class UpdateCartOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     images: Optional[List[str]] = []
 
     class Config:
@@ -419,6 +441,10 @@ class AddWishlist(BaseModel):
 class WishlistProductOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     category_name: Optional[str] = None
     description: Optional[str] = None
     images: Optional[List[str]] = []

@@ -45,6 +45,7 @@ import AdminUserDetails from './pages/admin/AdminUserDetails';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminComments from './pages/admin/AdminComments';
 import AdminDeliveries from './pages/admin/AdminDeliveries';
+import AdminDiscounts from './pages/admin/AdminDiscounts';
 
 //Pages - Employee
 import EmployeeLayout from './layouts/EmployeeLayout';
@@ -95,6 +96,7 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
+                    <Route path="discounts" element={<AdminDiscounts />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="deliveries" element={<AdminDeliveries />} />

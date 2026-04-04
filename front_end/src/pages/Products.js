@@ -203,6 +203,20 @@ const Products = () => {
 
         {/* Products Grid */}
         <main className="products-main">
+          <div className="products-toolbar">
+            <p className="products-count">
+              {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found
+            </p>
+            <div className="sort-controls">
+              <label>Sort by:</label>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="name">Name</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+          </div>
+
           {discountedProducts.length > 0 && (
             <section className="discounts-section">
               <h2>Discounts</h2>
@@ -242,20 +256,6 @@ const Products = () => {
               </div>
             </section>
           )}
-
-          <div className="products-toolbar">
-            <p className="products-count">
-              {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found
-            </p>
-            <div className="sort-controls">
-              <label>Sort by:</label>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="name">Name</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-            </div>
-          </div>
 
           {loading ? (
             <div className="products-grid">

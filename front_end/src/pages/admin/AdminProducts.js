@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
-import { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
+import API_BASE_URL, { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
@@ -32,6 +32,11 @@ const AdminProducts = () => {
   const [uploading, setUploading] = useState(false);
   const [isLowStockFilter, setIsLowStockFilter] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [quickFilters, setQuickFilters] = useState({
+    lowstock: false,
+    discounted: false,
+  });
   const [sentimentAnalytics, setSentimentAnalytics] = useState({}); // { productId: { total, positive, neutral, negative } }
 
   useEffect(() => {
@@ -58,15 +63,26 @@ const AdminProducts = () => {
     const isLowStock = filterParam === 'lowstock';
     setIsLowStockFilter(isLowStock);
     
-    if (isLowStock && allProducts.length > 0) {
-      // Filter products with quantity < threshold
-      const lowStockProducts = allProducts.filter(product => product.quantity < lowStockThreshold);
-      setProducts(lowStockProducts);
-    } else if (allProducts.length > 0) {
-      // Show all products if no filter
-      setProducts(allProducts);
+    let filteredProducts = [...allProducts];
+
+    if (isLowStock || quickFilters.lowstock) {
+      filteredProducts = filteredProducts.filter((product) => product.quantity < lowStockThreshold);
     }
-  }, [searchParams, allProducts, lowStockThreshold]);
+
+    if (quickFilters.discounted) {
+      filteredProducts = filteredProducts.filter((product) => product.discount_enabled);
+    }
+
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (normalizedQuery) {
+      filteredProducts = filteredProducts.filter((product) =>
+        product.name?.toLowerCase().includes(normalizedQuery) ||
+        product.category_name?.toLowerCase().includes(normalizedQuery)
+      );
+    }
+
+    setProducts(filteredProducts);
+  }, [searchParams, allProducts, lowStockThreshold, searchQuery, quickFilters]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -162,6 +178,15 @@ const AdminProducts = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const getImagePreviewUrl = (imagePath) => {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    const normalizedPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+    return `${API_BASE_URL}/${normalizedPath}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -178,12 +203,17 @@ const AdminProducts = () => {
     
     try {
       const basePrice = parseFloat(formData.price);
-      const discountEnabled = Boolean(formData.discount_enabled);
-      const discountType = formData.discount_type;
-      const rawDiscountValue = formData.discount_value;
-      const discountValue = parseFloat(rawDiscountValue);
+      let discountEnabled = Boolean(formData.discount_enabled);
+      let discountType = formData.discount_type;
+      let discountValue = parseFloat(formData.discount_value);
 
-      if (discountEnabled) {
+      // In edit mode, keep existing discount values as-is.
+      if (editingProduct) {
+        discountEnabled = Boolean(editingProduct.discount_enabled);
+        discountType = editingProduct.discount_type;
+        discountValue = editingProduct.discount_value ?? 0;
+      } else if (discountEnabled) {
+        const rawDiscountValue = formData.discount_value;
         if (rawDiscountValue === '' || rawDiscountValue === null || rawDiscountValue === undefined) {
           toast.error('Discount value is required when discount is enabled.');
           return;
@@ -247,9 +277,9 @@ const AdminProducts = () => {
       price: product.price,
       quantity: product.quantity,
       category_name: product.category_name,
-      discount_enabled: Boolean(product.discount_enabled),
-      discount_type: product.discount_type || 'percentage',
-      discount_value: product.discount_value ?? '',
+      discount_enabled: false,
+      discount_type: 'percentage',
+      discount_value: '',
     });
     // Load existing images
     setImages(product.images || []);
@@ -286,21 +316,91 @@ const AdminProducts = () => {
     setShowModal(false);
   };
 
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleQuickFilterClick = (filterName) => {
+    if (filterName === 'lowstock' && isLowStockFilter) {
+      navigate('/admin/products');
+      return;
+    }
+    setQuickFilters((prev) => ({
+      ...prev,
+      [filterName]: !prev[filterName],
+    }));
+  };
+
+  const clearQuickFilters = () => {
+    if (isLowStockFilter) {
+      navigate('/admin/products');
+    }
+    setQuickFilters({
+      lowstock: false,
+      discounted: false,
+    });
+  };
+
+  const totalProducts = allProducts.length;
+  const lowStockCount = allProducts.filter((product) => product.quantity < lowStockThreshold).length;
+  const discountedCount = allProducts.filter((product) => product.discount_enabled).length;
+
+  const isAnyQuickFilterActive = isLowStockFilter || quickFilters.lowstock || quickFilters.discounted;
+  const isLowStockActive = isLowStockFilter || quickFilters.lowstock;
+
   return (
     <div className="admin-products">
       <div className="admin-products-header">
-        <div>
+        <div className="header-left">
           <h1>Manage Products</h1>
+          <p className="admin-products-subtitle">Track inventory, update details, and manage your catalog faster.</p>
+          <div className="products-overview">
+            <button
+              type="button"
+              className={`overview-item ${!isAnyQuickFilterActive ? 'active' : ''}`}
+              onClick={clearQuickFilters}
+            >
+              <span className="overview-label">Total</span>
+              <span className="overview-value">{totalProducts}</span>
+            </button>
+            <button
+              type="button"
+              className={`overview-item ${isLowStockActive ? 'active warning' : ''}`}
+              onClick={() => handleQuickFilterClick('lowstock')}
+            >
+              <span className="overview-label">Low Stock</span>
+              <span className="overview-value warning">{lowStockCount}</span>
+            </button>
+            <button
+              type="button"
+              className={`overview-item ${quickFilters.discounted ? 'active success' : ''}`}
+              onClick={() => handleQuickFilterClick('discounted')}
+            >
+              <span className="overview-label">Discounted</span>
+              <span className="overview-value success">{discountedCount}</span>
+            </button>
+          </div>
           {isLowStockFilter && (
-            <p style={{ 
-              color: '#F44336', 
-              marginTop: '0.5rem',
-              fontSize: '0.9rem',
-              fontWeight: '500'
-            }}>
+            <p className="low-stock-banner">
               ⚠️ Showing low stock items (quantity {'<'} {lowStockThreshold})
             </p>
           )}
+          <div className="products-toolbar">
+            <div className="products-search">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by product or category..."
+                aria-label="Search products"
+              />
+              {searchQuery && (
+                <button type="button" className="clear-search-btn" onClick={clearSearch}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         <motion.button
           className="add-product-btn"
@@ -322,12 +422,8 @@ const AdminProducts = () => {
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '3rem',
-          color: 'var(--text-secondary)'
-        }}>
-          <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+        <div className="products-empty-state">
+          <p className="products-empty-text">
             {isLowStockFilter 
               ? 'No low stock items found. All products have sufficient inventory.' 
               : 'No products found.'}
@@ -335,15 +431,7 @@ const AdminProducts = () => {
           {isLowStockFilter && (
             <button
               onClick={() => navigate('/admin/products')}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.5rem',
-                cursor: 'pointer',
-                fontSize: '1rem'
-              }}
+              className="show-all-btn"
             >
               Show All Products
             </button>
@@ -362,15 +450,20 @@ const AdminProducts = () => {
               <div className="product-image">
                 <img
                   src={product.images && product.images.length > 0 
-                    ? `http://localhost:8000/${product.images[0]}`
-                    : `http://localhost:8000/images/placeholder.jpg`}
+                    ? getImagePreviewUrl(product.images[0])
+                    : `${API_BASE_URL}/images/placeholder.jpg`}
                   alt={product.name}
-                  // onError={(e) => {
-                  //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                  // }}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = `${API_BASE_URL}/images/placeholder.jpg`;
+                  }}
                 />
               </div>
               <div className="product-info">
+                <div className="product-status-row">
+                  {product.discount_enabled && <span className="status-chip discount">Discount</span>}
+                  {product.quantity < lowStockThreshold && <span className="status-chip low">Low Stock</span>}
+                </div>
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category_name}</p>
                 {product.discount_enabled ? (
@@ -555,6 +648,11 @@ const AdminProducts = () => {
                     <div className="uploaded-images">
                       {images.map((img, idx) => (
                         <div key={img || idx} className="image-tag">
+                          <img
+                            src={getImagePreviewUrl(img)}
+                            alt={`Product ${idx + 1}`}
+                            className="image-preview-thumb"
+                          />
                           <span>{img.split('/').pop()}</span>
                           <button
                             type="button"
@@ -570,47 +668,49 @@ const AdminProducts = () => {
                   )}
                 </div>
 
-                <div className="form-group discount-settings">
-                  <label className="discount-toggle">
-                    <input
-                      type="checkbox"
-                      name="discount_enabled"
-                      checked={formData.discount_enabled}
-                      onChange={handleInputChange}
-                    />
-                    Enable Discount
-                  </label>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Discount Type</label>
-                      <select
-                        name="discount_type"
-                        value={formData.discount_type}
-                        onChange={handleInputChange}
-                        disabled={!formData.discount_enabled}
-                      >
-                        <option value="percentage">Percentage (%)</option>
-                        <option value="fixed">Fixed Amount</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label>
-                        Discount Value {formData.discount_type === 'percentage' ? '(%)' : '(Amount)'}
-                      </label>
+                {!editingProduct && (
+                  <div className="form-group discount-settings">
+                    <label className="discount-toggle">
                       <input
-                        type="number"
-                        name="discount_value"
-                        value={formData.discount_value}
+                        type="checkbox"
+                        name="discount_enabled"
+                        checked={formData.discount_enabled}
                         onChange={handleInputChange}
-                        min="0"
-                        step="0.01"
-                        disabled={!formData.discount_enabled}
                       />
+                      Enable Discount
+                    </label>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Discount Type</label>
+                        <select
+                          name="discount_type"
+                          value={formData.discount_type}
+                          onChange={handleInputChange}
+                          disabled={!formData.discount_enabled}
+                        >
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="fixed">Fixed Amount</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>
+                          Discount Value {formData.discount_type === 'percentage' ? '(%)' : '(Amount)'}
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_value"
+                          value={formData.discount_value}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                          disabled={!formData.discount_enabled}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="modal-actions">
                   <button type="button" onClick={resetForm} className="cancel-btn">

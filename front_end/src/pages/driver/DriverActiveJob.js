@@ -4,6 +4,7 @@ import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
+import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/driver/DriverActiveJob.css';
 
 const DriverActiveJob = () => {
@@ -14,9 +15,18 @@ const DriverActiveJob = () => {
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [issueType, setIssueType] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
-  const [photoFile, setPhotoFile] = useState(null);
+  const [issuePhotoFile, setIssuePhotoFile] = useState(null);
+  const [issuePhotoPreview, setIssuePhotoPreview] = useState('');
+  const [pickupPhotoFile, setPickupPhotoFile] = useState(null);
+  const [pickupPhotoPreview, setPickupPhotoPreview] = useState('');
+  const [deliveryPhotoFile, setDeliveryPhotoFile] = useState(null);
+  const [deliveryPhotoPreview, setDeliveryPhotoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [issueMessages, setIssueMessages] = useState([]);
+  const [issueMessageText, setIssueMessageText] = useState('');
+  const [issueChatLoading, setIssueChatLoading] = useState(false);
+  const [issueSending, setIssueSending] = useState(false);
   
   const token = localStorage.getItem('token');
   // Hacky way to get driver ID if not stored in auth context directly, parse JWT if needed
@@ -63,6 +73,39 @@ const DriverActiveJob = () => {
     }, 30000);
     return () => clearInterval(pollInterval);
   }, [fetchActiveJobs]);
+
+  useEffect(() => {
+    if (!pickupPhotoFile) {
+      setPickupPhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(pickupPhotoFile);
+    setPickupPhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [pickupPhotoFile]);
+
+  useEffect(() => {
+    if (!deliveryPhotoFile) {
+      setDeliveryPhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(deliveryPhotoFile);
+    setDeliveryPhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [deliveryPhotoFile]);
+
+  useEffect(() => {
+    if (!issuePhotoFile) {
+      setIssuePhotoPreview('');
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(issuePhotoFile);
+    setIssuePhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [issuePhotoFile]);
 
   // Update location periodically
   useEffect(() => {
@@ -295,18 +338,26 @@ const DriverActiveJob = () => {
   };
 
   const handlePhotoUpload = async (type) => {
-    if (!photoFile || !activeJob) return;
+    if (!activeJob) return;
+    const selectedFile = type === 'pickup' ? pickupPhotoFile : deliveryPhotoFile;
+    if (!selectedFile) return;
+
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', photoFile);
+      formData.append('file', selectedFile);
       await http.post(
         buildUrl(DELIVERY_ENDPOINTS.UPLOAD_PHOTO, { job_id: activeJob.id }) + `?photo_type=${type}`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
       toast.success(`${type === 'pickup' ? 'Pickup' : 'Delivery'} photo uploaded!`);
-      setPhotoFile(null);
+      if (type === 'pickup') {
+        setPickupPhotoFile(null);
+      } else {
+        setDeliveryPhotoFile(null);
+      }
+      fetchActiveJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to upload photo');
     } finally {
@@ -317,19 +368,70 @@ const DriverActiveJob = () => {
   const handleReportIssue = async () => {
     if (!activeJob || !issueType) return;
     try {
-      await http.post(buildUrl(DELIVERY_ENDPOINTS.REPORT_ISSUE, { job_id: activeJob.id }), {
-        issue_type: issueType,
-        description: issueDescription,
+      const formData = new FormData();
+      formData.append('issue_type', issueType);
+      formData.append('description', issueDescription || '');
+      if (issuePhotoFile) {
+        formData.append('photo', issuePhotoFile);
+      }
+
+      await http.post(buildUrl(DELIVERY_ENDPOINTS.REPORT_ISSUE, { job_id: activeJob.id }), formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Issue reported');
       setShowIssueModal(false);
       setIssueType('');
       setIssueDescription('');
+      setIssuePhotoFile(null);
+      setIssuePhotoPreview('');
       fetchActiveJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to report issue');
     }
   };
+
+  const handleIssuePhotoChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setIssuePhotoFile(file);
+  };
+
+  const fetchIssueMessages = useCallback(async (jobId) => {
+    if (!jobId) return;
+    setIssueChatLoading(true);
+    try {
+      const response = await http.get(buildUrl(DELIVERY_ENDPOINTS.ISSUE_MESSAGES, { job_id: jobId }));
+      setIssueMessages(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      setIssueMessages([]);
+    } finally {
+      setIssueChatLoading(false);
+    }
+  }, []);
+
+  const handleSendIssueMessage = async () => {
+    if (!activeJob?.id || !issueMessageText.trim()) return;
+    setIssueSending(true);
+    try {
+      const response = await http.post(
+        buildUrl(DELIVERY_ENDPOINTS.ISSUE_MESSAGES, { job_id: activeJob.id }),
+        { message: issueMessageText.trim() }
+      );
+      setIssueMessages((prev) => [...prev, response.data]);
+      setIssueMessageText('');
+    } catch (error) {
+      toast.error(error.message || 'Failed to send issue message');
+    } finally {
+      setIssueSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeJob?.id && activeJob?.issue_type) {
+      fetchIssueMessages(activeJob.id);
+      return;
+    }
+    setIssueMessages([]);
+  }, [activeJob?.id, activeJob?.issue_type, fetchIssueMessages]);
 
   const getStatusSteps = () => {
     const steps = [
@@ -369,6 +471,17 @@ const DriverActiveJob = () => {
   }
 
   const statusSteps = getStatusSteps();
+  const allPhotos = Array.isArray(activeJob.photos) ? activeJob.photos : [];
+  const pickupPhotos = allPhotos.filter((photo) => photo.photo_type === 'pickup');
+  const deliveryPhotos = allPhotos.filter((photo) => photo.photo_type === 'delivery');
+  const issuePhotos = allPhotos.filter((photo) => photo.photo_type === 'issue');
+  const pickupChecked = !!activeJob.pickup_photo_checked;
+  const deliveryChecked = !!activeJob.delivery_photo_checked;
+  const canMarkPickup = activeJob.status === 'assigned' && pickupPhotos.length > 0 && pickupChecked;
+  const canMarkDelivered = (activeJob.status === 'picked_up' || activeJob.status === 'delivering')
+    && deliveryPhotos.length > 0
+    && deliveryChecked;
+  const canUploadDeliveryProof = activeJob.status === 'picked_up' || activeJob.status === 'delivering';
 
   return (
     <div className="active-job-page">
@@ -459,31 +572,163 @@ const DriverActiveJob = () => {
           {/* Photo upload */}
           <div className="info-card">
             <h3>📸 Upload Photo</h3>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files[0])}
-              className="photo-input"
-            />
-            {photoFile && (
-              <div className="photo-actions">
-                <button
-                  onClick={() => handlePhotoUpload('pickup')}
-                  disabled={uploading}
-                  className="btn-photo"
-                >
-                  {uploading ? '...' : 'Upload as Pickup'}
-                </button>
-                <button
-                  onClick={() => handlePhotoUpload('delivery')}
-                  disabled={uploading}
-                  className="btn-photo"
-                >
-                  {uploading ? '...' : 'Upload as Delivery'}
-                </button>
+            <div className="photo-review-status">
+              <div
+                className={`photo-review-pill ${pickupPhotos.length === 0 ? 'waiting' : pickupChecked ? 'approved' : 'pending'}`}
+              >
+                Pickup: {pickupPhotos.length === 0 ? 'No photo yet' : pickupChecked ? 'Marked OK' : 'Pending admin check'}
+              </div>
+              <div
+                className={`photo-review-pill ${deliveryPhotos.length === 0 ? 'waiting' : deliveryChecked ? 'approved' : 'pending'}`}
+              >
+                Delivery: {deliveryPhotos.length === 0 ? 'No photo yet' : deliveryChecked ? 'Marked OK' : 'Pending admin check'}
+              </div>
+            </div>
+            <div className="proof-upload-block">
+              <h4>Pickup Proof</h4>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPickupPhotoFile(e.target.files?.[0] || null)}
+                className="photo-input"
+                disabled={pickupPhotos.length > 0}
+              />
+              {pickupPhotoPreview && (
+                <div className="selected-photo-preview">
+                  <img src={pickupPhotoPreview} alt="Pickup selected upload" />
+                </div>
+              )}
+              {pickupPhotoFile && (
+                <div className="photo-actions">
+                  <button
+                    onClick={() => handlePhotoUpload('pickup')}
+                    disabled={uploading || pickupPhotos.length > 0}
+                    className="btn-photo"
+                  >
+                    {pickupPhotos.length > 0 ? 'Pickup Already Uploaded' : (uploading ? '...' : 'Upload Pickup Proof')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="proof-upload-block">
+              <h4>Delivery Proof</h4>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setDeliveryPhotoFile(e.target.files?.[0] || null)}
+                className="photo-input"
+                disabled={deliveryPhotos.length > 0 || !canUploadDeliveryProof}
+              />
+              {deliveryPhotoPreview && (
+                <div className="selected-photo-preview">
+                  <img src={deliveryPhotoPreview} alt="Delivery selected upload" />
+                </div>
+              )}
+              {deliveryPhotoFile && (
+                <div className="photo-actions">
+                  <button
+                    onClick={() => handlePhotoUpload('delivery')}
+                    disabled={uploading || deliveryPhotos.length > 0 || !canUploadDeliveryProof}
+                    className="btn-photo"
+                  >
+                    {!canUploadDeliveryProof
+                      ? 'Finish Pickup First'
+                      : deliveryPhotos.length > 0
+                        ? 'Delivery Already Uploaded'
+                        : (uploading ? '...' : 'Upload Delivery Proof')}
+                  </button>
+                </div>
+              )}
+            </div>
+            {!canUploadDeliveryProof && (
+              <p className="action-help-text">
+                You can upload delivery proof only after pickup is completed.
+              </p>
+            )}
+
+            {(pickupPhotos.length > 0 || deliveryPhotos.length > 0 || issuePhotos.length > 0) && (
+              <div className="uploaded-photos-wrap">
+                <h4>Uploaded Photos</h4>
+                <div className="uploaded-photos-grid">
+                  {pickupPhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`pickup-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Pickup proof" />
+                      <span>Pickup {pickupChecked ? '• Marked OK' : '• Pending'}</span>
+                    </div>
+                  ))}
+                  {deliveryPhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`delivery-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Delivery proof" />
+                      <span>Delivery {deliveryChecked ? '• Marked OK' : '• Pending'}</span>
+                    </div>
+                  ))}
+                  {issuePhotos.map((photo) => (
+                    <div className="uploaded-photo-card" key={`issue-${photo.id}`}>
+                      <img src={getImageUrl(photo.image_path)} alt="Issue photo" />
+                      <span>Issue</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
+
+          {activeJob.issue_type && (
+            <div className="info-card issue-summary-card">
+              <h3>⚠️ Reported Issue</h3>
+              {activeJob.issue_resolved && <p className="issue-resolved-badge">Solved by admin</p>}
+              <p className="issue-type-label">{activeJob.issue_type.replace(/_/g, ' ')}</p>
+              {activeJob.issue_description && <p>{activeJob.issue_description}</p>}
+              {issuePhotos.length > 0 && (
+                <div className="issue-photo-preview-grid">
+                  {issuePhotos.map((photo) => (
+                    <img key={`summary-issue-${photo.id}`} src={getImageUrl(photo.image_path)} alt="Issue preview" />
+                  ))}
+                </div>
+              )}
+
+              <div className="issue-thread-box">
+                <h4>Issue Discussion (Admin ↔ Driver)</h4>
+                {issueChatLoading ? (
+                  <p className="issue-thread-empty">Loading discussion...</p>
+                ) : issueMessages.length === 0 ? (
+                  <p className="issue-thread-empty">No messages yet.</p>
+                ) : (
+                  <div className="issue-thread-list">
+                    {issueMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`issue-thread-message ${msg.sender_id === currentUserId ? 'mine' : ''}`}
+                      >
+                        <div className="issue-thread-meta">
+                          <strong>{msg.sender_name || 'User'}</strong>
+                          <span>{msg.sender_role || 'user'} • {new Date(msg.created_at).toLocaleString()}</span>
+                        </div>
+                        <p>{msg.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!activeJob.issue_resolved ? (
+                  <div className="issue-thread-input-wrap">
+                    <input
+                      type="text"
+                      value={issueMessageText}
+                      onChange={(e) => setIssueMessageText(e.target.value)}
+                      placeholder="Write a message to admin..."
+                    />
+                    <button onClick={handleSendIssueMessage} disabled={issueSending || !issueMessageText.trim()}>
+                      {issueSending ? 'Sending...' : 'Send'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="issue-thread-closed">Discussion closed because issue is marked solved.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="action-buttons">
@@ -491,14 +736,24 @@ const DriverActiveJob = () => {
               💬 Chat with Customer
             </button>
             {activeJob.status === 'assigned' && (
-              <button onClick={handlePickup} disabled={updating} className="btn-primary-action">
+              <button onClick={handlePickup} disabled={updating || !canMarkPickup} className="btn-primary-action">
                 {updating ? 'Updating...' : '📦 Mark as Picked Up'}
               </button>
             )}
+            {activeJob.status === 'assigned' && !canMarkPickup && (
+              <p className="action-help-text">
+                Upload pickup proof and wait until admin marks it OK.
+              </p>
+            )}
             {(activeJob.status === 'picked_up' || activeJob.status === 'delivering') && (
-              <button onClick={handleDeliver} disabled={updating} className="btn-primary-action btn-deliver">
+              <button onClick={handleDeliver} disabled={updating || !canMarkDelivered} className="btn-primary-action btn-deliver">
                 {updating ? 'Updating...' : '🏠 Mark as Delivered'}
               </button>
+            )}
+            {(activeJob.status === 'picked_up' || activeJob.status === 'delivering') && !canMarkDelivered && (
+              <p className="action-help-text">
+                Upload delivery proof and wait until admin marks it OK.
+              </p>
             )}
             <button onClick={() => setShowIssueModal(true)} className="btn-report-issue">
               ⚠️ Report Issue
@@ -535,6 +790,21 @@ const DriverActiveJob = () => {
               onChange={(e) => setIssueDescription(e.target.value)}
               className="issue-description"
             />
+            <div className="issue-photo-upload-wrap">
+              <label htmlFor="issue-photo">Optional photo</label>
+              <input
+                id="issue-photo"
+                type="file"
+                accept="image/*"
+                onChange={handleIssuePhotoChange}
+                className="issue-photo-input"
+              />
+              {issuePhotoPreview && (
+                <div className="issue-photo-preview">
+                  <img src={issuePhotoPreview} alt="Issue upload preview" />
+                </div>
+              )}
+            </div>
             <button onClick={handleReportIssue} className="btn-submit-issue" disabled={!issueType}>
               Submit Report
             </button>

@@ -24,6 +24,9 @@ class DBProduct(Base):
     name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
+    discount_enabled = Column(Boolean, nullable=False, server_default='FALSE')
+    discount_type = Column(String, nullable=True)  # "percentage" or "fixed"
+    discount_value = Column(Numeric(10, 2), nullable=True, server_default=text('0'))
     quantity = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),nullable=False, server_default=text('now()'))
 
@@ -35,6 +38,29 @@ class DBProduct(Base):
     ratings = relationship("DBProductRating", back_populates="product", cascade="all, delete-orphan")
 
     # published = Column(Boolean, server_default='TRUE', nullable=False)
+
+    @property
+    def discounted_price(self):
+        original_price = float(self.price or 0)
+        if not self.discount_enabled:
+            return original_price
+
+        discount_value = float(self.discount_value or 0)
+        if self.discount_type == "percentage":
+            discount_amount = original_price * (discount_value / 100)
+        elif self.discount_type == "fixed":
+            discount_amount = discount_value
+        else:
+            discount_amount = 0
+
+        final_price = original_price - discount_amount
+        if final_price < 0:
+            final_price = 0
+        return round(final_price, 2)
+
+    @property
+    def final_price(self):
+        return self.discounted_price
 
 
 class DBProductImage(Base):
@@ -112,7 +138,7 @@ class DBCartItem(Base):
  
     @property
     def total(self):
-        return float(self.product.price * self.quantity)
+        return float(self.product.final_price * self.quantity)
     
 
 
@@ -267,13 +293,18 @@ class DBDeliveryJob(Base):
     payment_amount = Column(Float, nullable=False, server_default=text('0'))
     issue_type = Column(String, nullable=True)
     issue_description = Column(String, nullable=True)
+    issue_resolved = Column(Boolean, nullable=False, server_default='FALSE')
+    issue_resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    issue_resolved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     order = relationship("DBOrder", back_populates="delivery_job")
     driver = relationship("DBUser", foreign_keys=[driver_id])
+    issue_resolver = relationship("DBUser", foreign_keys=[issue_resolved_by])
     photos = relationship("DBDeliveryPhoto", back_populates="delivery_job", cascade="all, delete-orphan")
     messages = relationship("DBDeliveryChatMessage", back_populates="delivery_job", cascade="all, delete-orphan")
+    issue_messages = relationship("DBDeliveryIssueMessage", back_populates="delivery_job", cascade="all, delete-orphan")
 
 
 class DBDeliveryChatMessage(Base):
@@ -283,9 +314,29 @@ class DBDeliveryChatMessage(Base):
     sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    is_edited = Column(Boolean, nullable=False, server_default='FALSE')
+    is_deleted = Column(Boolean, nullable=False, server_default='FALSE')
 
     delivery_job = relationship("DBDeliveryJob", back_populates="messages")
     sender = relationship("DBUser", foreign_keys=[sender_id])
+    reactions = relationship("DBDeliveryChatReaction", back_populates="message_obj", cascade="all, delete-orphan")
+
+
+class DBDeliveryChatReaction(Base):
+    __tablename__ = "delivery_chat_reactions"
+    id = Column(Integer, primary_key=True, nullable=False)
+    message_id = Column(Integer, ForeignKey("delivery_chat_messages.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    reaction = Column(String(16), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    message_obj = relationship("DBDeliveryChatMessage", back_populates="reactions")
+    user = relationship("DBUser", foreign_keys=[user_id])
+
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', name='uq_delivery_chat_reaction_message_user'),
+    )
 
 
 class DBDriverLocation(Base):
@@ -321,3 +372,15 @@ class DBDriverEarning(Base):
 
     driver = relationship("DBUser", foreign_keys=[driver_id])
     delivery_job = relationship("DBDeliveryJob", foreign_keys=[delivery_job_id])
+
+
+class DBDeliveryIssueMessage(Base):
+    __tablename__ = "delivery_issue_messages"
+    id = Column(Integer, primary_key=True, nullable=False)
+    delivery_job_id = Column(Integer, ForeignKey("delivery_jobs.id", ondelete="CASCADE"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    delivery_job = relationship("DBDeliveryJob", back_populates="issue_messages")
+    sender = relationship("DBUser", foreign_keys=[sender_id])

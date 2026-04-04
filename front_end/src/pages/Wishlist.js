@@ -110,7 +110,19 @@ const Wishlist = () => {
                 <div className="wishlist-item-info">
                   <h3>{product.name}</h3>
                   <p className="wishlist-item-category">{product.category_name}</p>
-                  <p className="wishlist-item-price">{formatPrice(product.price)}</p>
+                  {(() => {
+                    const originalPrice = Number(product.original_price ?? product.price ?? 0);
+                    const discountedPrice = Number(product.discounted_price ?? product.price ?? 0);
+                    const hasDiscount = Boolean(product.has_discount) || discountedPrice < originalPrice;
+                    return hasDiscount ? (
+                      <div className="wishlist-price-block">
+                        <p className="wishlist-item-price-old">{formatPrice(originalPrice)}</p>
+                        <p className="wishlist-item-price-new">{formatPrice(discountedPrice)}</p>
+                      </div>
+                    ) : (
+                      <p className="wishlist-item-price">{formatPrice(product.price)}</p>
+                    );
+                  })()}
                 </div>
               </Link>
               <button

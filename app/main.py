@@ -26,6 +26,59 @@ if settings.auto_create_tables:
 else:
     logger.info("AUTO_CREATE_TABLES is disabled. Expecting managed schema migrations.")
 
+def apply_schema_updates():
+    """Apply lightweight schema updates for existing databases."""
+    with engine.begin() as conn:
+        conn.execute(text("""
+            ALTER TABLE IF EXISTS delivery_jobs
+                ADD COLUMN IF NOT EXISTS issue_resolved BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS issue_resolved_at TIMESTAMPTZ,
+                ADD COLUMN IF NOT EXISTS issue_resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS delivery_issue_messages (
+                id SERIAL PRIMARY KEY,
+                delivery_job_id INTEGER NOT NULL REFERENCES delivery_jobs(id) ON DELETE CASCADE,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                message VARCHAR NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_issue_messages_delivery_job_id
+            ON delivery_issue_messages(delivery_job_id)
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_issue_messages_created_at
+            ON delivery_issue_messages(created_at)
+        """))
+
+        conn.execute(text("""
+            ALTER TABLE delivery_chat_messages
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ,
+                ADD COLUMN IF NOT EXISTS is_edited BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+        """))
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS delivery_chat_reactions (
+                id SERIAL PRIMARY KEY,
+                message_id INTEGER NOT NULL REFERENCES delivery_chat_messages(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                reaction VARCHAR(16) NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT uq_delivery_chat_reaction_message_user UNIQUE (message_id, user_id)
+            )
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_delivery_chat_reactions_message_id
+            ON delivery_chat_reactions(message_id)
+        """))
+
 
 def apply_schema_patches() -> None:
     """Apply additive schema patches for existing databases."""
@@ -40,7 +93,19 @@ def apply_schema_patches() -> None:
             )
         )
 
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS products
+                ADD COLUMN IF NOT EXISTS discount_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS discount_type VARCHAR,
+                ADD COLUMN IF NOT EXISTS discount_value NUMERIC(10, 2) DEFAULT 0
+                """
+            )
+        )
 
+
+apply_schema_updates()
 apply_schema_patches()
 logger.info("Database connected successfully.")
 

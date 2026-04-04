@@ -152,6 +152,26 @@
   color: var(--primary-color);
 }
 
+.wishlist-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.wishlist-item-price-old {
+  margin: 0;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+.wishlist-item-price-new {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #dc2626;
+}
+
 .remove-wishlist-btn {
   position: absolute;
   top: 1rem;

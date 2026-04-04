@@ -9,6 +9,58 @@ from typing import List
 import logging
 
 
+def validate_discount(price: float, discount_enabled: bool, discount_type: str | None, discount_value: float | None):
+    if not discount_enabled:
+        return False, None, 0.0
+
+    if discount_type not in ["percentage", "fixed"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="discount_type must be either 'percentage' or 'fixed' when discount is enabled"
+        )
+
+    if discount_value is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="discount_value is required when discount is enabled"
+        )
+
+    try:
+        value = float(discount_value)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="discount_value must be a valid number"
+        )
+
+    if value <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="discount_value must be greater than zero when discount is enabled"
+        )
+
+    if discount_type == "percentage":
+        if value > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Percentage discount cannot be more than 100"
+            )
+        discount_amount = price * (value / 100)
+    else:
+        if value > price:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Fixed discount cannot exceed the original price"
+            )
+        discount_amount = value
+
+    final_price = price - discount_amount
+    if final_price < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Final price cannot be less than zero")
+
+    return True, discount_type, round(value, 2)
+
+
 router = APIRouter(
     # prefix="/products",
     tags=['Products']
@@ -24,6 +76,10 @@ def get_product_with_images(product: models.DBProduct) -> dict:
         "name": product.name,
         "description": product.description,
         "price": float(product.price),
+        "discount_enabled": bool(product.discount_enabled),
+        "discount_type": product.discount_type,
+        "discount_value": float(product.discount_value or 0),
+        "discounted_price": float(product.discounted_price),
         "quantity": product.quantity,
         "category_name": product.category_name,
         "images": [img.image_path for img in product.images]
@@ -123,9 +179,19 @@ def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db),
     if len(images) > 3:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
     
-    # Create product without images (images is not a column in DBProduct)
+    # Create product without images/derived fields
     product_dict = product.dict()
     product_dict.pop('images', None)
+    product_dict.pop('discounted_price', None)
+    discount_enabled, discount_type, discount_value = validate_discount(
+        float(product_dict.get("price", 0)),
+        bool(product_dict.get("discount_enabled", False)),
+        product_dict.get("discount_type"),
+        product_dict.get("discount_value"),
+    )
+    product_dict["discount_enabled"] = discount_enabled
+    product_dict["discount_type"] = discount_type
+    product_dict["discount_value"] = discount_value
     new_product = models.DBProduct(**product_dict)
     
     db.add(new_product)
@@ -206,10 +272,20 @@ def update_product(product: schemas.ProductBase, id :int, db: Session = Depends 
         if len(images) > 3:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
         
-        # Update product without images and id (id is primary key, shouldn't be updated)
+        # Update product without images, id, and derived fields
         product_dict = product.dict()
         product_dict.pop('images', None)
         product_dict.pop('id', None)  # Remove id to prevent updating primary key
+        product_dict.pop('discounted_price', None)
+        discount_enabled, discount_type, discount_value = validate_discount(
+            float(product_dict.get("price", 0)),
+            bool(product_dict.get("discount_enabled", False)),
+            product_dict.get("discount_type"),
+            product_dict.get("discount_value"),
+        )
+        product_dict["discount_enabled"] = discount_enabled
+        product_dict["discount_type"] = discount_type
+        product_dict["discount_value"] = discount_value
         updateproduct.update(product_dict, synchronize_session=False)
         
         # Delete existing images
@@ -235,6 +311,32 @@ def update_product(product: schemas.ProductBase, id :int, db: Session = Depends 
         db.rollback()
         logger.exception("Error updating product")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error updating product")
+
+
+@router.patch("/products/{id}/discount", response_model=schemas.ProductBase)
+def update_product_discount(
+    id: int,
+    payload: schemas.ProductDiscountUpdate,
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_admin)
+):
+    product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    discount_enabled, discount_type, discount_value = validate_discount(
+        float(product.price),
+        payload.discount_enabled,
+        payload.discount_type,
+        payload.discount_value,
+    )
+    product.discount_enabled = discount_enabled
+    product.discount_type = discount_type
+    product.discount_value = discount_value
+
+    db.commit()
+    db.refresh(product)
+    return schemas.ProductBase(**get_product_with_images(product))
 
 
 @router.delete("/products/{id}",  status_code=status.HTTP_204_NO_CONTENT)

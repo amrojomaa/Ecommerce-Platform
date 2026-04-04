@@ -9,13 +9,20 @@ from app import OAuth2
 
 def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
     """Helper function to convert DBCartItem to dict with product images"""
+    original_price = float(cart_item.product.price)
+    discounted_price = float(cart_item.product.final_price)
+    has_discount = discounted_price < original_price
     return {
         "id": cart_item.id,
         "quantity": cart_item.quantity,
         "total": float(cart_item.total),
         "product": {
             "name": cart_item.product.name,
-            "price": float(cart_item.product.price),
+            "price": discounted_price,
+            "original_price": original_price,
+            "discounted_price": discounted_price,
+            "discount_enabled": bool(cart_item.product.discount_enabled),
+            "has_discount": has_discount,
             "images": [img.image_path for img in cart_item.product.images]
         }
     }
@@ -64,10 +71,17 @@ def add_to_cart(request :schemas.AddCart, db: Session = Depends (get_db), curren
     # raise HTTPException(status_code=status.HTTP_200_OK, detail="add to cart succsessfully")
     
     # Return cart item with product images
+    original_price = float(cart_item.product.price)
+    discounted_price = float(cart_item.product.final_price)
+    has_discount = discounted_price < original_price
     return {
         "product": {
             "name": cart_item.product.name,
-            "price": float(cart_item.product.price),
+            "price": discounted_price,
+            "original_price": original_price,
+            "discounted_price": discounted_price,
+            "discount_enabled": bool(cart_item.product.discount_enabled),
+            "has_discount": has_discount,
             "images": [img.image_path for img in cart_item.product.images]
         },
         "quantity": cart_item.quantity,
@@ -112,10 +126,17 @@ def update_cart(item_id: int, request :schemas.Updateinputcart, db: Session = De
     db.refresh(cartitem)
     
     # Return cart item with product images
+    original_price = float(cartitem.product.price)
+    discounted_price = float(cartitem.product.final_price)
+    has_discount = discounted_price < original_price
     return {
         "product": {
             "name": cartitem.product.name,
-            "price": float(cartitem.product.price),
+            "price": discounted_price,
+            "original_price": original_price,
+            "discounted_price": discounted_price,
+            "discount_enabled": bool(cartitem.product.discount_enabled),
+            "has_discount": has_discount,
             "images": [img.image_path for img in cartitem.product.images]
         },
         "quantity": cartitem.quantity,

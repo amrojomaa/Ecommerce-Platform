@@ -121,6 +121,23 @@ body.cart-updating {
   color: var(--text-secondary);
 }
 
+.cart-discount-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cart-old-price {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+.cart-new-price {
+  color: #dc2626;
+  font-weight: 700;
+}
+
 .cart-item-quantity {
   display: flex;
   align-items: center;

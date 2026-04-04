@@ -362,6 +362,16 @@ const AdminDashboard = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
+          <Link to="/admin/discounts" className="dashboard-action-card">
+            <h3>Manage Discounts</h3>
+            <p>Enable, disable, and edit product discounts</p>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <Link to="/admin/categories" className="dashboard-action-card">
             <h3>{t('manageCategories', 'Manage Categories')}</h3>
             <p>{t('organizeProductCategories', 'Organize your product categories')}</p>

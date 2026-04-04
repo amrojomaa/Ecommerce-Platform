@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from datetime import datetime, timezone, timedelta
-from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status, Depends, UploadFile, File
+from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status, Depends, UploadFile, File, Form
 from fastapi import APIRouter
 from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
@@ -17,6 +17,22 @@ router = APIRouter(
     tags=['Delivery']
 )
 
+PHOTO_ACK_TYPES = {
+    "pickup": "pickup_ok",
+    "delivery": "delivery_ok",
+}
+
+
+def _job_has_photo_type(job: models.DBDeliveryJob, photo_type: str) -> bool:
+    return any(photo.photo_type == photo_type for photo in (job.photos or []))
+
+
+def _job_photo_type_checked(job: models.DBDeliveryJob, photo_type: str) -> bool:
+    ack_type = PHOTO_ACK_TYPES.get(photo_type)
+    if not ack_type:
+        return False
+    return _job_has_photo_type(job, ack_type)
+
 
 # ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -28,6 +44,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
     order = job.order
     customer = order.user if order else None
     items = []
+    photos = []
     if order and order.orderitems:
         for oi in order.orderitems:
             images = []
@@ -44,6 +61,18 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
                 "total": float(oi.total),
             })
 
+    photo_types = set()
+    if job.photos:
+        for photo in job.photos:
+            photo_types.add(photo.photo_type)
+            if photo.photo_type not in ("pickup", "delivery", "issue"):
+                continue
+            photos.append({
+                "id": photo.id,
+                "photo_type": photo.photo_type,
+                "image_path": photo.image_path,
+                "created_at": photo.created_at,
+            })
     effective_payment_amount = float(order.total_amount) if order and order.total_amount is not None else float(job.payment_amount or 0)
 
     return {
@@ -57,8 +86,14 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
         "delivery_address": job.delivery_address,
         "delivery_latitude": job.delivery_latitude,
         "delivery_longitude": job.delivery_longitude,
+        "payment_amount": job.payment_amount,
+        "issue_type": job.issue_type,
         "payment_amount": effective_payment_amount,
         "issue_description": job.issue_description,
+        "issue_resolved": bool(job.issue_resolved),
+        "issue_resolved_at": job.issue_resolved_at,
+        "pickup_photo_checked": PHOTO_ACK_TYPES["pickup"] in photo_types,
+        "delivery_photo_checked": PHOTO_ACK_TYPES["delivery"] in photo_types,
         "created_at": job.created_at,
         "updated_at": job.updated_at,
         "customer": {
@@ -70,6 +105,7 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
             "street": customer.street,
         } if customer else None,
         "items": items,
+        "photos": photos,
     }
 
 
@@ -83,8 +119,46 @@ def _load_job_query(db: Session):
             .selectinload(models.DBOrder.orderitems)
             .joinedload(models.DBOrderItem.product)
             .selectinload(models.DBProduct.images),
+            selectinload(models.DBDeliveryJob.photos),
+            joinedload(models.DBDeliveryJob.driver),
         )
     )
+
+
+def _clear_issue_report(db: Session, job: models.DBDeliveryJob):
+    """Clear issue-related data so it does not persist beyond this job lifecycle."""
+    if not job:
+        return
+
+    job.issue_type = None
+    job.issue_description = None
+    job.issue_resolved = False
+    job.issue_resolved_at = None
+    job.issue_resolved_by = None
+
+    issue_photos = (
+        db.query(models.DBDeliveryPhoto)
+        .filter(
+            models.DBDeliveryPhoto.delivery_job_id == job.id,
+            models.DBDeliveryPhoto.photo_type == "issue",
+        )
+        .all()
+    )
+    for photo in issue_photos:
+        if photo.image_path and os.path.exists(photo.image_path):
+            try:
+                os.remove(photo.image_path)
+            except OSError:
+                pass
+
+    db.query(models.DBDeliveryPhoto).filter(
+        models.DBDeliveryPhoto.delivery_job_id == job.id,
+        models.DBDeliveryPhoto.photo_type == "issue",
+    ).delete(synchronize_session=False)
+
+    db.query(models.DBDeliveryIssueMessage).filter(
+        models.DBDeliveryIssueMessage.delivery_job_id == job.id
+    ).delete(synchronize_session=False)
 
 
 # ─── Available Jobs ──────────────────────────────────────────────────────────
@@ -156,6 +230,7 @@ def decline_job(
 
     # If driver previously accepted then declines, set back to available
     if job.status == "assigned" and job.driver_id == current_user.id:
+        _clear_issue_report(db, job)
         job.status = "available"
         job.driver_id = None
         job.updated_at = datetime.now(timezone.utc)
@@ -183,6 +258,10 @@ def mark_pickup(
         raise HTTPException(status_code=403, detail="Not your job")
     if job.status != "assigned":
         raise HTTPException(status_code=400, detail=f"Cannot pick up from status '{job.status}'")
+    if not _job_has_photo_type(job, "pickup"):
+        raise HTTPException(status_code=400, detail="Upload pickup proof photo first")
+    if not _job_photo_type_checked(job, "pickup"):
+        raise HTTPException(status_code=400, detail="Pickup proof photo must be checked by admin")
 
     job.status = "picked_up"
     job.updated_at = datetime.now(timezone.utc)
@@ -207,7 +286,12 @@ def mark_delivered(
         raise HTTPException(status_code=403, detail="Not your job")
     if job.status not in ("picked_up", "delivering"):
         raise HTTPException(status_code=400, detail=f"Cannot deliver from status '{job.status}'")
+    if not _job_has_photo_type(job, "delivery"):
+        raise HTTPException(status_code=400, detail="Upload delivery proof photo first")
+    if not _job_photo_type_checked(job, "delivery"):
+        raise HTTPException(status_code=400, detail="Delivery proof photo must be checked by admin")
 
+    _clear_issue_report(db, job)
     job.status = "delivered"
     job.updated_at = datetime.now(timezone.utc)
     if job.order:
@@ -238,14 +322,32 @@ def upload_photo(
     db: Session = Depends(get_db),
     current_user=Depends(require_driver),
 ):
-    if photo_type not in ("pickup", "delivery"):
-        raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
+    if photo_type not in ("pickup", "delivery", "issue"):
+        raise HTTPException(status_code=400, detail="photo_type must be 'pickup', 'delivery', or 'issue'")
 
     job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     if job.driver_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not your job")
+
+    if photo_type == "delivery" and job.status not in ("picked_up", "delivering"):
+        raise HTTPException(
+            status_code=400,
+            detail="Delivery proof photo can be uploaded only after pickup is completed",
+        )
+
+    if photo_type in ("pickup", "delivery"):
+        existing_type_photo = (
+            db.query(models.DBDeliveryPhoto)
+            .filter(
+                models.DBDeliveryPhoto.delivery_job_id == job_id,
+                models.DBDeliveryPhoto.photo_type == photo_type,
+            )
+            .first()
+        )
+        if existing_type_photo:
+            raise HTTPException(status_code=400, detail=f"Only one {photo_type} proof photo is allowed")
 
     # Save file
     upload_dir = os.path.join("images", "delivery")
@@ -269,15 +371,73 @@ def upload_photo(
     return {"message": "Photo uploaded", "image_path": filepath}
 
 
+@router.post("/jobs/{job_id}/photo-review", response_model=schemas.AdminDeliveryJobResponse)
+def mark_photo_reviewed(
+    job_id: int,
+    photo_type: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    if photo_type not in PHOTO_ACK_TYPES:
+        raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
+
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    ack_type = PHOTO_ACK_TYPES[photo_type]
+    existing_ack = (
+        db.query(models.DBDeliveryPhoto)
+        .filter(
+            models.DBDeliveryPhoto.delivery_job_id == job_id,
+            models.DBDeliveryPhoto.photo_type == ack_type,
+        )
+        .first()
+    )
+
+    if not existing_ack:
+        has_type_photo = (
+            db.query(models.DBDeliveryPhoto)
+            .filter(
+                models.DBDeliveryPhoto.delivery_job_id == job_id,
+                models.DBDeliveryPhoto.photo_type == photo_type,
+            )
+            .first()
+        )
+        if not has_type_photo:
+            raise HTTPException(status_code=400, detail=f"No {photo_type} photos found for this job")
+
+        db.add(
+            models.DBDeliveryPhoto(
+                delivery_job_id=job_id,
+                photo_type=ack_type,
+                image_path="__admin_ok__",
+            )
+        )
+        db.commit()
+
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    resp = _job_to_response(job)
+    if job.driver:
+        resp["driver_name"] = f"{job.driver.first_name} {job.driver.last_name}"
+    else:
+        resp["driver_name"] = None
+    resp["issue_type"] = job.issue_type
+    return resp
+
+
 # ─── Report Issue ─────────────────────────────────────────────────────────────
 
 @router.post("/jobs/{job_id}/report-issue", response_model=schemas.DeliveryJobResponse)
 def report_issue(
     job_id: int,
-    report: schemas.IssueReport,
+    issue_type: str = Form(...),
+    description: Optional[str] = Form(None),
+    photo: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(require_driver),
 ):
+    report = schemas.IssueReport(issue_type=issue_type, description=description)
     job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -286,10 +446,147 @@ def report_issue(
 
     job.issue_type = report.issue_type
     job.issue_description = report.description
+    job.issue_resolved = False
+    job.issue_resolved_at = None
+    job.issue_resolved_by = None
+    job.updated_at = datetime.now(timezone.utc)
+
+    if photo is not None:
+        upload_dir = os.path.join("images", "delivery")
+        os.makedirs(upload_dir, exist_ok=True)
+        ext = os.path.splitext(photo.filename)[1] if photo.filename else ".jpg"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(upload_dir, filename)
+
+        with open(filepath, "wb") as f:
+            content = photo.file.read()
+            f.write(content)
+
+        issue_photo = models.DBDeliveryPhoto(
+            delivery_job_id=job_id,
+            photo_type="issue",
+            image_path=filepath,
+        )
+        db.add(issue_photo)
+
+    db.commit()
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    return _job_to_response(job)
+
+
+def _ensure_issue_chat_access(job: models.DBDeliveryJob, user: models.DBUser):
+    if user.role == "admin":
+        return
+    if user.role == "driver" and job.driver_id == user.id:
+        return
+    raise HTTPException(status_code=403, detail="Not authorized for issue discussion")
+
+
+@router.get("/jobs/{job_id}/issue-messages", response_model=List[schemas.DeliveryIssueMessageResponse])
+def get_issue_messages(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    _ensure_issue_chat_access(job, user)
+
+    messages = (
+        db.query(models.DBDeliveryIssueMessage)
+        .options(joinedload(models.DBDeliveryIssueMessage.sender))
+        .filter(models.DBDeliveryIssueMessage.delivery_job_id == job_id)
+        .order_by(models.DBDeliveryIssueMessage.created_at.asc())
+        .all()
+    )
+
+    return [
+        {
+            "id": msg.id,
+            "delivery_job_id": msg.delivery_job_id,
+            "sender_id": msg.sender_id,
+            "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
+            "sender_role": msg.sender.role if msg.sender else None,
+            "message": msg.message,
+            "created_at": msg.created_at,
+        }
+        for msg in messages
+    ]
+
+
+@router.post("/jobs/{job_id}/issue-messages", response_model=schemas.DeliveryIssueMessageResponse)
+def send_issue_message(
+    job_id: int,
+    payload: schemas.DeliveryIssueMessageCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    _ensure_issue_chat_access(job, user)
+
+    if not job.issue_type:
+        raise HTTPException(status_code=400, detail="No active issue report for this job")
+
+    new_msg = models.DBDeliveryIssueMessage(
+        delivery_job_id=job_id,
+        sender_id=user.id,
+        message=payload.message,
+    )
+    db.add(new_msg)
+    db.commit()
+    db.refresh(new_msg)
+
+    return {
+        "id": new_msg.id,
+        "delivery_job_id": new_msg.delivery_job_id,
+        "sender_id": new_msg.sender_id,
+        "sender_name": f"{user.first_name} {user.last_name}",
+        "sender_role": user.role,
+        "message": new_msg.message,
+        "created_at": new_msg.created_at,
+    }
+
+
+@router.patch("/jobs/{job_id}/issue/resolve", response_model=schemas.AdminDeliveryJobResponse)
+def resolve_issue(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin),
+):
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not job.issue_type:
+        raise HTTPException(status_code=400, detail="No issue report found for this job")
+
+    job.issue_resolved = True
+    job.issue_resolved_at = datetime.now(timezone.utc)
+    job.issue_resolved_by = current_user.id
     job.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(job)
-    return _job_to_response(job)
+
+    response = _job_to_response(job)
+    if job.driver:
+        response["driver_name"] = f"{job.driver.first_name} {job.driver.last_name}"
+    else:
+        response["driver_name"] = None
+    response["issue_type"] = job.issue_type
+    return response
 
 
 # ─── Driver Location ─────────────────────────────────────────────────────────
@@ -661,6 +958,82 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
+def _get_chat_job_or_404(db: Session, job_id: int) -> models.DBDeliveryJob:
+    job = (
+        db.query(models.DBDeliveryJob)
+        .options(joinedload(models.DBDeliveryJob.order))
+        .filter(models.DBDeliveryJob.id == job_id)
+        .first()
+    )
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+def _ensure_chat_access(job: models.DBDeliveryJob, user_id: int):
+    if job.driver_id == user_id:
+        return
+    if job.order and job.order.user_id == user_id:
+        return
+    raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+
+
+def _reaction_summary(
+    reactions: List[models.DBDeliveryChatReaction],
+    current_user_id: int,
+) -> List[dict]:
+    counts: Dict[str, int] = {}
+    my_reaction: Optional[str] = None
+
+    for reaction in reactions:
+        emoji = reaction.reaction
+        counts[emoji] = counts.get(emoji, 0) + 1
+        if reaction.user_id == current_user_id:
+            my_reaction = emoji
+
+    result = []
+    for emoji, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
+        result.append({
+            "emoji": emoji,
+            "count": count,
+            "reacted_by_me": emoji == my_reaction,
+        })
+    return result
+
+
+def _serialize_chat_message(msg: models.DBDeliveryChatMessage, current_user_id: int) -> dict:
+    return {
+        "id": msg.id,
+        "delivery_job_id": msg.delivery_job_id,
+        "sender_id": msg.sender_id,
+        "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
+        "message": msg.message,
+        "created_at": msg.created_at,
+        "updated_at": msg.updated_at,
+        "is_edited": bool(msg.is_edited),
+        "is_deleted": bool(msg.is_deleted),
+        "reactions": _reaction_summary(msg.reactions or [], current_user_id),
+    }
+
+
+def _load_chat_message_or_404(db: Session, job_id: int, message_id: int) -> models.DBDeliveryChatMessage:
+    msg = (
+        db.query(models.DBDeliveryChatMessage)
+        .options(
+            joinedload(models.DBDeliveryChatMessage.sender),
+            selectinload(models.DBDeliveryChatMessage.reactions),
+        )
+        .filter(
+            models.DBDeliveryChatMessage.id == message_id,
+            models.DBDeliveryChatMessage.delivery_job_id == job_id,
+        )
+        .first()
+    )
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return msg
+
 @router.get("/jobs/{job_id}/chat", response_model=List[schemas.DeliveryChatMessageResponse])
 def get_chat_history(
     job_id: int,
@@ -668,55 +1041,39 @@ def get_chat_history(
     current_user=Depends(OAuth2.get_current_user),
 ):
     """Get chat history for a delivery job."""
-    job = db.query(models.DBDeliveryJob).options(joinedload(models.DBDeliveryJob.order)).filter(models.DBDeliveryJob.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    # Check permission (must be driver or customer)
-    if job.driver_id != current_user.id and (not job.order or job.order.user_id != current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+    job = _get_chat_job_or_404(db, job_id)
+    _ensure_chat_access(job, current_user.id)
 
     messages = (
         db.query(models.DBDeliveryChatMessage)
-        .options(joinedload(models.DBDeliveryChatMessage.sender))
+        .options(
+            joinedload(models.DBDeliveryChatMessage.sender),
+            selectinload(models.DBDeliveryChatMessage.reactions),
+        )
         .filter(models.DBDeliveryChatMessage.delivery_job_id == job_id)
         .order_by(models.DBDeliveryChatMessage.created_at.asc())
         .all()
     )
 
-    result = []
-    for msg in messages:
-        result.append({
-            "id": msg.id,
-            "delivery_job_id": msg.delivery_job_id,
-            "sender_id": msg.sender_id,
-            "sender_name": f"{msg.sender.first_name} {msg.sender.last_name}" if msg.sender else "Unknown",
-            "message": msg.message,
-            "created_at": msg.created_at
-        })
-    return result
+    return [_serialize_chat_message(msg, current_user.id) for msg in messages]
 
 
 @router.post("/jobs/{job_id}/chat", response_model=schemas.DeliveryChatMessageResponse)
-def send_chat_message(
+async def send_chat_message(
     job_id: int,
     payload: schemas.DeliveryChatMessageCreate,
     db: Session = Depends(get_db),
     current_user=Depends(OAuth2.get_current_user),
 ):
     """Send a chat message via REST (fallback when WebSocket is unavailable)."""
-    job = db.query(models.DBDeliveryJob).options(joinedload(models.DBDeliveryJob.order)).filter(models.DBDeliveryJob.id == job_id).first()
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+    job = _get_chat_job_or_404(db, job_id)
 
     # Fetch the full user object for permission check and sender name
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Check permission (must be driver or customer)
-    if job.driver_id != user.id and (not job.order or job.order.user_id != user.id):
-        raise HTTPException(status_code=403, detail="Not authorized to access this chat")
+    _ensure_chat_access(job, user.id)
 
     new_msg = models.DBDeliveryChatMessage(
         delivery_job_id=job_id,
@@ -727,14 +1084,56 @@ def send_chat_message(
     db.commit()
     db.refresh(new_msg)
 
-    return {
-        "id": new_msg.id,
-        "delivery_job_id": new_msg.delivery_job_id,
-        "sender_id": new_msg.sender_id,
-        "sender_name": f"{user.first_name} {user.last_name}",
-        "message": new_msg.message,
-        "created_at": new_msg.created_at,
-    }
+    new_msg = _load_chat_message_or_404(db, job_id, new_msg.id)
+    response_payload = _serialize_chat_message(new_msg, user.id)
+
+    await manager.broadcast(response_payload, job_id)
+
+    return response_payload
+
+
+
+@router.post("/jobs/{job_id}/chat/{message_id}/reactions", response_model=schemas.DeliveryChatMessageResponse)
+async def react_to_chat_message(
+    job_id: int,
+    message_id: int,
+    payload: schemas.DeliveryChatReactionCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    """React to any chat message. Sending the same reaction again removes it."""
+    job = _get_chat_job_or_404(db, job_id)
+    _ensure_chat_access(job, current_user.id)
+
+    msg = _load_chat_message_or_404(db, job_id, message_id)
+    if msg.is_deleted:
+        raise HTTPException(status_code=400, detail="Cannot react to a deleted message")
+    if msg.sender_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You can only react to the other participant's messages")
+
+    existing = db.query(models.DBDeliveryChatReaction).filter(
+        models.DBDeliveryChatReaction.message_id == message_id,
+        models.DBDeliveryChatReaction.user_id == current_user.id,
+    ).first()
+
+    if existing and existing.reaction == payload.reaction:
+        db.delete(existing)
+    elif existing:
+        existing.reaction = payload.reaction
+    else:
+        db.add(models.DBDeliveryChatReaction(
+            message_id=message_id,
+            user_id=current_user.id,
+            reaction=payload.reaction,
+        ))
+
+    db.commit()
+
+    refreshed = _load_chat_message_or_404(db, job_id, message_id)
+    response_payload = _serialize_chat_message(refreshed, current_user.id)
+    await manager.broadcast({"event": "reaction", "message": response_payload}, job_id)
+
+    return response_payload
 
 
 @router.websocket("/jobs/{job_id}/ws/chat")
@@ -814,15 +1213,21 @@ async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
                 msg_db.commit()
                 msg_db.refresh(new_msg)
 
+                sender = msg_db.query(models.DBUser).filter(models.DBUser.id == sender_id).first()
+
                 broadcast_msg = {
                     "id": new_msg.id,
                     "delivery_job_id": job_id,
                     "sender_id": sender_id,
-                    "sender_name": sender_name,
+                    "sender_name": f"{sender.first_name} {sender.last_name}" if sender else sender_name,
                     "message": data,
                     "created_at": new_msg.created_at.isoformat()
                         if new_msg.created_at
                         else datetime.now(timezone.utc).isoformat(),
+                    "updated_at": None,
+                    "is_edited": False,
+                    "is_deleted": False,
+                    "reactions": [],
                 }
             except Exception as db_err:
                 print(f"Error saving chat message: {db_err}")
@@ -835,6 +1240,10 @@ async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
                     "sender_name": sender_name,
                     "message": data,
                     "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": None,
+                    "is_edited": False,
+                    "is_deleted": False,
+                    "reactions": [],
                 }
             finally:
                 msg_db.close()

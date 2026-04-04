@@ -19,6 +19,7 @@ const Home = () => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [discountedProducts, setDiscountedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +33,7 @@ const Home = () => {
       const products = response.data;
       // Get first 6 products as featured
       setFeaturedProducts(products.slice(0, 6));
+      setDiscountedProducts(products.filter((p) => p.discount_enabled).slice(0, 6));
       
       // Extract unique categories
       const uniqueCategories = [...new Set(products.map(p => p.category_name))];
@@ -110,6 +112,86 @@ const Home = () => {
         </section>
       )}
 
+      {/* Discounts */}
+      {discountedProducts.length > 0 && (
+        <section className="discounts-section">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            Discounts
+          </motion.h2>
+          {loading ? (
+            <div className="products-grid">
+              {[...Array(6)].map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="products-grid">
+              {discountedProducts.map((product, index) => (
+                <motion.div
+                  key={`discount-${product.name}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  whileHover={{ y: -5 }}
+                  className="product-card-wrapper"
+                >
+                  <Link
+                    to={`/products/${encodeURIComponent(product.name)}`}
+                    className="product-card"
+                  >
+                    <div className="product-image">
+                      <img
+                        src={product.images && product.images.length > 0
+                          ? `http://localhost:8000/${product.images[0]}`
+                          : `http://localhost:8000/images/placeholder.jpg`}
+                        alt={product.name}
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div className="product-info">
+                      <h3>{product.name}</h3>
+                      <p className="product-category">{product.category_name}</p>
+                      <div className="product-price-container">
+                        <div className="product-price-stack">
+                          <p className="product-price-before">{formatPrice(product.price)}</p>
+                          <p className="product-price-discount">
+                            {formatPrice(product.discounted_price ?? product.price)}
+                          </p>
+                        </div>
+                        {isAuthenticated && (
+                          <button
+                            className="product-add-to-cart-btn"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                await addToCart(product.name, 1);
+                                toast.success('Product added to cart!');
+                              } catch (error) {
+                                toast.error(error.response?.data?.detail || 'Failed to add to cart');
+                              }
+                            }}
+                            title="Add to cart"
+                          >
+                            <FaShoppingCart />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Featured Products */}
       <section className="featured-products-section">
         <motion.h2
@@ -184,7 +266,18 @@ const Home = () => {
                       </div>
                     )}
                     <div className="product-price-container">
-                      <p className="product-price">{formatPrice(product.price)}</p>
+                      <div className="product-price-stack">
+                        {product.discount_enabled ? (
+                          <>
+                            <p className="product-price-before">{formatPrice(product.price)}</p>
+                            <p className="product-price-discount">
+                              {formatPrice(product.discounted_price ?? product.price)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="product-price">{formatPrice(product.price)}</p>
+                        )}
+                      </div>
                       {isAuthenticated && (
                         <button
                           className="product-add-to-cart-btn"

@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
+import { formatPrice, formatDate, getImageUrl } from '../../utils/helpers';
 import { ORDER_ENDPOINTS } from '../../config/api';
-import { formatPrice, formatDate } from '../../utils/helpers';
 import { useLanguage } from '../../hooks/useLanguage';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminOrders.css';
@@ -18,6 +18,7 @@ const AdminOrders = () => {
   const [error, setError] = useState(null);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState({});
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [statusFilter, setStatusFilter] = useState(() => {
     // Initialize from URL parameter if present
     const filterParam = searchParams.get('filter');
@@ -272,58 +273,119 @@ const AdminOrders = () => {
                 <th>{t('items', 'Items')}</th>
                 <th>{t('total', 'Total')}</th>
                 <th>{t('status', 'Status')}</th>
+                <th>{t('notification', 'Notification')}</th>
                 <th>{t('actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               {orders.map((order, index) => (
-                <motion.tr
-                  key={order.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <td>#{order.id}</td>
-                  <td>
-                    {order.user?.email || 'N/A'}
-                    {order.user?.first_name && order.user?.last_name && (
-                      <span className="user-name">
-                        {' '}({order.user.first_name} {order.user.last_name})
+                <React.Fragment key={order.id}>
+                  {(() => {
+                    const orderStatus = (order.status || '').toLowerCase();
+                    const showIssueNotification = !!order.order_delivery?.issue_type && !order.order_delivery?.issue_resolved && !['cancelled', 'delivered'].includes(orderStatus);
+                    return (
+                  <motion.tr
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={expandedOrderId === order.id ? 'row-expanded' : ''}
+                  >
+                    <td>#{order.id}</td>
+                    <td>
+                      {order.user?.email || 'N/A'}
+                      {order.user?.first_name && order.user?.last_name && (
+                        <span className="user-name">
+                          {' '}({order.user.first_name} {order.user.last_name})
+                        </span>
+                      )}
+                    </td>
+                    <td>{formatDate(order.created_at)}</td>
+                    <td>{order.items?.length || order.orderitems?.length || 0}</td>
+                    <td>{formatPrice(order.total_amount)}</td>
+                    <td>
+                      <span className={`order-status status-${order.status || 'created'}`}>
+                        {getOrderStatusLabel(order.status || 'created')}
                       </span>
-                    )}
-                  </td>
-                  <td>{formatDate(order.created_at)}</td>
-                  <td>{order.items?.length || order.orderitems?.length || 0}</td>
-                  <td>{formatPrice(order.total_amount)}</td>
-                  <td>
-                    <span className={`order-status status-${order.status || 'created'}`}>
-                      {getOrderStatusLabel(order.status || 'created')}
-                    </span>
-                  </td>
-                  <td>
-                    {getAvailableStatuses(order.status || 'created').length > 0 ? (
-                      <select
-                        value={selectedStatus[order.id] || ''}
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleStatusChange(order.id, e.target.value);
-                          }
-                        }}
-                        disabled={updatingOrderId === order.id}
-                        className="status-select"
-                      >
-                        <option value="">{t('changeStatus', 'Change status')}...</option>
-                        {getAvailableStatuses(order.status || 'created').map(status => (
-                          <option key={status} value={status}>
-                            {getOrderStatusLabel(status)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="no-action">{t('noActions', 'No actions')}</span>
-                    )}
-                  </td>
-                </motion.tr>
+                    </td>
+                    <td>
+                      {showIssueNotification ? (
+                        <span className="issue-notification-badge">{t('driverIssue', 'Driver Issue')}</span>
+                      ) : (
+                        <span className="no-action">{t('none', 'None')}</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="order-actions-cell">
+                        {getAvailableStatuses(order.status || 'created').length > 0 ? (
+                          <select
+                            value={selectedStatus[order.id] || ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleStatusChange(order.id, e.target.value);
+                              }
+                            }}
+                            disabled={updatingOrderId === order.id}
+                            className="status-select"
+                          >
+                            <option value="">{t('changeStatus', 'Change status')}...</option>
+                            {getAvailableStatuses(order.status || 'created').map(status => (
+                              <option key={status} value={status}>
+                                {getOrderStatusLabel(status)}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="no-action">{t('noActions', 'No actions')}</span>
+                        )}
+
+                        {(order.order_delivery?.issue_type || (order.order_delivery?.photos?.length || 0) > 0) && (
+                          <button
+                            className="btn-view-issue"
+                            onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                          >
+                            {expandedOrderId === order.id ? t('hideReport', 'Hide report') : t('viewReport', 'View report')}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </motion.tr>
+                    );
+                  })()}
+
+                  {expandedOrderId === order.id && (
+                    <tr className="order-expanded-row">
+                      <td colSpan="8">
+                        <div className="order-expanded-panel">
+                          <h4>{t('driverReport', 'Driver Report')}</h4>
+                          {order.order_delivery?.issue_type ? (
+                            <p className="issue-report-line">
+                              <strong>{t('type', 'Type')}:</strong> {order.order_delivery.issue_type.replace(/_/g, ' ')}
+                            </p>
+                          ) : (
+                            <p className="issue-report-line">{t('noIssueTypeProvided', 'No issue type provided.')}</p>
+                          )}
+
+                          {order.order_delivery?.issue_description && (
+                            <p className="issue-report-line">
+                              <strong>{t('description', 'Description')}:</strong> {order.order_delivery.issue_description}
+                            </p>
+                          )}
+
+                          {Array.isArray(order.order_delivery?.photos) && order.order_delivery.photos.length > 0 && (
+                            <div className="order-issue-photo-grid">
+                              {order.order_delivery.photos.map((photo) => (
+                                <div className="order-issue-photo-card" key={`order-photo-${photo.id}`}>
+                                  <img src={getImageUrl(photo.image_path)} alt={`Delivery ${photo.photo_type}`} />
+                                  <span>{photo.photo_type.replace(/_/g, ' ')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

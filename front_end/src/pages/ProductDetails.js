@@ -195,7 +195,14 @@ const ProductDetails = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              {formatPrice(product.price)}
+              {product.discount_enabled ? (
+                <div>
+                  <div className="product-price-before">{formatPrice(product.price)}</div>
+                  <div className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</div>
+                </div>
+              ) : (
+                formatPrice(product.price)
+              )}
             </motion.div>
 
             <motion.div

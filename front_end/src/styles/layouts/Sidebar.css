@@ -95,6 +95,10 @@ html[dir='rtl'] .sidebar-badge {
   left: 1.5rem;
 }
 
+.sidebar-badge-deliveries {
+  background-color: #bf360c;
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;

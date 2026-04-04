@@ -26,6 +26,7 @@ export const PRODUCT_ENDPOINTS = {
   FILTER_ADMIN: '/products/filter/admin',
   CREATE: '/products/create',
   UPDATE: '/products/{id}',
+  UPDATE_DISCOUNT: '/products/{id}/discount',
   DELETE: '/products/{id}',
 };
 
@@ -153,7 +154,10 @@ export const DELIVERY_ENDPOINTS = {
   PICKUP_JOB: '/delivery/jobs/{job_id}/pickup',
   DELIVER_JOB: '/delivery/jobs/{job_id}/deliver',
   UPLOAD_PHOTO: '/delivery/jobs/{job_id}/photo',
+  REVIEW_PHOTO: '/delivery/jobs/{job_id}/photo-review',
   REPORT_ISSUE: '/delivery/jobs/{job_id}/report-issue',
+  ISSUE_MESSAGES: '/delivery/jobs/{job_id}/issue-messages',
+  RESOLVE_ISSUE: '/delivery/jobs/{job_id}/issue/resolve',
   UPDATE_LOCATION: '/delivery/location',
   GET_LOCATION: '/delivery/location/{driver_id}',
   ACTIVE_JOBS: '/delivery/jobs/active',
@@ -166,6 +170,7 @@ export const DELIVERY_ENDPOINTS = {
   JOB_DETAILS: '/delivery/jobs/{job_id}/details',
   GET_CHAT: '/delivery/jobs/{job_id}/chat',
   SEND_CHAT: '/delivery/jobs/{job_id}/chat',
+  REACT_CHAT: '/delivery/jobs/{job_id}/chat/{message_id}/reactions',
   WS_CHAT: '/delivery/jobs/{job_id}/ws/chat',
   GET_JOB_BY_ORDER: '/delivery/jobs/by-order/{order_id}',
 };

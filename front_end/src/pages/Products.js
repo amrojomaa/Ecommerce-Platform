@@ -131,6 +131,10 @@ const Products = () => {
   }, [sortedProducts, currentPage]);
 
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const discountedProducts = useMemo(
+    () => sortedProducts.filter((product) => product.discount_enabled),
+    [sortedProducts]
+  );
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -216,6 +220,46 @@ const Products = () => {
             </div>
           </div>
 
+          {discountedProducts.length > 0 && (
+            <section className="discounts-section">
+              <h2>Discounts</h2>
+              <div className="discounts-grid">
+                {discountedProducts.slice(0, 4).map((product, index) => (
+                  <motion.div
+                    key={`discount-${product.name}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                    whileHover={{ y: -5 }}
+                    className="product-card-wrapper"
+                  >
+                    <Link to={`/products/${encodeURIComponent(product.name)}`} className="product-card">
+                      <div className="product-image">
+                        <img
+                          src={product.images && product.images.length > 0
+                            ? `http://localhost:8000/${product.images[0]}`
+                            : `http://localhost:8000/images/placeholder.jpg`}
+                          alt={product.name}
+                          style={{ objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div className="product-info">
+                        <h3>{product.name}</h3>
+                        <p className="product-category">{product.category_name}</p>
+                        <div className="product-price-container">
+                          <div className="product-price-stack">
+                            <p className="product-price-before">{formatPrice(product.price)}</p>
+                            <p className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {loading ? (
             <div className="products-grid">
               {[...Array(12)].map((_, i) => (
@@ -288,7 +332,16 @@ const Products = () => {
                           </div>
                         )}
                         <div className="product-price-container">
-                          <p className="product-price">{formatPrice(product.price)}</p>
+                          <div className="product-price-stack">
+                            {product.discount_enabled ? (
+                              <>
+                                <p className="product-price-before">{formatPrice(product.price)}</p>
+                                <p className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</p>
+                              </>
+                            ) : (
+                              <p className="product-price">{formatPrice(product.price)}</p>
+                            )}
+                          </div>
                           {isAuthenticated && (
                             <button
                               className="product-add-to-cart-btn"

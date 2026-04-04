@@ -145,14 +145,34 @@ const Cart = () => {
                 </div>
                 
                 <div className="cart-item-info">
+                  {(() => {
+                    const originalPrice = Number(item.product?.original_price ?? item.product?.price ?? 0);
+                    const discountedPrice = Number(item.product?.discounted_price ?? item.product?.price ?? 0);
+                    const hasDiscount = Boolean(item.product?.has_discount) || discountedPrice < originalPrice;
+                    return (
+                      <>
                   <h3>
                     <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
                       {item.product?.name || t('product', 'Product')}
                     </Link>
                   </h3>
                   <p className="cart-item-price">
-                    {formatPrice(item.product?.price || 0)}
+                    {hasDiscount ? (
+                      <span className="cart-discount-price-block">
+                        <span className="cart-old-price">
+                          {formatPrice(originalPrice)}
+                        </span>
+                        <span className="cart-new-price">
+                          {formatPrice(discountedPrice)}
+                        </span>
+                      </span>
+                    ) : (
+                      formatPrice(item.product?.price || 0)
+                    )}
                   </p>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="cart-item-quantity">

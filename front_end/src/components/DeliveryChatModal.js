@@ -4,15 +4,47 @@ import http from '../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
 import '../styles/components/ChatWidget.css';
 
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢'];
+
 const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDriver }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
   const inputRef = useRef(null);
+
+  const getUserIdFromToken = () => {
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.id ?? payload.user_id ?? payload.sub ?? null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const effectiveCurrentUserId = currentUserId ?? getUserIdFromToken();
+
+  const isOwnMessage = (msg) => String(msg?.sender_id) === String(effectiveCurrentUserId);
+
+  const upsertMessage = (prev, incoming) => {
+    if (!incoming) return prev;
+    const idx = prev.findIndex((m) => m.id === incoming.id);
+    if (idx === -1) {
+      const filtered = prev.filter(
+        (m) => !(m.id === null && m.sender_id === incoming.sender_id && m.message === incoming.message)
+      );
+      return [...filtered, incoming];
+    }
+
+    const next = [...prev];
+    next[idx] = { ...next[idx], ...incoming };
+    return next;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,16 +100,11 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
       try {
         const data = JSON.parse(event.data);
         if (isMounted) {
-          // Avoid duplicates: don't add if we already have this message from the REST response
-          setMessages((prev) => {
-            // If the message has an id and we already have it, skip
-            if (data.id && prev.some(m => m.id === data.id)) {
-              return prev;
-            }
-            // Also remove any optimistic message (id === null) with the same text from same sender
-            const filtered = prev.filter(m => !(m.id === null && m.sender_id === data.sender_id && m.message === data.message));
-            return [...filtered, data];
-          });
+          if (data.event && data.message) {
+            setMessages((prev) => upsertMessage(prev, data.message));
+            return;
+          }
+          setMessages((prev) => upsertMessage(prev, data));
         }
       } catch (e) {
         console.error('Error parsing WS message', e);
@@ -115,7 +142,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
     const optimisticMsg = {
       id: null,
       delivery_job_id: jobId,
-      sender_id: currentUserId,
+      sender_id: effectiveCurrentUserId,
       sender_name: 'You',
       message: text,
       created_at: new Date().toISOString(),
@@ -131,7 +158,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
 
       // Replace optimistic message with the real one from server
       setMessages(prev => {
-        const filtered = prev.filter(m => !(m.id === null && m.sender_id === currentUserId && m.message === text));
+        const filtered = prev.filter(m => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text));
         // Only add if not already present (WS may have already delivered it)
         if (response.data.id && filtered.some(m => m.id === response.data.id)) {
           return filtered;
@@ -141,7 +168,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
     } catch (error) {
       console.error('Error sending message:', error);
       // Remove optimistic message on failure
-      setMessages(prev => prev.filter(m => !(m.id === null && m.sender_id === currentUserId && m.message === text)));
+      setMessages(prev => prev.filter(m => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text)));
       // Re-populate the input so user can try again
       setInputMessage(text);
     } finally {
@@ -154,6 +181,21 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const reactToMessage = async (messageId, reaction) => {
+    setActionLoadingId(messageId);
+    try {
+      const response = await http.post(
+        buildUrl(DELIVERY_ENDPOINTS.REACT_CHAT, { job_id: jobId, message_id: messageId }),
+        { reaction }
+      );
+      setMessages((prev) => upsertMessage(prev, response.data));
+    } catch (error) {
+      console.error('Error reacting to message:', error);
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -192,7 +234,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
               <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>No messages yet. Send one to start the conversation!</div>
             ) : (
               messages.map((msg, index) => {
-                const isMyMessage = msg.sender_id === currentUserId;
+                const isMyMessage = isOwnMessage(msg);
                 return (
                   <div
                     key={msg.id || `msg-${index}`}
@@ -203,8 +245,48 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
                         {isMyMessage ? 'You' : msg.sender_name}
                      </div>
                     <div className="message-content">
-                      {msg.message}
+                      <span>{msg.message}</span>
                     </div>
+
+                    {msg.id && !msg.is_deleted && !isMyMessage && (
+                      <div className="chat-reactions-row" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                        {QUICK_REACTIONS.map((emoji) => (
+                          <button
+                            key={`${msg.id}-${emoji}`}
+                            className="chat-reaction-btn"
+                            style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '12px', padding: '2px 6px', fontSize: '14px', cursor: 'pointer' }}
+                            onClick={() => reactToMessage(msg.id, emoji)}
+                            disabled={actionLoadingId === msg.id}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {msg.reactions && msg.reactions.length > 0 && (
+                      <div className="chat-reaction-summary" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {msg.reactions.map((reaction) => (
+                          <button
+                            key={`${msg.id}-summary-${reaction.emoji}`}
+                            className={`chat-reaction-chip ${reaction.reacted_by_me ? 'active' : ''}`}
+                            style={{ 
+                              border: reaction.reacted_by_me ? '1px solid #667eea' : '1px solid rgba(0,0,0,0.1)', 
+                              background: reaction.reacted_by_me ? 'rgba(102,126,234,0.15)' : '#fff',
+                              borderRadius: '12px', padding: '2px 6px', fontSize: '12px', cursor: isMyMessage ? 'default' : 'pointer'
+                            }}
+                            onClick={() => {
+                              if (!isMyMessage) {
+                                reactToMessage(msg.id, reaction.emoji);
+                              }
+                            }}
+                            disabled={actionLoadingId === msg.id || msg.is_deleted}
+                          >
+                            {reaction.emoji} {reaction.count}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })

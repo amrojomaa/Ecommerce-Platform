@@ -93,7 +93,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                     order_id=existing_order.id,
                     product_id=item.product_id,
                     quantity=item.quantity,
-                    price=float(item.product.price),
+                    price=float(item.product.final_price),
                     total=item.total
                 ))
                 cart_total += item.total
@@ -127,7 +127,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                 order_id=new_order.id,
                 product_id=item.product_id,
                 quantity=item.quantity,
-                price=float(item.product.price),
+                price=float(item.product.final_price),
                 total=item.total
             ))
 
@@ -249,7 +249,9 @@ def get_all_orders(
                 selectinload(models.DBOrder.orderitems)
                 .joinedload(models.DBOrderItem.product)
                 .selectinload(models.DBProduct.images),
-                joinedload(models.DBOrder.user)
+                joinedload(models.DBOrder.user),
+                joinedload(models.DBOrder.delivery_job)
+                .selectinload(models.DBDeliveryJob.photos)
             )
             .order_by(models.DBOrder.created_at.desc())
             .all()
@@ -292,7 +294,9 @@ def update_order_status(
             selectinload(models.DBOrder.orderitems)
             .joinedload(models.DBOrderItem.product)
             .selectinload(models.DBProduct.images),
-            joinedload(models.DBOrder.user)
+            joinedload(models.DBOrder.user),
+            joinedload(models.DBOrder.delivery_job)
+            .selectinload(models.DBDeliveryJob.photos)
         )
         .filter(models.DBOrder.id == order_id)
         .first()
@@ -333,6 +337,8 @@ def update_order_status(
         # Handle delivery job cancellation if any
         delivery_job = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.order_id == order.id).first()
         if delivery_job and delivery_job.status not in ["delivered", "cancelled"]:
+            from app.routers.delivery import _clear_issue_report
+            _clear_issue_report(db, delivery_job)
             delivery_job.status = "cancelled"
     # Allow cancellation from created status (no stock to restore)
     elif new_status == "cancelled" and current_status == "created":

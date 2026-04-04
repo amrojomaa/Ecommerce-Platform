@@ -221,9 +221,235 @@
   font-size: 0.85rem;
 }
 
+.photo-review-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.photo-review-pill {
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.photo-review-pill.waiting {
+  background: var(--background);
+  color: var(--text-secondary);
+}
+
+.photo-review-pill.pending {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #92400e;
+}
+
+.photo-review-pill.approved {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #065f46;
+}
+
+.proof-upload-block {
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: var(--background);
+}
+
+.proof-upload-block h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
 .photo-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.selected-photo-preview {
+  margin-bottom: 0.75rem;
+}
+
+.selected-photo-preview img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.uploaded-photos-wrap {
+  margin-top: 0.85rem;
+}
+
+.uploaded-photos-wrap h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.uploaded-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.uploaded-photo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.uploaded-photo-card img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.uploaded-photo-card span {
+  font-size: 0.72rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.issue-summary-card {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.issue-type-label {
+  color: #ef4444 !important;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.issue-resolved-badge {
+  display: inline-block;
+  margin-bottom: 0.45rem !important;
+  color: #065f46 !important;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.76rem !important;
+  font-weight: 700;
+}
+
+.issue-photo-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.issue-photo-preview-grid img {
+  width: 100%;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.issue-thread-box {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.issue-thread-box h4 {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.issue-thread-empty,
+.issue-thread-closed {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.issue-thread-list {
+  max-height: 190px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.issue-thread-message {
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+
+.issue-thread-message.mine {
+  border-color: rgba(139, 115, 85, 0.45);
+}
+
+.issue-thread-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.issue-thread-meta strong {
+  font-size: 0.76rem;
+  color: var(--text-primary);
+}
+
+.issue-thread-meta span {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.issue-thread-message p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.issue-thread-input-wrap {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.issue-thread-input-wrap input {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--text-primary);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.83rem;
+}
+
+.issue-thread-input-wrap button {
+  border: 1px solid rgba(139, 115, 85, 0.4);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.issue-thread-input-wrap button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .btn-photo {
@@ -279,6 +505,13 @@
 .btn-primary-action:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.action-help-text {
+  margin: -0.25rem 0 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .btn-report-issue {
@@ -369,6 +602,30 @@
   margin-bottom: 1rem;
 }
 
+.issue-photo-upload-wrap {
+  margin-bottom: 1rem;
+}
+
+.issue-photo-upload-wrap label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.issue-photo-input {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.issue-photo-preview img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
 .btn-submit-issue {
   width: 100%;
   padding: 0.85rem;
@@ -393,6 +650,10 @@
 
 @media (max-width: 900px) {
   .active-job-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-review-status {
     grid-template-columns: 1fr;
   }
 

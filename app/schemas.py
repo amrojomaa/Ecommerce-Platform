@@ -34,6 +34,10 @@ class ProductBase(BaseModel):
     name: str
     description: str
     price: float
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discounted_price: Optional[float] = None
     quantity: int
     category_name: str
     images: Optional[List[str]] = []
@@ -46,6 +50,10 @@ class Product(BaseModel):
     name: str
     description: str
     price: float
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discounted_price: Optional[float] = None
     quantity: int
     category_name: str
     images: Optional[List[str]] = []
@@ -65,6 +73,12 @@ class Productname(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ProductDiscountUpdate(BaseModel):
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -149,6 +163,10 @@ class AddCart(BaseModel):
 class ShowCartOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     images: Optional[List[str]] = []
     # quantity: int
     # total: float
@@ -175,6 +193,10 @@ class Updateinputcart(BaseModel):
 class UpdateCartOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     images: Optional[List[str]] = []
 
     class Config:
@@ -263,6 +285,26 @@ class OrderUserInfo(BaseModel):
         from_attributes = True
 
 
+class DeliveryPhotoResponse(BaseModel):
+    id: int
+    photo_type: str
+    image_path: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminOrderDeliverySummary(BaseModel):
+    issue_type: Optional[str] = None
+    issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    photos: List[DeliveryPhotoResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
 class AdminOrderResponse(BaseModel):
     id: int
     created_at: datetime
@@ -270,6 +312,7 @@ class AdminOrderResponse(BaseModel):
     status: str
     items: List[OrderItemResponse] = Field(alias="orderitems")
     user: Optional[OrderUserInfo] = None
+    order_delivery: Optional[AdminOrderDeliverySummary] = Field(default=None, alias="delivery_job")
 
     class Config:
         from_attributes = True
@@ -398,6 +441,10 @@ class AddWishlist(BaseModel):
 class WishlistProductOut(BaseModel):
     name: str
     price: float
+    original_price: Optional[float] = None
+    discounted_price: Optional[float] = None
+    discount_enabled: bool = False
+    has_discount: bool = False
     category_name: Optional[str] = None
     description: Optional[str] = None
     images: Optional[List[str]] = []
@@ -622,13 +669,31 @@ class DeliveryChatMessageResponse(BaseModel):
     sender_name: Optional[str] = None
     message: str
     created_at: datetime
+    updated_at: Optional[datetime] = None
+    is_edited: bool = False
+    is_deleted: bool = False
+    reactions: List["DeliveryChatReactionSummary"] = []
 
     class Config:
         from_attributes = True
 
 
 class DeliveryChatMessageCreate(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class DeliveryChatMessageUpdate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=2000)
+
+
+class DeliveryChatReactionCreate(BaseModel):
+    reaction: str = Field(..., min_length=1, max_length=16)
+
+
+class DeliveryChatReactionSummary(BaseModel):
+    emoji: str
+    count: int
+    reacted_by_me: bool = False
 
 
 class DeliveryJobCustomer(BaseModel):
@@ -666,11 +731,17 @@ class DeliveryJobResponse(BaseModel):
     delivery_latitude: Optional[float] = None
     delivery_longitude: Optional[float] = None
     payment_amount: float
+    issue_type: Optional[str] = None
     issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    issue_resolved_at: Optional[datetime] = None
+    pickup_photo_checked: bool = False
+    delivery_photo_checked: bool = False
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None
     items: List[DeliveryJobItemResponse] = []
+    photos: List[DeliveryPhotoResponse] = []
 
     class Config:
         from_attributes = True
@@ -687,6 +758,23 @@ class IssueReport(BaseModel):
         if v not in valid:
             raise ValueError(f'issue_type must be one of: {", ".join(valid)}')
         return v
+
+
+class DeliveryIssueMessageCreate(BaseModel):
+    message: str = Field(..., min_length=1, max_length=1000)
+
+
+class DeliveryIssueMessageResponse(BaseModel):
+    id: int
+    delivery_job_id: int
+    sender_id: int
+    sender_name: Optional[str] = None
+    sender_role: Optional[str] = None
+    message: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class EarningsSummary(BaseModel):
@@ -741,10 +829,15 @@ class AdminDeliveryJobResponse(BaseModel):
     payment_amount: float
     issue_type: Optional[str] = None
     issue_description: Optional[str] = None
+    issue_resolved: bool = False
+    issue_resolved_at: Optional[datetime] = None
+    pickup_photo_checked: bool = False
+    delivery_photo_checked: bool = False
     created_at: datetime
     updated_at: datetime
     customer: Optional[DeliveryJobCustomer] = None
     items: List[DeliveryJobItemResponse] = []
+    photos: List[DeliveryPhotoResponse] = []
 
     class Config:
         from_attributes = True

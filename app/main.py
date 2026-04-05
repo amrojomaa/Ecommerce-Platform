@@ -17,6 +17,7 @@ from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
 from .config import settings
 
+<<<<<<< HEAD
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -25,12 +26,13 @@ if settings.auto_create_tables:
     logger.warning("AUTO_CREATE_TABLES is enabled. Disable this in production and use migrations instead.")
 else:
     logger.info("AUTO_CREATE_TABLES is disabled. Expecting managed schema migrations.")
+=======
 
 def apply_schema_updates():
     """Apply lightweight schema updates for existing databases."""
     with engine.begin() as conn:
         conn.execute(text("""
-            ALTER TABLE IF EXISTS delivery_jobs
+            ALTER TABLE delivery_jobs
                 ADD COLUMN IF NOT EXISTS issue_resolved BOOLEAN NOT NULL DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS issue_resolved_at TIMESTAMPTZ,
                 ADD COLUMN IF NOT EXISTS issue_resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
@@ -80,6 +82,10 @@ def apply_schema_updates():
         """))
 
 
+models.Base.metadata.create_all(bind=engine)
+>>>>>>> origin/main
+
+
 def apply_schema_patches() -> None:
     """Apply additive schema patches for existing databases."""
     with engine.begin() as connection:
@@ -105,7 +111,6 @@ def apply_schema_patches() -> None:
         )
 
 
-apply_schema_updates()
 apply_schema_patches()
 logger.info("Database connected successfully.")
 

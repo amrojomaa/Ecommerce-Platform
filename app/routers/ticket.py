@@ -98,7 +98,7 @@ def get_assigned_tickets(
     return tickets
 
 
-@router.get("/tickets/{ticket_id}", response_model=schemas.TicketBase)
+@router.get("/tickets/{ticket_id:int}", response_model=schemas.TicketBase)
 def get_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),

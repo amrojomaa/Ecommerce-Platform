@@ -5,6 +5,7 @@ import { TICKET_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/employee/EmployeeTickets.css';
 
 const EmployeeTickets = () => {
@@ -15,6 +16,7 @@ const EmployeeTickets = () => {
   const [responseMessage, setResponseMessage] = useState('');
   const [respondingTicketId, setRespondingTicketId] = useState(null);
   const [requestingDelete, setRequestingDelete] = useState(null);
+  const confirm = useConfirm();
 
   const { markAsViewed } = useUnreadTickets();
 
@@ -76,7 +78,13 @@ const EmployeeTickets = () => {
   };
 
   const handleRequestDelete = async (ticketId) => {
-    if (!window.confirm('Are you sure you want to request deletion of this ticket? This requires admin approval.')) {
+    const confirmed = await confirm({
+      title: 'Request ticket deletion',
+      message: 'Are you sure you want to request deletion of this ticket? This requires admin approval.',
+      confirmText: 'Request delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

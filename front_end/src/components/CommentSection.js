@@ -6,6 +6,7 @@ import API_BASE_URL from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 import { FaTrash, FaUserCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { useConfirm } from '../hooks/useConfirm';
 import '../styles/components/CommentSection.css';
 
 const CommentSection = ({ productId }) => {
@@ -16,6 +17,7 @@ const CommentSection = ({ productId }) => {
   const [submitting, setSubmitting] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const confirm = useConfirm();
   
   const INITIAL_COMMENTS_COUNT = 3;
 
@@ -100,7 +102,13 @@ const CommentSection = ({ productId }) => {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    const confirmed = await confirm({
+      title: 'Delete comment',
+      message: 'Are you sure you want to delete this comment?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

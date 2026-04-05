@@ -49,3 +49,29 @@
   margin: 0;
   color: var(--text-secondary);
 }
+
+@media (max-width: 768px) {
+  .employee-dashboard {
+    padding: 1rem;
+  }
+
+  .employee-dashboard h1 {
+    font-size: 1.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .dashboard-cards {
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-card {
+    padding: 1.2rem;
+  }
+
+  .card-icon {
+    font-size: 2.4rem;
+  }
+}

@@ -352,3 +352,43 @@
     justify-content: space-between;
   }
 }
+
+@media (max-width: 1024px) {
+  .admin-comments-header {
+    align-items: flex-start;
+  }
+
+  .product-search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .product-selector {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .comment-card {
+    padding: 1rem;
+  }
+
+  .comment-user {
+    gap: 0.6rem;
+  }
+
+  .comment-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .delete-comment-btn {
+    width: 100%;
+  }
+}

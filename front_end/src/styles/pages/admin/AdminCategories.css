@@ -191,3 +191,36 @@
     gap: 1rem;
   }
 }
+
+@media (max-width: 1024px) {
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-card {
+    padding: 1.2rem;
+  }
+
+  .category-actions {
+    flex-direction: column;
+  }
+
+  .add-category-btn {
+    width: 100%;
+  }
+
+  .modal-content {
+    padding: 1.2rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+}

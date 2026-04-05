@@ -648,6 +648,12 @@
   cursor: not-allowed;
 }
 
+@media (max-width: 1024px) {
+  .active-job-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   .active-job-layout {
     grid-template-columns: 1fr;
@@ -664,5 +670,28 @@
 
   .step-connector {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .active-job-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .active-map-view {
+    height: 300px;
+  }
+
+  .issue-types {
+    grid-template-columns: 1fr;
+  }
+
+  .uploaded-photos-grid,
+  .issue-photo-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .issue-thread-input-wrap {
+    flex-direction: column;
   }
 }

@@ -229,12 +229,47 @@
   text-transform: capitalize;
 }
 
+@media (max-width: 1024px) {
+  .orders-table {
+    min-width: 760px;
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: 0.8rem 0.6rem;
+  }
+
+  .status-select {
+    min-width: 120px;
+  }
+}
+
 @media (max-width: 768px) {
   .orders-table-container {
     overflow-x: scroll;
   }
 
   .orders-table {
-    min-width: 600px;
+    min-width: 620px;
+  }
+
+  .order-actions-cell {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-select,
+  .btn-view-issue {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .orders-table {
+    min-width: 540px;
+  }
+
+  .order-expanded-panel {
+    padding: 0.85rem;
   }
 }

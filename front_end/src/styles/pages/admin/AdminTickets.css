@@ -623,6 +623,58 @@ body.dark select option,
   }
 }
 
+@media (max-width: 1024px) {
+  .admin-tickets-page {
+    padding: 1.25rem;
+  }
+
+  .admin-tickets-header {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .filters-container {
+    gap: 1rem;
+  }
+
+  .pending-delete-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .ticket-header {
+    padding: 1rem;
+  }
+
+  .ticket-details {
+    padding: 1rem;
+  }
+
+  .pending-deletes-section {
+    padding: 1rem;
+  }
+
+  .pending-delete-actions,
+  .pending-delete-admin-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .approve-delete-btn,
+  .reject-delete-btn,
+  .delete-ticket-btn,
+  .submit-response-btn {
+    width: 100%;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+}
+
 /* Pending Deletes Section */
 .pending-deletes-section {
   margin-bottom: 3rem;
@@ -765,4 +817,141 @@ body.dark select option,
 .reject-delete-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Responsive overrides (kept at end for precedence) */
+@media (max-width: 1024px) {
+  .admin-tickets-page {
+    padding: 1.25rem;
+  }
+
+  .admin-tickets-header {
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .filters-container {
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .ticket-header {
+    gap: 0.9rem;
+  }
+
+  .pending-delete-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-tickets-page {
+    padding: 1rem;
+  }
+
+  .admin-tickets-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-filter,
+  .assigned-filter {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .status-filter select,
+  .assigned-filter select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ticket-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .ticket-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .ticket-meta {
+    word-break: break-word;
+  }
+
+  .ticket-details {
+    padding: 1rem;
+  }
+
+  .ticket-actions {
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .response-header {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .pending-deletes-section {
+    padding: 1rem;
+  }
+
+  .pending-delete-actions,
+  .pending-delete-admin-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .approve-delete-btn,
+  .reject-delete-btn,
+  .delete-ticket-btn,
+  .submit-response-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-tickets-page {
+    padding: 0.75rem;
+  }
+
+  .admin-tickets-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .ticket-header h3 {
+    font-size: 1.05rem;
+  }
+
+  .status-badge {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .modal-content {
+    width: calc(100% - 1rem);
+    padding: 1rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
 }

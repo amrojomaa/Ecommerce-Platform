@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -72,6 +73,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
       <WishlistProvider>
+      <ConfirmProvider>
     <Router>
       <Routes>
 
@@ -122,8 +124,9 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={3000} style={{ top: '85px' }} />
     </Router>
+    </ConfirmProvider>
     </WishlistProvider>
     </CartProvider>
     </AuthProvider>

@@ -1,18 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
 import { useWishlist } from '../hooks/useWishlist';
+import { useConfirm } from '../hooks/useConfirm';
 import { formatPrice } from '../utils/helpers';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import API_BASE_URL from '../config/api';
 import '../styles/pages/Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlistItems, removeFromWishlist } = useWishlist();
+  const { wishlistItems, removeFromWishlist, loading } = useWishlist();
+  const confirm = useConfirm();
 
-  const handleRemove = (productName) => {
-    if (window.confirm(`Remove ${productName} from wishlist?`)) {
-      removeFromWishlist(productName);
+  const handleRemove = async (productName) => {
+    const confirmed = await confirm({
+      title: 'Remove from wishlist',
+      message: `Remove ${productName} from wishlist?`,
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+    });
+    if (confirmed) {
+      await removeFromWishlist(productName);
     }
   };
 
@@ -21,6 +30,35 @@ const Wishlist = () => {
       return `${API_BASE_URL}/${product.images[0]}`;
     }
     return `${API_BASE_URL}/images/placeholder.jpg`;
+  };
+
+  const handleDeleteAll = async () => {
+    if (wishlistItems.length === 0) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Delete all items',
+      message: 'Are you sure you want to delete all items from your wishlist?',
+      confirmText: 'Delete all',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    const productNames = wishlistItems.map((item) => item.name);
+    const results = await Promise.all(
+      productNames.map((productName) => removeFromWishlist(productName))
+    );
+    const failed = results.some((result) => !result.success);
+
+    if (failed) {
+      toast.error('Some wishlist items could not be deleted. Please try again.');
+      return;
+    }
+
+    toast.success('All wishlist items deleted');
   };
 
   if (wishlistItems.length === 0) {
@@ -44,7 +82,17 @@ const Wishlist = () => {
   return (
     <div className="wishlist-page">
       <div className="wishlist-container">
-        <h1>My Wishlist ({wishlistItems.length})</h1>
+        <div className="wishlist-header">
+          <h1>My Wishlist ({wishlistItems.length})</h1>
+          <button
+            type="button"
+            className="delete-all-btn"
+            onClick={handleDeleteAll}
+            disabled={loading || wishlistItems.length === 0}
+          >
+            Delete all
+          </button>
+        </div>
         <div className="wishlist-grid">
           {wishlistItems.map((product, index) => (
             <motion.div

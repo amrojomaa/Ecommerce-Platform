@@ -7,6 +7,7 @@ import API_BASE_URL, { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, A
 import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminProducts.css';
 
 const AdminProducts = () => {
@@ -38,6 +39,7 @@ const AdminProducts = () => {
     discounted: false,
   });
   const [sentimentAnalytics, setSentimentAnalytics] = useState({}); // { productId: { total, positive, neutral, negative } }
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchLowStockThreshold();
@@ -287,7 +289,13 @@ const AdminProducts = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
+    const confirmed = await confirm({
+      title: 'Delete product',
+      message: 'Are you sure you want to delete this product?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

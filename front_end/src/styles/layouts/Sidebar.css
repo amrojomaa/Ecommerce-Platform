@@ -78,6 +78,41 @@
   background-color: #bf360c;
 }
 
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    top: 0;
+    height: auto;
+    padding: 0.5rem 0;
+  }
+
+  .sidebar-header {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .sidebar-link {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    padding: 0.8rem 1rem;
+  }
+
+  .sidebar-link.active {
+    border-left: none;
+    border-bottom-color: var(--primary-color);
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { CATEGORY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminCategories.css';
 
 const AdminCategories = () => {
@@ -15,6 +16,7 @@ const AdminCategories = () => {
     name: '',
     description: '',
   });
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchCategories();
@@ -71,7 +73,13 @@ const AdminCategories = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) {
+    const confirmed = await confirm({
+      title: 'Delete category',
+      message: 'Are you sure you want to delete this category?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

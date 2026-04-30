@@ -209,15 +209,22 @@ export const WishlistProvider = ({ children }) => {
       return { success: false, error: 'Please login' };
     }
 
-    // Find the item to get its ID
-    const itemToRemove = wishlistItems.find(item => item.name === productName);
+    let itemToRemove;
+    let previousItems;
+
+    setWishlistItems((prevItems) => {
+      const found = prevItems.find((item) => item.name === productName);
+      if (!found) {
+        return prevItems;
+      }
+      itemToRemove = found;
+      previousItems = [...prevItems];
+      return prevItems.filter((item) => item.name !== productName);
+    });
+
     if (!itemToRemove) {
       return { success: false, error: 'Item not found in wishlist' };
     }
-
-    // Optimistically remove from local state
-    const previousItems = [...wishlistItems];
-    setWishlistItems(prevItems => prevItems.filter(item => item.name !== productName));
 
     setLoading(true);
     try {

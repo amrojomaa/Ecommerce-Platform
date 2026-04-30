@@ -10,22 +10,25 @@
   padding: 0 2rem;
 }
 
-.wishlist-container h1 {
-  font-size: 2rem;
-  margin-bottom: 2rem;
-  color: var(--text-primary);
-}
-
 .wishlist-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
+.wishlist-container > h1 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
 .wishlist-header h1 {
-  margin-bottom: 0;
+  font-size: 2rem;
+  margin: 0;
+  color: var(--text-primary);
 }
 
 .empty-wishlist {
@@ -214,7 +217,8 @@
     gap: 1.5rem;
   }
 
-  .wishlist-container h1 {
+  .wishlist-container > h1,
+  .wishlist-header h1 {
     font-size: 1.5rem;
   }
 }

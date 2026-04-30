@@ -10,7 +10,8 @@ import API_BASE_URL from '../config/api';
 import '../styles/pages/Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlistItems, removeFromWishlist, loading } = useWishlist();
+  const { wishlistItems, removeFromWishlist, loading, fetchWishlist } =
+    useWishlist();
   const confirm = useConfirm();
 
   const handleRemove = async (productName) => {
@@ -51,10 +52,15 @@ const Wishlist = () => {
     const results = await Promise.all(
       productNames.map((productName) => removeFromWishlist(productName))
     );
+
+    await fetchWishlist();
+
     const failed = results.some((result) => !result.success);
 
     if (failed) {
-      toast.error('Some wishlist items could not be deleted. Please try again.');
+      toast.error(
+        'Some wishlist items could not be deleted. Please try again.'
+      );
       return;
     }
 
@@ -119,16 +125,28 @@ const Wishlist = () => {
                   <h3>{product.name}</h3>
                   <p className="wishlist-item-category">{product.category_name}</p>
                   {(() => {
-                    const originalPrice = Number(product.original_price ?? product.price ?? 0);
-                    const discountedPrice = Number(product.discounted_price ?? product.price ?? 0);
-                    const hasDiscount = Boolean(product.has_discount) || discountedPrice < originalPrice;
+                    const originalPrice = Number(
+                      product.original_price ?? product.price ?? 0
+                    );
+                    const discountedPrice = Number(
+                      product.discounted_price ?? product.price ?? 0
+                    );
+                    const hasDiscount =
+                      Boolean(product.has_discount) ||
+                      discountedPrice < originalPrice;
                     return hasDiscount ? (
                       <div className="wishlist-price-block">
-                        <p className="wishlist-item-price-old">{formatPrice(originalPrice)}</p>
-                        <p className="wishlist-item-price-new">{formatPrice(discountedPrice)}</p>
+                        <p className="wishlist-item-price-old">
+                          {formatPrice(originalPrice)}
+                        </p>
+                        <p className="wishlist-item-price-new">
+                          {formatPrice(discountedPrice)}
+                        </p>
                       </div>
                     ) : (
-                      <p className="wishlist-item-price">{formatPrice(product.price)}</p>
+                      <p className="wishlist-item-price">
+                        {formatPrice(product.price)}
+                      </p>
                     );
                   })()}
                 </div>

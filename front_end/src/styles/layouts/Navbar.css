@@ -13,8 +13,8 @@
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
 }
 
 .navbar-logo {
@@ -27,7 +27,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex: 0 1 380px;
+  flex: 0 1 420px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .navbar-search input {
@@ -58,6 +60,8 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .navbar-link {
@@ -391,7 +395,7 @@
   }
 
   .navbar-search {
-    flex: 0 1 280px;
+    flex-basis: 320px;
   }
 
   .navbar-menu {

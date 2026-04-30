@@ -83,7 +83,7 @@
 
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../hooks/useTheme';
@@ -101,8 +101,10 @@ const Navbar = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { unreadCount: unreadTicketsCount } = useUnreadTickets();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef(null);
 
   const handleLogout = () => {
@@ -112,6 +114,26 @@ const Navbar = () => {
 
   const cartItemCount = getCartItemCount();
   const wishlistItemCount = getWishlistItemCount();
+
+  useEffect(() => {
+    if (location.pathname === '/products') {
+      const params = new URLSearchParams(location.search);
+      setSearchQuery(params.get('search') || '');
+      return;
+    }
+    setSearchQuery('');
+  }, [location.pathname, location.search]);
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmedQuery = searchQuery.trim();
+    const params = new URLSearchParams();
+    if (trimmedQuery) {
+      params.set('search', trimmedQuery);
+    }
+    navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
+    setMobileMenuOpen(false);
+  };
   
   // Safety check for isAdmin
   const checkIsAdmin = () => {
@@ -188,6 +210,17 @@ const Navbar = () => {
             E-Commerce
           </span>
         </Link>
+
+        <form className="navbar-search" onSubmit={handleSearchSubmit}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search products..."
+            aria-label="Search products"
+          />
+          <button type="submit">Search</button>
+        </form>
 
         <div className="navbar-menu">
           <Link to="/products" className="navbar-link">
@@ -328,6 +361,16 @@ const Navbar = () => {
 
       {mobileMenuOpen && (
         <div className="mobile-menu">
+          <form className="mobile-search" onSubmit={handleSearchSubmit}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search products..."
+              aria-label="Search products"
+            />
+            <button type="submit">Search</button>
+          </form>
           <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
             Products
           </Link>

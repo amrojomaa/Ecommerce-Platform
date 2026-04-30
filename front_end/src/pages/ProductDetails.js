@@ -149,7 +149,8 @@ const ProductDetails = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
                 onError={(e) => {
-                  e.target.src = 'https://via.placeholder.com/600x600?text=No+Image';
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
                 }}
               />
             </div>

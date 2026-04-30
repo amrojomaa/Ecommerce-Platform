@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS } from '../config/api';
@@ -14,7 +14,6 @@ import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 
 const Products = () => {
-  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
@@ -33,9 +32,17 @@ const Products = () => {
   const itemsPerPage = 12;
 
   useEffect(() => {
+    setSearchTerm(searchParams.get('search') || '');
+    setSelectedCategory(searchParams.get('category') || '');
+    setMinPrice(searchParams.get('min_price') || '');
+    setMaxPrice(searchParams.get('max_price') || '');
+    setCurrentPage(1);
+  }, [searchParams]);
+
+  useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // Refresh when navigating to products page
+  }, [searchTerm, selectedCategory, minPrice, maxPrice, isAuthenticated]);
 
   // useEffect(() => {
   //   applyFilters();
@@ -107,7 +114,6 @@ const Products = () => {
     if (maxPrice) params.set('max_price', maxPrice);
     setSearchParams(params);
     setCurrentPage(1);
-    fetchProducts();
   };
 
   const sortedProducts = useMemo(() => {
@@ -290,9 +296,10 @@ const Products = () => {
                             : `http://localhost:8000/images/placeholder.jpg`}
                           alt={product.name}
                           style={{ objectFit: 'cover' }}
-                          // onError={(e) => {
-                          //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                          // }}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                          }}
                         />
                         {isAuthenticated && (
                           <button

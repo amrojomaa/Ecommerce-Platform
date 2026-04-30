@@ -164,3 +164,35 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .discounts-search {
+    flex-wrap: wrap;
+  }
+
+  .discounts-search input {
+    max-width: 100%;
+  }
+
+  .discounts-search-clear {
+    width: 100%;
+  }
+
+  .discount-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .discounts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .discount-card-image {
+    height: 160px;
+  }
+
+  .discount-card-body {
+    padding: 0.85rem;
+  }
+}

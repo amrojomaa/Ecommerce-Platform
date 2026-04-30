@@ -7,6 +7,7 @@ import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, buildUrl } from '../../config/api
 import API_BASE_URL from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminComments.css';
 
 const AdminComments = () => {
@@ -20,6 +21,7 @@ const AdminComments = () => {
   const [loading, setLoading] = useState(true);
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
   const [deleting, setDeleting] = useState(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchProducts();
@@ -87,7 +89,13 @@ const AdminComments = () => {
   };
 
   const handleDelete = async (commentId) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
+    const confirmed = await confirm({
+      title: 'Delete comment',
+      message: 'Are you sure you want to delete this comment?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

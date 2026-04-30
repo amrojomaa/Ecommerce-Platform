@@ -231,9 +231,10 @@ const Home = () => {
                         : `http://localhost:8000/images/placeholder.jpg`}
                       alt={product.name}
                       style={{ objectFit: 'cover' }}
-                      // onError={(e) => {
-                      //   e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
-                      // }}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                      }}
                     />
                     {isAuthenticated && (
                       <button

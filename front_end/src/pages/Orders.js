@@ -7,6 +7,7 @@ import { formatPrice, formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DeliveryChatModal from '../components/DeliveryChatModal';
 import API_BASE_URL from '../config/api';
+import { useConfirm } from '../hooks/useConfirm';
 import '../styles/pages/Orders.css';
 
 const Orders = () => {
@@ -16,6 +17,7 @@ const Orders = () => {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [activeChatJobId, setActiveChatJobId] = useState(null);
+  const confirm = useConfirm();
   
   const token = localStorage.getItem('token');
   const getUserIdFromToken = () => {
@@ -71,10 +73,12 @@ const Orders = () => {
   };
 
   const handleCancelOrder = async (orderId) => {
-    // Confirm cancellation
-    const confirmed = window.confirm(
-      `Are you sure you want to cancel Order #${orderId}?`
-    );
+    const confirmed = await confirm({
+      title: 'Cancel order',
+      message: `Are you sure you want to cancel Order #${orderId}?`,
+      confirmText: 'Cancel order',
+      cancelText: 'Keep order',
+    });
     
     if (!confirmed) {
       return;
@@ -84,8 +88,6 @@ const Orders = () => {
     try {
       const cancelUrl = ORDER_ENDPOINTS.CANCEL.replace('{order_id}', orderId);
       const response = await http.patch(cancelUrl);
-      
-      // alert('Order cancelled successfully');
       
       // Update the order in the list with new status
       setOrders(prevOrders => 

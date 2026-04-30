@@ -5,6 +5,7 @@ import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminTickets.css';
 
 const AdminTickets = () => {
@@ -27,6 +28,7 @@ const AdminTickets = () => {
   const [approvingDelete, setApprovingDelete] = useState(null);
   const [rejectingDelete, setRejectingDelete] = useState(null);
   const { markAsViewed } = useUnreadTickets();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchTickets();
@@ -174,7 +176,13 @@ const AdminTickets = () => {
   };
 
   const handleDeleteTicket = async (ticketId) => {
-    if (!window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+    const confirmed = await confirm({
+      title: 'Delete ticket',
+      message: 'Are you sure you want to delete this ticket? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -194,7 +202,13 @@ const AdminTickets = () => {
   };
 
   const handleApproveDelete = async (ticketId) => {
-    if (!window.confirm('Approve and delete this ticket?')) {
+    const confirmed = await confirm({
+      title: 'Approve delete request',
+      message: 'Approve and delete this ticket?',
+      confirmText: 'Approve & Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

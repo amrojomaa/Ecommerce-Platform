@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { formatPrice } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
+import { useConfirm } from '../hooks/useConfirm';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Cart.css';
 
@@ -15,8 +16,8 @@ const Cart = () => {
     loading,
     updateCartItem,
     removeCartItem,
-    fetchCart,
   } = useCart();
+  const confirm = useConfirm();
 
   // useEffect(() => {
   //   fetchCart();
@@ -64,6 +65,34 @@ const Cart = () => {
     navigate('/checkout');
   };
 
+  const handleDeleteAll = async () => {
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Delete all items',
+      message: 'Are you sure you want to delete all items from your cart?',
+      confirmText: 'Delete all',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    const results = await Promise.all(
+      cartItems.map((item) => removeCartItem(item.id))
+    );
+    const failed = results.some((result) => !result.success);
+
+    if (failed) {
+      toast.error('Some items could not be deleted. Please try again.');
+      return;
+    }
+
+    toast.success('All items deleted from cart');
+  };
+
   if (loading) {
     return (
       <div className="cart-loading">
@@ -90,6 +119,16 @@ const Cart = () => {
       ) : (
         <div className="cart-container">
           <div className="cart-items">
+            <div className="cart-items-actions">
+              <button
+                type="button"
+                className="delete-all-btn"
+                onClick={handleDeleteAll}
+                disabled={loading || cartItems.length === 0}
+              >
+                Delete all
+              </button>
+            </div>
             {cartItems.map((item, index) => (
               <motion.div
                 key={item.id || index}
@@ -105,7 +144,8 @@ const Cart = () => {
                       : `http://localhost:8000/images/placeholder.jpg`}
                     alt={item.product?.name || 'Product'}
                     onError={(e) => {
-                      e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
                     }}
                   />
                 </div>

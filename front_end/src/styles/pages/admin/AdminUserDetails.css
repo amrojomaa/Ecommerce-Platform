@@ -303,3 +303,39 @@
     max-height: 95vh;
   }
 }
+
+@media (max-width: 1024px) {
+  .admin-user-details {
+    padding: 1.25rem;
+  }
+
+  .user-details-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .back-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user-profile-section {
+    padding: 1rem;
+  }
+
+  .profile-image-display {
+    width: 120px;
+    height: 120px;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .info-item span {
+    text-align: left;
+  }
+}

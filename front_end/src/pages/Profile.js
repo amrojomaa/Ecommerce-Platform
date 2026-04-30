@@ -6,6 +6,7 @@ import { USER_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useConfirm } from '../hooks/useConfirm';
 import API_BASE_URL from '../config/api';
 import '../styles/pages/Profile.css';
 
@@ -28,6 +29,7 @@ const Profile = () => {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
+  const confirm = useConfirm();
   
   // Default profile image
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
@@ -146,8 +148,13 @@ const Profile = () => {
   };
 
   const handleDeleteImage = async () => {
-    // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete your profile image? It will be reset to default.')) {
+    const confirmed = await confirm({
+      title: 'Delete profile image',
+      message: 'Are you sure you want to delete your profile image? It will be reset to default.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) {
       return;
     }
 

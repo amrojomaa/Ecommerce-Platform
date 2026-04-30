@@ -360,18 +360,18 @@ const AdminDeliveries = () => {
                     onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
                     style={{ cursor: 'pointer' }}
                   >
-                    <td>#{job.id}</td>
-                    <td>#{job.order_id}</td>
-                    <td>{job.driver_name || <span className="no-driver">Unassigned</span>}</td>
-                    <td>
+                    <td data-label="Job ID">#{job.id}</td>
+                    <td data-label="Order ID">#{job.order_id}</td>
+                    <td data-label="Driver">{job.driver_name || <span className="no-driver">Unassigned</span>}</td>
+                    <td data-label="Status">
                       <span className={`delivery-status status-${job.status}`}>
                         {getStatusLabel(job.status)}
                       </span>
                     </td>
-                    <td className="address-cell">{job.pickup_address || 'N/A'}</td>
-                    <td className="address-cell">{job.delivery_address || 'N/A'}</td>
-                    <td className="payment-cell">${job.payment_amount?.toFixed(2) || '0.00'}</td>
-                    <td>{formatDate(job.created_at)}</td>
+                    <td className="address-cell" data-label="Pickup">{job.pickup_address || 'N/A'}</td>
+                    <td className="address-cell" data-label="Delivery">{job.delivery_address || 'N/A'}</td>
+                    <td className="payment-cell" data-label="Payment">${job.payment_amount?.toFixed(2) || '0.00'}</td>
+                    <td data-label="Created">{formatDate(job.created_at)}</td>
                   </motion.tr>
                   {expandedJobId === job.id && (
                     <tr className="expanded-row">

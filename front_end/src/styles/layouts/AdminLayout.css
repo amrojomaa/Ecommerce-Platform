@@ -18,6 +18,18 @@
   margin-left: 250px;
 }
 
+@media (max-width: 1024px) {
+  .admin-container {
+    flex-direction: column;
+  }
+
+  .admin-content {
+    margin-left: 0;
+    max-width: 100%;
+    padding: 1.25rem;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-content {
     padding: 1rem;

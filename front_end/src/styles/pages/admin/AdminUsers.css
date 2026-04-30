@@ -492,6 +492,21 @@ body.dark .form-group select option,
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .admin-users {
+    padding: 1.25rem;
+  }
+
+  .users-table {
+    min-width: 700px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.85rem 0.6rem;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-users {
     padding: 1rem;
@@ -508,6 +523,7 @@ body.dark .form-group select option,
   }
 
   .users-table {
+    min-width: 620px;
     font-size: 0.9rem;
   }
 
@@ -519,5 +535,32 @@ body.dark .form-group select option,
   .modal-content {
     padding: 1.5rem;
     margin: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .users-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .filter-buttons button {
+    width: 100%;
+  }
+
+  .users-table {
+    min-width: 560px;
+    font-size: 0.85rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .change-role-btn,
+  .delete-user-btn {
+    width: 100%;
   }
 }

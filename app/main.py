@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations
 
 
 def apply_schema_updates():
@@ -70,7 +70,79 @@ def apply_schema_updates():
             ON delivery_chat_reactions(message_id)
         """))
 
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS user_interactions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+                event_type VARCHAR(32) NOT NULL,
+                query_text TEXT,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+        """))
 
+        # Align legacy user_interactions tables with the current model:
+        # drop any extra columns from prior schemas (e.g. signal_type) that have
+        # NOT NULL constraints and would break inserts from the current code.
+        conn.execute(text("""
+            DO $$
+            DECLARE
+                col_name text;
+                expected text[] := ARRAY[
+                    'id', 'user_id', 'product_id',
+                    'event_type', 'query_text', 'created_at'
+                ];
+            BEGIN
+                FOR col_name IN
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'user_interactions'
+                LOOP
+                    IF NOT (col_name = ANY(expected)) THEN
+                        EXECUTE format(
+                            'ALTER TABLE user_interactions DROP COLUMN IF EXISTS %I CASCADE',
+                            col_name
+                        );
+                    END IF;
+                END LOOP;
+
+                -- Make sure the columns we DO use exist (no-op if already there).
+                ALTER TABLE user_interactions
+                    ADD COLUMN IF NOT EXISTS event_type VARCHAR(32),
+                    ADD COLUMN IF NOT EXISTS query_text TEXT,
+                    ADD COLUMN IF NOT EXISTS product_id INTEGER;
+
+                -- Backfill / enforce NOT NULL on event_type.
+                UPDATE user_interactions SET event_type = 'view'
+                    WHERE event_type IS NULL;
+                ALTER TABLE user_interactions
+                    ALTER COLUMN event_type SET NOT NULL;
+            END$$;
+        """))
+
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS ix_user_interactions_user_time
+            ON user_interactions(user_id, created_at)
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS ix_user_interactions_product
+            ON user_interactions(product_id)
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS ix_user_interactions_event
+            ON user_interactions(event_type)
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS recommendation_batch_cache (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+                computed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            )
+        """))
+
+
+apply_schema_updates()
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -180,5 +252,6 @@ app.include_router(comment.router)
 app.include_router(rating.router)
 app.include_router(admin_settings.router)
 app.include_router(delivery.router)
+app.include_router(recommendations.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

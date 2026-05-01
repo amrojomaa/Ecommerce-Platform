@@ -1,6 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import http from '../services/http';
 import { WISHLIST_ENDPOINTS } from '../config/api';
+import { trackRecommendationEvent } from '../services/recommendations';
 
 export const WishlistContext = createContext();
 
@@ -189,6 +191,10 @@ export const WishlistProvider = ({ children }) => {
         )
       );
       
+      const pid = response.data?.product?.id;
+      if (pid) {
+        trackRecommendationEvent({ event_type: 'wishlist', product_id: pid });
+      }
       return { success: true };
     } catch (error) {
       // On error, revert optimistic update
@@ -212,23 +218,34 @@ export const WishlistProvider = ({ children }) => {
     let itemToRemove;
     let previousItems;
 
-    setWishlistItems((prevItems) => {
-      const found = prevItems.find((item) => item.name === productName);
-      if (!found) {
-        return prevItems;
-      }
-      itemToRemove = found;
-      previousItems = [...prevItems];
-      return prevItems.filter((item) => item.name !== productName);
+    flushSync(() => {
+      setWishlistItems((prevItems) => {
+        const found = prevItems.find((item) => item.name === productName);
+        if (!found) {
+          return prevItems;
+        }
+        itemToRemove = found;
+        previousItems = [...prevItems];
+        return prevItems.filter((item) => item.name !== productName);
+      });
     });
 
     if (!itemToRemove) {
       return { success: false, error: 'Item not found in wishlist' };
     }
 
+    const itemId = Number(itemToRemove.id);
+    if (!Number.isFinite(itemId)) {
+      setWishlistItems(previousItems);
+      return {
+        success: false,
+        error: 'Invalid wishlist item id — refresh and try again',
+      };
+    }
+
     setLoading(true);
     try {
-      await http.delete(WISHLIST_ENDPOINTS.DELETE_ITEM.replace('{item_id}', itemToRemove.id));
+      await http.delete(WISHLIST_ENDPOINTS.DELETE_ITEM.replace('{item_id}', itemId));
       return { success: true };
     } catch (error) {
       // On error, revert optimistic update

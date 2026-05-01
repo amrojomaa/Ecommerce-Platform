@@ -327,6 +327,18 @@ def update_order_status(
             product = order_item.product
             product.quantity -= order_item.quantity
         order.status = new_status
+        for order_item in order.orderitems:
+            db.add(
+                models.DBUserInteraction(
+                    user_id=order.user_id,
+                    product_id=order_item.product_id,
+                    event_type=models.InteractionEventType.PURCHASE,
+                    query_text=None,
+                )
+            )
+        db.query(models.DBRecommendationBatchCache).filter(
+            models.DBRecommendationBatchCache.user_id == order.user_id
+        ).delete()
     # If changing to cancelled from paid or delivery states, restore stock
     elif new_status == "cancelled" and current_status in ["paid", "shipped", "delivered", "assigned", "picked_up", "delivering"]:
         for order_item in order.orderitems:

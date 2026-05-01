@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -13,6 +13,7 @@ import CommentSection from '../components/CommentSection';
 import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
+import { trackRecommendationEvent } from '../services/recommendations';
 
 const ProductDetails = () => {
   const { name } = useParams();
@@ -25,6 +26,7 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
+  const viewTrackedRef = useRef(null);
 
   useEffect(() => {
     fetchProduct();
@@ -42,6 +44,13 @@ const ProductDetails = () => {
       }
     }
   }, [product, selectedImageIndex]);
+
+  useEffect(() => {
+    if (!product?.id || !isAuthenticated) return;
+    if (viewTrackedRef.current === product.id) return;
+    viewTrackedRef.current = product.id;
+    trackRecommendationEvent({ event_type: 'view', product_id: product.id });
+  }, [product, isAuthenticated]);
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -73,6 +82,7 @@ const ProductDetails = () => {
     const result = await addToCart(product.name, quantity);
     
     if (result.success) {
+      if (product.id) trackRecommendationEvent({ event_type: 'add_to_cart', product_id: product.id });
       toast.success(`Added ${quantity} ${product.name} to cart!`);
       // Animation feedback
     } else {
@@ -81,15 +91,19 @@ const ProductDetails = () => {
     setAddingToCart(false);
   };
 
-  const handleToggleWishlist = () => {
+  const handleToggleWishlist = async () => {
     if (!product) return;
     
     if (isInWishlist(product.name)) {
       removeFromWishlist(product.name);
       toast.success(`${product.name} removed from wishlist`);
     } else {
-      addToWishlist(product);
-      toast.success(`${product.name} added to wishlist`);
+      const r = await addToWishlist(product);
+      if (r.success) {
+        toast.success(`${product.name} added to wishlist`);
+      } else {
+        toast.error(r.error || 'Could not add to wishlist');
+      }
     }
   };
 

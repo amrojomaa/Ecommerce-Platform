@@ -105,6 +105,19 @@ def confirm_payment(
                 
                 # Update order status to paid
                 order.status = "paid"
+
+                for order_item in order.orderitems:
+                    db.add(
+                        models.DBUserInteraction(
+                            user_id=order.user_id,
+                            product_id=order_item.product_id,
+                            event_type=models.InteractionEventType.PURCHASE,
+                            query_text=None,
+                        )
+                    )
+                db.query(models.DBRecommendationBatchCache).filter(
+                    models.DBRecommendationBatchCache.user_id == order.user_id
+                ).delete()
                 
                 # Automatically create a delivery job for the paid order
                 from .delivery import internal_create_delivery_job

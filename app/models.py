@@ -1,9 +1,46 @@
-from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, Index, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
-from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.sql.sqltypes import TIMESTAMP, Text
 
 from .database import Base
+
+
+class InteractionEventType:
+    VIEW = "view"
+    SEARCH = "search"
+    WISHLIST = "wishlist"
+    ADD_TO_CART = "add_to_cart"
+    PURCHASE = "purchase"
+
+
+class DBUserInteraction(Base):
+    """Append-only behavioral log for recommendation and analytics."""
+
+    __tablename__ = "user_interactions"
+    __table_args__ = (
+        Index("ix_user_interactions_user_time", "user_id", "created_at"),
+        Index("ix_user_interactions_product", "product_id"),
+        Index("ix_user_interactions_event", "event_type"),
+    )
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=True)
+    event_type = Column(String(32), nullable=False)
+    query_text = Column(Text, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+
+class DBRecommendationBatchCache(Base):
+    """Precomputed batch recommendations per user (hybrid breakdown stored in payload)."""
+
+    __tablename__ = "recommendation_batch_cache"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, nullable=False)
+    payload = Column(JSON, nullable=False)
+    computed_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
 
 
 class DBCategory(Base):

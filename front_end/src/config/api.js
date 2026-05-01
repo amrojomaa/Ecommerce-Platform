@@ -95,6 +95,14 @@ export const AI_ASSISTANT_ENDPOINTS = {
   CLEAR: '/ai-assistant/chat/clear',
 };
 
+// Hybrid recommendations (logged-in only)
+export const RECOMMENDATION_ENDPOINTS = {
+  EVENTS: '/recommendations/events',
+  REALTIME: '/recommendations/realtime',
+  BATCH: '/recommendations/batch',
+  RESET: '/recommendations/reset',
+};
+
 // Ticket endpoints
 export const TICKET_ENDPOINTS = {
   CREATE: '/tickets/create',

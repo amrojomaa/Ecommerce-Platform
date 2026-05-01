@@ -34,6 +34,7 @@ import ResetPassword from './pages/ResetPassword';
 import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
+import Recommendations from './pages/Recommendations';
 import Tickets from './pages/Tickets';
 
 //Pages - Admin
@@ -89,6 +90,7 @@ function App() {
           <Route path="reset-password" element={<ResetPassword />} />
           <Route path="profile" element={<Profile />} />
           <Route path="cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+          <Route path="recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />

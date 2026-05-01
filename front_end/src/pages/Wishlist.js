@@ -49,21 +49,16 @@ const Wishlist = () => {
     }
 
     const productNames = wishlistItems.map((item) => item.name);
-    const results = await Promise.all(
-      productNames.map((productName) => removeFromWishlist(productName))
-    );
-
-    await fetchWishlist();
-
-    const failed = results.some((result) => !result.success);
-
-    if (failed) {
-      toast.error(
-        'Some wishlist items could not be deleted. Please try again.'
-      );
-      return;
+    for (const productName of productNames) {
+      const result = await removeFromWishlist(productName);
+      if (!result.success) {
+        await fetchWishlist();
+        toast.error(result.error || 'Some wishlist items could not be deleted. Please try again.');
+        return;
+      }
     }
 
+    await fetchWishlist();
     toast.success('All wishlist items deleted');
   };
 

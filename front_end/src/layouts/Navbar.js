@@ -93,6 +93,7 @@ import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
 import API_BASE_URL from '../config/api';
 import { useWishlist } from '../hooks/useWishlist';
+import { trackRecommendationEvent } from '../services/recommendations';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
@@ -130,6 +131,9 @@ const Navbar = () => {
     const params = new URLSearchParams();
     if (trimmedQuery) {
       params.set('search', trimmedQuery);
+      if (isAuthenticated) {
+        trackRecommendationEvent({ event_type: 'search', query_text: trimmedQuery });
+      }
     }
     navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
     setMobileMenuOpen(false);
@@ -248,6 +252,9 @@ const Navbar = () => {
                   <span className="wishlist-badge">{wishlistItemCount}</span>
                   )}
                 </div>
+              </Link>
+              <Link to="/recommendations" className="navbar-link">
+                For you
               </Link>
               <Link to="/orders" className="navbar-link">
                 My Orders
@@ -381,6 +388,9 @@ const Navbar = () => {
               </Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                 Wishlist ({wishlistItemCount})
+              </Link>
+              <Link to="/recommendations" onClick={() => setMobileMenuOpen(false)}>
+                For you
               </Link>
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
                 My Orders

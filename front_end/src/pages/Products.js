@@ -12,6 +12,7 @@ import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
+import { trackRecommendationEvent } from '../services/recommendations';
 
 const Products = () => {
   const { isAuthenticated } = useAuth();
@@ -114,6 +115,10 @@ const Products = () => {
     if (maxPrice) params.set('max_price', maxPrice);
     setSearchParams(params);
     setCurrentPage(1);
+    const qt = searchTerm.trim();
+    if (isAuthenticated && qt) {
+      trackRecommendationEvent({ event_type: 'search', query_text: qt });
+    }
   };
 
   const sortedProducts = useMemo(() => {
@@ -349,8 +354,18 @@ const Products = () => {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 try {
-                                  await addToCart(product.name, 1);
-                                  toast.success('Product added to cart!');
+                                  const cartRes = await addToCart(product.name, 1);
+                                  if (cartRes.success) {
+                                    if (product.id) {
+                                      trackRecommendationEvent({
+                                        event_type: 'add_to_cart',
+                                        product_id: product.id,
+                                      });
+                                    }
+                                    toast.success('Product added to cart!');
+                                  } else {
+                                    toast.error(cartRes.error || 'Failed to add to cart');
+                                  }
                                 } catch (error) {
                                   toast.error(error.response?.data?.detail || 'Failed to add to cart');
                                 }

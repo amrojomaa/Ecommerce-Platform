@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
 
 # from pydantic.types import conint
@@ -828,3 +828,47 @@ class AdminDeliveryJobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Recommendations (hybrid recommendation system) ---
+RecEventLiteral = Literal["view", "search", "wishlist", "add_to_cart", "purchase"]
+
+
+class RecommendationEventCreate(BaseModel):
+    """Track a behavioral signal for personalization."""
+
+    event_type: RecEventLiteral
+    product_id: Optional[int] = None
+    query_text: Optional[str] = Field(None, max_length=512)
+
+    @model_validator(mode="after")
+    def validate_payload(self):
+        et = self.event_type
+        if et == "search":
+            qt = (self.query_text or "").strip()
+            if not qt:
+                raise ValueError("query_text is required for search events")
+            self.query_text = qt
+        elif self.product_id is None:
+            raise ValueError("product_id is required for this event type")
+        return self
+
+
+class RecommendationItemDetail(BaseModel):
+    product_id: int
+    score: float
+    sources: List[str] = Field(default_factory=list)
+
+
+class RecommendationFeedOut(BaseModel):
+    mode: str
+    cold_start: bool
+    computed_at: datetime
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    items: List[RecommendationItemDetail] = Field(default_factory=list)
+
+
+class RecommendationProductEnvelope(BaseModel):
+    score: float
+    sources: List[str] = Field(default_factory=list)
+    product: Product

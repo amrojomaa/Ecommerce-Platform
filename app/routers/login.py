@@ -288,6 +288,12 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create or retrieve user"
             )
+
+        if getattr(user, "is_blocked", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account has been suspended.",
+            )
         
         # Increment token_version to invalidate all previous sessions
         user.token_version = (user.token_version or 0) + 1
@@ -321,6 +327,12 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         getuser = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
         if not getuser :
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="this is email not a found ")
+
+        if getattr(getuser, "is_blocked", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account has been suspended.",
+            )
 
         # Check if user is OAuth user (no password)
         if getuser.provider == "google" or not getuser.password:

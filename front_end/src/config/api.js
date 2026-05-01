@@ -55,6 +55,13 @@ export const ORDER_ENDPOINTS = {
   UPDATE_STATUS: '/orders/{order_id}/status',
 };
 
+// Point of sale (cashier / admin / employee)
+export const POS_ENDPOINTS = {
+  PRODUCTS: '/pos/products',
+  SALE: '/pos/sale',
+  SALES_TODAY: '/pos/sales/today',
+};
+
 // Payment endpoints
 export const PAYMENT_ENDPOINTS = {
   CREATE_INTENT: '/payment/create-intent',
@@ -81,6 +88,7 @@ export const USER_ENDPOINTS = {
   BY_ID: '/users/{id}',
   UPDATE: '/users/{id}',
   UPDATE_ROLE: '/users/{id}/role',
+  UPDATE_BLOCK: '/users/{id}/block',
   DELETE: '/users/{id}',
 };
 

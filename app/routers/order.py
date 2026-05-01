@@ -247,6 +247,7 @@ def get_all_orders(
                 .joinedload(models.DBOrderItem.product)
                 .selectinload(models.DBProduct.images),
                 joinedload(models.DBOrder.user),
+                joinedload(models.DBOrder.cashier),
                 joinedload(models.DBOrder.delivery_job)
                 .selectinload(models.DBDeliveryJob.photos)
             )
@@ -381,7 +382,7 @@ def update_order_status(
     db.refresh(order)
     
     # If order is paid, create a delivery job
-    if new_status == "paid":
+    if new_status == "paid" and getattr(order, "sale_channel", None) != "pos":
         from app.routers.delivery import internal_create_delivery_job
         internal_create_delivery_job(order.id, db)
     

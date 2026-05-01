@@ -273,3 +273,24 @@
     padding: 0.85rem;
   }
 }
+
+.order-channel-pos {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  background: #0d9488;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.pos-customer-primary {
+  display: inline;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+}

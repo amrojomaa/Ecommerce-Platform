@@ -3,8 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from './LoadingSpinner';
 
-const ProtectedRoute = ({ children, requireAdmin = false, requireEmployee = false, requireDriver = false }) => {
-  const { isAuthenticated, loading, isAdmin, isEmployee, isDriver } = useAuth();
+const ProtectedRoute = ({ children, requireAdmin = false, requireEmployee = false, requireDriver = false, requireCashier = false }) => {
+  const { isAuthenticated, loading, isAdmin, isEmployee, isDriver, isCashier } = useAuth();
 
   if (loading) {
     return (
@@ -27,6 +27,10 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireEmployee = fals
   }
 
   if (requireDriver && isDriver && typeof isDriver === 'function' && !isDriver()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireCashier && isCashier && typeof isCashier === 'function' && !isCashier()) {
     return <Navigate to="/" replace />;
   }
 

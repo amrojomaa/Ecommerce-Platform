@@ -816,6 +816,9 @@ def internal_create_delivery_job(
     if not order:
         return None
 
+    if getattr(order, "sale_channel", None) == "pos":
+        return None
+
     # Check if delivery job already exists
     existing = db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.order_id == order_id).first()
     if existing:

@@ -332,6 +332,12 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'driver';
   };
 
+  /** Dedicated POS access: cashier accounts (+ admin). Not employees—use a separate cashier login. */
+  const isCashier = () => {
+    const r = user?.role;
+    return r === 'cashier' || r === 'admin';
+  };
+
   const value = {
     user,
     loading,
@@ -344,6 +350,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     isEmployee,
     isDriver,
+    isCashier,
     fetchUserInfo,
     forgotPassword,
     verifyResetCode,

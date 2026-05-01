@@ -143,7 +143,7 @@ const Navbar = () => {
   const checkIsAdmin = () => {
     return isAdmin && typeof isAdmin === 'function' ? isAdmin() : false;
   };
-  
+
   // Default profile image (same as Profile page)
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
   
@@ -288,6 +288,16 @@ const Navbar = () => {
                   <span>Driver</span>
                 </Link>
               )}
+              {user?.role === 'cashier' && (
+                <Link to="/cashier" className="navbar-link">
+                  <span>Cashier</span>
+                </Link>
+              )}
+              {checkIsAdmin() && (
+                <Link to="/cashier" className="navbar-link">
+                  POS
+                </Link>
+              )}
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div 
                   className="profile-image-wrapper"
@@ -416,6 +426,16 @@ const Navbar = () => {
               {user?.role === 'driver' && (
                 <Link to="/driver" onClick={() => setMobileMenuOpen(false)}>
                   Driver
+                </Link>
+              )}
+              {user?.role === 'cashier' && (
+                <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
+                  Cashier
+                </Link>
+              )}
+              {checkIsAdmin() && (
+                <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
+                  POS
                 </Link>
               )}
               <div className="mobile-user-info">

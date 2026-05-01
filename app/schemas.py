@@ -10,6 +10,7 @@ class UserRole(str, Enum):
     EMPLOYEE = "employee"
     CUSTOMER = "customer"
     DRIVER = "driver"
+    CASHIER = "cashier"
 
 class FilterProducts(BaseModel):
     name: Optional[str] = None
@@ -95,8 +96,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver')
+        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -117,8 +118,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver')
+        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -136,13 +137,14 @@ class User(BaseModel):
     profile_image: Optional[str] = None
     role: str  # admin, employee, or customer
     is_verified: bool
+    is_blocked: bool = False
     created_at: datetime
     
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver')
+        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
         return v
 
     class Config:
@@ -284,6 +286,16 @@ class OrderUserInfo(BaseModel):
         from_attributes = True
 
 
+class OrderCashierInfo(BaseModel):
+    id: int
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class DeliveryPhotoResponse(BaseModel):
     id: int
     photo_type: str
@@ -312,6 +324,9 @@ class AdminOrderResponse(BaseModel):
     items: List[OrderItemResponse] = Field(alias="orderitems")
     user: Optional[OrderUserInfo] = None
     order_delivery: Optional[AdminOrderDeliverySummary] = Field(default=None, alias="delivery_job")
+    sale_channel: str = "online"
+    payment_method: Optional[str] = None
+    cashier: Optional[OrderCashierInfo] = None
 
     class Config:
         from_attributes = True
@@ -413,9 +428,51 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver')
+        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
         return v
+
+
+class UserBlockUpdate(BaseModel):
+    is_blocked: bool
+
+
+class POSLineItem(BaseModel):
+    product_id: int
+    quantity: int
+
+
+class POSCheckoutRequest(BaseModel):
+    items: List[POSLineItem]
+    payment_method: Literal["cash", "card"]
+
+
+class POSProductRow(BaseModel):
+    id: int
+    name: str
+    description: str
+    price: float
+    discount_enabled: bool = False
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = 0
+    discounted_price: float
+    quantity: int
+    category_name: str
+    images: List[str] = []
+
+    class Config:
+        from_attributes = True
+
+
+class POSSaleSummaryRow(BaseModel):
+    id: int
+    created_at: datetime
+    total_amount: float
+    payment_method: Optional[str] = None
+    status: str
+
+    class Config:
+        from_attributes = True
 
 
 class ChatRequest(BaseModel):

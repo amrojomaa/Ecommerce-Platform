@@ -39,6 +39,8 @@ const AdminOrders = () => {
           return status === 'paid' || status === 'shipped' || status === 'delivered';
         });
         setOrders(filtered);
+      } else if (statusFilter === 'pos') {
+        setOrders(allOrders.filter((order) => order.sale_channel === 'pos'));
       } else {
         const filtered = allOrders.filter(order => 
           (order.status || 'created').toLowerCase() === statusFilter.toLowerCase()
@@ -109,7 +111,14 @@ const AdminOrders = () => {
     }
   };
 
-  const orderStatuses = ['all', 'revenue', 'created', 'paid', 'assigned', 'picked_up', 'delivering', 'shipped', 'delivered', 'cancelled'];
+  const orderStatuses = ['all', 'revenue', 'pos', 'created', 'paid', 'assigned', 'picked_up', 'delivering', 'shipped', 'delivered', 'cancelled'];
+
+  const formatFilterLabel = (value) => {
+    if (value === 'pos') return 'POS (in-store)';
+    if (value === 'revenue') return 'Revenue (paid/shipped/delivered)';
+    if (value === 'all') return 'All';
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
 
   const handleStatusChange = async (orderId, newStatus) => {
     setUpdatingOrderId(orderId);
@@ -170,9 +179,9 @@ const AdminOrders = () => {
               minWidth: '150px'
             }}
           >
-            {orderStatuses.map(status => (
+            {orderStatuses.map((status) => (
               <option key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {formatFilterLabel(status)}
               </option>
             ))}
           </select>
@@ -224,6 +233,8 @@ const AdminOrders = () => {
               ? 'No orders found.'
               : statusFilter === 'revenue'
               ? 'No orders found with status "paid", "shipped", or "delivered".'
+              : statusFilter === 'pos'
+              ? 'No in-store POS orders found.'
               : `No orders found with status "${statusFilter}".`}
           </p>
           {statusFilter !== 'all' && (
@@ -276,11 +287,32 @@ const AdminOrders = () => {
                   >
                     <td>#{order.id}</td>
                     <td>
-                      {order.user?.email || 'N/A'}
-                      {order.user?.first_name && order.user?.last_name && (
-                        <span className="user-name">
-                          {' '}({order.user.first_name} {order.user.last_name})
-                        </span>
+                      {order.sale_channel === 'pos' ? (
+                        <>
+                          <span className="order-channel-pos" title="In-store POS sale">POS</span>
+                          {order.cashier ? (
+                            <>
+                              <span className="pos-customer-primary">{order.cashier.email}</span>
+                              {(order.cashier.first_name || order.cashier.last_name) && (
+                                <span className="user-name">
+                                  {' '}
+                                  ({[order.cashier.first_name, order.cashier.last_name].filter(Boolean).join(' ')})
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="user-name">Cashier not recorded</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {order.user?.email || 'N/A'}
+                          {order.user?.first_name && order.user?.last_name && (
+                            <span className="user-name">
+                              {' '}({order.user.first_name} {order.user.last_name})
+                            </span>
+                          )}
+                        </>
                       )}
                     </td>
                     <td>{formatDate(order.created_at)}</td>

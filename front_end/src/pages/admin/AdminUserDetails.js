@@ -99,6 +99,8 @@ const AdminUserDetails = () => {
         return 'role-badge driver';
       case 'customer':
         return 'role-badge customer';
+      case 'cashier':
+        return 'role-badge cashier';
       default:
         return 'role-badge';
     }

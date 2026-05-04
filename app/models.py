@@ -129,6 +129,7 @@ class DBUser(Base):
     google_id = Column(String, nullable=True, unique=True)  # Google user ID
     profile_image = Column(String, nullable=True)  # Profile image path
     token_version = Column(Integer, nullable=False, server_default=text('0'))  # Token version for session invalidation
+    is_blocked = Column(Boolean, nullable=False, server_default='FALSE')
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text('now()'))
     
@@ -187,9 +188,13 @@ class DBOrder(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String, nullable=False, server_default="created")
     driver_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    sale_channel = Column(String, nullable=False, server_default="online")
+    cashier_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    payment_method = Column(String, nullable=True)
 
     user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
     driver = relationship("DBUser", foreign_keys=[driver_id])
+    cashier = relationship("DBUser", foreign_keys=[cashier_id])
     orderitems = relationship("DBOrderItem", back_populates="order", cascade="all, delete")
     delivery_job = relationship("DBDeliveryJob", back_populates="order", uselist=False)
 

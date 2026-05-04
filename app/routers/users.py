@@ -37,10 +37,10 @@ def get_all_user(
     
     # Filter by role if provided
     if role:
-        if role not in ["admin", "employee", "customer", "driver"]:
+        if role not in ["admin", "employee", "customer", "driver", "cashier"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be one of: admin, employee, customer, driver"
+                detail="Invalid role. Must be one of: admin, employee, customer, driver, cashier"
             )
         query = query.filter(models.DBUser.role == role)
     
@@ -127,6 +127,34 @@ def update_user_role(
     db.commit()
     db.refresh(user)
     
+    return user
+
+
+@router.patch("/users/{id}/block", response_model=schemas.User)
+def update_user_blocked(
+    block_update: schemas.UserBlockUpdate,
+    id: int,
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_admin),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    """Suspend or restore a user account. Admin cannot block their own account."""
+    user = db.query(models.DBUser).filter(models.DBUser.id == id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if current_user.id == id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot block or unblock your own account",
+        )
+
+    user.is_blocked = block_update.is_blocked
+    if block_update.is_blocked:
+        user.token_version = (user.token_version or 0) + 1
+
+    db.commit()
+    db.refresh(user)
     return user
 
 

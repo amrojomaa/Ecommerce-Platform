@@ -6,14 +6,28 @@ import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminUsers.css';
+
+const ROLE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'employee', label: 'Employee' },
+  { value: 'driver', label: 'Driver' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'cashier', label: 'Cashier' },
+];
 
 const AdminUsers = () => {
   const navigate = useNavigate();
+  const { user: currentAuthUser, loading: authLoading } = useAuth();
+  const confirm = useConfirm();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [newRole, setNewRole] = useState('customer');
@@ -21,6 +35,7 @@ const AdminUsers = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [blockingId, setBlockingId] = useState(null);
 
   // Default profile image (same as Profile page and Navbar)
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
@@ -47,28 +62,28 @@ const AdminUsers = () => {
   }, []);
 
   useEffect(() => {
-    filterUsers();
-  }, [roleFilter, users]);
+    let list = roleFilter === 'all' ? [...users] : users.filter((u) => u.role === roleFilter);
+    const q = userSearch.trim().toLowerCase();
+    if (q) {
+      list = list.filter((u) => {
+        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().trim();
+        const email = (u.email || '').toLowerCase();
+        return fullName.includes(q) || email.includes(q);
+      });
+    }
+    setFilteredUsers(list);
+  }, [roleFilter, users, userSearch]);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await http.get(USER_ENDPOINTS.ALL);
       setUsers(response.data);
-      setFilteredUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const filterUsers = () => {
-    if (roleFilter === 'all') {
-      setFilteredUsers(users);
-    } else {
-      setFilteredUsers(users.filter(user => user.role === roleFilter));
     }
   };
 
@@ -95,40 +110,12 @@ const AdminUsers = () => {
       
       toast.success(`User role updated to ${newRole}`);
       
-      // Update the user in users list
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
           user.id === selectedUser.id ? { ...user, role: newRole } : user
         )
       );
-      
-      // Update filteredUsers based on current filter
-      // If role filter is 'all', update the user in filtered list
-      // If role filter matches new role, update the user
-      // If role filter doesn't match new role, remove the user from filtered list
-      setFilteredUsers(prevFilteredUsers => {
-        if (roleFilter === 'all') {
-          // Show all users, just update the role
-          return prevFilteredUsers.map(user => 
-            user.id === selectedUser.id ? { ...user, role: newRole } : user
-          );
-        } else if (roleFilter === newRole) {
-          // New role matches filter, add user if not already in list, or update if exists
-          const userExists = prevFilteredUsers.some(u => u.id === selectedUser.id);
-          if (userExists) {
-            return prevFilteredUsers.map(user => 
-              user.id === selectedUser.id ? { ...user, role: newRole } : user
-            );
-          } else {
-            // Add the user to filtered list
-            return [...prevFilteredUsers, { ...selectedUser, role: newRole }];
-          }
-        } else {
-          // New role doesn't match filter, remove user from filtered list
-          return prevFilteredUsers.filter(user => user.id !== selectedUser.id);
-        }
-      });
-      
+
       setShowRoleModal(false);
       setSelectedUser(null);
     } catch (error) {
@@ -145,6 +132,36 @@ const AdminUsers = () => {
     setShowDeleteModal(true);
   };
 
+  const handleToggleBlock = async (user) => {
+    if (!currentAuthUser || user.id === currentAuthUser.id) return;
+
+    const nextBlocked = !user.is_blocked;
+    if (nextBlocked) {
+      const agreed = await confirm({
+        title: 'Suspend this user?',
+        message: `This will sign out ${user.first_name} ${user.last_name} (${user.email}) and block sign-in until you unblock them.`,
+        confirmText: 'Suspend',
+        cancelText: 'Cancel',
+      });
+      if (!agreed) return;
+    }
+
+    setBlockingId(user.id);
+    try {
+      const { data } = await http.patch(
+        buildUrl(USER_ENDPOINTS.UPDATE_BLOCK, { id: user.id }),
+        { is_blocked: nextBlocked }
+      );
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, ...data } : u)));
+      toast.success(nextBlocked ? 'User suspended' : 'User reactivated');
+    } catch (error) {
+      const msg = error.response?.data?.detail || error.message || 'Failed to update account';
+      toast.error(typeof msg === 'string' ? msg : 'Failed to update account');
+    } finally {
+      setBlockingId(null);
+    }
+  };
+
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
 
@@ -154,16 +171,8 @@ const AdminUsers = () => {
         buildUrl(USER_ENDPOINTS.DELETE, { id: userToDelete.id })
       );
       
-      // Remove user from users list
-      setUsers(prevUsers => 
-        prevUsers.filter(user => user.id !== userToDelete.id)
-      );
-      
-      // Remove user from filteredUsers list
-      setFilteredUsers(prevFilteredUsers => 
-        prevFilteredUsers.filter(user => user.id !== userToDelete.id)
-      );
-      
+      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userToDelete.id));
+
       toast.success(`User ${userToDelete.first_name} ${userToDelete.last_name} deleted successfully`);
       setShowDeleteModal(false);
       setUserToDelete(null);
@@ -186,6 +195,9 @@ const AdminUsers = () => {
     });
   };
 
+  const countForRoleFilter = (value) =>
+    value === 'all' ? users.length : users.filter((u) => u.role === value).length;
+
   const getRoleBadgeClass = (role) => {
     switch (role) {
       case 'admin':
@@ -196,6 +208,8 @@ const AdminUsers = () => {
         return 'role-badge driver';
       case 'customer':
         return 'role-badge customer';
+      case 'cashier':
+        return 'role-badge cashier';
       default:
         return 'role-badge';
     }
@@ -213,48 +227,45 @@ const AdminUsers = () => {
     <div className="admin-users">
       <div className="admin-users-header">
         <h1>Manage Users</h1>
-        <div className="users-stats">
-          <span>Total: {users.length}</span>
-          <span>Admin: {users.filter(u => u.role === 'admin').length}</span>
-          <span>Employee: {users.filter(u => u.role === 'employee').length}</span>
-          <span>Driver: {users.filter(u => u.role === 'driver').length}</span>
-          <span>Customer: {users.filter(u => u.role === 'customer').length}</span>
-        </div>
       </div>
 
       <div className="filter-section">
+        <div className="users-search-row">
+          <label htmlFor="admin-users-search">Search users</label>
+          <div className="users-search-input-wrap">
+            <input
+              id="admin-users-search"
+              type="search"
+              className="users-search-input"
+              placeholder="Name or email…"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              autoComplete="off"
+            />
+            {userSearch.trim() !== '' && (
+              <button
+                type="button"
+                className="users-search-clear"
+                onClick={() => setUserSearch('')}
+                aria-label="Clear search"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
         <label>Filter by Role:</label>
         <div className="filter-buttons">
-          <button
-            className={roleFilter === 'all' ? 'active' : ''}
-            onClick={() => setRoleFilter('all')}
-          >
-            All
-          </button>
-          <button
-            className={roleFilter === 'admin' ? 'active' : ''}
-            onClick={() => setRoleFilter('admin')}
-          >
-            Admin
-          </button>
-          <button
-            className={roleFilter === 'employee' ? 'active' : ''}
-            onClick={() => setRoleFilter('employee')}
-          >
-            Employee
-          </button>
-          <button
-            className={roleFilter === 'driver' ? 'active' : ''}
-            onClick={() => setRoleFilter('driver')}
-          >
-            Driver
-          </button>
-          <button
-            className={roleFilter === 'customer' ? 'active' : ''}
-            onClick={() => setRoleFilter('customer')}
-          >
-            Customer
-          </button>
+          {ROLE_FILTER_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={roleFilter === value ? 'active' : ''}
+              onClick={() => setRoleFilter(value)}
+            >
+              {label} ({countForRoleFilter(value)})
+            </button>
+          ))}
         </div>
       </div>
 
@@ -267,6 +278,7 @@ const AdminUsers = () => {
               <th>Email</th>
               <th>Role</th>
               <th>Verified</th>
+              <th>Account</th>
               <th>Created</th>
               <th>Actions</th>
             </tr>
@@ -274,8 +286,12 @@ const AdminUsers = () => {
           <tbody>
             {filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan="7" className="no-users">
-                  No users found
+                <td colSpan="8" className="no-users">
+                  {users.length === 0
+                    ? 'No users found.'
+                    : userSearch.trim()
+                      ? 'No users match your search and role filter.'
+                      : 'No users match the selected role filter.'}
                 </td>
               </tr>
             ) : (
@@ -285,7 +301,7 @@ const AdminUsers = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="user-row"
+                  className={`user-row${user.is_blocked ? ' user-row-blocked' : ''}`}
                   onClick={() => navigate(`/admin/users/${user.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
@@ -319,9 +335,33 @@ const AdminUsers = () => {
                       {user.is_verified ? '✓ Verified' : '✗ Not Verified'}
                     </span>
                   </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <span className={user.is_blocked ? 'account-status suspended' : 'account-status active'}>
+                      {user.is_blocked ? 'Suspended' : 'Active'}
+                    </span>
+                  </td>
                   <td>{formatDate(user.created_at)}</td>
                   <td>
                     <div className="action-buttons">
+                      {authLoading ? (
+                        <span className="action-self-placeholder">…</span>
+                      ) : currentAuthUser?.id === user.id ? (
+                        <span className="action-self-placeholder" title="You cannot block your own account">
+                          —
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={user.is_blocked ? 'unblock-user-btn' : 'block-user-btn'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleBlock(user);
+                          }}
+                          disabled={updating || deleting || blockingId === user.id}
+                        >
+                          {blockingId === user.id ? '…' : user.is_blocked ? 'Unblock' : 'Block'}
+                        </button>
+                      )}
                       <button
                         className="change-role-btn"
                         onClick={(e) => {
@@ -389,6 +429,7 @@ const AdminUsers = () => {
                   <option value="employee">Employee</option>
                   <option value="driver">Driver</option>
                   <option value="customer">Customer</option>
+                  <option value="cashier">Cashier</option>
                 </select>
               </div>
 

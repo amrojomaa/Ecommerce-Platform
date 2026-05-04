@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos
 
 
 def apply_schema_updates():
@@ -170,6 +170,50 @@ def apply_schema_patches() -> None:
             )
         )
 
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS sale_channel VARCHAR(32) NOT NULL DEFAULT 'online'
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS cashier_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS payment_method VARCHAR(32)
+                """
+            )
+        )
+
+        # POS walk-in placeholder: old email fails Pydantic EmailStr (reserved .local TLD).
+        connection.execute(
+            text(
+                """
+                UPDATE users SET email = 'pos.walkin@example.com'
+                WHERE email = 'pos.walkin@internal.local'
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS users
+                ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE
+                """
+            )
+        )
+
 
 apply_schema_patches()
 print("Data Base connected successfully!")
@@ -253,5 +297,6 @@ app.include_router(rating.router)
 app.include_router(admin_settings.router)
 app.include_router(delivery.router)
 app.include_router(recommendations.router)
+app.include_router(pos.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

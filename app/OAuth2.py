@@ -65,7 +65,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Session expired. Please login again.",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    
+
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account has been suspended.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return token_data
 
     # user = db.query(models.User).filter(models.User.id == token.id).first()
@@ -103,7 +110,10 @@ def get_current_user_optional(
         
         if user_token_version != token_token_version:
             return None
-        
+
+        if getattr(user, "is_blocked", False):
+            return None
+
         # Return token data (same as get_current_user)
         return token_data
     except Exception:

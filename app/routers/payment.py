@@ -119,9 +119,10 @@ def confirm_payment(
                     models.DBRecommendationBatchCache.user_id == order.user_id
                 ).delete()
                 
-                # Automatically create a delivery job for the paid order
-                from .delivery import internal_create_delivery_job
-                internal_create_delivery_job(order.id, db)
+                # Automatically create a delivery job for online paid orders only
+                if getattr(order, "sale_channel", None) != "pos":
+                    from .delivery import internal_create_delivery_job
+                    internal_create_delivery_job(order.id, db)
             
             db.commit()
         

@@ -20,7 +20,12 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        navigate(u.role === 'cashier' ? '/cashier' : '/');
+      } catch {
+        navigate('/');
+      }
     }
   }, [isAuthenticated, navigate]);
 
@@ -41,7 +46,6 @@ const Login = () => {
   
       if (result?.success) {
         toast.success('Login successful');
-        navigate('/');
       } else {
         toast.error(result?.error || 'Login failed');
       }
@@ -60,7 +64,6 @@ const Login = () => {
         const result = await loginWithGoogle(tokenResponse.access_token);
         if (result?.success) {
           toast.success('Login successful');
-          navigate('/');
         } else {
           toast.error(result?.error || 'Google login failed');
         }

@@ -62,6 +62,10 @@ import DriverActiveJob from './pages/driver/DriverActiveJob';
 import DriverJobHistory from './pages/driver/DriverJobHistory';
 import DriverEarnings from './pages/driver/DriverEarnings';
 
+// Cashier / POS
+import CashierLayout from './layouts/CashierLayout';
+import PosTerminal from './pages/cashier/PosTerminal';
+
 // Styles
 import './styles/App.css';
 
@@ -121,6 +125,10 @@ function App() {
                     <Route path="active" element={<DriverActiveJob />} />
                     <Route path="history" element={<DriverJobHistory />} />
                     <Route path="earnings" element={<DriverEarnings />} />
+        </Route>
+
+        <Route path="/cashier" element={<ProtectedRoute requireCashier={true}><CashierLayout /></ProtectedRoute>}>
+          <Route index element={<PosTerminal />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

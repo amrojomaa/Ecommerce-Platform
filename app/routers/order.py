@@ -6,6 +6,7 @@ from ..database import get_db
 from app import models, schemas
 from app import OAuth2
 from app.routers.admin import require_admin
+from app.services import promotion_engine
 
 
 def get_order_item_with_images(order_item: models.DBOrderItem) -> dict:
@@ -24,6 +25,24 @@ def get_order_item_with_images(order_item: models.DBOrderItem) -> dict:
         "price": float(order_item.price),
         "total": float(order_item.total)
     }
+
+
+def _build_promotion_line_items(cart_items: List[models.DBCartItem]) -> list[promotion_engine.PromotionLineItem]:
+    lines: list[promotion_engine.PromotionLineItem] = []
+    for item in cart_items:
+        unit_price = float(item.product.final_price)
+        quantity = int(item.quantity)
+        lines.append(
+            promotion_engine.PromotionLineItem(
+                product_id=item.product_id,
+                product_name=item.product.name,
+                category_name=item.product.category_name,
+                quantity=quantity,
+                unit_price=unit_price,
+                line_total=round(unit_price * quantity, 2),
+            )
+        )
+    return lines
 
 
 
@@ -49,6 +68,11 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
     cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
     if not cart or not cart.items:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart not found")
+
+    promotion_summary = promotion_engine.calculate_promotion_totals(
+        _build_promotion_line_items(cart.items),
+        promotion_engine.get_active_promotion(db),
+    )
     
     # Check if there's an existing order with status "created"
     existing_order = (
@@ -67,7 +91,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
 
     if existing_order:
         # Add items to existing order
-        cart_total = 0
+        cart_total = float(promotion_summary["grand_total"])
         for item in cart.items:
             # Check if order item with same product_id already exists
             existing_order_item = (
@@ -83,7 +107,6 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                 # Update existing order item: add quantities and recalculate total
                 existing_order_item.quantity += item.quantity
                 existing_order_item.total = float(existing_order_item.price * existing_order_item.quantity)
-                cart_total += item.total
             else:
                 # Create new order item
                 db.add(models.DBOrderItem(
@@ -93,10 +116,15 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
                     price=float(item.product.final_price),
                     total=item.total
                 ))
-                cart_total += item.total
         
         # Update order total amount
         existing_order.total_amount += cart_total
+        existing_order.promotion_discount = round(
+            float(existing_order.promotion_discount or 0) + float(promotion_summary["promotion_discount"]),
+            2,
+        )
+        if promotion_summary["applied_promotion"]:
+            existing_order.promotion_name = promotion_summary["applied_promotion"]["name"]
         db.commit()
         
         # Reload order with orderitems for response
@@ -114,7 +142,16 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
         return existing_order
     else:
         # Create new order
-        new_order = models.DBOrder(user_id=current_user.id, total_amount=cart.grand_total)
+        new_order = models.DBOrder(
+            user_id=current_user.id,
+            total_amount=float(promotion_summary["grand_total"]),
+            promotion_discount=float(promotion_summary["promotion_discount"]),
+            promotion_name=(
+                promotion_summary["applied_promotion"]["name"]
+                if promotion_summary["applied_promotion"]
+                else None
+            ),
+        )
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
@@ -177,6 +214,8 @@ def get_my_orders(
             "id": order.id,
             "created_at": order.created_at,
             "total_amount": order.total_amount,
+            "promotion_discount": float(order.promotion_discount or 0),
+            "promotion_name": order.promotion_name,
             "status": order.status,
             "orderitems": [get_order_item_with_images(item) for item in order.orderitems]
         }

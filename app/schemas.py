@@ -12,6 +12,131 @@ class UserRole(str, Enum):
     DRIVER = "driver"
     CASHIER = "cashier"
 
+
+class PromotionTargetType(str, Enum):
+    AMOUNT = "amount"
+    QUANTITY = "quantity"
+
+
+class PromotionDiscountType(str, Enum):
+    PERCENTAGE = "percentage"
+    FIXED = "fixed"
+
+
+class PromotionFilterType(str, Enum):
+    INCLUDE_PRODUCTS = "include_products"
+    EXCLUDE_PRODUCTS = "exclude_products"
+    INCLUDE_CATEGORIES = "include_categories"
+    EXCLUDE_CATEGORIES = "exclude_categories"
+
+
+class PromotionBase(BaseModel):
+    name: str
+    is_active: bool = False
+    target_type: PromotionTargetType
+    target_value: float
+    discount_type: PromotionDiscountType
+    discount_value: float
+    filter_type: PromotionFilterType
+    filter_values: List[str] = Field(default_factory=list)
+
+    @field_validator("target_value", "discount_value")
+    @classmethod
+    def validate_positive_number(cls, value: float):
+        if value <= 0:
+            raise ValueError("Value must be greater than zero.")
+        return value
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str):
+        cleaned = (value or "").strip()
+        if not cleaned:
+            raise ValueError("Promotion name is required.")
+        return cleaned
+
+    @field_validator("filter_values")
+    @classmethod
+    def validate_filter_values(cls, values: List[str]):
+        cleaned = []
+        seen = set()
+        for value in values or []:
+            normalized = value.strip()
+            if normalized and normalized.lower() not in seen:
+                cleaned.append(normalized)
+                seen.add(normalized.lower())
+        return cleaned
+
+    @model_validator(mode="after")
+    def validate_discount_rules(self):
+        if self.discount_type == PromotionDiscountType.PERCENTAGE and self.discount_value > 100:
+            raise ValueError("Percentage discount cannot exceed 100.")
+        return self
+
+
+class PromotionCreate(PromotionBase):
+    @field_validator("filter_values")
+    @classmethod
+    def validate_required_filter_values(cls, values: List[str]):
+        if not values:
+            raise ValueError("At least one filter value is required.")
+        return values
+
+
+class PromotionUpdate(PromotionBase):
+    @field_validator("filter_values")
+    @classmethod
+    def validate_required_filter_values(cls, values: List[str]):
+        if not values:
+            raise ValueError("At least one filter value is required.")
+        return values
+
+
+class PromotionStatusUpdate(BaseModel):
+    is_active: bool
+
+
+class AppliedPromotion(BaseModel):
+    promotion_id: int
+    name: str
+    target_type: PromotionTargetType
+    target_value: float
+    discount_type: PromotionDiscountType
+    discount_value: float
+    filter_type: PromotionFilterType
+    filter_values: List[str]
+    eligible_amount: float
+    eligible_quantity: int
+    discount_applied: float
+
+
+class PromotionResponse(PromotionBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PromotionCalculationResponse(BaseModel):
+    subtotal: float
+    promotion_discount: float
+    grand_total: float
+    applied_promotion: Optional[AppliedPromotion] = None
+
+
+class ActivePromotionPublicResponse(BaseModel):
+    id: int
+    name: str
+    target_type: PromotionTargetType
+    target_value: float
+    discount_type: PromotionDiscountType
+    discount_value: float
+    filter_type: PromotionFilterType
+    filter_values: List[str] = Field(default_factory=list)
+    customer_message: str
+
 class FilterProducts(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
@@ -183,7 +308,10 @@ class ShowCart(BaseModel):
     
 class CartResponse(BaseModel):
     items: List[ShowCart]
+    subtotal: float = 0
+    promotion_discount: float = 0
     grand_total: float
+    applied_promotion: Optional[AppliedPromotion] = None
 
     class Config:
         orm_mode = True
@@ -262,6 +390,8 @@ class OrderResponse(BaseModel):
     id: int
     created_at: datetime
     total_amount: float
+    promotion_discount: float = 0
+    promotion_name: Optional[str] = None
     status: str
     items: List[OrderItemResponse] = Field(alias="orderitems")
 
@@ -320,6 +450,8 @@ class AdminOrderResponse(BaseModel):
     id: int
     created_at: datetime
     total_amount: float
+    promotion_discount: float = 0
+    promotion_name: Optional[str] = None
     status: str
     items: List[OrderItemResponse] = Field(alias="orderitems")
     user: Optional[OrderUserInfo] = None
@@ -447,6 +579,10 @@ class POSCheckoutRequest(BaseModel):
     payment_method: Literal["cash", "card"]
 
 
+class POSPromotionPreviewRequest(BaseModel):
+    items: List[POSLineItem]
+
+
 class POSProductRow(BaseModel):
     id: int
     name: str
@@ -468,6 +604,8 @@ class POSSaleSummaryRow(BaseModel):
     id: int
     created_at: datetime
     total_amount: float
+    promotion_discount: float = 0
+    promotion_name: Optional[str] = None
     payment_method: Optional[str] = None
     status: str
 

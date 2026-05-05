@@ -10,6 +10,9 @@ export const CartProvider = ({ children }) => {
     return !!localStorage.getItem('token');
   };
   const [cartItems, setCartItems] = useState([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [promotionDiscount, setPromotionDiscount] = useState(0);
+  const [appliedPromotion, setAppliedPromotion] = useState(null);
   const [grandTotal, setGrandTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -38,6 +41,9 @@ export const CartProvider = ({ children }) => {
       if (!token) {
         if (currentUserId !== null) {
           setCartItems([]);
+          setSubtotal(0);
+          setPromotionDiscount(0);
+          setAppliedPromotion(null);
           setGrandTotal(0);
           setCurrentUserId(null);
           loadCartFromStorage();
@@ -48,6 +54,9 @@ export const CartProvider = ({ children }) => {
       // If user changed, clear cart and fetch new user's cart
       if (userId && userId !== currentUserId) {
         setCartItems([]);
+        setSubtotal(0);
+        setPromotionDiscount(0);
+        setAppliedPromotion(null);
         setGrandTotal(0);
         setCurrentUserId(userId);
         fetchCart();
@@ -99,6 +108,9 @@ export const CartProvider = ({ children }) => {
       if (savedCart) {
         const cart = JSON.parse(savedCart);
         setCartItems(cart.items || []);
+        setSubtotal(cart.subtotal || cart.grandTotal || 0);
+        setPromotionDiscount(cart.promotionDiscount || 0);
+        setAppliedPromotion(cart.appliedPromotion || null);
         setGrandTotal(cart.grandTotal || 0);
       }
     } catch (error) {
@@ -116,15 +128,24 @@ export const CartProvider = ({ children }) => {
       
       if (cartData.items && Array.isArray(cartData.items)) {
         setCartItems(cartData.items);
+        setSubtotal(cartData.subtotal || cartData.grand_total || 0);
+        setPromotionDiscount(cartData.promotion_discount || 0);
+        setAppliedPromotion(cartData.applied_promotion || null);
         setGrandTotal(cartData.grand_total || 0);
       } else {
         setCartItems([]);
+        setSubtotal(0);
+        setPromotionDiscount(0);
+        setAppliedPromotion(null);
         setGrandTotal(0);
       }
     } catch (error) {
       // If cart not found, initialize empty cart
       if (error.status === 404) {
         setCartItems([]);
+        setSubtotal(0);
+        setPromotionDiscount(0);
+        setAppliedPromotion(null);
         setGrandTotal(0);
       } else {
         console.error('Error fetching cart:', error);
@@ -212,6 +233,7 @@ export const CartProvider = ({ children }) => {
         return updated;
       });
       
+      await fetchCart();
       return { success: true };
     } catch (error) {
       // On error, revert to previous state and refetch to sync with server
@@ -240,6 +262,7 @@ export const CartProvider = ({ children }) => {
     // Don't show loading for quick deletes - makes it feel instant
     try {
       await http.delete(CART_ENDPOINTS.DELETE_ITEM.replace('{item_id}', itemId));
+      await fetchCart();
       return { success: true };
     } catch (error) {
       // On error, revert to previous state and refetch to sync with server
@@ -276,6 +299,9 @@ export const CartProvider = ({ children }) => {
 
   const value = {
     cartItems,
+    subtotal,
+    promotionDiscount,
+    appliedPromotion,
     grandTotal,
     loading,
     addToCart,

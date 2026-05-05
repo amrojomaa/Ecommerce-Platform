@@ -24,6 +24,12 @@ const PosTerminal = () => {
   const [submitting, setSubmitting] = useState(false);
   const [todaySales, setTodaySales] = useState([]);
   const [loadingToday, setLoadingToday] = useState(true);
+  const [promotionSummary, setPromotionSummary] = useState({
+    subtotal: 0,
+    promotion_discount: 0,
+    grand_total: 0,
+    applied_promotion: null,
+  });
 
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
@@ -99,10 +105,44 @@ const PosTerminal = () => {
     setLines((prev) => prev.filter((r) => r.product_id !== productId));
   };
 
-  const subtotal = useMemo(
-    () => lines.reduce((s, r) => s + r.unit * r.quantity, 0),
-    [lines]
-  );
+  const refreshPromotionPreview = useCallback(async (currentLines) => {
+    if (!currentLines.length) {
+      setPromotionSummary({
+        subtotal: 0,
+        promotion_discount: 0,
+        grand_total: 0,
+        applied_promotion: null,
+      });
+      return;
+    }
+
+    try {
+      const { data } = await http.post(POS_ENDPOINTS.PROMOTION_PREVIEW, {
+        items: currentLines.map(({ product_id, quantity }) => ({ product_id, quantity })),
+      });
+      setPromotionSummary({
+        subtotal: Number(data?.subtotal || 0),
+        promotion_discount: Number(data?.promotion_discount || 0),
+        grand_total: Number(data?.grand_total || 0),
+        applied_promotion: data?.applied_promotion || null,
+      });
+    } catch {
+      const fallbackSubtotal = currentLines.reduce((s, row) => s + row.unit * row.quantity, 0);
+      setPromotionSummary({
+        subtotal: fallbackSubtotal,
+        promotion_discount: 0,
+        grand_total: fallbackSubtotal,
+        applied_promotion: null,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshPromotionPreview(lines);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [lines, refreshPromotionPreview]);
 
   const completeSale = async () => {
     if (lines.length === 0) {
@@ -111,11 +151,16 @@ const PosTerminal = () => {
     }
     setSubmitting(true);
     try {
-      await http.post(POS_ENDPOINTS.SALE, {
+      const { data } = await http.post(POS_ENDPOINTS.SALE, {
         items: lines.map(({ product_id, quantity }) => ({ product_id, quantity })),
         payment_method: paymentMethod,
       });
-      toast.success('Sale completed');
+      const saved = Number(data?.promotion_discount || 0);
+      if (saved > 0) {
+        toast.success(`Sale completed. Promotion saved ${formatPrice(saved)}.`);
+      } else {
+        toast.success('Sale completed');
+      }
       setLines([]);
       fetchToday();
       fetchCatalog();
@@ -131,6 +176,9 @@ const PosTerminal = () => {
     catalog.forEach((p) => p.category_name && s.add(p.category_name));
     return [...s].sort();
   }, [catalog]);
+
+  const previewSubtotal = promotionSummary.subtotal;
+  const previewGrandTotal = promotionSummary.grand_total;
 
   return (
     <div className="pos-terminal">
@@ -230,8 +278,25 @@ const PosTerminal = () => {
           )}
 
           <div className="pos-total-row">
+            <span>Subtotal</span>
+            <strong>{formatPrice(previewSubtotal)}</strong>
+          </div>
+
+          {promotionSummary.promotion_discount > 0 && (
+            <div className="pos-promo-row">
+              <span>
+                Promotion
+                {promotionSummary.applied_promotion?.name
+                  ? ` (${promotionSummary.applied_promotion.name})`
+                  : ''}
+              </span>
+              <strong>-{formatPrice(promotionSummary.promotion_discount)}</strong>
+            </div>
+          )}
+
+          <div className="pos-total-row pos-total-row-final">
             <span>Total</span>
-            <strong>{formatPrice(subtotal)}</strong>
+            <strong>{formatPrice(previewGrandTotal)}</strong>
           </div>
 
           <div className="pos-payment">

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
+from app.services import promotion_engine
 
 
 def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
@@ -26,6 +27,24 @@ def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
             "images": [img.image_path for img in cart_item.product.images]
         }
     }
+
+
+def _build_promotion_line_items(cart_items: List[models.DBCartItem]) -> list[promotion_engine.PromotionLineItem]:
+    lines: list[promotion_engine.PromotionLineItem] = []
+    for item in cart_items:
+        unit_price = float(item.product.final_price)
+        quantity = int(item.quantity)
+        lines.append(
+            promotion_engine.PromotionLineItem(
+                product_id=item.product_id,
+                product_name=item.product.name,
+                category_name=item.product.category_name,
+                quantity=quantity,
+                unit_price=unit_price,
+                line_total=round(unit_price * quantity, 2),
+            )
+        )
+    return lines
 
 
 router = APIRouter(
@@ -99,15 +118,26 @@ def show_me_cart(db: Session = Depends(get_db), current_user: schemas.User = Dep
     if not cart.items:
         return {
             "items": [],
+            "subtotal": 0.0,
+            "promotion_discount": 0.0,
+            "applied_promotion": None,
             "grand_total": 0.0
         }
 
     # Convert cart items to include product images
     cart_items = [get_cart_item_with_images(item) for item in cart.items]
+    active_promotion = promotion_engine.get_active_promotion(db)
+    promotion_summary = promotion_engine.calculate_promotion_totals(
+        _build_promotion_line_items(cart.items),
+        active_promotion,
+    )
 
     return {
         "items": cart_items,
-        "grand_total": float(cart.grand_total)
+        "subtotal": float(promotion_summary["subtotal"]),
+        "promotion_discount": float(promotion_summary["promotion_discount"]),
+        "applied_promotion": promotion_summary["applied_promotion"],
+        "grand_total": float(promotion_summary["grand_total"])
     }
 
 

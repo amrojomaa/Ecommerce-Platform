@@ -247,6 +247,11 @@ body.cart-updating {
   color: var(--text-secondary);
 }
 
+.summary-row.summary-row-discount {
+  color: #16a34a;
+  font-weight: 600;
+}
+
 .summary-row.total {
   border-top: 1px solid var(--border-color);
   padding-top: 1rem;

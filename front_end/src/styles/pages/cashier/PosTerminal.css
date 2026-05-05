@@ -234,6 +234,21 @@
   padding-top: 0.5rem;
 }
 
+.pos-promo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -0.5rem 0 0.8rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.pos-total-row-final {
+  border-top: 1px solid var(--border-color, #ddd);
+  margin-top: 0.35rem;
+  padding-top: 0.8rem;
+}
+
 .pos-payment {
   margin-bottom: 1rem;
 }

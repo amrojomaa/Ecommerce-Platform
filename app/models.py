@@ -191,6 +191,8 @@ class DBOrder(Base):
     sale_channel = Column(String, nullable=False, server_default="online")
     cashier_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     payment_method = Column(String, nullable=True)
+    promotion_discount = Column(Float, nullable=False, server_default=text("0"))
+    promotion_name = Column(String, nullable=True)
 
     user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
     driver = relationship("DBUser", foreign_keys=[driver_id])
@@ -425,3 +427,19 @@ class DBDeliveryIssueMessage(Base):
 
     delivery_job = relationship("DBDeliveryJob", back_populates="issue_messages")
     sender = relationship("DBUser", foreign_keys=[sender_id])
+
+
+class DBPromotion(Base):
+    __tablename__ = "promotions"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String, nullable=False, unique=True)
+    is_active = Column(Boolean, nullable=False, server_default="FALSE")
+    target_type = Column(String(16), nullable=False)  # "amount" or "quantity"
+    target_value = Column(Numeric(10, 2), nullable=False)
+    discount_type = Column(String(16), nullable=False)  # "percentage" or "fixed"
+    discount_value = Column(Numeric(10, 2), nullable=False)
+    filter_type = Column(String(32), nullable=False)  # include/exclude + product/category
+    filter_values = Column(JSON, nullable=False, server_default=text("'[]'::jsonb"))
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))

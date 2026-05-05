@@ -12,6 +12,9 @@ const Cart = () => {
   const navigate = useNavigate();
   const {
     cartItems,
+    subtotal,
+    promotionDiscount,
+    appliedPromotion,
     grandTotal,
     loading,
     updateCartItem,
@@ -245,8 +248,16 @@ const Cart = () => {
               <h2>Order Summary</h2>
               <div className="summary-row">
                 <span>Subtotal:</span>
-                <span>{formatPrice(grandTotal)}</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
+              {promotionDiscount > 0 && (
+                <div className="summary-row summary-row-discount">
+                  <span>
+                    Promotion{appliedPromotion?.name ? ` (${appliedPromotion.name})` : ''}:
+                  </span>
+                  <span>-{formatPrice(promotionDiscount)}</span>
+                </div>
+              )}
               <div className="summary-row">
                 <span>Shipping:</span>
                 <span>Free</span>

@@ -58,8 +58,20 @@ export const ORDER_ENDPOINTS = {
 // Point of sale (cashier / admin / employee)
 export const POS_ENDPOINTS = {
   PRODUCTS: '/pos/products',
+  PROMOTION_PREVIEW: '/pos/promotion-preview',
   SALE: '/pos/sale',
   SALES_TODAY: '/pos/sales/today',
+};
+
+export const PROMOTION_ENDPOINTS = {
+  LIST: '/promotions',
+  ACTIVE: '/promotions/active',
+  CREATE: '/promotions',
+  UPDATE: '/promotions/{promotion_id}',
+  DELETE: '/promotions/{promotion_id}',
+  SET_ACTIVE: '/promotions/{promotion_id}/active',
+  PRODUCT_OPTIONS: '/promotions/products/options',
+  CATEGORY_OPTIONS: '/promotions/categories/options',
 };
 
 // Payment endpoints

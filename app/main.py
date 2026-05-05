@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos, promotions
 
 
 def apply_schema_updates():
@@ -194,6 +194,138 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS promotion_discount DOUBLE PRECISION NOT NULL DEFAULT 0
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS orders
+                ADD COLUMN IF NOT EXISTS promotion_name VARCHAR(255)
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS promotions (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR NOT NULL UNIQUE,
+                    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                    target_type VARCHAR(16) NOT NULL,
+                    target_value NUMERIC(10, 2) NOT NULL,
+                    discount_type VARCHAR(16) NOT NULL,
+                    discount_value NUMERIC(10, 2) NOT NULL,
+                    filter_type VARCHAR(32) NOT NULL,
+                    filter_values JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS promotions
+                ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                ADD COLUMN IF NOT EXISTS target_type VARCHAR(16),
+                ADD COLUMN IF NOT EXISTS target_value NUMERIC(10, 2),
+                ADD COLUMN IF NOT EXISTS discount_type VARCHAR(16),
+                ADD COLUMN IF NOT EXISTS discount_value NUMERIC(10, 2),
+                ADD COLUMN IF NOT EXISTS filter_type VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS filter_values JSONB,
+                ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET target_type = 'amount'
+                WHERE target_type IS NULL OR btrim(target_type) = ''
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET target_value = 1
+                WHERE target_value IS NULL
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET discount_type = 'percentage'
+                WHERE discount_type IS NULL OR btrim(discount_type) = ''
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET discount_value = 0
+                WHERE discount_value IS NULL
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET filter_type = 'include_products'
+                WHERE filter_type IS NULL OR btrim(filter_type) = ''
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                UPDATE promotions
+                SET filter_values = '[]'::jsonb
+                WHERE filter_values IS NULL
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS promotions
+                ALTER COLUMN target_type SET DEFAULT 'amount',
+                ALTER COLUMN target_value SET DEFAULT 1,
+                ALTER COLUMN discount_type SET DEFAULT 'percentage',
+                ALTER COLUMN discount_value SET DEFAULT 0,
+                ALTER COLUMN filter_type SET DEFAULT 'include_products',
+                ALTER COLUMN filter_values SET DEFAULT '[]'::jsonb
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS promotions
+                ALTER COLUMN target_type SET NOT NULL,
+                ALTER COLUMN target_value SET NOT NULL,
+                ALTER COLUMN discount_type SET NOT NULL,
+                ALTER COLUMN discount_value SET NOT NULL,
+                ALTER COLUMN filter_type SET NOT NULL,
+                ALTER COLUMN filter_values SET NOT NULL
+                """
+            )
+        )
 
         # POS walk-in placeholder: old email fails Pydantic EmailStr (reserved .local TLD).
         connection.execute(
@@ -298,5 +430,6 @@ app.include_router(admin_settings.router)
 app.include_router(delivery.router)
 app.include_router(recommendations.router)
 app.include_router(pos.router)
+app.include_router(promotions.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

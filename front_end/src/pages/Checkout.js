@@ -11,7 +11,7 @@ import '../styles/pages/Checkout.css';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cartItems, grandTotal, clearCart } = useCart();
+  const { cartItems, subtotal, promotionDiscount, appliedPromotion, grandTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     address: '',
@@ -195,8 +195,16 @@ const Checkout = () => {
           <div className="order-totals">
             <div className="total-row">
               <span>Subtotal:</span>
-              <span>{formatPrice(grandTotal)}</span>
+              <span>{formatPrice(subtotal)}</span>
             </div>
+            {promotionDiscount > 0 && (
+              <div className="total-row total-row-discount">
+                <span>
+                  Promotion{appliedPromotion?.name ? ` (${appliedPromotion.name})` : ''}:
+                </span>
+                <span>-{formatPrice(promotionDiscount)}</span>
+              </div>
+            )}
             <div className="total-row">
               <span>Shipping:</span>
               <span>Free</span>

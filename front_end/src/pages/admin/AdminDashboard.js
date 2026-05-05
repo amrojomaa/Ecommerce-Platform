@@ -360,9 +360,9 @@ const AdminDashboard = () => {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <Link to="/admin/discounts" className="dashboard-action-card">
-            <h3>Manage Discounts</h3>
-            <p>Enable, disable, and edit product discounts</p>
+          <Link to="/admin/promotions" className="dashboard-action-card">
+            <h3>Manage Promotions</h3>
+            <p>Create rule-based cart and POS discount campaigns</p>
           </Link>
         </motion.div>
 

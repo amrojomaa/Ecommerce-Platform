@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
-import { PRODUCT_ENDPOINTS } from '../config/api';
+import { PRODUCT_ENDPOINTS, PROMOTION_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { useAuth } from '../hooks/useAuth';
@@ -22,6 +22,7 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
+  const [activePromotionMessage, setActivePromotionMessage] = useState('');
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
@@ -44,6 +45,10 @@ const Products = () => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, selectedCategory, minPrice, maxPrice, isAuthenticated]);
+
+  useEffect(() => {
+    fetchActivePromotionMessage();
+  }, []);
 
   // useEffect(() => {
   //   applyFilters();
@@ -104,6 +109,16 @@ const Products = () => {
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActivePromotionMessage = async () => {
+    try {
+      const response = await http.get(PROMOTION_ENDPOINTS.ACTIVE);
+      const promotion = response?.data;
+      setActivePromotionMessage(promotion?.customer_message || '');
+    } catch {
+      setActivePromotionMessage('');
     }
   };
 
@@ -214,6 +229,12 @@ const Products = () => {
 
         {/* Products Grid */}
         <main className="products-main">
+          {activePromotionMessage && (
+            <div className="promotion-available-banner" role="status" aria-live="polite">
+              <span>{activePromotionMessage}</span>
+            </div>
+          )}
+
           <div className="products-toolbar">
             <p className="products-count">
               {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found

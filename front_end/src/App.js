@@ -48,6 +48,7 @@ import AdminTickets from './pages/admin/AdminTickets';
 import AdminComments from './pages/admin/AdminComments';
 import AdminDeliveries from './pages/admin/AdminDeliveries';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
+import AdminPromotions from './pages/admin/AdminPromotions';
 
 //Pages - Employee
 import EmployeeLayout from './layouts/EmployeeLayout';
@@ -105,6 +106,8 @@ function App() {
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="discounts" element={<AdminDiscounts />} />
+                    <Route path="promotions" element={<AdminPromotions />} />
+                    <Route path="promotions/create" element={<AdminPromotions />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="deliveries" element={<AdminDeliveries />} />

@@ -124,6 +124,11 @@
   color: var(--text-secondary);
 }
 
+.total-row.total-row-discount {
+  color: #16a34a;
+  font-weight: 600;
+}
+
 .total-row.final-total {
   font-size: 1.25rem;
   font-weight: 700;

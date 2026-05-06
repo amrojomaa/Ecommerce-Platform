@@ -179,8 +179,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
                         detail="Invalid Google token"
                     )
                 user_info = response.json()
-                # Debug: Print full user info to see what Google returns
-                print(f"Full Google user_info: {user_info}")
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -200,10 +198,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
             first_name = 'User'
         if not last_name or last_name.strip() == '':
             last_name = email.split('@')[0] if email else 'User'
-        
-        # Debug: Print user info to see what Google returns
-        print(f"Google user info - email: {email}, first_name: {first_name}, last_name: {last_name}, picture: {picture}, google_id: {google_id}")
-        print(f"Available fields in user_info: {list(user_info.keys())}")
         
         if not email:
             raise HTTPException(
@@ -303,7 +297,6 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         # Generate JWT token
         token = OAuth2.create_access_token(data={"user_id": user.id}, token_version=user.token_version)
         
-        print(f"Google auth successful for user: {user.email}, returning token")
         return {
             "access_token": token,
             "token_type": "bearer"

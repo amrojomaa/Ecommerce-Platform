@@ -2,10 +2,11 @@ from fastapi import HTTPException, status, Response, Depends
 from fastapi import APIRouter
 from app import OAuth2, models, schemas
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from app.routers.admin import require_admin
 from ..database import get_db
-from typing import List
+from typing import List, Dict
 
 
 def validate_discount(price: float, discount_enabled: bool, discount_type: str | None, discount_value: float | None):
@@ -66,8 +67,33 @@ router = APIRouter(
 )
 
 
-def get_product_with_images(product: models.DBProduct) -> dict:
+def get_ratings_summary_by_product_ids(db: Session, product_ids: List[int]) -> Dict[int, dict]:
+    if not product_ids:
+        return {}
+
+    rows = (
+        db.query(
+            models.DBProductRating.product_id.label("product_id"),
+            func.avg(models.DBProductRating.rating).label("average_rating"),
+            func.count(models.DBProductRating.id).label("total_ratings"),
+        )
+        .filter(models.DBProductRating.product_id.in_(product_ids))
+        .group_by(models.DBProductRating.product_id)
+        .all()
+    )
+
+    ratings_map: Dict[int, dict] = {}
+    for row in rows:
+        ratings_map[row.product_id] = {
+            "average_rating": round(float(row.average_rating or 0), 2),
+            "total_ratings": int(row.total_ratings or 0),
+        }
+    return ratings_map
+
+
+def get_product_with_images(product: models.DBProduct, ratings_map: Dict[int, dict] | None = None) -> dict:
     """Helper function to convert DBProduct to dict with images"""
+    rating_summary = (ratings_map or {}).get(product.id, {})
     product_dict = {
         "id": product.id,
         "name": product.name,
@@ -79,7 +105,9 @@ def get_product_with_images(product: models.DBProduct) -> dict:
         "discounted_price": float(product.discounted_price),
         "quantity": product.quantity,
         "category_name": product.category_name,
-        "images": [img.image_path for img in product.images]
+        "images": [img.image_path for img in product.images],
+        "average_rating": float(rating_summary.get("average_rating", 0.0)),
+        "total_ratings": int(rating_summary.get("total_ratings", 0)),
     }
     return product_dict
 
@@ -106,7 +134,8 @@ def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depe
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    return [schemas.Product(**get_product_with_images(p)) for p in products]
+    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
+    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/filter/user", response_model=list[schemas.Product])
 def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
@@ -130,7 +159,8 @@ def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session =
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    return [schemas.Product(**get_product_with_images(p)) for p in products]
+    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
+    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/filter/admin", response_model=list[schemas.ProductBase])
 def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_admin)):
@@ -211,8 +241,9 @@ def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db),
 
 @router.get("/products/all", response_model=List[schemas.Product])
 def get_all_products(db: Session = Depends (get_db)):
-    products = db.query(models.DBProduct).all() 
-    return [schemas.Product(**get_product_with_images(p)) for p in products]
+    products = db.query(models.DBProduct).all()
+    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
+    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
 def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_admin)):
@@ -232,7 +263,8 @@ def get_products_by_name(name: str, db: Session = Depends (get_db)):
     product = db.query(models.DBProduct).filter(models.DBProduct.name == name).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    return schemas.Product(**get_product_with_images(product))
+    ratings_map = get_ratings_summary_by_product_ids(db, [product.id])
+    return schemas.Product(**get_product_with_images(product, ratings_map))
 
 @router.get("/products/{id}", response_model=schemas.ProductBase)
 def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)): 

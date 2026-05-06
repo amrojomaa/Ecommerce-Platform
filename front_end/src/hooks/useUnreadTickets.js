@@ -4,6 +4,7 @@ import http from '../services/http';
 import { TICKET_ENDPOINTS } from '../config/api';
 
 const STORAGE_KEY_PREFIX = 'last_viewed_tickets_';
+const UNREAD_TICKETS_POLL_INTERVAL_MS = 60 * 1000; // 1 minute
 
 export const useUnreadTickets = () => {
   const { user, isAuthenticated } = useAuth();
@@ -59,10 +60,10 @@ export const useUnreadTickets = () => {
     if (isAuthenticated && user && (user.role === 'admin' || user.role === 'employee' || user.role === 'customer')) {
       fetchUnreadCount();
       
-      // Poll for updates every 30 seconds
+      // Poll for updates every minute
       const interval = setInterval(() => {
         fetchUnreadCount();
-      }, 30000);
+      }, UNREAD_TICKETS_POLL_INTERVAL_MS);
 
       return () => clearInterval(interval);
     } else {

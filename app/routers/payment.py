@@ -23,7 +23,9 @@ def create_payment_intent(
     Create a Stripe payment intent for an order
     """
     try:
-        currency = str(payment_data.currency).lower()
+        # PaymentIntentCreate.currency is an enum; read its value safely.
+        currency = getattr(payment_data.currency, "value", payment_data.currency)
+        currency = str(currency).lower()
         currency_multipliers = {
             "usd": 100,
             "ils": 100,
@@ -58,6 +60,8 @@ def create_payment_intent(
             "client_secret": intent.client_secret,
             "payment_intent_id": intent.id
         }
+    except HTTPException:
+        raise
     except stripe.error.StripeError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -149,6 +153,8 @@ def confirm_payment(
             "message": "Payment confirmed successfully",
             "payment_intent_id": payment_confirm.payment_intent_id
         }
+    except HTTPException:
+        raise
     except stripe.error.StripeError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

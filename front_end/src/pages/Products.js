@@ -354,7 +354,15 @@ const Products = () => {
                         <p className="product-category">{product.category_name}</p>
                         {product.id && (
                           <div className="product-rating-container">
-                            <StarRating productId={product.id} showLabel={false} interactive={false} size="small" />
+                            <StarRating
+                              productId={product.id}
+                              showLabel={false}
+                              interactive={false}
+                              size="small"
+                              initialAverageRating={product.average_rating}
+                              initialTotalRatings={product.total_ratings}
+                              fetchOnMount={!Number.isFinite(Number(product.average_rating))}
+                            />
                           </div>
                         )}
                         <div className="product-price-container">

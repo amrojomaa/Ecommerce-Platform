@@ -5,6 +5,7 @@ import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../config/api';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const SESSION_CHECK_INTERVAL_MS = 60 * 1000; // 1 minute
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -144,8 +145,8 @@ export const AuthProvider = ({ children }) => {
     // This ensures browser2 gets the latest profile image from browser1
     checkAndUpdateUser();
     
-    // Then check periodically every 2 seconds to quickly detect changes
-    const sessionCheckInterval = setInterval(checkAndUpdateUser, 2000);
+    // Then check periodically every minute.
+    const sessionCheckInterval = setInterval(checkAndUpdateUser, SESSION_CHECK_INTERVAL_MS);
 
     return () => {
       clearInterval(sessionCheckInterval);

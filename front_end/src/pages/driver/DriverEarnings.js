@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
 import { toast } from 'react-toastify';
+import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/driver/DriverEarnings.css';
 
@@ -70,7 +71,7 @@ const DriverEarnings = () => {
       <div className="earnings-overview-grid">
         <div className="earnings-summary-card primary">
           <div className="card-label">Pending Payout</div>
-          <div className="card-value large">${summary?.pending_payout?.toFixed(2) || '0.00'}</div>
+          <div className="card-value large">{formatPrice(summary?.pending_payout || 0)}</div>
           <button 
             className="btn-payout" 
             onClick={handleRequestPayout}
@@ -82,17 +83,17 @@ const DriverEarnings = () => {
 
         <div className="earnings-summary-card">
           <div className="card-label">Today</div>
-          <div className="card-value">${summary?.today?.toFixed(2) || '0.00'}</div>
+          <div className="card-value">{formatPrice(summary?.today || 0)}</div>
         </div>
 
         <div className="earnings-summary-card">
           <div className="card-label">This Week</div>
-          <div className="card-value">${summary?.this_week?.toFixed(2) || '0.00'}</div>
+          <div className="card-value">{formatPrice(summary?.this_week || 0)}</div>
         </div>
 
         <div className="earnings-summary-card">
           <div className="card-label">This Month</div>
-          <div className="card-value">${summary?.this_month?.toFixed(2) || '0.00'}</div>
+          <div className="card-value">{formatPrice(summary?.this_month || 0)}</div>
         </div>
       </div>
 
@@ -107,7 +108,7 @@ const DriverEarnings = () => {
         <div className="stat-item">
           <span className="stat-icon">💰</span>
           <div className="stat-text">
-            <strong>${summary?.total?.toFixed(2) || '0.00'}</strong>
+            <strong>{formatPrice(summary?.total || 0)}</strong>
             <span>Lifetime Earnings</span>
           </div>
         </div>
@@ -133,7 +134,7 @@ const DriverEarnings = () => {
                   <tr key={record.id}>
                     <td>{new Date(record.created_at).toLocaleDateString()}</td>
                     <td>#{record.delivery_job_id}</td>
-                    <td className="amount-cell">${record.amount.toFixed(2)}</td>
+                    <td className="amount-cell">{formatPrice(record.amount || 0)}</td>
                     <td>
                       <span className={`payout-status ${record.status}`}>
                         {record.status}

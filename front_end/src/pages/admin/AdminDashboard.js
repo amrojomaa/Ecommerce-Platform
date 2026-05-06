@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, DELIVERY_ENDPOINTS } from '../../config/api';
+import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminDashboard.css';
 
@@ -166,7 +167,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Total Revenue',
-      value: `$${stats.totalRevenue.toFixed(2)}`,
+      value: formatPrice(stats.totalRevenue),
       icon: '💰',
       color: '#FF9800',
       path: '/admin/orders?filter=revenue',

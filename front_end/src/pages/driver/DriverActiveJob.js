@@ -4,7 +4,7 @@ import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
-import { getImageUrl } from '../../utils/helpers';
+import { formatPrice, getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/driver/DriverActiveJob.css';
 
 const DriverActiveJob = () => {
@@ -535,7 +535,7 @@ const DriverActiveJob = () => {
                 {(activeJob.status || 'unknown').replace('_', ' ')}
               </span>
               <span className="info-payment">
-                ${typeof activeJob.payment_amount === 'number' ? activeJob.payment_amount.toFixed(2) : '0.00'}
+                {formatPrice(activeJob.payment_amount || 0)}
               </span>
             </div>
           </div>

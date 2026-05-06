@@ -11,19 +11,24 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { PAYMENT_ENDPOINTS, ORDER_ENDPOINTS } from '../config/api';
-import { formatPrice } from '../utils/helpers';
+import { roundCurrencyAmount } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
+import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Payment.css';
 
 // Initialize Stripe - Replace with your publishable key
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QEXAMPLE');
 
-const PaymentForm = ({ amount, orderId, onSuccess }) => {
+const PaymentForm = ({ amountInUsd, orderId, onSuccess, currentCurrency, stripeCurrency, convertPrice, formatCurrency }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const payableAmount = roundCurrencyAmount(
+    convertPrice(amountInUsd, currentCurrency),
+    currentCurrency
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,11 +41,15 @@ const PaymentForm = ({ amount, orderId, onSuccess }) => {
     setError(null);
 
     try {
+      if (payableAmount <= 0) {
+        throw new Error('Invalid payment amount.');
+      }
+
       // Create payment intent
       const intentResponse = await http.post(PAYMENT_ENDPOINTS.CREATE_INTENT, {
-        amount: amount,
+        amount: payableAmount,
         order_id: orderId,
-        currency: 'usd'
+        currency: stripeCurrency
       });
 
       const { client_secret, payment_intent_id } = intentResponse.data;
@@ -117,7 +126,7 @@ const PaymentForm = ({ amount, orderId, onSuccess }) => {
             Processing Payment...
           </>
         ) : (
-          `Pay ${formatPrice(amount)}`
+          `Pay ${formatCurrency(amountInUsd, currentCurrency)}`
         )}
       </motion.button>
     </form>
@@ -128,6 +137,7 @@ const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { clearCart } = useCart();
+  const { currentCurrency, stripeCurrency, convertPrice, formatCurrency } = useCurrency();
   const [orderId, setOrderId] = useState(null);
   const [amount, setAmount] = useState(0);
   const [orderCreated, setOrderCreated] = useState(false);
@@ -218,7 +228,11 @@ const Payment = () => {
             </div>
             <div className="summary-row">
               <span>Total Amount:</span>
-              <span className="total-amount">{formatPrice(amount)}</span>
+              <span className="total-amount">{formatCurrency(amount, currentCurrency)}</span>
+            </div>
+            <div className="summary-row">
+              <span>Payment Currency:</span>
+              <span>{currentCurrency}</span>
             </div>
           </div>
         </motion.div>
@@ -232,9 +246,13 @@ const Payment = () => {
           {orderCreated && (
             <Elements stripe={stripePromise}>
               <PaymentForm 
-                amount={amount} 
+                amountInUsd={amount}
                 orderId={orderId}
                 onSuccess={handlePaymentSuccess}
+                currentCurrency={currentCurrency}
+                stripeCurrency={stripeCurrency}
+                convertPrice={convertPrice}
+                formatCurrency={formatCurrency}
               />
             </Elements>
           )}

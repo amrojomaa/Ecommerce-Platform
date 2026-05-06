@@ -23,13 +23,31 @@ def create_payment_intent(
     Create a Stripe payment intent for an order
     """
     try:
-        # Convert amount to cents (Stripe uses smallest currency unit)
-        amount_cents = int(payment_data.amount * 100)
+        currency = str(payment_data.currency).lower()
+        currency_multipliers = {
+            "usd": 100,
+            "ils": 100,
+            "jod": 1000,
+        }
+        multiplier = currency_multipliers.get(currency)
+        if multiplier is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported currency. Allowed: usd, jod, ils"
+            )
+
+        # Convert amount to Stripe's smallest supported unit for each currency.
+        amount_cents = int(round(payment_data.amount * multiplier))
+        if amount_cents <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Amount must be greater than zero"
+            )
         
         # Create payment intent
         intent = stripe.PaymentIntent.create(
             amount=amount_cents,
-            currency=payment_data.currency,
+            currency=currency,
             metadata={
                 "user_id": current_user.id,
                 "order_id": payment_data.order_id or "",

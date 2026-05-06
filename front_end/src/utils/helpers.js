@@ -1,10 +1,185 @@
 // Utility helper functions
 
-export const formatPrice = (price) => {
+export const CURRENCY_STORAGE_KEY = 'preferred_currency';
+export const EXCHANGE_RATES_STORAGE_KEY = 'usd_exchange_rates';
+export const EXCHANGE_RATES_UPDATED_AT_KEY = 'usd_exchange_rates_updated_at';
+export const DEFAULT_CURRENCY = 'USD';
+
+export const SUPPORTED_CURRENCIES = {
+  USD: {
+    code: 'USD',
+    stripeCode: 'usd',
+    label: 'Dollar (USD)',
+  },
+  JOD: {
+    code: 'JOD',
+    stripeCode: 'jod',
+    label: 'Jordanian Dinar (JOD)',
+  },
+  ILS: {
+    code: 'ILS',
+    stripeCode: 'ils',
+    label: 'Israeli Shekel (ILS)',
+  },
+};
+
+export const DEFAULT_EXCHANGE_RATES = {
+  USD: 1,
+  JOD: 0.709,
+  ILS: 3.65,
+};
+
+const safeLocalStorageGet = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    return null;
+  }
+};
+
+const safeLocalStorageSet = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    // Ignore localStorage write errors (private mode, quota, etc.)
+  }
+};
+
+export const normalizeCurrencyCode = (currencyCode) => {
+  const normalized = String(currencyCode || '').toUpperCase();
+  if (SUPPORTED_CURRENCIES[normalized]) {
+    return normalized;
+  }
+  return DEFAULT_CURRENCY;
+};
+
+export const getCurrentCurrency = () => {
+  const storedCurrency = safeLocalStorageGet(CURRENCY_STORAGE_KEY);
+  return normalizeCurrencyCode(storedCurrency);
+};
+
+export const setCurrentCurrency = (currencyCode) => {
+  const normalized = normalizeCurrencyCode(currencyCode);
+  safeLocalStorageSet(CURRENCY_STORAGE_KEY, normalized);
+  return normalized;
+};
+
+export const getStoredExchangeRates = () => {
+  const rawRates = safeLocalStorageGet(EXCHANGE_RATES_STORAGE_KEY);
+  if (!rawRates) {
+    return { ...DEFAULT_EXCHANGE_RATES };
+  }
+
+  try {
+    const parsed = JSON.parse(rawRates);
+    return {
+      ...DEFAULT_EXCHANGE_RATES,
+      ...parsed,
+    };
+  } catch (error) {
+    return { ...DEFAULT_EXCHANGE_RATES };
+  }
+};
+
+export const setStoredExchangeRates = (rates) => {
+  const mergedRates = {
+    ...DEFAULT_EXCHANGE_RATES,
+    ...(rates || {}),
+  };
+  safeLocalStorageSet(EXCHANGE_RATES_STORAGE_KEY, JSON.stringify(mergedRates));
+  safeLocalStorageSet(EXCHANGE_RATES_UPDATED_AT_KEY, new Date().toISOString());
+  return mergedRates;
+};
+
+export const getExchangeRatesUpdatedAt = () => {
+  return safeLocalStorageGet(EXCHANGE_RATES_UPDATED_AT_KEY);
+};
+
+export const getStripeCurrencyCode = (currencyCode = getCurrentCurrency()) => {
+  const normalized = normalizeCurrencyCode(currencyCode);
+  return SUPPORTED_CURRENCIES[normalized].stripeCode;
+};
+
+const getCurrencyFractionDigits = (currencyCode) => {
+  const normalized = normalizeCurrencyCode(currencyCode);
+  // Keep USD with cents, but round converted currencies (JOD/ILS) to whole values.
+  if (normalized === 'USD') {
+    return 2;
+  }
+  return 0;
+};
+
+const toNumeric = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+  return numericValue;
+};
+
+export const convertFromUSD = (
+  amount,
+  currencyCode = getCurrentCurrency(),
+  exchangeRates = getStoredExchangeRates()
+) => {
+  const numericAmount = toNumeric(amount);
+  const normalized = normalizeCurrencyCode(currencyCode);
+  const rate = Number(exchangeRates?.[normalized]);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return numericAmount;
+  }
+  return numericAmount * rate;
+};
+
+export const roundCurrencyAmount = (amount, currencyCode = getCurrentCurrency()) => {
+  const numericAmount = toNumeric(amount);
+  const fractionDigits = getCurrencyFractionDigits(currencyCode);
+  return Number(numericAmount.toFixed(fractionDigits));
+};
+
+export const formatPrice = (
+  price,
+  currencyCode = getCurrentCurrency(),
+  exchangeRates = getStoredExchangeRates()
+) => {
+  const normalized = normalizeCurrencyCode(currencyCode);
+  const fractionDigits = getCurrencyFractionDigits(normalized);
+  const convertedPrice = convertFromUSD(price, normalized, exchangeRates);
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
-  }).format(price);
+    currency: normalized,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(convertedPrice);
+};
+
+export const fetchLatestExchangeRates = async () => {
+  const apiKey = (process.env.REACT_APP_EXCHANGE_RATE_API_KEY || '').trim();
+  const endpoint = apiKey
+    ? `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
+    : 'https://open.er-api.com/v6/latest/USD';
+
+  const response = await fetch(endpoint);
+  if (!response.ok) {
+    throw new Error('Unable to fetch exchange rates');
+  }
+
+  const payload = await response.json();
+  const sourceRates = payload?.conversion_rates || payload?.rates;
+  if (!sourceRates) {
+    throw new Error('Invalid exchange rates response');
+  }
+
+  const normalizedRates = {
+    USD: 1,
+    JOD: Number(sourceRates.JOD) || DEFAULT_EXCHANGE_RATES.JOD,
+    ILS: Number(sourceRates.ILS) || DEFAULT_EXCHANGE_RATES.ILS,
+  };
+
+  return {
+    rates: normalizedRates,
+    updatedAt: new Date().toISOString(),
+  };
 };
 
 export const formatDate = (dateString) => {

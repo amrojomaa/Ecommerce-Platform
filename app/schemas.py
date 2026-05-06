@@ -189,6 +189,8 @@ class Product(BaseModel):
     quantity: int
     category_name: str
     images: Optional[List[str]] = []
+    average_rating: float = 0.0
+    total_ratings: int = 0
 
     class Config:
         orm_mode = True

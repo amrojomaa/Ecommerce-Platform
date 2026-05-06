@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { RATING_ENDPOINTS, buildUrl } from '../config/api';
@@ -7,22 +7,27 @@ import { FaStar, FaStarHalfAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../styles/components/StarRating.css';
 
-const StarRating = ({ productId, showLabel = true, interactive = true, size = 'medium' }) => {
+const StarRating = ({
+  productId,
+  showLabel = true,
+  interactive = true,
+  size = 'medium',
+  initialAverageRating,
+  initialTotalRatings,
+  initialUserRating,
+  fetchOnMount = true,
+}) => {
   const { isAuthenticated } = useAuth();
-  const [averageRating, setAverageRating] = useState(0);
-  const [totalRatings, setTotalRatings] = useState(0);
-  const [userRating, setUserRating] = useState(null);
+  const hasPreloadedSummary = Number.isFinite(Number(initialAverageRating))
+    && Number.isFinite(Number(initialTotalRatings));
+  const [averageRating, setAverageRating] = useState(Number(initialAverageRating) || 0);
+  const [totalRatings, setTotalRatings] = useState(Number(initialTotalRatings) || 0);
+  const [userRating, setUserRating] = useState(initialUserRating ?? null);
   const [hoveredRating, setHoveredRating] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasPreloadedSummary);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (productId) {
-      fetchRating();
-    }
-  }, [productId]);
-
-  const fetchRating = async () => {
+  const fetchRating = useCallback(async () => {
     try {
       setLoading(true);
       const response = await http.get(buildUrl(RATING_ENDPOINTS.GET_PRODUCT, { product_id: productId }));
@@ -34,7 +39,28 @@ const StarRating = ({ productId, showLabel = true, interactive = true, size = 'm
     } finally {
       setLoading(false);
     }
-  };
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId) {
+      setLoading(false);
+      return;
+    }
+
+    if (fetchOnMount || !hasPreloadedSummary) {
+      fetchRating();
+    } else {
+      setLoading(false);
+    }
+  }, [productId, fetchOnMount, hasPreloadedSummary, fetchRating]);
+
+  useEffect(() => {
+    if (!hasPreloadedSummary) return;
+    setAverageRating(Number(initialAverageRating) || 0);
+    setTotalRatings(Number(initialTotalRatings) || 0);
+    setUserRating(initialUserRating ?? null);
+    setLoading(false);
+  }, [hasPreloadedSummary, initialAverageRating, initialTotalRatings, initialUserRating]);
 
   const handleStarClick = async (rating) => {
     if (!interactive || !isAuthenticated || submitting) {

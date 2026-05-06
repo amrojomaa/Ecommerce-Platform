@@ -87,6 +87,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../hooks/useTheme';
+import { useCurrency } from '../hooks/useCurrency';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import '../styles/layouts/Navbar.css';
 import { MdDarkMode, MdLightMode } from "react-icons/md";
@@ -100,6 +101,7 @@ const Navbar = () => {
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { currentCurrency, setCurrency, supportedCurrencies } = useCurrency();
   const { unreadCount: unreadTicketsCount } = useUnreadTickets();
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,6 +117,7 @@ const Navbar = () => {
 
   const cartItemCount = getCartItemCount();
   const wishlistItemCount = getWishlistItemCount();
+  const currencyOptions = Object.values(supportedCurrencies || {});
 
   useEffect(() => {
     if (location.pathname === '/products') {
@@ -204,6 +207,10 @@ const Navbar = () => {
 
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
+  };
+
+  const handleCurrencyChange = (event) => {
+    setCurrency(event.target.value);
   };
 
   return (
@@ -330,6 +337,20 @@ const Navbar = () => {
                       onClick={() => setProfileDropdownOpen(false)}>
                       Profile
                     </Link>
+                    <div className="dropdown-item currency-item">
+                      <span className="currency-label">Currency</span>
+                      <select
+                        className="currency-select"
+                        value={currentCurrency}
+                        onChange={handleCurrencyChange}
+                      >
+                        {currencyOptions.map((currency) => (
+                          <option key={currency.code} value={currency.code}>
+                            {currency.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <button 
                       onClick={() => {
                         setProfileDropdownOpen(false);
@@ -413,6 +434,20 @@ const Navbar = () => {
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                 Profile
               </Link>
+              <div className="mobile-currency-switcher">
+                <label htmlFor="mobile-currency">Currency</label>
+                <select
+                  id="mobile-currency"
+                  value={currentCurrency}
+                  onChange={handleCurrencyChange}
+                >
+                  {currencyOptions.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {checkIsAdmin() && (
                 <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
                   Admin {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}

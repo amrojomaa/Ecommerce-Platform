@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminComments.css';
@@ -262,7 +262,7 @@ const AdminComments = () => {
             </div>
             <div className="product-card-title">{product.name}</div>
             <div className="product-card-meta">
-              ${Number(product.price || 0).toFixed(2)}
+              {formatPrice(product.price || 0)}
             </div>
           </button>
         ))}

@@ -13,6 +13,12 @@ class UserRole(str, Enum):
     CASHIER = "cashier"
 
 
+class SupportedCurrency(str, Enum):
+    USD = "usd"
+    JOD = "jod"
+    ILS = "ils"
+
+
 class PromotionTargetType(str, Enum):
     AMOUNT = "amount"
     QUANTITY = "quantity"
@@ -522,7 +528,7 @@ class AdminOrderResponse(BaseModel):
 class PaymentIntentCreate(BaseModel):
     amount: float
     order_id: Optional[int] = None
-    currency: str = "usd"
+    currency: SupportedCurrency = SupportedCurrency.USD
 
 class PaymentIntentResponse(BaseModel):
     client_secret: str

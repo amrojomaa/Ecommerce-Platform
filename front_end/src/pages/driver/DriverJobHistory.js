@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
+import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/driver/DriverJobHistory.css';
 
@@ -86,7 +87,7 @@ const DriverJobHistory = () => {
                   <span className={`history-status-badge ${job.status}`}>
                     {job.status === 'delivered' ? '✅ Delivered' : '❌ Cancelled'}
                   </span>
-                  <span className="history-amount">${job.payment_amount.toFixed(2)}</span>
+                  <span className="history-amount">{formatPrice(job.payment_amount || 0)}</span>
                 </div>
               </div>
               <div className="history-card-body">

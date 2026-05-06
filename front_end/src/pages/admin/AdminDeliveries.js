@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
-import { formatDate, getImageUrl } from '../../utils/helpers';
+import { formatDate, formatPrice, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminDeliveries.css';
 
@@ -370,7 +370,7 @@ const AdminDeliveries = () => {
                     </td>
                     <td className="address-cell" data-label="Pickup">{job.pickup_address || 'N/A'}</td>
                     <td className="address-cell" data-label="Delivery">{job.delivery_address || 'N/A'}</td>
-                    <td className="payment-cell" data-label="Payment">${job.payment_amount?.toFixed(2) || '0.00'}</td>
+                    <td className="payment-cell" data-label="Payment">{formatPrice(job.payment_amount || 0)}</td>
                     <td data-label="Created">{formatDate(job.created_at)}</td>
                   </motion.tr>
                   {expandedJobId === job.id && (

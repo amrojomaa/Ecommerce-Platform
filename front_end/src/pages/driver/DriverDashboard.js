@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
+import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/driver/DriverDashboard.css';
 
@@ -47,7 +48,7 @@ const DriverDashboard = () => {
         <div className="stat-card earnings-card">
           <div className="stat-icon">💰</div>
           <div className="stat-info">
-            <span className="stat-value">${earnings?.today?.toFixed(2) || '0.00'}</span>
+            <span className="stat-value">{formatPrice(earnings?.today || 0)}</span>
             <span className="stat-label">Today's Earnings</span>
           </div>
         </div>
@@ -68,7 +69,7 @@ const DriverDashboard = () => {
         <div className="stat-card total-card">
           <div className="stat-icon">📈</div>
           <div className="stat-info">
-            <span className="stat-value">${earnings?.this_month?.toFixed(2) || '0.00'}</span>
+            <span className="stat-value">{formatPrice(earnings?.this_month || 0)}</span>
             <span className="stat-label">This Month</span>
           </div>
         </div>
@@ -107,7 +108,7 @@ const DriverDashboard = () => {
                 <div className="job-details">
                   <span className="job-id">Order #{job.order_id}</span>
                   <span className="job-address">{job.delivery_address || 'N/A'}</span>
-                  <span className="job-amount">${job.payment_amount.toFixed(2)}</span>
+                  <span className="job-amount">{formatPrice(job.payment_amount || 0)}</span>
                 </div>
               </Link>
             ))}

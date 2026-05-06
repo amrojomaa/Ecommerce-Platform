@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 
 // Layouts
@@ -76,6 +77,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <ThemeProvider>
+    <CurrencyProvider>
     <AuthProvider>
       <CartProvider>
       <WishlistProvider>
@@ -143,6 +145,7 @@ function App() {
     </WishlistProvider>
     </CartProvider>
     </AuthProvider>
+    </CurrencyProvider>
     </ThemeProvider>
     </GoogleOAuthProvider>
   );

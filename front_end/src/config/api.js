@@ -175,6 +175,12 @@ export const RATING_ENDPOINTS = {
   ALL: '/ratings/all', // Admin only
 };
 
+// Customer feedback endpoints
+export const FEEDBACK_ENDPOINTS = {
+  ME: '/feedback/me',
+  ALL: '/feedback/all', // Admin/Support Manager
+};
+
 // Admin Settings endpoints
 export const ADMIN_SETTINGS_ENDPOINTS = {
   GET_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',

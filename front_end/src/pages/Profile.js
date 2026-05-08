@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
-import { USER_ENDPOINTS } from '../config/api';
+import API_BASE_URL, { USER_ENDPOINTS, FEEDBACK_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useConfirm } from '../hooks/useConfirm';
-import API_BASE_URL from '../config/api';
+import { FaStar } from 'react-icons/fa';
 import '../styles/pages/Profile.css';
 
 const Profile = () => {
@@ -29,6 +29,12 @@ const Profile = () => {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState({});
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackHoverRating, setFeedbackHoverRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackUpdatedAt, setFeedbackUpdatedAt] = useState(null);
   const confirm = useConfirm();
   
   // Default profile image
@@ -52,6 +58,32 @@ const Profile = () => {
       // We'll reset it manually after successful upload
     }
   }, [user?.email, user?.first_name, user?.last_name, user?.phone, user?.country, user?.city, user?.street]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchMyFeedback();
+    }
+  }, [user?.id]);
+
+  const fetchMyFeedback = async () => {
+    setFeedbackLoading(true);
+    try {
+      const response = await http.get(FEEDBACK_ENDPOINTS.ME);
+      const payload = response.data;
+      setFeedbackRating(payload?.rating || 0);
+      setFeedbackComment(payload?.comment || '');
+      setFeedbackUpdatedAt(payload?.updated_at || null);
+    } catch (error) {
+      if (error.response?.status !== 404) {
+        toast.error('Failed to load your feedback');
+      }
+      setFeedbackRating(0);
+      setFeedbackComment('');
+      setFeedbackUpdatedAt(null);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
   
   const getProfileImageUrl = () => {
     // If preview image exists (during upload), use it
@@ -125,7 +157,7 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('image', file);
       
-      const response = await http.post(USER_ENDPOINTS.UPLOAD_PROFILE_IMAGE, formData, {
+      await http.post(USER_ENDPOINTS.UPLOAD_PROFILE_IMAGE, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -245,6 +277,30 @@ const Profile = () => {
       toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitFeedback = async (e) => {
+    e.preventDefault();
+
+    if (feedbackRating < 1 || feedbackRating > 5) {
+      toast.error('Please choose a rating between 1 and 5 stars');
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    try {
+      const response = await http.post(FEEDBACK_ENDPOINTS.ME, {
+        rating: feedbackRating,
+        comment: feedbackComment.trim() ? feedbackComment.trim() : null,
+      });
+      setFeedbackUpdatedAt(response?.data?.updated_at || null);
+      setFeedbackComment(response?.data?.comment || '');
+      toast.success('Your feedback has been saved');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to submit feedback');
+    } finally {
+      setFeedbackSubmitting(false);
     }
   };
 
@@ -505,6 +561,75 @@ const Profile = () => {
             )}
           </motion.button>
         </form>
+      </motion.div>
+
+      <motion.div
+        className="customer-feedback-panel"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h2>Customer Feedback</h2>
+        <p className="customer-feedback-subtitle">
+          Rate your overall experience from 1 to 5 stars and add an optional comment.
+        </p>
+
+        {feedbackLoading ? (
+          <div className="customer-feedback-loading">
+            <LoadingSpinner size="small" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitFeedback} className="customer-feedback-form">
+            <div className="feedback-stars" onMouseLeave={() => setFeedbackHoverRating(0)}>
+              {[1, 2, 3, 4, 5].map((starValue) => {
+                const activeRating = feedbackHoverRating || feedbackRating;
+                const isActive = starValue <= activeRating;
+                return (
+                  <button
+                    key={starValue}
+                    type="button"
+                    className={`feedback-star-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => setFeedbackRating(starValue)}
+                    onMouseEnter={() => setFeedbackHoverRating(starValue)}
+                    aria-label={`Rate ${starValue} star${starValue > 1 ? 's' : ''}`}
+                  >
+                    <FaStar />
+                  </button>
+                );
+              })}
+              <span className="feedback-rating-value">
+                {feedbackRating ? `${feedbackRating}/5` : 'No rating selected'}
+              </span>
+            </div>
+
+            <label htmlFor="feedback-comment">Comment (optional)</label>
+            <textarea
+              id="feedback-comment"
+              className="feedback-comment-input"
+              value={feedbackComment}
+              onChange={(event) => setFeedbackComment(event.target.value)}
+              placeholder="Share your feedback (optional)"
+              maxLength={1000}
+              rows={4}
+            />
+
+            <div className="feedback-form-footer">
+              <span>{feedbackComment.length}/1000</span>
+              <button
+                type="submit"
+                className="feedback-submit-btn"
+                disabled={feedbackSubmitting || feedbackRating < 1}
+              >
+                {feedbackSubmitting ? 'Saving...' : 'Submit Feedback'}
+              </button>
+            </div>
+
+            {feedbackUpdatedAt && (
+              <p className="feedback-updated-at">
+                Last updated: {formatDate(feedbackUpdatedAt)}
+              </p>
+            )}
+          </form>
+        )}
       </motion.div>
     </div>
   );

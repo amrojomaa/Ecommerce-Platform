@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, Index, JSON, UniqueConstraint
+from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, Index, JSON, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP, Text
@@ -143,6 +143,11 @@ class DBUser(Base):
     ticket_responses = relationship("DBTicketResponse", back_populates="user", cascade="all, delete")
     comments = relationship("DBComment", back_populates="user", cascade="all, delete")
     ratings = relationship("DBProductRating", back_populates="user", cascade="all, delete")
+    customer_feedback = relationship(
+        "DBCustomerFeedback",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     installment_requests = relationship(
         "DBInstallmentRequest",
         foreign_keys="DBInstallmentRequest.user_id",
@@ -327,6 +332,27 @@ class DBProductRating(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'product_id', name='unique_user_product_rating'),
     )
+
+
+class DBCustomerFeedback(Base):
+    __tablename__ = "customer_feedback"
+    __table_args__ = (
+        CheckConstraint("rating >= 1 AND rating <= 5", name="ck_customer_feedback_rating_range"),
+    )
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        onupdate=text("now()"),
+    )
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("DBUser", back_populates="customer_feedback")
 
 
 class DBAdminSettings(Base):

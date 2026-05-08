@@ -19,6 +19,7 @@ const ADMIN_MENU_ITEMS = [
   { path: '/admin/users', label: 'Users', icon: '👥' },
   { path: '/admin/tickets', label: 'Tickets', icon: '🎫' },
   { path: '/admin/comments', label: 'Reviews', icon: '💬' },
+  { path: '/admin/feedback', label: 'Feedback', icon: '⭐' },
 ];
 
 const OPERATIONS_MANAGER_MENU_ITEMS = [
@@ -30,6 +31,7 @@ const OPERATIONS_MANAGER_MENU_ITEMS = [
 const SUPPORT_MANAGER_MENU_ITEMS = [
   { path: '/support/tickets', label: 'Tickets', icon: '🎫' },
   { path: '/support/comments', label: 'Reviews', icon: '💬' },
+  { path: '/support/feedback', label: 'Feedback', icon: '⭐' },
 ];
 
 const WAREHOUSE_MANAGER_MENU_ITEMS = [

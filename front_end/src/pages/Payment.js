@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -17,8 +17,7 @@ import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Payment.css';
 
-// Initialize Stripe - Replace with your publishable key
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QEXAMPLE');
+const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
 
 const PaymentForm = ({
   amountInUsd,
@@ -166,6 +165,33 @@ const Payment = () => {
   const [amount, setAmount] = useState(0);
   const [orderCreated, setOrderCreated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [stripePromise, setStripePromise] = useState(null);
+  const [stripeLoading, setStripeLoading] = useState(true);
+  const [stripeLoadError, setStripeLoadError] = useState('');
+
+  const initializeStripe = useCallback(async () => {
+    setStripeLoading(true);
+    setStripeLoadError('');
+
+    if (!stripePublishableKey) {
+      setStripeLoadError('Stripe is not configured. Please set REACT_APP_STRIPE_PUBLISHABLE_KEY.');
+      setStripeLoading(false);
+      return;
+    }
+
+    const nextStripePromise = loadStripe(stripePublishableKey).catch((error) => {
+      console.error('Failed to load Stripe.js', error);
+      return null;
+    });
+
+    setStripePromise(nextStripePromise);
+
+    const stripe = await nextStripePromise;
+    if (!stripe) {
+      setStripeLoadError('Failed to load Stripe.js. Check your internet connection and try again.');
+    }
+    setStripeLoading(false);
+  }, []);
 
   useEffect(() => {
     const initializePayment = async () => {
@@ -212,6 +238,10 @@ const Payment = () => {
 
     initializePayment();
   }, [location, navigate]);
+
+  useEffect(() => {
+    initializeStripe();
+  }, [initializeStripe]);
 
   const handlePaymentSuccess = async () => {
     if (installmentRequestId && installmentScheduleId) {
@@ -292,7 +322,25 @@ const Payment = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           <h2>Payment Information</h2>
-          {orderCreated && (
+          {stripeLoading && (
+            <div className="payment-loading-inline">
+              <LoadingSpinner size="small" />
+              <p>Loading secure payment gateway...</p>
+            </div>
+          )}
+          {!stripeLoading && stripeLoadError && (
+            <div className="payment-error-block">
+              <div className="payment-error">{stripeLoadError}</div>
+              <button
+                type="button"
+                className="retry-payment-btn"
+                onClick={initializeStripe}
+              >
+                Retry loading Stripe
+              </button>
+            </div>
+          )}
+          {!stripeLoading && !stripeLoadError && orderCreated && stripePromise && (
             <Elements stripe={stripePromise}>
               <PaymentForm 
                 amountInUsd={amount}

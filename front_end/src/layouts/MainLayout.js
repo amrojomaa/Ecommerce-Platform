@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from '../components/ChatWidget';
+import CustomerFeedbackPopup from '../components/CustomerFeedbackPopup';
 import '../styles/layouts/MainLayout.css';
 
 const MainLayout = () => {
@@ -26,6 +27,7 @@ const MainLayout = () => {
       </main>
       <Footer />
       {!hideChatWidget && <ChatWidget />}
+      <CustomerFeedbackPopup />
     </div>
   );
 };

@@ -48,6 +48,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetails from './pages/admin/AdminUserDetails';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminComments from './pages/admin/AdminComments';
+import AdminFeedback from './pages/admin/AdminFeedback';
 import AdminDeliveries from './pages/admin/AdminDeliveries';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
 import AdminPromotions from './pages/admin/AdminPromotions';
@@ -122,12 +123,14 @@ function App() {
                     <Route path="tickets" element={<AdminTickets />} />
                     <Route path="comments" element={<AdminComments />} />
                     <Route path="comments/product/:productId" element={<AdminComments />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
         </Route>
         <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<AdminTickets />} />
                     <Route path="tickets" element={<AdminTickets />} />
                     <Route path="comments" element={<AdminComments />} />
                     <Route path="comments/product/:productId" element={<AdminComments />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
         </Route>
         <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<Navigate to="products" replace />} />

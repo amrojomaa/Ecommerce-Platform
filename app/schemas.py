@@ -808,6 +808,42 @@ class ProductRatingSummary(BaseModel):
         from_attributes = True
 
 
+# Customer feedback schemas
+class CustomerFeedbackCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating must be between 1 and 5")
+    comment: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("comment")
+    @classmethod
+    def normalize_comment(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class CustomerFeedbackUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: EmailStr
+
+    class Config:
+        from_attributes = True
+
+
+class CustomerFeedbackDisplay(BaseModel):
+    id: int
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    user: CustomerFeedbackUser
+
+    class Config:
+        from_attributes = True
+
+
 # Admin Settings Schemas
 class LowStockThresholdUpdate(BaseModel):
     threshold: int = Field(..., ge=1, description="Low stock threshold must be at least 1")

@@ -5,9 +5,11 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
-import { formatDate, formatPrice } from '../../utils/helpers';
+import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useAuth } from '../../hooks/useAuth';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminComments.css';
 
 const AdminComments = () => {
@@ -22,6 +24,9 @@ const AdminComments = () => {
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
   const [deleting, setDeleting] = useState(null);
   const confirm = useConfirm();
+  const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
+  const commentsBasePath = user?.role === 'support_manager' ? '/support/comments' : '/admin/comments';
 
   useEffect(() => {
     fetchProducts();
@@ -43,7 +48,9 @@ const AdminComments = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+      const productsEndpoint =
+        user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
+      const response = await http.get(productsEndpoint);
       setProducts(response.data || []);
       
       // If productId from URL, set it as selected
@@ -52,6 +59,7 @@ const AdminComments = () => {
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      toast.error('Failed to fetch products');
     }
   };
 
@@ -75,7 +83,7 @@ const AdminComments = () => {
 
   const handleProductSelect = (productId) => {
     setSelectedProductId(productId);
-    navigate(`/admin/comments/product/${productId}`, { replace: true });
+    navigate(`${commentsBasePath}/product/${productId}`, { replace: true });
   };
 
   const filterComments = () => {
@@ -205,7 +213,7 @@ const AdminComments = () => {
               className="clear-product-btn"
               onClick={() => {
                 setSelectedProductId(null);
-                navigate('/admin/comments', { replace: true });
+                navigate(commentsBasePath, { replace: true });
               }}
             >
               Clear Product
@@ -262,7 +270,7 @@ const AdminComments = () => {
             </div>
             <div className="product-card-title">{product.name}</div>
             <div className="product-card-meta">
-              {formatPrice(product.price || 0)}
+              {formatCurrency(product.price || 0)}
             </div>
           </button>
         ))}

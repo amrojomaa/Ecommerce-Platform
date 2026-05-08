@@ -4,7 +4,7 @@ from app import OAuth2, models, schemas
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from app.routers.admin import require_admin
+from app.routers.admin import require_admin_or_warehouse_manager
 from ..database import get_db
 from typing import List, Dict
 
@@ -163,7 +163,7 @@ def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session =
     return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/filter/admin", response_model=list[schemas.ProductBase])
-def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_admin)):
+def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     query = db.query(models.DBProduct)
     if prod.name:
         query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
@@ -187,7 +187,7 @@ def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session 
     return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
 
 @router.post("/products/create", status_code=status.HTTP_201_CREATED, response_model=schemas.ProductBase)
-def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
 
     category_name = product.category_name
     category = db.query(models.DBCategory).filter(models.DBCategory.name == category_name).first()
@@ -246,13 +246,13 @@ def get_all_products(db: Session = Depends (get_db)):
     return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
-def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     products = db.query(models.DBProduct).all() 
     return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
 
 
 @router.get("/products/name/byadmin", response_model=schemas.ProductBase)
-def get_products_by_name(name: str, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_products_by_name(name: str, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     product = db.query(models.DBProduct).filter(models.DBProduct.name == name).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
@@ -267,7 +267,7 @@ def get_products_by_name(name: str, db: Session = Depends (get_db)):
     return schemas.Product(**get_product_with_images(product, ratings_map))
 
 @router.get("/products/{id}", response_model=schemas.ProductBase)
-def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)): 
+def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)): 
     product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
@@ -277,7 +277,7 @@ def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Dep
 
 
 @router.put("/products/{id}", response_model=schemas.ProductBase)
-def update_product(product: schemas.ProductBase, id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def update_product(product: schemas.ProductBase, id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     try:
         updateproduct = db.query(models.DBProduct).filter(models.DBProduct.id == id)
         update = updateproduct.first()
@@ -346,7 +346,7 @@ def update_product_discount(
     id: int,
     payload: schemas.ProductDiscountUpdate,
     db: Session = Depends(get_db),
-    admin_user=Depends(require_admin)
+    admin_user=Depends(require_admin_or_warehouse_manager)
 ):
     product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
     if not product:
@@ -368,7 +368,7 @@ def update_product_discount(
 
 
 @router.delete("/products/{id}",  status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def delete_product(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     try:
         product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
         if product is None:

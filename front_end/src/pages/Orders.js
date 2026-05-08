@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { ORDER_ENDPOINTS, DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
-import { formatPrice, formatDate } from '../utils/helpers';
+import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DeliveryChatModal from '../components/DeliveryChatModal';
 import API_BASE_URL from '../config/api';
 import { useConfirm } from '../hooks/useConfirm';
+import { useCurrency } from '../hooks/useCurrency';
 import '../styles/pages/Orders.css';
 
 const Orders = () => {
@@ -18,6 +19,7 @@ const Orders = () => {
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [activeChatJobId, setActiveChatJobId] = useState(null);
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
   
   const token = localStorage.getItem('token');
   const getUserIdFromToken = () => {
@@ -179,7 +181,7 @@ const Orders = () => {
                         </span>
                       </div>
                       <div className="order-total">
-                        Total: {formatPrice(order.total_amount)}
+                        Total: {formatCurrency(order.total_amount)}
                       </div>
                       <span className="expand-icon">
                         {isExpanded ? '▼' : '▶'}
@@ -225,7 +227,7 @@ const Orders = () => {
                       </div>
                       <div className="info-row">
                         <span className="info-label">Total Amount:</span>
-                        <span className="info-value">{formatPrice(order.total_amount)}</span>
+                        <span className="info-value">{formatCurrency(order.total_amount)}</span>
                       </div>
                     </div>
 
@@ -318,8 +320,8 @@ const Orders = () => {
                                   <p>Quantity: {item.quantity}</p>
                                 </div>
                                 <div className="order-item-price">
-                                  <p>Price: {formatPrice(item.price)} each</p>
-                                  <p className="item-total">Total: {formatPrice(item.total)}</p>
+                                  <p>Price: {formatCurrency(item.price)} each</p>
+                                  <p className="item-total">Total: {formatCurrency(item.total)}</p>
                                 </div>
                               </div>
                             );

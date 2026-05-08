@@ -4,10 +4,12 @@ import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
-import { formatPrice, getImageUrl } from '../../utils/helpers';
+import { getImageUrl } from '../../utils/helpers';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/driver/DriverActiveJob.css';
 
 const DriverActiveJob = () => {
+  const { formatCurrency } = useCurrency();
   const [jobs, setJobs] = useState([]);
   const [activeJobId, setActiveJobId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -535,7 +537,7 @@ const DriverActiveJob = () => {
                 {(activeJob.status || 'unknown').replace('_', ' ')}
               </span>
               <span className="info-payment">
-                {formatPrice(activeJob.payment_amount || 0)}
+                {formatCurrency(activeJob.payment_amount || 0)}
               </span>
             </div>
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import http from '../../services/http';
 import { POS_ENDPOINTS } from '../../config/api';
 import API_BASE_URL from '../../config/api';
-import { formatPrice } from '../../utils/helpers';
+import { useCurrency } from '../../hooks/useCurrency';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/cashier/PosTerminal.css';
@@ -15,6 +15,7 @@ const thumbUrl = (path) => {
 };
 
 const PosTerminal = () => {
+  const { formatCurrency } = useCurrency();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [catalog, setCatalog] = useState([]);
@@ -157,7 +158,7 @@ const PosTerminal = () => {
       });
       const saved = Number(data?.promotion_discount || 0);
       if (saved > 0) {
-        toast.success(`Sale completed. Promotion saved ${formatPrice(saved)}.`);
+        toast.success(`Sale completed. Promotion saved ${formatCurrency(saved)}.`);
       } else {
         toast.success('Sale completed');
       }
@@ -236,7 +237,7 @@ const PosTerminal = () => {
                   </div>
                   <div className="pos-product-meta">
                     <span className="pos-product-name">{p.name}</span>
-                    <span className="pos-product-price">{formatPrice(p.discounted_price)}</span>
+                    <span className="pos-product-price">{formatCurrency(p.discounted_price)}</span>
                     <span className="pos-product-stock">Stock: {p.quantity}</span>
                   </div>
                 </button>
@@ -255,7 +256,7 @@ const PosTerminal = () => {
                 <li key={row.product_id} className="pos-line">
                   <div className="pos-line-info">
                     <span className="pos-line-name">{row.name}</span>
-                    <span className="pos-line-unit">{formatPrice(row.unit)} each</span>
+                    <span className="pos-line-unit">{formatCurrency(row.unit)} each</span>
                   </div>
                   <div className="pos-line-actions">
                     <input
@@ -267,7 +268,7 @@ const PosTerminal = () => {
                       className="pos-qty"
                       aria-label={`Quantity for ${row.name}`}
                     />
-                    <span className="pos-line-total">{formatPrice(row.unit * row.quantity)}</span>
+                    <span className="pos-line-total">{formatCurrency(row.unit * row.quantity)}</span>
                     <button type="button" className="pos-remove" onClick={() => removeLine(row.product_id)} aria-label="Remove line">
                       ×
                     </button>
@@ -279,7 +280,7 @@ const PosTerminal = () => {
 
           <div className="pos-total-row">
             <span>Subtotal</span>
-            <strong>{formatPrice(previewSubtotal)}</strong>
+            <strong>{formatCurrency(previewSubtotal)}</strong>
           </div>
 
           {promotionSummary.promotion_discount > 0 && (
@@ -290,13 +291,13 @@ const PosTerminal = () => {
                   ? ` (${promotionSummary.applied_promotion.name})`
                   : ''}
               </span>
-              <strong>-{formatPrice(promotionSummary.promotion_discount)}</strong>
+              <strong>-{formatCurrency(promotionSummary.promotion_discount)}</strong>
             </div>
           )}
 
           <div className="pos-total-row pos-total-row-final">
             <span>Total</span>
-            <strong>{formatPrice(previewGrandTotal)}</strong>
+            <strong>{formatCurrency(previewGrandTotal)}</strong>
           </div>
 
           <div className="pos-payment">
@@ -350,7 +351,7 @@ const PosTerminal = () => {
                 <tr key={s.id}>
                   <td>#{s.id}</td>
                   <td>{new Date(s.created_at).toLocaleTimeString()}</td>
-                  <td>{formatPrice(s.total_amount)}</td>
+                  <td>{formatCurrency(s.total_amount)}</td>
                   <td>{s.payment_method || '—'}</td>
                 </tr>
               ))}

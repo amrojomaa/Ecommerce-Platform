@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS } from '../config/api';
-import { formatPrice } from '../utils/helpers';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useWishlist } from '../hooks/useWishlist';
+import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CommentSection from '../components/CommentSection';
 import StarRating from '../components/StarRating';
@@ -21,6 +21,7 @@ const ProductDetails = () => {
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { formatCurrency } = useCurrency();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -212,11 +213,11 @@ const ProductDetails = () => {
             >
               {product.discount_enabled ? (
                 <div>
-                  <div className="product-price-before">{formatPrice(product.price)}</div>
-                  <div className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</div>
+                  <div className="product-price-before">{formatCurrency(product.price)}</div>
+                  <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
                 </div>
               ) : (
-                formatPrice(product.price)
+                formatCurrency(product.price)
               )}
             </motion.div>
 

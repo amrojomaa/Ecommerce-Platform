@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from app import models, schemas, OAuth2
 from app.utils.geocoding import geocode_address_with_fallback
-from app.routers.admin import require_driver, require_admin, require_employee
+from app.routers.admin import require_driver, require_employee, require_admin_or_operations_manager
 from app.OAuth2 import verify_access_token
 import os
 import uuid
@@ -376,7 +376,7 @@ def mark_photo_reviewed(
     job_id: int,
     photo_type: str,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin),
+    current_user=Depends(require_admin_or_operations_manager),
 ):
     if photo_type not in PHOTO_ACK_TYPES:
         raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
@@ -475,7 +475,7 @@ def report_issue(
 
 
 def _ensure_issue_chat_access(job: models.DBDeliveryJob, user: models.DBUser):
-    if user.role == "admin":
+    if user.role in ["admin", "operations_manager"]:
         return
     if user.role == "driver" and job.driver_id == user.id:
         return
@@ -564,7 +564,7 @@ def send_issue_message(
 def resolve_issue(
     job_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin),
+    current_user=Depends(require_admin_or_operations_manager),
 ):
     job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
@@ -754,9 +754,9 @@ def request_payout(
 def get_all_delivery_jobs(
     status_filter: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin),
+    current_user=Depends(require_admin_or_operations_manager),
 ):
-    """List all delivery jobs (Admin only). Optionally filter by status."""
+    """List all delivery jobs (Admin/Operations Manager). Optionally filter by status."""
     query = _load_job_query(db)
 
     if status_filter and status_filter != "all":
@@ -777,6 +777,72 @@ def get_all_delivery_jobs(
         result.append(resp)
 
     return result
+
+
+@router.get("/drivers", response_model=List[schemas.User])
+def get_delivery_drivers(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin_or_operations_manager),
+):
+    """List active driver accounts for assignment."""
+    drivers = (
+        db.query(models.DBUser)
+        .filter(
+            models.DBUser.role == "driver",
+            models.DBUser.is_blocked == False,  # noqa: E712
+        )
+        .order_by(models.DBUser.first_name.asc(), models.DBUser.last_name.asc())
+        .all()
+    )
+    return drivers
+
+
+@router.patch("/jobs/{job_id}/assign-driver", response_model=schemas.AdminDeliveryJobResponse)
+def assign_driver_to_job(
+    job_id: int,
+    payload: schemas.AssignDriverPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin_or_operations_manager),
+):
+    """Assign or reassign a driver while job is available/assigned."""
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status not in ["available", "assigned"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Driver assignment is only allowed when job is available or assigned (current: {job.status})",
+        )
+
+    driver = (
+        db.query(models.DBUser)
+        .filter(
+            models.DBUser.id == payload.driver_id,
+            models.DBUser.role == "driver",
+        )
+        .first()
+    )
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    if getattr(driver, "is_blocked", False):
+        raise HTTPException(status_code=400, detail="Driver account is suspended")
+
+    job.driver_id = driver.id
+    job.status = "assigned"
+    job.updated_at = datetime.now(timezone.utc)
+
+    if job.order:
+        job.order.driver_id = driver.id
+        if job.order.status in ["paid", "assigned"]:
+            job.order.status = "assigned"
+
+    db.commit()
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    response = _job_to_response(job)
+    response["driver_name"] = f"{driver.first_name} {driver.last_name}"
+    response["issue_type"] = job.issue_type
+    return response
 
 
 @router.get("/jobs/{job_id}/details", response_model=schemas.AdminDeliveryJobResponse)
@@ -892,9 +958,9 @@ def create_delivery_job(
     delivery_lat: Optional[float] = None,
     delivery_lng: Optional[float] = None,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin),
+    current_user=Depends(require_admin_or_operations_manager),
 ):
-    """Create a delivery job for an order (Admin only)."""
+    """Create a delivery job for an order (Admin/Operations Manager)."""
     job = internal_create_delivery_job(
         order_id, db, pickup_address, pickup_lat, pickup_lng, 
         delivery_address, delivery_lat, delivery_lng
@@ -925,7 +991,7 @@ def get_delivery_job_by_order(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    if job.order.user_id != user.id and user.role not in ["admin", "employee"]:
+    if job.order.user_id != user.id and user.role not in ["admin", "employee", "operations_manager"]:
         raise HTTPException(status_code=403, detail="Not authorized to view this delivery job")
 
     return _job_to_response(job)

@@ -7,6 +7,9 @@ from enum import Enum
 
 class UserRole(str, Enum):
     ADMIN = "admin"
+    SUPPORT_MANAGER = "support_manager"
+    OPERATIONS_MANAGER = "operations_manager"
+    WAREHOUSE_MANAGER = "warehouse_manager"
     EMPLOYEE = "employee"
     CUSTOMER = "customer"
     DRIVER = "driver"
@@ -229,8 +232,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -251,8 +254,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -276,8 +279,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
     class Config:
@@ -568,8 +571,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
 
@@ -948,6 +951,10 @@ class IssueReport(BaseModel):
         if v not in valid:
             raise ValueError(f'issue_type must be one of: {", ".join(valid)}')
         return v
+
+
+class AssignDriverPayload(BaseModel):
+    driver_id: int
 
 
 class DeliveryIssueMessageCreate(BaseModel):

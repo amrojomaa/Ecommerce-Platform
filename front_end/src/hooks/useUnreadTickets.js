@@ -31,7 +31,14 @@ export const useUnreadTickets = () => {
   }, [getStorageKey]);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (!isAuthenticated || !user || (user.role !== 'admin' && user.role !== 'employee' && user.role !== 'customer')) {
+    if (
+      !isAuthenticated ||
+      !user ||
+      (user.role !== 'admin' &&
+        user.role !== 'support_manager' &&
+        user.role !== 'employee' &&
+        user.role !== 'customer')
+    ) {
       setUnreadCount(0);
       return;
     }
@@ -57,7 +64,14 @@ export const useUnreadTickets = () => {
   }, [setLastViewed]);
 
   useEffect(() => {
-    if (isAuthenticated && user && (user.role === 'admin' || user.role === 'employee' || user.role === 'customer')) {
+    if (
+      isAuthenticated &&
+      user &&
+      (user.role === 'admin' ||
+        user.role === 'support_manager' ||
+        user.role === 'employee' ||
+        user.role === 'customer')
+    ) {
       fetchUnreadCount();
       
       // Poll for updates every minute

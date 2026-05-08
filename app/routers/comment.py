@@ -4,7 +4,7 @@ from sqlalchemy import desc, func
 from typing import List, Optional
 from app import OAuth2, models, schemas
 from app.database import get_db
-from app.routers.admin import require_admin
+from app.routers.admin import require_admin_or_support_manager
 from app.utils.sentiment_analysis import analyze_sentiment
 
 router = APIRouter(
@@ -87,7 +87,7 @@ def delete_comment(
     current_user: int = Depends(OAuth2.get_current_user)
 ):
     """
-    Delete a comment. Users can delete their own comments, admins can delete any comment.
+    Delete a comment. Users can delete their own comments, admins/support managers can delete any comment.
     """
     comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
     if not comment:
@@ -99,8 +99,8 @@ def delete_comment(
     # Get current user from database
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     
-    # Check if user is the comment owner or an admin
-    if comment.user_id != current_user.id and user.role != "admin":
+    # Check if user is the comment owner or an admin/support manager
+    if comment.user_id != current_user.id and user.role not in ["admin", "support_manager"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete this comment"
@@ -117,10 +117,10 @@ def get_all_comments(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=1000),
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
     """
-    Get all comments. Admin only endpoint.
+    Get all comments. Admin/Support Manager endpoint.
     """
     comments = db.query(models.DBComment)\
         .options(joinedload(models.DBComment.user))\
@@ -136,10 +136,10 @@ def get_all_comments(
 def get_product_sentiment_analytics(
     product_id: int,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
     """
-    Get sentiment analytics for a product. Admin only endpoint.
+    Get sentiment analytics for a product. Admin/Support Manager endpoint.
     Returns counts of positive, neutral, and negative reviews.
     """
     # Verify product exists
@@ -193,12 +193,12 @@ def get_product_sentiment_analytics(
 def backfill_sentiment_for_comments(
     product_id: Optional[int] = Query(None, description="Optional product ID to backfill sentiment for specific product"),
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
     """
     Backfill sentiment analysis for all comments that don't have sentiment values.
     If product_id is provided, only backfill comments for that product.
-    Admin only endpoint.
+    Admin/Support Manager endpoint.
     """
     # Build query for comments without sentiment
     query = db.query(models.DBComment)\

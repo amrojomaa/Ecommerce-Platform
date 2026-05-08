@@ -2,9 +2,9 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
-import { formatPrice } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
 import { useConfirm } from '../hooks/useConfirm';
+import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Cart.css';
 
@@ -21,6 +21,7 @@ const Cart = () => {
     removeCartItem,
   } = useCart();
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
 
   // useEffect(() => {
   //   fetchCart();
@@ -169,14 +170,14 @@ const Cart = () => {
                     {hasDiscount ? (
                       <span className="cart-discount-price-block">
                         <span className="cart-old-price">
-                          {formatPrice(originalPrice)}
+                          {formatCurrency(originalPrice)}
                         </span>
                         <span className="cart-new-price">
-                          {formatPrice(discountedPrice)}
+                          {formatCurrency(discountedPrice)}
                         </span>
                       </span>
                     ) : (
-                      formatPrice(item.product?.price || 0)
+                      formatCurrency(item.product?.price || 0)
                     )}
                   </p>
                       </>
@@ -217,7 +218,7 @@ const Cart = () => {
 
                 <div className="cart-item-total">
                   <p className="item-total">
-                    {formatPrice(item.total || 0)}
+                    {formatCurrency(item.total || 0)}
                   </p>
                 </div>
 
@@ -248,14 +249,14 @@ const Cart = () => {
               <h2>Order Summary</h2>
               <div className="summary-row">
                 <span>Subtotal:</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{formatCurrency(subtotal)}</span>
               </div>
               {promotionDiscount > 0 && (
                 <div className="summary-row summary-row-discount">
                   <span>
                     Promotion{appliedPromotion?.name ? ` (${appliedPromotion.name})` : ''}:
                   </span>
-                  <span>-{formatPrice(promotionDiscount)}</span>
+                  <span>-{formatCurrency(promotionDiscount)}</span>
                 </div>
               )}
               <div className="summary-row">
@@ -264,7 +265,7 @@ const Cart = () => {
               </div>
               <div className="summary-row total">
                 <span>Total:</span>
-                <span>{formatPrice(grandTotal)}</span>
+                <span>{formatCurrency(grandTotal)}</span>
               </div>
               <motion.button
                 className="checkout-btn"

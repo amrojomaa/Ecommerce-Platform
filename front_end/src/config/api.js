@@ -188,6 +188,8 @@ export const DELIVERY_ENDPOINTS = {
   PAYOUT: '/delivery/earnings/payout',
   CREATE_JOB: '/delivery/create-job',
   ALL_JOBS: '/delivery/all-jobs',
+  DRIVERS: '/delivery/drivers',
+  ASSIGN_DRIVER: '/delivery/jobs/{job_id}/assign-driver',
   JOB_DETAILS: '/delivery/jobs/{job_id}/details',
   GET_CHAT: '/delivery/jobs/{job_id}/chat',
   SEND_CHAT: '/delivery/jobs/{job_id}/chat',

@@ -7,9 +7,10 @@ export const useDeliveryIssueCount = () => {
   const { user, isAuthenticated } = useAuth();
   const [issueCount, setIssueCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const canManageDelivery = user?.role === 'admin' || user?.role === 'operations_manager';
 
   const fetchIssueCount = useCallback(async () => {
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (!isAuthenticated || !canManageDelivery) {
       setIssueCount(0);
       return;
     }
@@ -30,10 +31,10 @@ export const useDeliveryIssueCount = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.role]);
+  }, [canManageDelivery, isAuthenticated]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
+    if (isAuthenticated && canManageDelivery) {
       fetchIssueCount();
 
       const interval = setInterval(() => {
@@ -44,7 +45,7 @@ export const useDeliveryIssueCount = () => {
     }
 
     setIssueCount(0);
-  }, [fetchIssueCount, isAuthenticated, user?.role]);
+  }, [canManageDelivery, fetchIssueCount, isAuthenticated]);
 
   return {
     issueCount,

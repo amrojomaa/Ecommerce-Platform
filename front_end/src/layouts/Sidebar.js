@@ -7,7 +7,7 @@ import { useDeliveryIssueCount } from '../hooks/useDeliveryIssueCount';
 import { useDeliveryPhotoCount } from '../hooks/useDeliveryPhotoCount';
 import '../styles/layouts/Sidebar.css';
 
-const DEFAULT_MENU_ITEMS = [
+const ADMIN_MENU_ITEMS = [
   { path: '/admin', label: 'Dashboard', icon: '📊' },
   { path: '/admin/products', label: 'Products', icon: '📦' },
   { path: '/admin/promotions', label: 'Promotions', icon: '🎯' },
@@ -18,6 +18,20 @@ const DEFAULT_MENU_ITEMS = [
   { path: '/admin/users', label: 'Users', icon: '👥' },
   { path: '/admin/tickets', label: 'Tickets', icon: '🎫' },
   { path: '/admin/comments', label: 'Reviews', icon: '💬' },
+];
+
+const OPERATIONS_MANAGER_MENU_ITEMS = [
+  { path: '/admin/orders', label: 'Orders', icon: '📋' },
+  { path: '/admin/deliveries', label: 'Deliveries', icon: '🚚' },
+];
+
+const SUPPORT_MANAGER_MENU_ITEMS = [
+  { path: '/support/tickets', label: 'Tickets', icon: '🎫' },
+  { path: '/support/comments', label: 'Reviews', icon: '💬' },
+];
+
+const WAREHOUSE_MANAGER_MENU_ITEMS = [
+  { path: '/warehouse/products', label: 'Products', icon: '📦' },
 ];
 
 const getStorageKey = (userId) => `admin-sidebar-order:${userId || 'default'}`;
@@ -42,38 +56,47 @@ const Sidebar = () => {
   const { unreadCount } = useUnreadTickets();
   const { issueCount } = useDeliveryIssueCount();
   const { photoCount } = useDeliveryPhotoCount();
-  const [menuItems, setMenuItems] = useState(DEFAULT_MENU_ITEMS);
+  const availableMenuItems = useMemo(
+    () => {
+      if (user?.role === 'operations_manager') return OPERATIONS_MANAGER_MENU_ITEMS;
+      if (user?.role === 'support_manager') return SUPPORT_MANAGER_MENU_ITEMS;
+      if (user?.role === 'warehouse_manager') return WAREHOUSE_MANAGER_MENU_ITEMS;
+      return ADMIN_MENU_ITEMS;
+    },
+    [user?.role]
+  );
+  const [menuItems, setMenuItems] = useState(availableMenuItems);
   const [draggedPath, setDraggedPath] = useState(null);
   const [dragOverPath, setDragOverPath] = useState(null);
   const deliveriesNotificationCount = issueCount + photoCount;
 
   useEffect(() => {
-    const menuByPath = new Map(DEFAULT_MENU_ITEMS.map((item) => [item.path, item]));
+    const menuByPath = new Map(availableMenuItems.map((item) => [item.path, item]));
     const storageKey = getStorageKey(user?.id);
     const raw = localStorage.getItem(storageKey);
     if (!raw) {
-      setMenuItems(DEFAULT_MENU_ITEMS);
+      setMenuItems(availableMenuItems);
       return;
     }
 
     try {
       const orderedPaths = JSON.parse(raw);
       if (!Array.isArray(orderedPaths)) {
-        setMenuItems(DEFAULT_MENU_ITEMS);
+        setMenuItems(availableMenuItems);
         return;
       }
 
       const restored = orderedPaths
         .map((path) => menuByPath.get(path))
         .filter(Boolean);
-      const missing = DEFAULT_MENU_ITEMS.filter(
+      const missing = availableMenuItems.filter(
         (item) => !restored.some((existing) => existing.path === item.path)
       );
       setMenuItems([...restored, ...missing]);
     } catch {
-      setMenuItems(DEFAULT_MENU_ITEMS);
+      setMenuItems(availableMenuItems);
     }
-  }, [user?.id]);
+  }, [availableMenuItems, user?.id]);
 
   useEffect(() => {
     const storageKey = getStorageKey(user?.id);
@@ -124,12 +147,20 @@ const Sidebar = () => {
   return (
     <aside className={`sidebar ${isDarkMode ? 'dark' : ''}`}>
       <div className="sidebar-header">
-        <h2>Admin Panel</h2>
+        <h2>
+          {user?.role === 'operations_manager'
+            ? 'Operations Panel'
+            : user?.role === 'support_manager'
+              ? 'Support Panel'
+              : user?.role === 'warehouse_manager'
+                ? 'Warehouse Panel'
+              : 'Admin Panel'}
+        </h2>
         <p className="sidebar-reorder-hint">{dragHint}</p>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
-          const isTickets = item.path === '/admin/tickets';
+          const isTickets = item.path === '/admin/tickets' || item.path === '/support/tickets';
           const isDeliveries = item.path === '/admin/deliveries';
           const isDragging = draggedPath === item.path;
           const isDragOver = dragOverPath === item.path && draggedPath !== item.path;

@@ -7,9 +7,10 @@ export const useDeliveryPhotoCount = () => {
   const { user, isAuthenticated } = useAuth();
   const [photoCount, setPhotoCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const canManageDelivery = user?.role === 'admin' || user?.role === 'operations_manager';
 
   const fetchPhotoCount = useCallback(async () => {
-    if (!isAuthenticated || user?.role !== 'admin') {
+    if (!isAuthenticated || !canManageDelivery) {
       setPhotoCount(0);
       return;
     }
@@ -42,10 +43,10 @@ export const useDeliveryPhotoCount = () => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.role]);
+  }, [canManageDelivery, isAuthenticated]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'admin') {
+    if (isAuthenticated && canManageDelivery) {
       fetchPhotoCount();
 
       const interval = setInterval(() => {
@@ -56,7 +57,7 @@ export const useDeliveryPhotoCount = () => {
     }
 
     setPhotoCount(0);
-  }, [fetchPhotoCount, isAuthenticated, user?.role]);
+  }, [canManageDelivery, fetchPhotoCount, isAuthenticated]);
 
   return {
     photoCount,

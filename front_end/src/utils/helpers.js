@@ -45,6 +45,31 @@ const safeLocalStorageSet = (key, value) => {
   }
 };
 
+const getActiveUserId = () => {
+  const rawUser = safeLocalStorageGet('user');
+  if (!rawUser) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawUser);
+    const userId = parsed?.id;
+    if (userId === null || userId === undefined) {
+      return null;
+    }
+    return String(userId);
+  } catch (error) {
+    return null;
+  }
+};
+
+export const getCurrencyStorageKey = (userId = getActiveUserId()) => {
+  if (userId === null || userId === undefined || userId === '') {
+    return CURRENCY_STORAGE_KEY;
+  }
+  return `${CURRENCY_STORAGE_KEY}_${userId}`;
+};
+
 export const normalizeCurrencyCode = (currencyCode) => {
   const normalized = String(currencyCode || '').toUpperCase();
   if (SUPPORTED_CURRENCIES[normalized]) {
@@ -53,14 +78,26 @@ export const normalizeCurrencyCode = (currencyCode) => {
   return DEFAULT_CURRENCY;
 };
 
-export const getCurrentCurrency = () => {
-  const storedCurrency = safeLocalStorageGet(CURRENCY_STORAGE_KEY);
-  return normalizeCurrencyCode(storedCurrency);
+export const getCurrentCurrency = (userId = getActiveUserId()) => {
+  const hasUser = userId !== null && userId !== undefined && userId !== '';
+  const storageKey = getCurrencyStorageKey(userId);
+  const storedCurrency = safeLocalStorageGet(storageKey);
+
+  if (storedCurrency) {
+    return normalizeCurrencyCode(storedCurrency);
+  }
+
+  // Keep logged-in accounts isolated: do not inherit any global/guest currency.
+  if (hasUser) {
+    return DEFAULT_CURRENCY;
+  }
+
+  return normalizeCurrencyCode(safeLocalStorageGet(CURRENCY_STORAGE_KEY));
 };
 
-export const setCurrentCurrency = (currencyCode) => {
+export const setCurrentCurrency = (currencyCode, userId = getActiveUserId()) => {
   const normalized = normalizeCurrencyCode(currencyCode);
-  safeLocalStorageSet(CURRENCY_STORAGE_KEY, normalized);
+  safeLocalStorageSet(getCurrencyStorageKey(userId), normalized);
   return normalized;
 };
 

@@ -3,11 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS, PROMOTION_ENDPOINTS } from '../config/api';
-import { formatPrice } from '../utils/helpers';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { useAuth } from '../hooks/useAuth';
 import { useWishlist } from '../hooks/useWishlist';
 import { useCart } from '../hooks/useCart';
+import { useCurrency } from '../hooks/useCurrency';
 import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -18,6 +18,7 @@ const Products = () => {
   const { isAuthenticated } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
+  const { formatCurrency } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -277,8 +278,8 @@ const Products = () => {
                         <p className="product-category">{product.category_name}</p>
                         <div className="product-price-container">
                           <div className="product-price-stack">
-                            <p className="product-price-before">{formatPrice(product.price)}</p>
-                            <p className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</p>
+                            <p className="product-price-before">{formatCurrency(product.price)}</p>
+                            <p className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</p>
                           </div>
                         </div>
                       </div>
@@ -369,11 +370,11 @@ const Products = () => {
                           <div className="product-price-stack">
                             {product.discount_enabled ? (
                               <>
-                                <p className="product-price-before">{formatPrice(product.price)}</p>
-                                <p className="product-price-discount">{formatPrice(product.discounted_price ?? product.price)}</p>
+                                <p className="product-price-before">{formatCurrency(product.price)}</p>
+                                <p className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</p>
                               </>
                             ) : (
-                              <p className="product-price">{formatPrice(product.price)}</p>
+                              <p className="product-price">{formatCurrency(product.price)}</p>
                             )}
                           </div>
                           {isAuthenticated && (

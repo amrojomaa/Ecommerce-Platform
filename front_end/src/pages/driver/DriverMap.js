@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
-import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/driver/DriverMap.css';
 
 const DriverMap = () => {
+  const { formatCurrency } = useCurrency();
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [driverPosition, setDriverPosition] = useState(null);
@@ -444,7 +445,7 @@ const DriverMap = () => {
                 >
                   <div className="job-item-header">
                     <span className="job-order">Order #{job.order_id}</span>
-                    <span className="job-pay">{formatPrice(job.payment_amount || 0)}</span>
+                    <span className="job-pay">{formatCurrency(job.payment_amount || 0)}</span>
                   </div>
                   <div className="job-distance-row">
                     {Number.isFinite(job.pickup_latitude) && Number.isFinite(job.pickup_longitude) && Number.isFinite(job.delivery_latitude) && Number.isFinite(job.delivery_longitude) && (
@@ -516,7 +517,7 @@ const DriverMap = () => {
               </div>
               <div className="detail-section">
                 <h3>💰 Payment</h3>
-                <p className="payment-amount">{formatPrice(selectedJob.payment_amount || 0)}</p>
+                <p className="payment-amount">{formatCurrency(selectedJob.payment_amount || 0)}</p>
               </div>
             </div>
 
@@ -528,7 +529,7 @@ const DriverMap = () => {
                     <div key={idx} className="item-row">
                       <span className="item-name">{item.product?.name}</span>
                       <span className="item-qty">x{item.quantity}</span>
-                      <span className="item-price">{formatPrice(item.total || 0)}</span>
+                      <span className="item-price">{formatCurrency(item.total || 0)}</span>
                     </div>
                   ))}
                 </div>

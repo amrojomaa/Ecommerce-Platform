@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
-from app.routers.admin import require_admin, require_employee
+from app.routers.admin import require_employee, require_admin_or_support_manager
 
 router = APIRouter(
     tags=['Tickets']
@@ -68,9 +68,9 @@ def get_my_tickets(
 def get_all_tickets(
     status_filter: Optional[str] = Query(None, description="Filter by status: In Progress, Resolved, Closed"),
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
-    """Get all tickets - Admin only"""
+    """Get all tickets - Admin/Support Manager."""
     query = db.query(models.DBTicket)
     
     if status_filter:
@@ -114,16 +114,21 @@ def get_ticket(
             detail="Ticket not found"
         )
     
-    # Check permissions: customer can view their own, employee can view assigned, admin can view all
+    # Check permissions: customer can view their own, employee can view assigned, admin/support manager can view all
     if user.role == "customer" and ticket.customer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view your own tickets"
         )
-    elif user.role == "employee" and ticket.employee_id != current_user.id and user.role != "admin":
+    elif user.role == "employee" and ticket.employee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view tickets assigned to you"
+        )
+    elif user.role not in ["admin", "support_manager", "employee", "customer"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to view this ticket"
         )
     
     return ticket
@@ -134,9 +139,9 @@ def assign_ticket(
     ticket_id: int,
     assignment: schemas.TicketAssign,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    manager_user = Depends(require_admin_or_support_manager)
 ):
-    """Assign a ticket to an employee - Admin only"""
+    """Assign a ticket to an employee - Admin/Support Manager."""
     ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
     
     if not ticket:
@@ -161,7 +166,7 @@ def assign_ticket(
     
     ticket.employee_id = assignment.employee_id
     ticket.updated_at = datetime.now(timezone.utc)
-    ticket.last_updated_by = admin_user.id
+    ticket.last_updated_by = manager_user.id
     db.commit()
     db.refresh(ticket)
     
@@ -223,16 +228,22 @@ def add_ticket_response(
             detail="Ticket not found"
         )
     
-    # Check permissions: customer can respond to their own, employee/admin can respond to any
+    # Check permissions: customer can respond to their own, employee can respond to assigned,
+    # admin/support manager can respond to any.
     if user.role == "customer" and ticket.customer_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only respond to your own tickets"
         )
-    elif user.role == "employee" and ticket.employee_id != current_user.id and user.role != "admin":
+    elif user.role == "employee" and ticket.employee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only respond to tickets assigned to you"
+        )
+    elif user.role not in ["admin", "support_manager", "employee", "customer"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to respond to this ticket"
         )
     
     new_response = models.DBTicketResponse(
@@ -261,7 +272,7 @@ def get_unread_ticket_count(
     - Have been created after last_viewed timestamp, OR
     - Have been updated (new responses) after last_viewed timestamp
     
-    - Admin sees all tickets
+    - Admin and Support Manager see all tickets
     - Employee sees only assigned tickets
     - Customer sees only their own tickets
     """
@@ -279,8 +290,8 @@ def get_unread_ticket_count(
             last_viewed_dt = None
     
     # Build query based on user role
-    if user.role == "admin":
-        # Admin sees all tickets
+    if user.role in ["admin", "support_manager"]:
+        # Admin/Support Manager see all tickets
         query = db.query(models.DBTicket)
     elif user.role == "employee":
         # Employee sees only assigned tickets
@@ -345,9 +356,9 @@ def get_unread_ticket_count(
 def delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
-    """Delete a ticket - Admin only"""
+    """Delete a ticket - Admin/Support Manager."""
     ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
     
     if not ticket:
@@ -404,9 +415,9 @@ def request_delete_ticket(
 @router.get("/tickets/pending-deletes", response_model=List[schemas.TicketBase])
 def get_pending_deletes(
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
-    """Get all tickets with pending delete requests - Admin only"""
+    """Get all tickets with pending delete requests - Admin/Support Manager."""
     tickets = db.query(models.DBTicket)\
         .options(
             joinedload(models.DBTicket.customer),
@@ -423,9 +434,9 @@ def get_pending_deletes(
 def approve_delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
-    """Approve and delete a ticket - Admin only"""
+    """Approve and delete a ticket - Admin/Support Manager."""
     ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
     
     if not ticket:
@@ -450,9 +461,9 @@ def approve_delete_ticket(
 def reject_delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
-    """Reject a delete request for a ticket - Admin only"""
+    """Reject a delete request for a ticket - Admin/Support Manager."""
     ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
     
     if not ticket:

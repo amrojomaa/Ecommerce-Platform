@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
-import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/driver/DriverJobHistory.css';
 
 const DriverJobHistory = () => {
+  const { formatCurrency } = useCurrency();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -87,7 +88,7 @@ const DriverJobHistory = () => {
                   <span className={`history-status-badge ${job.status}`}>
                     {job.status === 'delivered' ? '✅ Delivered' : '❌ Cancelled'}
                   </span>
-                  <span className="history-amount">{formatPrice(job.payment_amount || 0)}</span>
+                  <span className="history-amount">{formatCurrency(job.payment_amount || 0)}</span>
                 </div>
               </div>
               <div className="history-card-body">

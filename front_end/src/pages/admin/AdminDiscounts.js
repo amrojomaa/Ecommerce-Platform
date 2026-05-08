@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS } from '../../config/api';
-import { formatPrice } from '../../utils/helpers';
 import { ProductCardSkeleton } from '../../components/Skeleton';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDiscounts.css';
 
 const AdminDiscounts = () => {
+  const { formatCurrency } = useCurrency();
   const [products, setProducts] = useState([]);
   const [drafts, setDrafts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -171,9 +172,9 @@ const AdminDiscounts = () => {
                   <p className="discount-category">{product.category_name}</p>
 
                   <div className="discount-prices">
-                    <span className="price-before">{formatPrice(product.price)}</span>
+                    <span className="price-before">{formatCurrency(product.price)}</span>
                     <span className={`price-after ${product.discount_enabled ? 'active' : ''}`}>
-                      {formatPrice(finalPrice)}
+                      {formatCurrency(finalPrice)}
                     </span>
                   </div>
 

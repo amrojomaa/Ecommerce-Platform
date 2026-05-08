@@ -119,6 +119,16 @@ function App() {
                     <Route path="comments" element={<AdminComments />} />
                     <Route path="comments/product/:productId" element={<AdminComments />} />
         </Route>
+        <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<AdminTickets />} />
+                    <Route path="tickets" element={<AdminTickets />} />
+                    <Route path="comments" element={<AdminComments />} />
+                    <Route path="comments/product/:productId" element={<AdminComments />} />
+        </Route>
+        <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<Navigate to="products" replace />} />
+                    <Route path="products" element={<AdminProducts />} />
+        </Route>
         <Route path="/employee" element={<ProtectedRoute requireEmployee={true}><EmployeeLayout /></ProtectedRoute>}>
                     <Route index element={<EmployeeDashboard />} />
                     <Route path="tickets" element={<EmployeeTickets />} />

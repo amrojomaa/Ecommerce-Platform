@@ -49,13 +49,22 @@ export const CurrencyProvider = ({ children }) => {
 
   useEffect(() => {
     const handleStorage = (event) => {
-      if (event.key === CURRENCY_STORAGE_KEY) {
+      if (event.key?.startsWith(CURRENCY_STORAGE_KEY)) {
         setCurrentCurrencyState(getCurrentCurrency());
       }
     };
 
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setCurrentCurrencyState(getCurrentCurrency());
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
   const setCurrency = useCallback((currencyCode) => {

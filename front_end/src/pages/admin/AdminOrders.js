@@ -4,11 +4,13 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { ORDER_ENDPOINTS } from '../../config/api';
-import { formatPrice, formatDate, getImageUrl } from '../../utils/helpers';
+import { formatDate, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminOrders.css';
 
 const AdminOrders = () => {
+  const { formatCurrency } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
   const [allOrders, setAllOrders] = useState([]); // Store all orders for filtering
@@ -317,7 +319,7 @@ const AdminOrders = () => {
                     </td>
                     <td>{formatDate(order.created_at)}</td>
                     <td>{order.items?.length || order.orderitems?.length || 0}</td>
-                    <td>{formatPrice(order.total_amount)}</td>
+                    <td>{formatCurrency(order.total_amount)}</td>
                     <td>
                       <span className={`order-status status-${order.status || 'created'}`}>
                         {order.status || 'created'}

@@ -337,6 +337,39 @@
   margin-top: 0.25rem;
 }
 
+.assign-driver-controls {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.assign-driver-controls select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.assign-driver-btn {
+  border: none;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.assign-driver-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .proof-photos-section {
   margin-bottom: 1rem;
   background: linear-gradient(180deg, var(--surface) 0%, var(--background) 100%);

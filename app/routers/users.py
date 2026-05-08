@@ -29,7 +29,10 @@ router = APIRouter(
 
 @router.get("/users/all", response_model=List[schemas.User])
 def get_all_user(
-    role: Optional[str] = Query(None, description="Filter by role: admin, employee, or customer"),
+    role: Optional[str] = Query(
+        None,
+        description="Filter by role: admin, support_manager, operations_manager, warehouse_manager, employee, driver, cashier, or customer",
+    ),
     db: Session = Depends (get_db), 
     admin_user = Depends(require_admin)
 ):
@@ -37,10 +40,10 @@ def get_all_user(
     
     # Filter by role if provided
     if role:
-        if role not in ["admin", "employee", "customer", "driver", "cashier"]:
+        if role not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be one of: admin, employee, customer, driver, cashier"
+                detail="Invalid role. Must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier"
             )
         query = query.filter(models.DBUser.role == role)
     

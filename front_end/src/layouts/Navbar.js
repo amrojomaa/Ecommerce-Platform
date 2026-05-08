@@ -97,7 +97,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
 
 const Navbar = () => {
-  const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isSupportManager, isWarehouseManager } = useAuth();
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -118,6 +118,12 @@ const Navbar = () => {
   const cartItemCount = getCartItemCount();
   const wishlistItemCount = getWishlistItemCount();
   const currencyOptions = Object.values(supportedCurrencies || {});
+  const isOperationsManager = user?.role === 'operations_manager';
+  const isRealAdmin = user?.role === 'admin';
+  const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
+  const adminPanelLabel = isOperationsManager ? 'Operations Manager' : 'Admin';
+  const supportPanelPath = '/support/tickets';
+  const warehousePanelPath = '/warehouse/products';
 
   useEffect(() => {
     if (location.pathname === '/products') {
@@ -145,6 +151,14 @@ const Navbar = () => {
   // Safety check for isAdmin
   const checkIsAdmin = () => {
     return isAdmin && typeof isAdmin === 'function' ? isAdmin() : false;
+  };
+
+  const checkIsSupportManager = () => {
+    return isSupportManager && typeof isSupportManager === 'function' ? isSupportManager() : false;
+  };
+
+  const checkIsWarehouseManager = () => {
+    return isWarehouseManager && typeof isWarehouseManager === 'function' ? isWarehouseManager() : false;
   };
 
   // Default profile image (same as Profile page)
@@ -275,11 +289,24 @@ const Navbar = () => {
                 </Link>
               )}
               {checkIsAdmin() && (
-                <Link to="/admin" className="navbar-link admin-link">
-                  <span>Admin</span>
+                <Link to={adminPanelPath} className="navbar-link admin-link">
+                  <span>{adminPanelLabel}</span>
                   {unreadTicketsCount > 0 && (
                     <span className="admin-badge">{unreadTicketsCount}</span>
                   )}
+                </Link>
+              )}
+              {checkIsSupportManager() && (
+                <Link to={supportPanelPath} className="navbar-link admin-link">
+                  <span>Support Manager</span>
+                  {unreadTicketsCount > 0 && (
+                    <span className="admin-badge">{unreadTicketsCount}</span>
+                  )}
+                </Link>
+              )}
+              {checkIsWarehouseManager() && (
+                <Link to={warehousePanelPath} className="navbar-link admin-link">
+                  <span>Warehouse Manager</span>
                 </Link>
               )}
               {user?.role === 'employee' && !checkIsAdmin() && (
@@ -300,7 +327,7 @@ const Navbar = () => {
                   <span>Cashier</span>
                 </Link>
               )}
-              {checkIsAdmin() && (
+              {isRealAdmin && (
                 <Link to="/cashier" className="navbar-link">
                   POS
                 </Link>
@@ -449,8 +476,18 @@ const Navbar = () => {
                 </select>
               </div>
               {checkIsAdmin() && (
-                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
-                  Admin {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                <Link to={adminPanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  {adminPanelLabel} {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                </Link>
+              )}
+              {checkIsSupportManager() && (
+                <Link to={supportPanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  Support Manager {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+                </Link>
+              )}
+              {checkIsWarehouseManager() && (
+                <Link to={warehousePanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  Warehouse Manager
                 </Link>
               )}
               {user?.role === 'employee' && !checkIsAdmin() && (
@@ -468,7 +505,7 @@ const Navbar = () => {
                   Cashier
                 </Link>
               )}
-              {checkIsAdmin() && (
+              {isRealAdmin && (
                 <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
                   POS
                 </Link>

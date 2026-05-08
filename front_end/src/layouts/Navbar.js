@@ -281,6 +281,11 @@ const Navbar = () => {
                 My Orders
               </Link>
               {user?.role === 'customer' && (
+                <Link to="/installments" className="navbar-link">
+                  Installments
+                </Link>
+              )}
+              {user?.role === 'customer' && (
                 <Link to="/tickets" className="navbar-link">
                   <span>Tickets</span>
                   {unreadTicketsCount > 0 && (
@@ -453,6 +458,11 @@ const Navbar = () => {
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
                 My Orders
               </Link>
+              {user?.role === 'customer' && (
+                <Link to="/installments" onClick={() => setMobileMenuOpen(false)}>
+                  Installments
+                </Link>
+              )}
               {user?.role === 'customer' && (
                 <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
                   Tickets {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}

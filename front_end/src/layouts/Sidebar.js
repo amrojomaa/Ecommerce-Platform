@@ -14,6 +14,7 @@ const ADMIN_MENU_ITEMS = [
   { path: '/admin/discounts', label: 'Discounts', icon: '🏷️' },
   { path: '/admin/categories', label: 'Categories', icon: '🏷️' },
   { path: '/admin/orders', label: 'Orders', icon: '📋' },
+  { path: '/admin/installments', label: 'Installments', icon: '💳' },
   { path: '/admin/deliveries', label: 'Deliveries', icon: '🚚' },
   { path: '/admin/users', label: 'Users', icon: '👥' },
   { path: '/admin/tickets', label: 'Tickets', icon: '🎫' },
@@ -22,6 +23,7 @@ const ADMIN_MENU_ITEMS = [
 
 const OPERATIONS_MANAGER_MENU_ITEMS = [
   { path: '/admin/orders', label: 'Orders', icon: '📋' },
+  { path: '/admin/installments', label: 'Installments', icon: '💳' },
   { path: '/admin/deliveries', label: 'Deliveries', icon: '🚚' },
 ];
 

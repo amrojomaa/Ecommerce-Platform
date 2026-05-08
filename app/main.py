@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos, promotions
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos, promotions, installments
 
 
 def apply_schema_updates():
@@ -346,6 +346,47 @@ def apply_schema_patches() -> None:
             )
         )
 
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_requests_user_id
+                ON installment_requests(user_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_requests_status
+                ON installment_requests(status)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_schedules_request_due_date
+                ON installment_schedules(request_id, due_date)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_documents_request_id
+                ON installment_documents(request_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_payments_request_id
+                ON installment_payments(request_id)
+                """
+            )
+        )
+
 
 apply_schema_patches()
 print("Data Base connected successfully!")
@@ -431,5 +472,6 @@ app.include_router(delivery.router)
 app.include_router(recommendations.router)
 app.include_router(pos.router)
 app.include_router(promotions.router)
+app.include_router(installments.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

@@ -47,13 +47,19 @@ def create_payment_intent(
             )
         
         # Create payment intent
+        metadata = {
+            "user_id": str(current_user.id),
+            "order_id": str(payment_data.order_id or ""),
+        }
+        if payment_data.installment_request_id is not None:
+            metadata["installment_request_id"] = str(payment_data.installment_request_id)
+        if payment_data.installment_schedule_id is not None:
+            metadata["installment_schedule_id"] = str(payment_data.installment_schedule_id)
+
         intent = stripe.PaymentIntent.create(
             amount=amount_cents,
             currency=currency,
-            metadata={
-                "user_id": current_user.id,
-                "order_id": payment_data.order_id or "",
-            }
+            metadata=metadata
         )
         
         return {

@@ -55,6 +55,22 @@ export const ORDER_ENDPOINTS = {
   UPDATE_STATUS: '/orders/{order_id}/status',
 };
 
+export const INSTALLMENT_ENDPOINTS = {
+  CREATE_REQUEST: '/installments/requests',
+  MY_REQUESTS: '/installments/my',
+  MY_REQUEST_BY_ID: '/installments/my/{request_id}',
+  MY_UPDATE_REQUEST: '/installments/my/{request_id}',
+  MY_CANCEL: '/installments/my/{request_id}/cancel',
+  MY_MARK_PAID: '/installments/my/{request_id}/schedules/{schedule_id}/pay',
+  MY_UPSERT_DOCUMENT: '/installments/my/{request_id}/documents/{document_type}',
+  MY_DELETE_DOCUMENT: '/installments/my/{request_id}/documents/{document_id}',
+  ADMIN_REQUESTS: '/installments/admin/requests',
+  ADMIN_REQUEST_BY_ID: '/installments/admin/requests/{request_id}',
+  ADMIN_REVIEW: '/installments/admin/requests/{request_id}/review',
+  ADMIN_CANCEL: '/installments/admin/requests/{request_id}/cancel',
+  ADMIN_MARK_PAID: '/installments/admin/requests/{request_id}/schedules/{schedule_id}/pay',
+};
+
 // Point of sale (cashier / admin / employee)
 export const POS_ENDPOINTS = {
   PRODUCTS: '/pos/products',

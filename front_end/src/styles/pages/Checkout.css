@@ -18,6 +18,7 @@
   padding: 2rem;
   border-radius: 1rem;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
 }
 
 .checkout-form h2 {
@@ -34,6 +35,30 @@
   margin-bottom: 0.5rem;
   color: var(--text-primary);
   font-weight: 500;
+}
+
+.checkout-form input,
+.checkout-form textarea,
+.checkout-form select {
+  background-color: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.checkout-form input::placeholder,
+.checkout-form textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.checkout-form input:-webkit-autofill,
+.checkout-form input:-webkit-autofill:hover,
+.checkout-form input:-webkit-autofill:focus,
+.checkout-form textarea:-webkit-autofill,
+.checkout-form textarea:-webkit-autofill:hover,
+.checkout-form textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--background) inset;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 .form-row {
@@ -71,9 +96,30 @@
   padding: 2rem;
   border-radius: 1rem;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
   position: sticky;
   top: 100px;
   height: fit-content;
+}
+
+.dark .checkout-form {
+  background-color: var(--surface);
+  border-color: var(--border-color);
+}
+
+.dark .checkout-form input,
+.dark .checkout-form textarea,
+.dark .checkout-form select {
+  background-color: #0f172a;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.dark .checkout-form input:focus,
+.dark .checkout-form textarea:focus,
+.dark .checkout-form select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .order-summary h2 {

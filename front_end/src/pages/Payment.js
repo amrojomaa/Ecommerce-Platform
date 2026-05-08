@@ -10,7 +10,7 @@ import {
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
-import { PAYMENT_ENDPOINTS, ORDER_ENDPOINTS } from '../config/api';
+import { INSTALLMENT_ENDPOINTS, PAYMENT_ENDPOINTS, ORDER_ENDPOINTS, buildUrl } from '../config/api';
 import { roundCurrencyAmount } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
 import { useCurrency } from '../hooks/useCurrency';
@@ -20,7 +20,17 @@ import '../styles/pages/Payment.css';
 // Initialize Stripe - Replace with your publishable key
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QEXAMPLE');
 
-const PaymentForm = ({ amountInUsd, orderId, onSuccess, currentCurrency, stripeCurrency, convertPrice, formatCurrency }) => {
+const PaymentForm = ({
+  amountInUsd,
+  orderId,
+  installmentRequestId,
+  installmentScheduleId,
+  onSuccess,
+  currentCurrency,
+  stripeCurrency,
+  convertPrice,
+  formatCurrency,
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -49,6 +59,8 @@ const PaymentForm = ({ amountInUsd, orderId, onSuccess, currentCurrency, stripeC
       const intentResponse = await http.post(PAYMENT_ENDPOINTS.CREATE_INTENT, {
         amount: payableAmount,
         order_id: orderId,
+        installment_request_id: installmentRequestId,
+        installment_schedule_id: installmentScheduleId,
         currency: stripeCurrency
       });
 
@@ -72,11 +84,21 @@ const PaymentForm = ({ amountInUsd, orderId, onSuccess, currentCurrency, stripeC
       }
 
       if (paymentIntent.status === 'succeeded') {
-        // Confirm payment on backend
-        await http.post(PAYMENT_ENDPOINTS.CONFIRM, {
-          payment_intent_id: payment_intent_id,
-          order_id: orderId
-        });
+        if (installmentRequestId && installmentScheduleId) {
+          const endpoint = buildUrl(INSTALLMENT_ENDPOINTS.MY_MARK_PAID, {
+            request_id: installmentRequestId,
+            schedule_id: installmentScheduleId,
+          });
+          await http.patch(endpoint, {
+            payment_intent_id: payment_intent_id,
+          });
+        } else {
+          // Confirm payment on backend
+          await http.post(PAYMENT_ENDPOINTS.CONFIRM, {
+            payment_intent_id: payment_intent_id,
+            order_id: orderId
+          });
+        }
 
         toast.success('Payment successful!');
         onSuccess();
@@ -139,6 +161,8 @@ const Payment = () => {
   const { clearCart } = useCart();
   const { currentCurrency, stripeCurrency, convertPrice, formatCurrency } = useCurrency();
   const [orderId, setOrderId] = useState(null);
+  const [installmentRequestId, setInstallmentRequestId] = useState(null);
+  const [installmentScheduleId, setInstallmentScheduleId] = useState(null);
   const [amount, setAmount] = useState(0);
   const [orderCreated, setOrderCreated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -149,9 +173,18 @@ const Payment = () => {
         // Get order information from location state
         const orderAmount = location.state?.amount;
         const existingOrderId = location.state?.orderId;
+        const targetInstallmentRequestId = location.state?.installmentRequestId;
+        const targetInstallmentScheduleId = location.state?.installmentScheduleId;
         
         if (orderAmount) {
           setAmount(orderAmount);
+
+          if (targetInstallmentRequestId && targetInstallmentScheduleId) {
+            setInstallmentRequestId(targetInstallmentRequestId);
+            setInstallmentScheduleId(targetInstallmentScheduleId);
+            setOrderCreated(true);
+            return;
+          }
           
           if (existingOrderId) {
             // Use existing order
@@ -181,6 +214,13 @@ const Payment = () => {
   }, [location, navigate]);
 
   const handlePaymentSuccess = async () => {
+    if (installmentRequestId && installmentScheduleId) {
+      setTimeout(() => {
+        navigate('/installments');
+      }, 1200);
+      return;
+    }
+
     // Clear cart after successful payment
     try {
       const cartResponse = await http.get('/showmecart');
@@ -222,10 +262,19 @@ const Payment = () => {
         >
           <h2>Order Summary</h2>
           <div className="summary-details">
-            <div className="summary-row">
-              <span>Order ID:</span>
-              <span>#{orderId || 'Processing...'}</span>
-            </div>
+            {installmentRequestId ? (
+              <>
+                <div className="summary-row">
+                  <span>Installment request:</span>
+                  <span>#{installmentRequestId}</span>
+                </div>
+              </>
+            ) : (
+              <div className="summary-row">
+                <span>Order ID:</span>
+                <span>#{orderId || 'Processing...'}</span>
+              </div>
+            )}
             <div className="summary-row">
               <span>Total Amount:</span>
               <span className="total-amount">{formatCurrency(amount, currentCurrency)}</span>
@@ -248,6 +297,8 @@ const Payment = () => {
               <PaymentForm 
                 amountInUsd={amount}
                 orderId={orderId}
+                installmentRequestId={installmentRequestId}
+                installmentScheduleId={installmentScheduleId}
                 onSuccess={handlePaymentSuccess}
                 currentCurrency={currentCurrency}
                 stripeCurrency={stripeCurrency}

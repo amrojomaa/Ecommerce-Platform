@@ -37,6 +37,7 @@ import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
 import Recommendations from './pages/Recommendations';
 import Tickets from './pages/Tickets';
+import Installments from './pages/Installments';
 
 //Pages - Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -50,6 +51,7 @@ import AdminComments from './pages/admin/AdminComments';
 import AdminDeliveries from './pages/admin/AdminDeliveries';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
 import AdminPromotions from './pages/admin/AdminPromotions';
+import AdminInstallments from './pages/admin/AdminInstallments';
 
 //Pages - Employee
 import EmployeeLayout from './layouts/EmployeeLayout';
@@ -102,6 +104,7 @@ function App() {
           <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="installments" element={<ProtectedRoute><Installments /></ProtectedRoute>} />
           <Route path="tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
         </Route>
         <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
@@ -112,6 +115,7 @@ function App() {
                     <Route path="promotions/create" element={<AdminPromotions />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="orders" element={<AdminOrders />} />
+                    <Route path="installments" element={<AdminInstallments />} />
                     <Route path="deliveries" element={<AdminDeliveries />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="users/:id" element={<AdminUserDetails />} />

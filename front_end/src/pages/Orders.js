@@ -89,7 +89,7 @@ const Orders = () => {
     setCancellingOrderId(orderId);
     try {
       const cancelUrl = ORDER_ENDPOINTS.CANCEL.replace('{order_id}', orderId);
-      const response = await http.patch(cancelUrl);
+      await http.patch(cancelUrl);
       
       // Update the order in the list with new status
       setOrders(prevOrders => 
@@ -120,6 +120,10 @@ const Orders = () => {
         orderId: order.id
       }
     });
+  };
+
+  const handleRequestInstallment = (orderId) => {
+    navigate(`/installments?orderId=${orderId}`);
   };
 
   if (loading) {
@@ -189,6 +193,18 @@ const Orders = () => {
                     </div>
                   </div>
                   <div className="order-actions">
+                    {order.status === 'created' && (
+                      <button
+                        className="payment-order-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRequestInstallment(order.id);
+                        }}
+                        title="Request installment plan"
+                      >
+                        Installments
+                      </button>
+                    )}
                     {order.status === 'created' && (
                       <button
                         className="payment-order-btn"

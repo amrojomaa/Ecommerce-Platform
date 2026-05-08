@@ -37,6 +37,7 @@ import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
 import Recommendations from './pages/Recommendations';
 import Tickets from './pages/Tickets';
+import Installments from './pages/Installments';
 
 //Pages - Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -47,9 +48,11 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetails from './pages/admin/AdminUserDetails';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminComments from './pages/admin/AdminComments';
+import AdminFeedback from './pages/admin/AdminFeedback';
 import AdminDeliveries from './pages/admin/AdminDeliveries';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
 import AdminPromotions from './pages/admin/AdminPromotions';
+import AdminInstallments from './pages/admin/AdminInstallments';
 
 //Pages - Employee
 import EmployeeLayout from './layouts/EmployeeLayout';
@@ -102,6 +105,7 @@ function App() {
           <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="installments" element={<ProtectedRoute><Installments /></ProtectedRoute>} />
           <Route path="tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
         </Route>
         <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout /></ProtectedRoute>}>
@@ -112,12 +116,25 @@ function App() {
                     <Route path="promotions/create" element={<AdminPromotions />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="orders" element={<AdminOrders />} />
+                    <Route path="installments" element={<AdminInstallments />} />
                     <Route path="deliveries" element={<AdminDeliveries />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="users/:id" element={<AdminUserDetails />} />
                     <Route path="tickets" element={<AdminTickets />} />
                     <Route path="comments" element={<AdminComments />} />
                     <Route path="comments/product/:productId" element={<AdminComments />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
+        </Route>
+        <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<AdminTickets />} />
+                    <Route path="tickets" element={<AdminTickets />} />
+                    <Route path="comments" element={<AdminComments />} />
+                    <Route path="comments/product/:productId" element={<AdminComments />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
+        </Route>
+        <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<Navigate to="products" replace />} />
+                    <Route path="products" element={<AdminProducts />} />
         </Route>
         <Route path="/employee" element={<ProtectedRoute requireEmployee={true}><EmployeeLayout /></ProtectedRoute>}>
                     <Route index element={<EmployeeDashboard />} />

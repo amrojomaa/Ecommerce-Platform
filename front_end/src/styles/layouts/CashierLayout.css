@@ -15,7 +15,7 @@
   flex: 1;
   padding: 1.25rem;
   overflow-y: auto;
-  background: var(--bg-color);
+  background: var(--background);
   margin-left: 250px;
   min-height: calc(100vh - 80px);
 }

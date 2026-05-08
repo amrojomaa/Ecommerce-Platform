@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useWishlist } from '../hooks/useWishlist';
 import { useConfirm } from '../hooks/useConfirm';
-import { formatPrice } from '../utils/helpers';
+import { useCurrency } from '../hooks/useCurrency';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import API_BASE_URL from '../config/api';
 import '../styles/pages/Wishlist.css';
@@ -13,6 +13,7 @@ const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading, fetchWishlist } =
     useWishlist();
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
 
   const handleRemove = async (productName) => {
     const confirmed = await confirm({
@@ -132,15 +133,15 @@ const Wishlist = () => {
                     return hasDiscount ? (
                       <div className="wishlist-price-block">
                         <p className="wishlist-item-price-old">
-                          {formatPrice(originalPrice)}
+                          {formatCurrency(originalPrice)}
                         </p>
                         <p className="wishlist-item-price-new">
-                          {formatPrice(discountedPrice)}
+                          {formatCurrency(discountedPrice)}
                         </p>
                       </div>
                     ) : (
                       <p className="wishlist-item-price">
-                        {formatPrice(product.price)}
+                        {formatCurrency(product.price)}
                       </p>
                     );
                   })()}

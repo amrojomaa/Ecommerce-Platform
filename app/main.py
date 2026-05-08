@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, admin_settings, delivery, recommendations, pos, promotions
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments
 
 
 def apply_schema_updates():
@@ -346,6 +346,71 @@ def apply_schema_patches() -> None:
             )
         )
 
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS customer_feedback (
+                    id SERIAL PRIMARY KEY,
+                    rating INTEGER NOT NULL,
+                    comment TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    CONSTRAINT ck_customer_feedback_rating_range CHECK (rating >= 1 AND rating <= 5)
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS customer_feedback
+                DROP CONSTRAINT IF EXISTS uq_customer_feedback_user_id
+                """
+            )
+        )
+
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_requests_user_id
+                ON installment_requests(user_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_requests_status
+                ON installment_requests(status)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_schedules_request_due_date
+                ON installment_schedules(request_id, due_date)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_documents_request_id
+                ON installment_documents(request_id)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_payments_request_id
+                ON installment_payments(request_id)
+                """
+            )
+        )
+
 
 apply_schema_patches()
 print("Data Base connected successfully!")
@@ -426,10 +491,12 @@ app.include_router(Wishlist.router)
 app.include_router(ticket.router)
 app.include_router(comment.router)
 app.include_router(rating.router)
+app.include_router(feedback.router)
 app.include_router(admin_settings.router)
 app.include_router(delivery.router)
 app.include_router(recommendations.router)
 app.include_router(pos.router)
 app.include_router(promotions.router)
+app.include_router(installments.router)
 
 app.mount("/images", StaticFiles(directory="images"), name="images")

@@ -210,6 +210,21 @@
   color: white;
 }
 
+.role-badge.operations_manager {
+  background-color: #7c3aed;
+  color: white;
+}
+
+.role-badge.support_manager {
+  background-color: #2563eb;
+  color: white;
+}
+
+.role-badge.warehouse_manager {
+  background-color: #0f766e;
+  color: white;
+}
+
 .role-badge.driver {
   background-color: #14b8a6;
   color: white;

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from app import models, schemas
 from app import OAuth2
-from app.routers.admin import require_admin
+from app.routers.admin import require_admin_or_operations_manager
 from app.services import promotion_engine
 
 
@@ -275,9 +275,9 @@ def cancel_order(
 @router.get("/orders/all", response_model=List[schemas.AdminOrderResponse])
 def get_all_orders(
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_operations_manager)
 ):
-    """Get all orders (Admin only)"""
+    """Get all orders (Admin / Operations Manager)."""
     try:
         orders = (
             db.query(models.DBOrder)
@@ -310,9 +310,9 @@ def update_order_status(
     order_id: int,
     status_update: schemas.OrderStatusUpdate,
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_operations_manager)
 ):
-    """Update order status (Admin only)
+    """Update order status (Admin / Operations Manager)
     
     Allowed transitions:
     - paid → shipped

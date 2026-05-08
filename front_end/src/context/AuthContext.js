@@ -322,7 +322,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user?.role === 'admin';
+    return user?.role === 'admin' || user?.role === 'operations_manager';
+  };
+
+  const isOperationsManager = () => {
+    return user?.role === 'operations_manager';
+  };
+
+  const isSupportManager = () => {
+    return user?.role === 'support_manager';
+  };
+
+  const isWarehouseManager = () => {
+    return user?.role === 'warehouse_manager';
   };
 
   const isEmployee = () => {
@@ -349,6 +361,9 @@ export const AuthProvider = ({ children }) => {
     loginWithGoogle,
     logout,
     isAdmin,
+    isOperationsManager,
+    isSupportManager,
+    isWarehouseManager,
     isEmployee,
     isDriver,
     isCashier,

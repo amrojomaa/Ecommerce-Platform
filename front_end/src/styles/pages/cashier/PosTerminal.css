@@ -1,6 +1,7 @@
 .pos-terminal {
   max-width: 1400px;
   margin: 0 auto;
+  color: var(--text-primary);
 }
 
 .pos-header h1 {
@@ -10,7 +11,7 @@
 
 .pos-sub {
   margin: 0 0 1.25rem;
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -28,15 +29,15 @@
 }
 
 .pos-catalog {
-  background: var(--card-bg, #fff);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow);
 }
 
 .dark .pos-catalog {
-  background: var(--card-bg, #1e1e2e);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  background: var(--surface);
 }
 
 .pos-filters {
@@ -52,10 +53,14 @@
   min-width: 140px;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, #ddd);
+  border: 1px solid var(--border-color);
   font-size: 1rem;
-  background: var(--input-bg, #fff);
-  color: inherit;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.pos-input::placeholder {
+  color: var(--text-secondary);
 }
 
 .pos-product-grid {
@@ -69,10 +74,11 @@
 
 .pos-product-card {
   text-align: left;
-  border: 1px solid var(--border-color, #e5e5e5);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 0.5rem;
-  background: var(--bg-color, #fafafa);
+  background: var(--background);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color 0.15s, transform 0.1s;
 }
@@ -91,11 +97,15 @@
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
-  background: #eee;
+  background: #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.4rem;
+}
+
+.dark .pos-product-thumb {
+  background: #334155;
 }
 
 .pos-product-thumb img {
@@ -106,7 +116,7 @@
 
 .pos-no-img {
   font-size: 0.7rem;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .pos-product-meta {
@@ -136,20 +146,21 @@
 
 .pos-product-stock {
   font-size: 0.72rem;
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
 }
 
 .pos-cart-panel {
-  background: var(--card-bg, #fff);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem 1.1rem;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow);
   position: sticky;
   top: 1rem;
 }
 
 .dark .pos-cart-panel {
-  background: var(--card-bg, #1e1e2e);
+  background: var(--surface);
 }
 
 .pos-cart-panel h2 {
@@ -158,7 +169,7 @@
 }
 
 .pos-empty-cart {
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0 0 1rem;
 }
@@ -176,7 +187,7 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .pos-line-info {
@@ -191,7 +202,7 @@
 
 .pos-line-unit {
   font-size: 0.75rem;
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
 }
 
 .pos-line-actions {
@@ -204,9 +215,9 @@
   width: 3.5rem;
   padding: 0.25rem;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #ccc);
-  background: var(--input-bg, #fff);
-  color: inherit;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--text-primary);
 }
 
 .pos-line-total {
@@ -244,7 +255,7 @@
 }
 
 .pos-total-row-final {
-  border-top: 1px solid var(--border-color, #ddd);
+  border-top: 1px solid var(--border-color);
   margin-top: 0.35rem;
   padding-top: 0.8rem;
 }
@@ -257,7 +268,7 @@
   display: block;
   font-size: 0.85rem;
   margin-bottom: 0.35rem;
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
 }
 
 .pos-payment-toggle {
@@ -299,13 +310,14 @@
 .pos-today {
   margin-top: 2rem;
   padding: 1rem;
-  background: var(--card-bg, #fff);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow);
 }
 
 .dark .pos-today {
-  background: var(--card-bg, #1e1e2e);
+  background: var(--surface);
 }
 
 .pos-today h2 {
@@ -314,7 +326,7 @@
 }
 
 .pos-muted {
-  color: var(--text-muted, #666);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -328,10 +340,14 @@
 .pos-today-table td {
   text-align: left;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .pos-today-table th {
   font-weight: 600;
-  color: var(--text-muted, #555);
+  color: var(--text-secondary);
+}
+
+.dark .pos-product-card:disabled {
+  opacity: 0.35;
 }

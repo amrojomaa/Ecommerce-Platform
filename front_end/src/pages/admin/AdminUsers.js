@@ -13,6 +13,9 @@ import '../../styles/pages/admin/AdminUsers.css';
 const ROLE_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
   { value: 'admin', label: 'Admin' },
+  { value: 'support_manager', label: 'Support Manager' },
+  { value: 'operations_manager', label: 'Operations Manager' },
+  { value: 'warehouse_manager', label: 'Warehouse Manager' },
   { value: 'employee', label: 'Employee' },
   { value: 'driver', label: 'Driver' },
   { value: 'customer', label: 'Customer' },
@@ -204,6 +207,12 @@ const AdminUsers = () => {
         return 'role-badge admin';
       case 'employee':
         return 'role-badge employee';
+      case 'operations_manager':
+        return 'role-badge operations_manager';
+      case 'support_manager':
+        return 'role-badge support_manager';
+      case 'warehouse_manager':
+        return 'role-badge warehouse_manager';
       case 'driver':
         return 'role-badge driver';
       case 'customer':
@@ -426,6 +435,9 @@ const AdminUsers = () => {
                   disabled={updating}
                 >
                   <option value="admin">Admin</option>
+                  <option value="support_manager">Support Manager</option>
+                  <option value="operations_manager">Operations Manager</option>
+                  <option value="warehouse_manager">Warehouse Manager</option>
                   <option value="employee">Employee</option>
                   <option value="driver">Driver</option>
                   <option value="customer">Customer</option>

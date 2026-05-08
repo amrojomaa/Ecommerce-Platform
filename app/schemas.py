@@ -7,6 +7,9 @@ from enum import Enum
 
 class UserRole(str, Enum):
     ADMIN = "admin"
+    SUPPORT_MANAGER = "support_manager"
+    OPERATIONS_MANAGER = "operations_manager"
+    WAREHOUSE_MANAGER = "warehouse_manager"
     EMPLOYEE = "employee"
     CUSTOMER = "customer"
     DRIVER = "driver"
@@ -229,8 +232,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -251,8 +254,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
     
     class Config:
@@ -276,8 +279,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
     class Config:
@@ -530,6 +533,8 @@ class AdminOrderResponse(BaseModel):
 class PaymentIntentCreate(BaseModel):
     amount: float
     order_id: Optional[int] = None
+    installment_request_id: Optional[int] = None
+    installment_schedule_id: Optional[int] = None
     currency: SupportedCurrency = SupportedCurrency.USD
 
 class PaymentIntentResponse(BaseModel):
@@ -568,8 +573,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
 
@@ -803,6 +808,42 @@ class ProductRatingSummary(BaseModel):
         from_attributes = True
 
 
+# Customer feedback schemas
+class CustomerFeedbackCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating must be between 1 and 5")
+    comment: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("comment")
+    @classmethod
+    def normalize_comment(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class CustomerFeedbackUser(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: EmailStr
+
+    class Config:
+        from_attributes = True
+
+
+class CustomerFeedbackDisplay(BaseModel):
+    id: int
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    user: CustomerFeedbackUser
+
+    class Config:
+        from_attributes = True
+
+
 # Admin Settings Schemas
 class LowStockThresholdUpdate(BaseModel):
     threshold: int = Field(..., ge=1, description="Low stock threshold must be at least 1")
@@ -950,6 +991,10 @@ class IssueReport(BaseModel):
         return v
 
 
+class AssignDriverPayload(BaseModel):
+    driver_id: int
+
+
 class DeliveryIssueMessageCreate(BaseModel):
     message: str = Field(..., min_length=1, max_length=1000)
 
@@ -1075,3 +1120,147 @@ class RecommendationProductEnvelope(BaseModel):
     score: float
     sources: List[str] = Field(default_factory=list)
     product: Product
+
+
+class InstallmentStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class InstallmentDocumentType(str, Enum):
+    ID_FRONT = "id_front"
+    ID_BACK = "id_back"
+    SELFIE_WITH_ID = "selfie_with_id"
+
+
+class InstallmentRequestItemOut(BaseModel):
+    id: int
+    order_item_id: Optional[int] = None
+    product_id: Optional[int] = None
+    product_name: str
+    quantity: int
+    unit_price: float
+    total: float
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentDocumentOut(BaseModel):
+    id: int
+    document_type: str
+    file_path: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentScheduleOut(BaseModel):
+    id: int
+    installment_number: int
+    due_date: datetime
+    amount_due: float
+    amount_paid: float
+    status: str
+    paid_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentPaymentHistoryOut(BaseModel):
+    id: int
+    schedule_id: int
+    amount: float
+    note: Optional[str] = None
+    marked_by: Optional[int] = None
+    paid_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentOrderSummary(BaseModel):
+    id: int
+    created_at: datetime
+    status: str
+    total_amount: float
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentReviewerSummary(BaseModel):
+    id: int
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentCustomerSummary(BaseModel):
+    id: int
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentRequestResponse(BaseModel):
+    id: int
+    user_id: int
+    order_id: int
+    duration_months: int
+    status: str
+    total_amount: float
+    remaining_balance: float
+    monthly_payment: float
+    next_payment_date: Optional[datetime] = None
+    user_note: Optional[str] = None
+    admin_note: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    order: Optional[InstallmentOrderSummary] = None
+    user: Optional[InstallmentCustomerSummary] = None
+    reviewer: Optional[InstallmentReviewerSummary] = None
+    items: List[InstallmentRequestItemOut] = Field(default_factory=list)
+    documents: List[InstallmentDocumentOut] = Field(default_factory=list)
+    schedules: List[InstallmentScheduleOut] = Field(default_factory=list)
+    payments: List[InstallmentPaymentHistoryOut] = Field(default_factory=list)
+
+    class Config:
+        from_attributes = True
+
+
+class InstallmentReviewPayload(BaseModel):
+    action: Literal["approve", "reject"]
+    admin_note: Optional[str] = None
+
+
+class InstallmentMarkPaidPayload(BaseModel):
+    note: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+
+class InstallmentStripePayPayload(BaseModel):
+    payment_intent_id: str
+    note: Optional[str] = None
+
+
+class InstallmentCancelPayload(BaseModel):
+    admin_note: Optional[str] = None
+
+
+class InstallmentRequestUpdatePayload(BaseModel):
+    duration_months: Optional[int] = None
+    user_note: Optional[str] = None

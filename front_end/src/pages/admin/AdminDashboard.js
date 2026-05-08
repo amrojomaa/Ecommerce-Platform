@@ -4,12 +4,16 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, DELIVERY_ENDPOINTS } from '../../config/api';
-import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useAuth } from '../../hooks/useAuth';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDashboard.css';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
+  const isOperationsManager = user?.role === 'operations_manager';
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalOrders: 0,
@@ -25,12 +29,16 @@ const AdminDashboard = () => {
   const isInitialMount = useRef(true);
 
   useEffect(() => {
+    if (isOperationsManager) {
+      navigate('/admin/orders', { replace: true });
+      return;
+    }
     const initializeData = async () => {
       await fetchLowStockThreshold();
       await fetchStats();
     };
     initializeData();
-  }, []);
+  }, [isOperationsManager, navigate]);
 
   const fetchLowStockThreshold = async () => {
     try {
@@ -107,6 +115,9 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    if (isOperationsManager) {
+      return;
+    }
     // Refetch stats when threshold changes (but not on initial mount)
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -115,7 +126,7 @@ const AdminDashboard = () => {
     if (lowStockThreshold > 0) {
       fetchStats();
     }
-  }, [lowStockThreshold]);
+  }, [isOperationsManager, lowStockThreshold]);
 
   const handleUpdateThreshold = async () => {
     const newThreshold = parseInt(thresholdInput);
@@ -167,7 +178,7 @@ const AdminDashboard = () => {
     },
     {
       title: 'Total Revenue',
-      value: formatPrice(stats.totalRevenue),
+      value: formatCurrency(stats.totalRevenue),
       icon: '💰',
       color: '#FF9800',
       path: '/admin/orders?filter=revenue',

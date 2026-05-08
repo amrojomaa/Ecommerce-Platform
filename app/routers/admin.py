@@ -11,6 +11,45 @@ def require_admin(db: Session = Depends (get_db), current_user: int = Depends(OA
     return user
 
 
+def require_admin_or_operations_manager(
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if user.role not in ["admin", "operations_manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You're not authorized for this operation. Admin or Operations Manager access required.",
+        )
+    return user
+
+
+def require_admin_or_support_manager(
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if user.role not in ["admin", "support_manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You're not authorized for this operation. Admin or Support Manager access required.",
+        )
+    return user
+
+
+def require_admin_or_warehouse_manager(
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user),
+):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if user.role not in ["admin", "warehouse_manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You're not authorized for this operation. Admin or Warehouse Manager access required.",
+        )
+    return user
+
+
 def require_employee(db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if user.role not in ["admin", "employee"]:

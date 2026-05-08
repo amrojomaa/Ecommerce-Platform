@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, Index, JSON, UniqueConstraint
+from sqlalchemy import Column, Float, Integer, String, Boolean, ForeignKey, Numeric, Index, JSON, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP, Text
@@ -143,6 +143,27 @@ class DBUser(Base):
     ticket_responses = relationship("DBTicketResponse", back_populates="user", cascade="all, delete")
     comments = relationship("DBComment", back_populates="user", cascade="all, delete")
     ratings = relationship("DBProductRating", back_populates="user", cascade="all, delete")
+    customer_feedback = relationship(
+        "DBCustomerFeedback",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    installment_requests = relationship(
+        "DBInstallmentRequest",
+        foreign_keys="DBInstallmentRequest.user_id",
+        back_populates="user",
+        cascade="all, delete",
+    )
+    reviewed_installment_requests = relationship(
+        "DBInstallmentRequest",
+        foreign_keys="DBInstallmentRequest.reviewed_by",
+        back_populates="reviewer",
+    )
+    installment_payments_marked = relationship(
+        "DBInstallmentPayment",
+        foreign_keys="DBInstallmentPayment.marked_by",
+        back_populates="marked_by_user",
+    )
 
 
 
@@ -199,6 +220,7 @@ class DBOrder(Base):
     cashier = relationship("DBUser", foreign_keys=[cashier_id])
     orderitems = relationship("DBOrderItem", back_populates="order", cascade="all, delete")
     delivery_job = relationship("DBDeliveryJob", back_populates="order", uselist=False)
+    installment_requests = relationship("DBInstallmentRequest", back_populates="order")
 
 
 class DBOrderItem(Base):
@@ -310,6 +332,27 @@ class DBProductRating(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'product_id', name='unique_user_product_rating'),
     )
+
+
+class DBCustomerFeedback(Base):
+    __tablename__ = "customer_feedback"
+    __table_args__ = (
+        CheckConstraint("rating >= 1 AND rating <= 5", name="ck_customer_feedback_rating_range"),
+    )
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        onupdate=text("now()"),
+    )
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("DBUser", back_populates="customer_feedback")
 
 
 class DBAdminSettings(Base):
@@ -443,3 +486,97 @@ class DBPromotion(Base):
     filter_values = Column(JSON, nullable=False, server_default=text("'[]'::jsonb"))
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
+
+
+class DBInstallmentRequest(Base):
+    __tablename__ = "installment_requests"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    duration_months = Column(Integer, nullable=False)
+    status = Column(String(32), nullable=False, server_default="pending")  # pending, approved, rejected, completed
+    total_amount = Column(Float, nullable=False)
+    remaining_balance = Column(Float, nullable=False)
+    monthly_payment = Column(Float, nullable=False)
+    next_payment_date = Column(TIMESTAMP(timezone=True), nullable=True)
+    user_note = Column(Text, nullable=True)
+    admin_note = Column(Text, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"), onupdate=text("now()"))
+
+    user = relationship("DBUser", foreign_keys=[user_id], back_populates="installment_requests")
+    reviewer = relationship("DBUser", foreign_keys=[reviewed_by], back_populates="reviewed_installment_requests")
+    order = relationship("DBOrder", back_populates="installment_requests")
+    items = relationship("DBInstallmentRequestItem", back_populates="request", cascade="all, delete-orphan")
+    documents = relationship("DBInstallmentDocument", back_populates="request", cascade="all, delete-orphan")
+    schedules = relationship("DBInstallmentSchedule", back_populates="request", cascade="all, delete-orphan")
+    payments = relationship("DBInstallmentPayment", back_populates="request", cascade="all, delete-orphan")
+
+
+class DBInstallmentRequestItem(Base):
+    __tablename__ = "installment_request_items"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    request_id = Column(Integer, ForeignKey("installment_requests.id", ondelete="CASCADE"), nullable=False)
+    order_item_id = Column(Integer, ForeignKey("order_items.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    product_name = Column(String, nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit_price = Column(Numeric(10, 2), nullable=False)
+    total = Column(Numeric(10, 2), nullable=False)
+
+    request = relationship("DBInstallmentRequest", back_populates="items")
+    order_item = relationship("DBOrderItem")
+    product = relationship("DBProduct")
+
+
+class DBInstallmentDocument(Base):
+    __tablename__ = "installment_documents"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    request_id = Column(Integer, ForeignKey("installment_requests.id", ondelete="CASCADE"), nullable=False)
+    document_type = Column(String(32), nullable=False)  # id_front, id_back, selfie_with_id
+    file_path = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    request = relationship("DBInstallmentRequest", back_populates="documents")
+
+
+class DBInstallmentSchedule(Base):
+    __tablename__ = "installment_schedules"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    request_id = Column(Integer, ForeignKey("installment_requests.id", ondelete="CASCADE"), nullable=False)
+    installment_number = Column(Integer, nullable=False)
+    due_date = Column(TIMESTAMP(timezone=True), nullable=False)
+    amount_due = Column(Float, nullable=False)
+    amount_paid = Column(Float, nullable=False, server_default=text("0"))
+    status = Column(String(32), nullable=False, server_default="pending")  # pending, paid
+    paid_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    request = relationship("DBInstallmentRequest", back_populates="schedules")
+    payments = relationship("DBInstallmentPayment", back_populates="schedule")
+
+    __table_args__ = (
+        UniqueConstraint("request_id", "installment_number", name="uq_installment_request_installment_number"),
+    )
+
+
+class DBInstallmentPayment(Base):
+    __tablename__ = "installment_payments"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    request_id = Column(Integer, ForeignKey("installment_requests.id", ondelete="CASCADE"), nullable=False)
+    schedule_id = Column(Integer, ForeignKey("installment_schedules.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Float, nullable=False)
+    note = Column(Text, nullable=True)
+    marked_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    paid_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    request = relationship("DBInstallmentRequest", back_populates="payments")
+    schedule = relationship("DBInstallmentSchedule", back_populates="payments")
+    marked_by_user = relationship("DBUser", foreign_keys=[marked_by], back_populates="installment_payments_marked")

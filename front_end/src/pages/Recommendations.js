@@ -5,8 +5,8 @@ import { toast } from 'react-toastify';
 import { FaSync, FaUndo } from 'react-icons/fa';
 
 import API_BASE_URL from '../config/api';
-import { formatPrice } from '../utils/helpers';
 import { useConfirm } from '../hooks/useConfirm';
+import { useCurrency } from '../hooks/useCurrency';
 import {
   fetchBatchRecommendations,
   fetchRealtimeRecommendations,
@@ -23,6 +23,7 @@ const imgUrl = (path) => {
 
 const Recommendations = () => {
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
   const [realtime, setRealtime] = useState([]);
   const [batch, setBatch] = useState([]);
   const [loadingRt, setLoadingRt] = useState(true);
@@ -117,7 +118,7 @@ const Recommendations = () => {
             <h3 className="reco-card-title">{p.name}</h3>
             <p className="reco-card-category">{p.category_name}</p>
             <p className="reco-card-price">
-              {formatPrice(p.discounted_price ?? p.price)}
+              {formatCurrency(p.discounted_price ?? p.price)}
             </p>
             <p className="reco-card-meta">
               score {Number(entry.score).toFixed(2)}

@@ -3,13 +3,16 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
-import { formatDate, formatPrice, getImageUrl } from '../../utils/helpers';
+import { formatDate, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDeliveries.css';
 
 const AdminDeliveries = () => {
+  const { formatCurrency } = useCurrency();
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -22,6 +25,8 @@ const AdminDeliveries = () => {
   const [issueSending, setIssueSending] = useState(false);
   const [resolvingIssue, setResolvingIssue] = useState(false);
   const [reviewingPhotoType, setReviewingPhotoType] = useState(null);
+  const [selectedDriverByJob, setSelectedDriverByJob] = useState({});
+  const [assigningDriverJobId, setAssigningDriverJobId] = useState(null);
 
   const hasOpenIssue = (job) => {
     const status = (job.status || '').toLowerCase();
@@ -45,6 +50,7 @@ const AdminDeliveries = () => {
 
   useEffect(() => {
     fetchJobs();
+    fetchDrivers();
   }, []);
 
   useEffect(() => {
@@ -84,6 +90,16 @@ const AdminDeliveries = () => {
       setAllJobs([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDrivers = async () => {
+    try {
+      const response = await http.get(DELIVERY_ENDPOINTS.DRIVERS);
+      setDrivers(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+      setDrivers([]);
     }
   };
 
@@ -145,6 +161,30 @@ const AdminDeliveries = () => {
       toast.error(error.response?.data?.detail || error.message || 'Failed to review photos');
     } finally {
       setReviewingPhotoType(null);
+    }
+  };
+
+  const handleAssignDriver = async (jobId) => {
+    const selectedDriverId = selectedDriverByJob[jobId];
+    if (!selectedDriverId) {
+      toast.error('Please select a driver first');
+      return;
+    }
+
+    setAssigningDriverJobId(jobId);
+    try {
+      const response = await http.patch(
+        buildUrl(DELIVERY_ENDPOINTS.ASSIGN_DRIVER, { job_id: jobId }),
+        { driver_id: Number(selectedDriverId) }
+      );
+
+      const updatedJob = response.data;
+      setAllJobs(prevJobs => prevJobs.map(job => (job.id === jobId ? updatedJob : job)));
+      toast.success('Driver assigned successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || error.message || 'Failed to assign driver');
+    } finally {
+      setAssigningDriverJobId(null);
     }
   };
 
@@ -340,6 +380,8 @@ const AdminDeliveries = () => {
             </thead>
             <tbody>
               {jobs.map((job, index) => {
+                const normalizedStatus = (job.status || '').toLowerCase();
+                const canAssignDriver = normalizedStatus === 'available' || normalizedStatus === 'assigned';
                 const pickupPhotos = Array.isArray(job.photos)
                   ? job.photos.filter(photo => photo.photo_type === 'pickup')
                   : [];
@@ -370,7 +412,7 @@ const AdminDeliveries = () => {
                     </td>
                     <td className="address-cell" data-label="Pickup">{job.pickup_address || 'N/A'}</td>
                     <td className="address-cell" data-label="Delivery">{job.delivery_address || 'N/A'}</td>
-                    <td className="payment-cell" data-label="Payment">{formatPrice(job.payment_amount || 0)}</td>
+                    <td className="payment-cell" data-label="Payment">{formatCurrency(job.payment_amount || 0)}</td>
                     <td data-label="Created">{formatDate(job.created_at)}</td>
                   </motion.tr>
                   {expandedJobId === job.id && (
@@ -406,6 +448,38 @@ const AdminDeliveries = () => {
                             <div className="detail-card">
                               <h4>🚚 Driver</h4>
                               <p>{job.driver_name || 'Not assigned'}</p>
+                              {canAssignDriver && (
+                                <div
+                                  className="assign-driver-controls"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <select
+                                    value={selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : '')}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
+                                    }}
+                                  >
+                                    <option value="">Select driver...</option>
+                                    {drivers.map((driver) => (
+                                      <option key={driver.id} value={String(driver.id)}>
+                                        {driver.first_name} {driver.last_name} ({driver.email})
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    type="button"
+                                    className="assign-driver-btn"
+                                    disabled={
+                                      assigningDriverJobId === job.id ||
+                                      !(selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : ''))
+                                    }
+                                    onClick={() => handleAssignDriver(job.id)}
+                                  >
+                                    {assigningDriverJobId === job.id ? 'Assigning...' : 'Assign Driver'}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                           {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (

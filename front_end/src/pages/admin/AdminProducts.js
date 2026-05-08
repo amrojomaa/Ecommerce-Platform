@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import API_BASE_URL, { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
-import { formatPrice } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminProducts.css';
 
 const AdminProducts = () => {
@@ -40,6 +40,7 @@ const AdminProducts = () => {
   });
   const [sentimentAnalytics, setSentimentAnalytics] = useState({}); // { productId: { total, positive, neutral, negative } }
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     fetchLowStockThreshold();
@@ -476,11 +477,11 @@ const AdminProducts = () => {
                 <p className="product-category">{product.category_name}</p>
                 {product.discount_enabled ? (
                   <div className="product-price-block">
-                    <p className="product-price-original">{formatPrice(product.price)}</p>
-                    <p className="product-price-discounted">{formatPrice(product.discounted_price ?? product.price)}</p>
+                    <p className="product-price-original">{formatCurrency(product.price)}</p>
+                    <p className="product-price-discounted">{formatCurrency(product.discounted_price ?? product.price)}</p>
                   </div>
                 ) : (
-                  <p className="product-price">{formatPrice(product.price)}</p>
+                  <p className="product-price">{formatCurrency(product.price)}</p>
                 )}
                 <p className="product-stock">Stock: {product.quantity}</p>
                 {sentimentAnalytics[product.id] && (

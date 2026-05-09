@@ -1,6 +1,3 @@
-import random
-import shutil
-import string
 from fastapi import File, HTTPException, UploadFile, status, Depends, Query
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
@@ -9,6 +6,7 @@ from ..database import get_db
 from app import models, utils, schemas
 from app import OAuth2
 from typing import List, Optional
+from app.utils.image_storage import delete_local_image, is_local_image_path, save_uploaded_image
 
 
 router = APIRouter(
@@ -178,103 +176,37 @@ def delete_user(id :int, db: Session = Depends (get_db), admin_user = Depends(re
 
 @router.post("/image")
 def upload_image(image: UploadFile = File(...), current_user: int = Depends(OAuth2.get_current_user)):
-    letter = string.ascii_letters
-    rand_str = ''.join(random.choice(letter) for i in range(6))
-    new = f"_{rand_str}."
-    filename = new.join(image.filename.rsplit(".", 1))
-    path = f"images/{filename}"
-
-    with open(path, "w+b") as buffer:
-        shutil.copyfileobj(image.file, buffer)
-
+    path = save_uploaded_image(image, "misc")
     return {"filename": path}
 
 @router.post("/users/me/profile-image")
 def upload_profile_image(image: UploadFile = File(...), db: Session = Depends(get_db), current_user: int = Depends(OAuth2.get_current_user)):
-    # Validate file type
-    if not image.content_type or not image.content_type.startswith('image/'):
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
         )
-    
-    letter = string.ascii_letters
-    rand_str = ''.join(random.choice(letter) for i in range(6))
-    new = f"_{rand_str}."
-    filename = new.join(image.filename.rsplit(".", 1))
-    path = f"images/profile/{filename}"
 
-    # Create directory if it doesn't exist
-    import os
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    previous_path = user.profile_image if is_local_image_path(user.profile_image) else None
+    path = save_uploaded_image(image, "profile")
 
-    # Save the image file
-    with open(path, "w+b") as buffer:
-        shutil.copyfileobj(image.file, buffer)
-    
-    # Validate and optimize image dimensions using PIL if available
-    try:
-        from PIL import Image
-        with Image.open(path) as img:
-            # Convert to RGB if necessary (handles RGBA, P mode, etc.)
-            if img.mode in ('RGBA', 'LA', 'P'):
-                # Create white background for transparent images
-                background = Image.new('RGB', img.size, (255, 255, 255))
-                if img.mode == 'P':
-                    img = img.convert('RGBA')
-                if img.mode in ('RGBA', 'LA'):
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                img = background
-            elif img.mode != 'RGB':
-                img = img.convert('RGB')
-            
-            width, height = img.size
-            # Minimum dimension: 300px to ensure quality even on high-DPI displays
-            # Largest display size is 200px, so 300px provides 1.5x buffer for retina displays
-            min_dimension = 300
-            max_dimension = 2000
-            
-            if width < min_dimension or height < min_dimension:
-                # Resize to minimum while maintaining aspect ratio
-                if width < height:
-                    new_width = min_dimension
-                    new_height = int(height * (min_dimension / width))
-                else:
-                    new_height = min_dimension
-                    new_width = int(width * (min_dimension / height))
-                
-                # Use high-quality LANCZOS resampling for upscaling
-                resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                # Save with high quality to prevent compression artifacts
-                resized_img.save(path, format='JPEG', optimize=True, quality=95)
-            elif width > max_dimension or height > max_dimension:
-                # Resize if too large to save storage
-                if width > height:
-                    new_width = max_dimension
-                    new_height = int(height * (max_dimension / width))
-                else:
-                    new_height = max_dimension
-                    new_width = int(width * (max_dimension / height))
-                
-                # Use LANCZOS for downscaling as well
-                resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                resized_img.save(path, format='JPEG', optimize=True, quality=95)
-            else:
-                # Image is within acceptable range, but ensure it's saved as JPEG with good quality
-                img.save(path, format='JPEG', optimize=True, quality=95)
-    except ImportError:
-        # PIL not available, skip image optimization
-        pass
-    except Exception as e:
-        # If image processing fails, continue with original image
-        print(f"Warning: Could not process image: {e}")
-
-    # Update user's profile_image
-    updateuser = db.query(models.DBUser).filter(models.DBUser.id == current_user.id)
-    updateuser.update({"profile_image": path}, synchronize_session=False)
+    user.profile_image = path
     db.commit()
-    
-    user = updateuser.first()
+    db.refresh(user)
+
+    if previous_path and previous_path != path:
+        shared_profile_image = (
+            db.query(models.DBUser.id)
+            .filter(
+                models.DBUser.profile_image == previous_path,
+                models.DBUser.id != user.id,
+            )
+            .first()
+        )
+        if not shared_profile_image:
+            delete_local_image(previous_path)
+
     return {"profile_image": user.profile_image}
 
 
@@ -283,8 +215,6 @@ def delete_profile_image(db: Session = Depends(get_db), current_user: int = Depe
     """
     Delete user's profile image and set it to None (default).
     """
-    import os
-    
     # Get current user
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if not user:
@@ -293,16 +223,17 @@ def delete_profile_image(db: Session = Depends(get_db), current_user: int = Depe
             detail="User not found"
         )
     
-    # If user has a profile image that's a local file, optionally delete the file
-    # (We'll just set it to None to keep it simple - the file can be cleaned up later if needed)
-    if user.profile_image and not user.profile_image.startswith('http'):
-        # Optional: Delete the physical file if it exists
-        if os.path.exists(user.profile_image):
-            try:
-                os.remove(user.profile_image)
-            except Exception as e:
-                # Log error but don't fail - we'll still clear the database field
-                print(f"Error deleting profile image file: {e}")
+    if is_local_image_path(user.profile_image):
+        shared_profile_image = (
+            db.query(models.DBUser.id)
+            .filter(
+                models.DBUser.profile_image == user.profile_image,
+                models.DBUser.id != user.id,
+            )
+            .first()
+        )
+        if not shared_profile_image:
+            delete_local_image(user.profile_image)
     
     # Set profile_image to None
     user.profile_image = None

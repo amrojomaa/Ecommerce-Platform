@@ -15,6 +15,7 @@ import logging
 from .database import SessionLocal, engine, get_db
 from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments
+from app.utils.image_storage import IMAGES_ROOT_DIR, ensure_images_root
 
 
 def apply_schema_updates():
@@ -410,12 +411,37 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_users_profile_image
+                ON users(profile_image)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_delivery_photos_image_path
+                ON delivery_photos(image_path)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_documents_file_path
+                ON installment_documents(file_path)
+                """
+            )
+        )
 
 
 apply_schema_patches()
 print("Data Base connected successfully!")
 
 app = FastAPI()
+ensure_images_root()
 
 origins = [
     "http://localhost:3000",
@@ -499,4 +525,4 @@ app.include_router(pos.router)
 app.include_router(promotions.router)
 app.include_router(installments.router)
 
-app.mount("/images", StaticFiles(directory="images"), name="images")
+app.mount("/images", StaticFiles(directory=str(IMAGES_ROOT_DIR)), name="images")

@@ -6,10 +6,9 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from app import models, schemas, OAuth2
 from app.utils.geocoding import geocode_address_with_fallback
+from app.utils.image_storage import delete_local_image, save_uploaded_image
 from app.routers.admin import require_driver, require_employee, require_admin_or_operations_manager
 from app.OAuth2 import verify_access_token
-import os
-import uuid
 import json
 
 router = APIRouter(
@@ -145,11 +144,18 @@ def _clear_issue_report(db: Session, job: models.DBDeliveryJob):
         .all()
     )
     for photo in issue_photos:
-        if photo.image_path and os.path.exists(photo.image_path):
-            try:
-                os.remove(photo.image_path)
-            except OSError:
-                pass
+        if not photo.image_path:
+            continue
+        has_other_reference = (
+            db.query(models.DBDeliveryPhoto.id)
+            .filter(
+                models.DBDeliveryPhoto.image_path == photo.image_path,
+                models.DBDeliveryPhoto.id != photo.id,
+            )
+            .first()
+        )
+        if not has_other_reference:
+            delete_local_image(photo.image_path)
 
     db.query(models.DBDeliveryPhoto).filter(
         models.DBDeliveryPhoto.delivery_job_id == job.id,
@@ -349,16 +355,11 @@ def upload_photo(
         if existing_type_photo:
             raise HTTPException(status_code=400, detail=f"Only one {photo_type} proof photo is allowed")
 
-    # Save file
-    upload_dir = os.path.join("images", "delivery")
-    os.makedirs(upload_dir, exist_ok=True)
-    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    filename = f"{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(upload_dir, filename)
-
-    with open(filepath, "wb") as f:
-        content = file.file.read()
-        f.write(content)
+    filepath = save_uploaded_image(
+        file,
+        f"delivery/{job_id}/{photo_type}",
+        max_bytes=10 * 1024 * 1024,
+    )
 
     photo = models.DBDeliveryPhoto(
         delivery_job_id=job_id,
@@ -452,15 +453,11 @@ def report_issue(
     job.updated_at = datetime.now(timezone.utc)
 
     if photo is not None:
-        upload_dir = os.path.join("images", "delivery")
-        os.makedirs(upload_dir, exist_ok=True)
-        ext = os.path.splitext(photo.filename)[1] if photo.filename else ".jpg"
-        filename = f"{uuid.uuid4().hex}{ext}"
-        filepath = os.path.join(upload_dir, filename)
-
-        with open(filepath, "wb") as f:
-            content = photo.file.read()
-            f.write(content)
+        filepath = save_uploaded_image(
+            photo,
+            f"delivery/{job_id}/issue",
+            max_bytes=10 * 1024 * 1024,
+        )
 
         issue_photo = models.DBDeliveryPhoto(
             delivery_job_id=job_id,

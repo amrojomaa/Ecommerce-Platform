@@ -1,7 +1,5 @@
 import json
 import os
-import shutil
-import uuid
 import calendar
 import stripe
 from datetime import datetime, timezone
@@ -13,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app import OAuth2, models, schemas
 from app.database import get_db
 from app.routers.admin import require_admin_or_operations_manager
+from app.utils.image_storage import delete_local_image, save_uploaded_image
 
 
 router = APIRouter(tags=["Installments"])
@@ -73,32 +72,17 @@ def _save_document(request_id: int, doc_type: str, file: UploadFile) -> str:
 
     _ensure_valid_image(file, doc_type)
 
-    extension = ""
-    if "." in file.filename:
-        extension = file.filename.rsplit(".", 1)[1].lower()
-    if not extension:
-        extension = "jpg"
-
-    dir_path = os.path.join("images", "installments", str(request_id))
-    os.makedirs(dir_path, exist_ok=True)
-    filename = f"{doc_type}_{uuid.uuid4().hex[:12]}.{extension}"
-    full_path = os.path.join(dir_path, filename)
-
-    with open(full_path, "w+b") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return full_path.replace("\\", "/")
+    return save_uploaded_image(
+        file,
+        f"installments/{request_id}/{doc_type}",
+        max_bytes=10 * 1024 * 1024,
+    )
 
 
 def _delete_file_if_exists(path: Optional[str]) -> None:
     if not path:
         return
-    normalized = path.replace("/", os.sep)
-    if os.path.exists(normalized):
-        try:
-            os.remove(normalized)
-        except OSError:
-            pass
+    delete_local_image(path)
 
 
 def _add_months(source: datetime, months: int) -> datetime:
@@ -478,7 +462,16 @@ def upsert_my_installment_document(
     )
 
     if existing_document:
-        _delete_file_if_exists(existing_document.file_path)
+        has_other_reference = (
+            db.query(models.DBInstallmentDocument.id)
+            .filter(
+                models.DBInstallmentDocument.file_path == existing_document.file_path,
+                models.DBInstallmentDocument.id != existing_document.id,
+            )
+            .first()
+        )
+        if not has_other_reference:
+            _delete_file_if_exists(existing_document.file_path)
         existing_document.file_path = saved_path
         existing_document.created_at = datetime.now(timezone.utc)
     else:
@@ -525,7 +518,16 @@ def delete_my_installment_document(
             detail="Document not found",
         )
 
-    _delete_file_if_exists(document.file_path)
+    has_other_reference = (
+        db.query(models.DBInstallmentDocument.id)
+        .filter(
+            models.DBInstallmentDocument.file_path == document.file_path,
+            models.DBInstallmentDocument.id != document.id,
+        )
+        .first()
+    )
+    if not has_other_reference:
+        _delete_file_if_exists(document.file_path)
     db.delete(document)
     db.commit()
     return _get_installment_request_or_404(db, request_id)

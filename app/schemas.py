@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
+import re
 
 # from pydantic.types import conint
 
@@ -14,6 +15,28 @@ class UserRole(str, Enum):
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
+
+
+PASSWORD_MIN_LENGTH = 9  # More than 8 characters
+PASSWORD_POLICY_ERROR_MESSAGE = (
+    "Password does not satisfy the required security requirements."
+)
+
+
+def validate_strong_password(value: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    if len(value) < PASSWORD_MIN_LENGTH:
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    if not re.search(r"[A-Z]", value):
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    if not re.search(r"[a-z]", value):
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    if not re.search(r"\d", value):
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    if not re.search(r"[^A-Za-z0-9]", value):
+        raise ValueError(PASSWORD_POLICY_ERROR_MESSAGE)
+    return value
 
 
 class SupportedCurrency(str, Enum):
@@ -235,6 +258,11 @@ class UserBase(BaseModel):
         if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
             raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        return validate_strong_password(v)
     
     class Config:
         orm_mode = True
@@ -257,6 +285,13 @@ class UserUpdate(BaseModel):
         if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
             raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        if v is None or v == "":
+            return None
+        return validate_strong_password(v)
     
     class Config:
         orm_mode = True
@@ -566,6 +601,11 @@ class ResetPassword(BaseModel):
     email: EmailStr
     verification_code: str
     new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password_strength(cls, v):
+        return validate_strong_password(v)
 
 class UserRoleUpdate(BaseModel):
     role: str

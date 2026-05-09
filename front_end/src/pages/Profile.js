@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import API_BASE_URL, { USER_ENDPOINTS, FEEDBACK_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
-import { formatDate } from '../utils/helpers';
+import {
+  formatDate,
+  isStrongPassword,
+  getStrongPasswordErrorMessage,
+  getPasswordStrengthProgress,
+} from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useConfirm } from '../hooks/useConfirm';
 import { FaStar } from 'react-icons/fa';
@@ -35,6 +40,7 @@ const Profile = () => {
   const [feedbackHoverRating, setFeedbackHoverRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
   const [feedbackUpdatedAt, setFeedbackUpdatedAt] = useState(null);
+  const [isUpdateProfileOpen, setIsUpdateProfileOpen] = useState(false);
   const confirm = useConfirm();
   
   // Default profile image
@@ -64,6 +70,34 @@ const Profile = () => {
       fetchMyFeedback();
     }
   }, [user?.id]);
+
+  const hasProfileChanges = useMemo(() => {
+    if (!user) {
+      return false;
+    }
+
+    const baseFirstName = user.first_name || '';
+    const baseLastName = user.last_name || '';
+    const basePhone = user.phone || '';
+    const baseCountry = user.country || '';
+    const baseCity = user.city || '';
+    const baseStreet = user.street || '';
+
+    return (
+      formData.first_name !== baseFirstName ||
+      formData.last_name !== baseLastName ||
+      formData.phone !== basePhone ||
+      formData.country !== baseCountry ||
+      formData.city !== baseCity ||
+      formData.street !== baseStreet ||
+      formData.password.trim() !== ''
+    );
+  }, [formData, user]);
+
+  const passwordStrengthProgress = useMemo(
+    () => getPasswordStrengthProgress(formData.password),
+    [formData.password]
+  );
 
   const fetchMyFeedback = async () => {
     setFeedbackLoading(true);
@@ -226,8 +260,8 @@ const Profile = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (formData.password && formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    if (formData.password && !isStrongPassword(formData.password)) {
+      newErrors.password = getStrongPasswordErrorMessage();
     }
 
     if (formData.password && formData.password !== formData.confirmPassword) {
@@ -240,6 +274,10 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!hasProfileChanges) {
+      return;
+    }
     
     if (!validateForm()) {
       return;
@@ -248,7 +286,7 @@ const Profile = () => {
     setLoading(true);
     try {
       const updateData = {
-        email: formData.email,
+        email: user.email,
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone || null,
@@ -273,6 +311,8 @@ const Profile = () => {
         password: '',
         confirmPassword: '',
       });
+      setErrors({});
+      setIsUpdateProfileOpen(false);
     } catch (error) {
       toast.error(error.response?.data?.detail || error.message || 'Failed to update profile');
     } finally {
@@ -317,7 +357,7 @@ const Profile = () => {
       <h1>My Profile</h1>
       
       <motion.div
-        className="profile-container"
+        className={`profile-container ${isUpdateProfileOpen ? 'with-update-form' : 'without-update-form'}`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -421,10 +461,30 @@ const Profile = () => {
             <label>Member Since:</label>
             <span>{formatDate(user.created_at)}</span>
           </div>
+
+          <div className="profile-actions">
+            <button
+              type="button"
+              className="open-update-profile-btn"
+              onClick={() => setIsUpdateProfileOpen(true)}
+            >
+              Update Profile
+            </button>
+          </div>
         </div>
 
+        {isUpdateProfileOpen && (
         <form onSubmit={handleSubmit} className="profile-form">
-          <h2>Update Profile</h2>
+          <div className="profile-form-header">
+            <h2>Update Profile</h2>
+            <button
+              type="button"
+              className="close-update-profile-btn"
+              onClick={() => setIsUpdateProfileOpen(false)}
+            >
+              Close
+            </button>
+          </div>
           
           <div className="form-group">
             <label htmlFor="first_name">First Name</label>
@@ -445,18 +505,6 @@ const Profile = () => {
               id="last_name"
               name="last_name"
               value={formData.last_name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
               onChange={handleChange}
               required
             />
@@ -521,6 +569,12 @@ const Profile = () => {
               placeholder="Enter new password"
               className={errors.password ? 'error' : ''}
             />
+            <div className="profile-password-strength-line" aria-hidden="true">
+              <div
+                className="profile-password-strength-line-progress"
+                style={{ width: `${passwordStrengthProgress}%` }}
+              />
+            </div>
             {errors.password && (
               <span className="error-message">{errors.password}</span>
             )}
@@ -544,23 +598,26 @@ const Profile = () => {
             </div>
           )}
 
-          <motion.button
-            type="submit"
-            className="update-btn"
-            disabled={loading}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner size="small" />
-                Updating...
-              </>
-            ) : (
-              'Update Profile'
-            )}
-          </motion.button>
+          {hasProfileChanges && (
+            <motion.button
+              type="submit"
+              className="update-btn"
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {loading ? (
+                <>
+                  <LoadingSpinner size="small" />
+                  Updating...
+                </>
+              ) : (
+                'Update Profile'
+              )}
+            </motion.button>
+          )}
         </form>
+        )}
       </motion.div>
 
       <motion.div

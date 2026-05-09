@@ -1,9 +1,10 @@
 import axios from 'axios';
-import API_BASE_URL from '../config/api';
+import API_BASE_URL, { AUTH_ENDPOINTS } from '../config/api';
 
 // Create axios instance
 const http = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,11 +29,41 @@ http.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       const requestUrl = error.config?.url || '';
-      const isAuthEndpoint = requestUrl.includes('/login') || requestUrl.includes('/signup');
+      const authEndpoints = [
+        AUTH_ENDPOINTS.LOGIN,
+        AUTH_ENDPOINTS.SIGNUP,
+        AUTH_ENDPOINTS.GOOGLE_AUTH,
+        AUTH_ENDPOINTS.REFRESH_TOKEN,
+        AUTH_ENDPOINTS.LOGOUT,
+      ];
+      const isAuthEndpoint = authEndpoints.some((endpoint) => requestUrl.includes(endpoint));
       const hadToken = !!localStorage.getItem('token');
+      const canUseRefreshToken = localStorage.getItem('auth_persistence') === 'persistent';
+      const originalRequest = error.config || {};
+
+      // Try to recover once by refreshing the access token via cookie.
+      if (hadToken && canUseRefreshToken && !isAuthEndpoint && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const refreshResponse = await axios.post(
+            `${API_BASE_URL}${AUTH_ENDPOINTS.REFRESH_TOKEN}`,
+            {},
+            { withCredentials: true }
+          );
+          const newAccessToken = refreshResponse?.data?.access_token;
+          if (newAccessToken) {
+            localStorage.setItem('token', newAccessToken);
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return http(originalRequest);
+          }
+        } catch (_) {
+          // Fall through to the normal invalid-session handling.
+        }
+      }
       
       // Only handle token expiration (had token but got 401 on non-auth endpoints)
       // Don't interfere with login/signup attempts - let those errors pass through
@@ -40,6 +71,8 @@ http.interceptors.response.use(
         // Token expired or invalid - clear it
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('auth_persistence');
+        sessionStorage.removeItem('session_auth_active');
         
         // Dispatch event to notify AuthContext about session invalidation
         window.dispatchEvent(new CustomEvent('session-invalidated', { 

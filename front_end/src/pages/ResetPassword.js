@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
+import { isStrongPassword, getStrongPasswordErrorMessage } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
 
@@ -41,9 +42,8 @@ const ResetPassword = () => {
   };
 
   const validatePassword = (password) => {
-    // At least 8 characters
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+    if (!isStrongPassword(password)) {
+      return getStrongPasswordErrorMessage();
     }
     return null;
   };
@@ -115,9 +115,9 @@ const ResetPassword = () => {
                 value={formData.newPassword}
                 onChange={handleChange}
                 required
-                placeholder="Enter new password (min 8 characters)"
+                placeholder="Enter new password"
                 disabled={loading}
-                minLength={8}
+                minLength={9}
               />
               <button
                 type="button"
@@ -151,7 +151,7 @@ const ResetPassword = () => {
                 required
                 placeholder="Confirm new password"
                 disabled={loading}
-                minLength={8}
+                minLength={9}
               />
               <button
                 type="button"

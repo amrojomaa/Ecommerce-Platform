@@ -252,6 +252,32 @@ export const validateEmail = (email) => {
   return re.test(email);
 };
 
+const STRONG_PASSWORD_MIN_LENGTH = 9; // More than 8 characters
+
+export const getPasswordValidationChecks = (password) => {
+  const value = password || '';
+  return {
+    hasMinLength: value.length >= STRONG_PASSWORD_MIN_LENGTH,
+    hasUpperAndLower: /[A-Z]/.test(value) && /[a-z]/.test(value),
+    hasNumber: /\d/.test(value),
+    hasSymbol: /[^A-Za-z0-9]/.test(value),
+  };
+};
+
+export const getPasswordStrengthProgress = (password) => {
+  const checks = getPasswordValidationChecks(password);
+  const completedRules = Object.values(checks).filter(Boolean).length;
+  return completedRules * 25;
+};
+
+export const isStrongPassword = (password) => {
+  const checks = getPasswordValidationChecks(password);
+  return Object.values(checks).every(Boolean);
+};
+
+export const getStrongPasswordErrorMessage = () =>
+  'Password does not satisfy the required security requirements.';
+
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return '/placeholder-image.jpg';
   // If it's already a full URL, return it

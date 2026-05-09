@@ -13,6 +13,7 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    rememberMe: false,
   });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -30,9 +31,10 @@ const Login = () => {
   }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? checked : value,
     });
   };
 
@@ -41,7 +43,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, formData.rememberMe);
       console.log("LOGIN RESULT:", result);
   
       if (result?.success) {
@@ -142,6 +144,19 @@ const Login = () => {
                 )}
               </button>
             </div>
+          </div>
+
+          <div className="remember-me-row">
+            <label className="remember-me-label" htmlFor="rememberMe">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+              />
+              <span>Remember Me</span>
+            </label>
           </div>
 
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>

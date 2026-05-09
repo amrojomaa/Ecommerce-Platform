@@ -6,6 +6,8 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 // Authentication endpoints
 export const AUTH_ENDPOINTS = {
   LOGIN: '/login',
+  REFRESH_SESSION: '/refresh-session',
+  REFRESH_TOKEN: '/refresh-token',
   SIGNUP: '/signup',
   VERIFY_EMAIL: '/verify-email',
   GOOGLE_AUTH: '/auth/google',

@@ -1,24 +1,114 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import http from '../services/http';
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../config/api';
+import '../styles/components/SessionExpiryPopup.css';
 
 export const AuthContext = createContext();
 
+const SESSION_CHECK_INTERVAL_MS = 60 * 1000; // 1 minute
+const SESSION_WARNING_SECONDS = 10;
+const SESSION_MONITOR_INTERVAL_MS = 1000;
+const AUTH_PERSISTENCE_KEY = 'auth_persistence';
+const AUTH_PERSISTENCE_PERSISTENT = 'persistent';
+const AUTH_PERSISTENCE_SESSION = 'session';
+const SESSION_AUTH_ACTIVE_KEY = 'session_auth_active';
+
 export const AuthProvider = ({ children }) => {
-  const SESSION_CHECK_INTERVAL_MS = 60 * 1000; // 1 minute
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sessionWarningOpen, setSessionWarningOpen] = useState(false);
+  const [sessionCountdown, setSessionCountdown] = useState(SESSION_WARNING_SECONDS);
+  const [isExtendingSession, setIsExtendingSession] = useState(false);
+  const lastObservedTokenRef = useRef(null);
+  const sessionExpiryHandledRef = useRef(false);
 
-  // Define logout function first using useCallback
-  const logout = useCallback(() => {
+  const clearLocalAuthState = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem(AUTH_PERSISTENCE_KEY);
+    sessionStorage.removeItem(SESSION_AUTH_ACTIVE_KEY);
     setUser(null);
     setIsAuthenticated(false);
     // Dispatch event for cart context to detect user change
     window.dispatchEvent(new Event('auth-change'));
   }, []);
+
+  // Keep backward-compatible logout signature while also clearing refresh cookie.
+  const logout = useCallback((options = { syncServer: true }) => {
+    if (options.syncServer) {
+      http.post(AUTH_ENDPOINTS.LOGOUT, {}).catch(() => {
+        // Ignore network/logout endpoint failures and continue local logout.
+      });
+    }
+    clearLocalAuthState();
+  }, [clearLocalAuthState]);
+
+  const parseTokenExpiryMs = useCallback((token) => {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) {
+        return null;
+      }
+
+      // JWT payload uses URL-safe Base64 encoding.
+      const normalizedPayload = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padding = '='.repeat((4 - (normalizedPayload.length % 4)) % 4);
+      const payload = JSON.parse(atob(`${normalizedPayload}${padding}`));
+      if (!payload?.exp || typeof payload.exp !== 'number') {
+        return null;
+      }
+      return payload.exp * 1000;
+    } catch (_) {
+      return null;
+    }
+  }, []);
+
+  const redirectToLoginIfNeeded = useCallback(() => {
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/login' && currentPath !== '/signup') {
+      window.location.href = '/login';
+    }
+  }, []);
+
+  const handleForcedLogout = useCallback(() => {
+    setSessionWarningOpen(false);
+    setSessionCountdown(SESSION_WARNING_SECONDS);
+    setIsExtendingSession(false);
+    logout();
+    redirectToLoginIfNeeded();
+  }, [logout, redirectToLoginIfNeeded]);
+
+  const extendSession = useCallback(async () => {
+    if (isExtendingSession) {
+      return;
+    }
+
+    setIsExtendingSession(true);
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.REFRESH_SESSION);
+      const refreshedToken = response?.data?.access_token;
+
+      if (!refreshedToken) {
+        throw new Error('No access token returned');
+      }
+
+      localStorage.setItem('token', refreshedToken);
+      sessionExpiryHandledRef.current = false;
+      lastObservedTokenRef.current = refreshedToken;
+      setSessionWarningOpen(false);
+      setSessionCountdown(SESSION_WARNING_SECONDS);
+      window.dispatchEvent(new Event('auth-change'));
+    } catch (_) {
+      handleForcedLogout();
+    } finally {
+      setIsExtendingSession(false);
+    }
+  }, [handleForcedLogout, isExtendingSession]);
 
   const fetchUserInfo = useCallback(async () => {
     try {
@@ -29,32 +119,127 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
       console.error('Error fetching user info:', error);
-      logout();
+      logout({ syncServer: false });
     } finally {
       setLoading(false);
     }
   }, [logout]);
 
+  const restoreSessionFromRefreshToken = useCallback(async () => {
+    const persistenceMode = localStorage.getItem(AUTH_PERSISTENCE_KEY);
+    if (persistenceMode !== AUTH_PERSISTENCE_PERSISTENT) {
+      return false;
+    }
+
+    try {
+      const response = await http.post(AUTH_ENDPOINTS.REFRESH_TOKEN, {});
+      const refreshedToken = response?.data?.access_token;
+      if (!refreshedToken) {
+        return false;
+      }
+      localStorage.setItem('token', refreshedToken);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }, []);
+
   // Check if user is logged in on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (token && savedUser) {
-      try {
-        // Don't set user from cache - wait for fresh data from server
-        // This ensures profile images and other data are up-to-date
-        setIsAuthenticated(true);
-        // Fetch fresh user info from server (this will update user state)
-        fetchUserInfo();
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        logout();
+    let isMounted = true;
+
+    const initAuth = async () => {
+      const persistenceMode = localStorage.getItem(AUTH_PERSISTENCE_KEY);
+      const hasActiveSessionMarker = !!sessionStorage.getItem(SESSION_AUTH_ACTIVE_KEY);
+
+      // Session-only mode: if browser was restarted, force re-login.
+      if (persistenceMode === AUTH_PERSISTENCE_SESSION && !hasActiveSessionMarker) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem(AUTH_PERSISTENCE_KEY);
       }
-    } else {
-      setLoading(false);
+
+      const token = localStorage.getItem('token');
+
+      // If access token exists, continue with normal bootstrap.
+      if (token) {
+        if (isMounted) {
+          setIsAuthenticated(true);
+        }
+        await fetchUserInfo();
+        return;
+      }
+
+      // Try silent login from refresh-token cookie.
+      const restored = await restoreSessionFromRefreshToken();
+      if (restored) {
+        if (isMounted) {
+          setIsAuthenticated(true);
+        }
+        await fetchUserInfo();
+        return;
+      }
+
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchUserInfo, restoreSessionFromRefreshToken]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSessionWarningOpen(false);
+      setSessionCountdown(SESSION_WARNING_SECONDS);
+      lastObservedTokenRef.current = null;
+      sessionExpiryHandledRef.current = false;
+      return undefined;
     }
-  }, [fetchUserInfo, logout]);
+
+    const monitorSessionExpiry = () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
+      }
+
+      if (lastObservedTokenRef.current !== token) {
+        lastObservedTokenRef.current = token;
+        sessionExpiryHandledRef.current = false;
+        setSessionWarningOpen(false);
+        setSessionCountdown(SESSION_WARNING_SECONDS);
+      }
+
+      const expiresAtMs = parseTokenExpiryMs(token);
+      if (!expiresAtMs) {
+        return;
+      }
+
+      const secondsRemaining = Math.max(0, Math.ceil((expiresAtMs - Date.now()) / 1000));
+      if (secondsRemaining <= 0) {
+        if (!sessionExpiryHandledRef.current) {
+          sessionExpiryHandledRef.current = true;
+          handleForcedLogout();
+        }
+        return;
+      }
+
+      if (secondsRemaining <= SESSION_WARNING_SECONDS) {
+        setSessionWarningOpen(true);
+        setSessionCountdown(secondsRemaining);
+      } else {
+        setSessionWarningOpen(false);
+        setSessionCountdown(SESSION_WARNING_SECONDS);
+      }
+    };
+
+    monitorSessionExpiry();
+    const interval = setInterval(monitorSessionExpiry, SESSION_MONITOR_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [handleForcedLogout, isAuthenticated, parseTokenExpiryMs]);
 
   // Listen for session invalidation events from HTTP interceptor
   useEffect(() => {
@@ -88,7 +273,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (!token) {
         // Token was removed (possibly by interceptor), logout
-        logout();
+        logout({ syncServer: false });
         return;
       }
 
@@ -132,7 +317,7 @@ export const AuthProvider = ({ children }) => {
           // to update the React state
           if (!localStorage.getItem('token')) {
             // Token already cleared by interceptor
-            logout();
+            logout({ syncServer: false });
           }
         }
         // For other errors, don't logout (might be network issues)
@@ -156,7 +341,7 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, logout]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
       // Clear any existing user state before logging in (important when switching accounts)
       setUser(null);
@@ -166,6 +351,7 @@ export const AuthProvider = ({ children }) => {
       const formData = new URLSearchParams();
       formData.append('username', email);
       formData.append('password', password);
+      formData.append('remember_me', String(rememberMe));
 
       const response = await http.post(AUTH_ENDPOINTS.LOGIN, formData, {
         headers: {
@@ -177,6 +363,13 @@ export const AuthProvider = ({ children }) => {
       
       if (access_token) {
         localStorage.setItem('token', access_token);
+        if (rememberMe) {
+          localStorage.setItem(AUTH_PERSISTENCE_KEY, AUTH_PERSISTENCE_PERSISTENT);
+          sessionStorage.removeItem(SESSION_AUTH_ACTIVE_KEY);
+        } else {
+          localStorage.setItem(AUTH_PERSISTENCE_KEY, AUTH_PERSISTENCE_SESSION);
+          sessionStorage.setItem(SESSION_AUTH_ACTIVE_KEY, '1');
+        }
         await fetchUserInfo();
         // Dispatch event for cart context to detect user change
         window.dispatchEvent(new Event('auth-change'));
@@ -305,6 +498,8 @@ export const AuthProvider = ({ children }) => {
       
       if (access_token) {
         localStorage.setItem('token', access_token);
+        localStorage.setItem(AUTH_PERSISTENCE_KEY, AUTH_PERSISTENCE_PERSISTENT);
+        sessionStorage.removeItem(SESSION_AUTH_ACTIVE_KEY);
         await fetchUserInfo();
         // Dispatch event for cart context to detect user change
         window.dispatchEvent(new Event('auth-change'));
@@ -373,5 +568,43 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {isAuthenticated && sessionWarningOpen && (
+        <div className="session-expiry-popup-overlay" role="presentation">
+          <div
+            className="session-expiry-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="session-expiry-title"
+          >
+            <h3 id="session-expiry-title">Session Expiration Warning</h3>
+            <p>Your session will expire soon. Do you want to extend your session?</p>
+            <p className="session-expiry-popup-countdown">
+              Auto logout in {sessionCountdown} second{sessionCountdown === 1 ? '' : 's'}.
+            </p>
+            <div className="session-expiry-popup-actions">
+              <button
+                type="button"
+                className="session-expiry-popup-extend-btn"
+                onClick={extendSession}
+                disabled={isExtendingSession}
+              >
+                {isExtendingSession ? 'Extending...' : 'Extend Session'}
+              </button>
+              <button
+                type="button"
+                className="session-expiry-popup-logout-btn"
+                onClick={handleForcedLogout}
+                disabled={isExtendingSession}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AuthContext.Provider>
+  );
 };

@@ -4,7 +4,12 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../hooks/useAuth';
-import { validateEmail } from '../utils/helpers';
+import {
+  validateEmail,
+  isStrongPassword,
+  getPasswordStrengthProgress,
+  getStrongPasswordErrorMessage,
+} from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
 
@@ -27,6 +32,7 @@ const Signup = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const passwordStrengthProgress = getPasswordStrengthProgress(formData.password);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -67,8 +73,8 @@ const Signup = () => {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (!isStrongPassword(formData.password)) {
+      newErrors.password = getStrongPasswordErrorMessage();
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -153,7 +159,9 @@ const Signup = () => {
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="first_name">First Name</label>
+              <label htmlFor="first_name">
+                First Name <span className="required-mark">*</span>
+              </label>
               <input
                 type="text"
                 id="first_name"
@@ -168,7 +176,9 @@ const Signup = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="last_name">Last Name</label>
+              <label htmlFor="last_name">
+                Last Name <span className="required-mark">*</span>
+              </label>
               <input
                 type="text"
                 id="last_name"
@@ -184,7 +194,9 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">
+              Email <span className="required-mark">*</span>
+            </label>
             <input
               type="email"
               id="email"
@@ -249,7 +261,9 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">
+              Password <span className="required-mark">*</span>
+            </label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
@@ -280,11 +294,19 @@ const Signup = () => {
                 )}
               </button>
             </div>
+            <div className="password-strength-line" aria-hidden="true">
+              <div
+                className="password-strength-line-progress"
+                style={{ width: `${passwordStrengthProgress}%` }}
+              />
+            </div>
             {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">
+              Confirm Password <span className="required-mark">*</span>
+            </label>
             <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? "text" : "password"}

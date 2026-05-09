@@ -13,6 +13,7 @@ import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
+import { getImageUrl } from '../utils/helpers';
 
 const Products = () => {
   const { isAuthenticated } = useAuth();
@@ -267,8 +268,8 @@ const Products = () => {
                       <div className="product-image">
                         <img
                           src={product.images && product.images.length > 0
-                            ? `http://localhost:8000/${product.images[0]}`
-                            : `http://localhost:8000/images/placeholder.jpg`}
+                            ? getImageUrl(product.images[0])
+                            : getImageUrl('/images/placeholder.jpg')}
                           alt={product.name}
                           style={{ objectFit: 'cover' }}
                         />
@@ -319,13 +320,13 @@ const Products = () => {
                       <div className="product-image">
                         <img
                           src={product.images && product.images.length > 0
-                            ? `http://localhost:8000/${product.images[0]}`
-                            : `http://localhost:8000/images/placeholder.jpg`}
+                            ? getImageUrl(product.images[0])
+                            : getImageUrl('/images/placeholder.jpg')}
                           alt={product.name}
                           style={{ objectFit: 'cover' }}
                           onError={(e) => {
                             e.currentTarget.onerror = null;
-                            e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                            e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
                           }}
                         />
                         {isAuthenticated && (

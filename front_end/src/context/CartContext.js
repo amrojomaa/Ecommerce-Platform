@@ -89,15 +89,12 @@ export const CartProvider = ({ children }) => {
     };
 
     window.addEventListener('auth-change', handleAuthChange);
-
-    // Also check periodically for same-tab changes (since storage event doesn't fire in same tab)
-    // Reduced frequency to every 2 seconds to be less resource-intensive
-    const interval = setInterval(checkUserChange, 2000);
+    window.addEventListener('focus', checkUserChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
-      clearInterval(interval);
+      window.removeEventListener('focus', checkUserChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);

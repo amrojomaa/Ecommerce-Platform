@@ -18,6 +18,18 @@ from .routers import Cart, Categories, login, products, users, order, payment, a
 from app.utils.image_storage import IMAGES_ROOT_DIR, ensure_images_root
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+IS_PRODUCTION = os.getenv("ENV", "").strip().lower() == "production"
+RUN_STARTUP_SCHEMA_UPDATES = _env_bool("RUN_STARTUP_SCHEMA_UPDATES", not IS_PRODUCTION)
+RUN_STARTUP_SCHEMA_PATCHES = _env_bool("RUN_STARTUP_SCHEMA_PATCHES", not IS_PRODUCTION)
+
+
 def apply_schema_updates():
     """Apply lightweight schema updates for existing databases."""
     with engine.begin() as conn:
@@ -142,8 +154,8 @@ def apply_schema_updates():
             )
         """))
 
-
-apply_schema_updates()
+if RUN_STARTUP_SCHEMA_UPDATES:
+    apply_schema_updates()
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -436,8 +448,8 @@ def apply_schema_patches() -> None:
             )
         )
 
-
-apply_schema_patches()
+if RUN_STARTUP_SCHEMA_PATCHES:
+    apply_schema_patches()
 print("Data Base connected successfully!")
 
 app = FastAPI()
@@ -489,12 +501,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     # Log the full traceback for debugging
-    logging.error(f"Unhandled exception: {exc}")
+    logging.error("Unhandled exception: %s", exc)
     logging.error(traceback.format_exc())
     
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": "Internal server error"}
     )
     # Add CORS headers manually
     origin = request.headers.get("origin")

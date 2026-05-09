@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -28,40 +28,33 @@ const AdminDashboard = () => {
   const [updatingThreshold, setUpdatingThreshold] = useState(false);
   const isInitialMount = useRef(true);
 
-  useEffect(() => {
-    if (isOperationsManager) {
-      navigate('/admin/orders', { replace: true });
-      return;
-    }
-    const initializeData = async () => {
-      await fetchLowStockThreshold();
-      await fetchStats();
-    };
-    initializeData();
-  }, [isOperationsManager, navigate]);
-
-  const fetchLowStockThreshold = async () => {
+  const fetchLowStockThreshold = useCallback(async () => {
     try {
       const response = await http.get(ADMIN_SETTINGS_ENDPOINTS.GET_LOW_STOCK_THRESHOLD);
       const threshold = response.data.threshold;
       setLowStockThreshold(threshold);
       setThresholdInput(threshold.toString());
+      return threshold;
     } catch (error) {
       console.error('Error fetching low stock threshold:', error);
       // Use default value of 10 if fetch fails
       setLowStockThreshold(10);
       setThresholdInput('10');
+      return 10;
     }
-  };
+  }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (thresholdOverride = null) => {
+    const effectiveThreshold = Number.isFinite(Number(thresholdOverride))
+      ? Number(thresholdOverride)
+      : Number(lowStockThreshold);
     setLoading(true);
     try {
       // Fetch products
       const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
       const products = productsResponse.data;
       
-      const lowStock = products.filter(p => p.quantity < lowStockThreshold).length;
+      const lowStock = products.filter(p => p.quantity < effectiveThreshold).length;
       
       // Fetch orders
       let totalOrders = 0;
@@ -112,7 +105,19 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [lowStockThreshold]);
+
+  useEffect(() => {
+    if (isOperationsManager) {
+      navigate('/admin/orders', { replace: true });
+      return;
+    }
+    const initializeData = async () => {
+      const threshold = await fetchLowStockThreshold();
+      await fetchStats(threshold);
+    };
+    initializeData();
+  }, [isOperationsManager, navigate, fetchLowStockThreshold, fetchStats]);
 
   useEffect(() => {
     if (isOperationsManager) {
@@ -126,7 +131,7 @@ const AdminDashboard = () => {
     if (lowStockThreshold > 0) {
       fetchStats();
     }
-  }, [isOperationsManager, lowStockThreshold]);
+  }, [isOperationsManager, lowStockThreshold, fetchStats]);
 
   const handleUpdateThreshold = async () => {
     const newThreshold = parseInt(thresholdInput);
@@ -144,7 +149,7 @@ const AdminDashboard = () => {
       setShowThresholdModal(false);
       toast.success('Low stock threshold updated successfully');
       // Refetch stats with new threshold
-      await fetchStats();
+      await fetchStats(newThreshold);
     } catch (error) {
       console.error('Error updating threshold:', error);
       toast.error(error.response?.data?.detail || 'Failed to update threshold');

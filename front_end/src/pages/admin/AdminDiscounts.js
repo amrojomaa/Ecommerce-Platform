@@ -5,6 +5,7 @@ import http from '../../services/http';
 import { PRODUCT_ENDPOINTS } from '../../config/api';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import { useCurrency } from '../../hooks/useCurrency';
+import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminDiscounts.css';
 
 const AdminDiscounts = () => {
@@ -162,8 +163,8 @@ const AdminDiscounts = () => {
                 <div className="discount-card-image">
                   <img
                     src={product.images && product.images.length > 0
-                      ? `http://localhost:8000/${product.images[0]}`
-                      : 'http://localhost:8000/images/placeholder.jpg'}
+                      ? getImageUrl(product.images[0])
+                      : getImageUrl('/images/placeholder.jpg')}
                     alt={product.name}
                   />
                 </div>

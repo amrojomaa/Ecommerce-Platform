@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import http from '../services/http';
 import { AI_ASSISTANT_ENDPOINTS } from '../config/api';
-import { formatPrice } from '../utils/helpers';
+import { formatPrice, getImageUrl } from '../utils/helpers';
 import '../styles/components/ChatWidget.css';
 
 const ChatWidget = () => {
@@ -176,10 +176,10 @@ const ChatWidget = () => {
                             {product.images && product.images.length > 0 && (
                               <div className="product-image-mini">
                                 <img
-                                  src={`http://localhost:8000/${product.images[0]}`}
+                                  src={getImageUrl(product.images[0])}
                                   alt={product.name}
                                   onError={(e) => {
-                                    e.target.src = 'http://localhost:8000/images/placeholder.jpg';
+                                    e.target.src = getImageUrl('/images/placeholder.jpg');
                                   }}
                                 />
                               </div>

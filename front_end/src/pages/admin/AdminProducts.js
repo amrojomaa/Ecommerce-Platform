@@ -42,11 +42,12 @@ const AdminProducts = () => {
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchLowStockThreshold();
     fetchProducts();
     fetchCategories();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchLowStockThreshold = async () => {
     try {

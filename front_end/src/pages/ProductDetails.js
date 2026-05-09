@@ -14,6 +14,7 @@ import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
 import { trackRecommendationEvent } from '../services/recommendations';
+import { getImageUrl } from '../utils/helpers';
 
 const ProductDetails = () => {
   const { name } = useParams();
@@ -122,8 +123,8 @@ const ProductDetails = () => {
 
   // Get product images from API response
   const productImages = product.images && product.images.length > 0
-    ? product.images.map(img => `http://localhost:8000/${img}`)
-    : [`http://localhost:8000/images/placeholder.jpg`];
+    ? product.images.map((img) => getImageUrl(img))
+    : [getImageUrl('/images/placeholder.jpg')];
 
   // Get quantity from product, defaulting to 0 if not available
   const maxQuantity = product.quantity !== undefined && product.quantity !== null ? product.quantity : 0;
@@ -165,7 +166,7 @@ const ProductDetails = () => {
                 transition={{ duration: 0.3 }}
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                  e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
                 }}
               />
             </div>

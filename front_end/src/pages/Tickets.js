@@ -48,7 +48,7 @@ const Tickets = () => {
 
     setCreating(true);
     try {
-      const response = await http.post(TICKET_ENDPOINTS.CREATE, newTicket);
+      await http.post(TICKET_ENDPOINTS.CREATE, newTicket);
       toast.success('Ticket created successfully');
       setNewTicket({ title: '', description: '' });
       setShowCreateForm(false);

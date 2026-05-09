@@ -278,11 +278,31 @@ export const isStrongPassword = (password) => {
 export const getStrongPasswordErrorMessage = () =>
   'Password does not satisfy the required security requirements.';
 
+export const getApiBaseUrl = () => {
+  const baseUrl = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000').trim();
+  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+};
+
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return '/placeholder-image.jpg';
   // If it's already a full URL, return it
   if (imagePath.startsWith('http')) return imagePath;
   // Otherwise, construct URL from API base
-  const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+  const baseUrl = getApiBaseUrl();
   return `${baseUrl}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
+};
+
+export const buildWebSocketUrl = (path, queryParams = {}) => {
+  const apiBase = getApiBaseUrl();
+  const normalizedPath = path?.startsWith('/') ? path : `/${path || ''}`;
+  const httpUrl = new URL(`${apiBase}${normalizedPath}`);
+  httpUrl.protocol = httpUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      httpUrl.searchParams.set(key, String(value));
+    }
+  });
+
+  return httpUrl.toString();
 };

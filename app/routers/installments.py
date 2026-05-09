@@ -714,6 +714,8 @@ def mark_my_installment_schedule_paid(
     metadata_user_id = str(metadata.get("user_id", "")).strip()
     metadata_request_id = str(metadata.get("installment_request_id", "")).strip()
     metadata_schedule_id = str(metadata.get("installment_schedule_id", "")).strip()
+    expected_currency = str(metadata.get("expected_currency", "")).strip().lower()
+    expected_amount_minor_raw = str(metadata.get("expected_amount_minor", "")).strip()
 
     if metadata_user_id != str(current_user.id):
         raise HTTPException(
@@ -725,6 +727,25 @@ def mark_my_installment_schedule_paid(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment intent does not match this installment schedule",
         )
+    if expected_currency and str(intent.currency or "").lower() != expected_currency:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payment currency does not match server expectation",
+        )
+    if expected_amount_minor_raw:
+        try:
+            expected_amount_minor = int(expected_amount_minor_raw)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment metadata is invalid",
+            )
+        charged_minor = int(getattr(intent, "amount_received", 0) or 0)
+        if charged_minor != expected_amount_minor:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment amount does not match server expectation",
+            )
 
     installment_request = _ensure_owner_request_or_403(db, request_id, current_user.id)
     return _mark_schedule_as_paid(

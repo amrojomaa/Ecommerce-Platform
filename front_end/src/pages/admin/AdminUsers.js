@@ -106,7 +106,7 @@ const AdminUsers = () => {
 
     setUpdating(true);
     try {
-      const response = await http.patch(
+      await http.patch(
         buildUrl(USER_ENDPOINTS.UPDATE_ROLE, { id: selectedUser.id }),
         { role: newRole }
       );

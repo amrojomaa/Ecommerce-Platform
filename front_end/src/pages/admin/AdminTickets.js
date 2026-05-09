@@ -30,17 +30,19 @@ const AdminTickets = () => {
   const { markAsViewed } = useUnreadTickets();
   const confirm = useConfirm();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTickets();
     fetchEmployees();
     fetchPendingDeletes();
     // Mark tickets as viewed when page loads
     markAsViewed();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     filterTickets();
-  }, [statusFilter, assignedToFilter, tickets]);
+  }, [statusFilter, assignedToFilter, tickets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTickets = async () => {
     setLoading(true);

@@ -14,7 +14,6 @@ const StarRating = ({
   size = 'medium',
   initialAverageRating,
   initialTotalRatings,
-  initialUserRating,
   fetchOnMount = true,
 }) => {
   const { isAuthenticated } = useAuth();
@@ -22,7 +21,6 @@ const StarRating = ({
     && Number.isFinite(Number(initialTotalRatings));
   const [averageRating, setAverageRating] = useState(Number(initialAverageRating) || 0);
   const [totalRatings, setTotalRatings] = useState(Number(initialTotalRatings) || 0);
-  const [userRating, setUserRating] = useState(initialUserRating ?? null);
   const [hoveredRating, setHoveredRating] = useState(null);
   const [loading, setLoading] = useState(!hasPreloadedSummary);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +31,6 @@ const StarRating = ({
       const response = await http.get(buildUrl(RATING_ENDPOINTS.GET_PRODUCT, { product_id: productId }));
       setAverageRating(response.data.average_rating || 0);
       setTotalRatings(response.data.total_ratings || 0);
-      setUserRating(response.data.user_rating || null);
     } catch (error) {
       console.error('Error fetching rating:', error);
     } finally {
@@ -58,9 +55,8 @@ const StarRating = ({
     if (!hasPreloadedSummary) return;
     setAverageRating(Number(initialAverageRating) || 0);
     setTotalRatings(Number(initialTotalRatings) || 0);
-    setUserRating(initialUserRating ?? null);
     setLoading(false);
-  }, [hasPreloadedSummary, initialAverageRating, initialTotalRatings, initialUserRating]);
+  }, [hasPreloadedSummary, initialAverageRating, initialTotalRatings]);
 
   const handleStarClick = async (rating) => {
     if (!interactive || !isAuthenticated || submitting) {
@@ -72,7 +68,7 @@ const StarRating = ({
 
     setSubmitting(true);
     try {
-      const response = await http.post(
+      await http.post(
         buildUrl(RATING_ENDPOINTS.CREATE_OR_UPDATE, { product_id: productId }),
         { rating }
       );

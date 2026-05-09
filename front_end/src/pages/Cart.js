@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { useCart } from '../hooks/useCart';
 import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
+import { getImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Cart.css';
 
@@ -144,12 +145,12 @@ const Cart = () => {
                 <div className="cart-item-image">
                   <img
                     src={item.product?.images && item.product.images.length > 0
-                      ? `http://localhost:8000/${item.product.images[0]}`
-                      : `http://localhost:8000/images/placeholder.jpg`}
+                      ? getImageUrl(item.product.images[0])
+                      : getImageUrl('/images/placeholder.jpg')}
                     alt={item.product?.name || 'Product'}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                      e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
                     }}
                   />
                 </div>

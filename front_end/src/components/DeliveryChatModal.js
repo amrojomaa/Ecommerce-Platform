@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import http from '../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
+import { buildWebSocketUrl } from '../utils/helpers';
 import '../styles/components/ChatWidget.css';
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢'];
@@ -11,7 +12,6 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
@@ -20,7 +20,11 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
   const getUserIdFromToken = () => {
     if (!token) return null;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) return null;
+      const normalizedPayload = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padding = '='.repeat((4 - (normalizedPayload.length % 4)) % 4);
+      const payload = JSON.parse(atob(`${normalizedPayload}${padding}`));
       return payload.id ?? payload.user_id ?? payload.sub ?? null;
     } catch (e) {
       return null;
@@ -83,43 +87,61 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
 
     fetchHistory();
 
-    // Connect WebSocket for real-time receiving
-    const wsProt = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const backendHost = 'localhost:8000';
-    const wsUrl = `${wsProt}//${backendHost}/delivery/jobs/${jobId}/ws/chat?token=${token}`;
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log('Chat WebSocket connected');
-      if (isMounted) setWsConnected(true);
-    };
-
-    ws.onmessage = (event) => {
+    const connectWebSocket = async () => {
+      let wsAuthToken = token;
       try {
-        const data = JSON.parse(event.data);
-        if (isMounted) {
-          if (data.event && data.message) {
-            setMessages((prev) => upsertMessage(prev, data.message));
-            return;
-          }
-          setMessages((prev) => upsertMessage(prev, data));
+        const ticketResponse = await http.post(
+          buildUrl(DELIVERY_ENDPOINTS.CHAT_TICKET, { job_id: jobId })
+        );
+        if (ticketResponse?.data?.ws_chat_token) {
+          wsAuthToken = ticketResponse.data.ws_chat_token;
         }
-      } catch (e) {
-        console.error('Error parsing WS message', e);
+      } catch (error) {
+        // Backward compatibility: fall back to access token if ticket endpoint fails.
+        console.error('Failed to create chat ticket, falling back to access token.', error);
       }
+
+      if (!isMounted || !wsAuthToken) {
+        return;
+      }
+
+      const wsUrl = buildWebSocketUrl(
+        buildUrl(DELIVERY_ENDPOINTS.WS_CHAT, { job_id: jobId }),
+        { token: wsAuthToken }
+      );
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('Chat WebSocket connected');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (isMounted) {
+            if (data.event && data.message) {
+              setMessages((prev) => upsertMessage(prev, data.message));
+              return;
+            }
+            setMessages((prev) => upsertMessage(prev, data));
+          }
+        } catch (e) {
+          console.error('Error parsing WS message', e);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('Chat WebSocket disconnected');
+      };
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      if (isMounted) setWsConnected(false);
-    };
-
-    ws.onclose = () => {
-      console.log('Chat WebSocket disconnected');
-      if (isMounted) setWsConnected(false);
-    };
+    connectWebSocket();
 
     return () => {
       isMounted = false;

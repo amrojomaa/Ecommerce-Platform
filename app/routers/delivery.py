@@ -8,7 +8,6 @@ from app import models, schemas, OAuth2
 from app.utils.geocoding import geocode_address_with_fallback
 from app.utils.image_storage import delete_local_image, save_uploaded_image
 from app.routers.admin import require_driver, require_employee, require_admin_or_operations_manager
-from app.OAuth2 import verify_access_token
 import json
 
 router = APIRouter(
@@ -85,9 +84,8 @@ def _job_to_response(job: models.DBDeliveryJob) -> dict:
         "delivery_address": job.delivery_address,
         "delivery_latitude": job.delivery_latitude,
         "delivery_longitude": job.delivery_longitude,
-        "payment_amount": job.payment_amount,
-        "issue_type": job.issue_type,
         "payment_amount": effective_payment_amount,
+        "issue_type": job.issue_type,
         "issue_description": job.issue_description,
         "issue_resolved": bool(job.issue_resolved),
         "issue_resolved_at": job.issue_resolved_at,
@@ -1159,6 +1157,33 @@ async def send_chat_message(
 
 
 
+@router.post("/jobs/{job_id}/chat-ticket")
+def create_chat_ticket(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    """Issue a short-lived token scoped to a delivery chat job for WebSocket auth."""
+    job = _get_chat_job_or_404(db, job_id)
+    _ensure_chat_access(job, current_user.id)
+
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    token_version = user.token_version if user.token_version is not None else 0
+    ws_chat_token = OAuth2.create_ws_chat_token(
+        data={"user_id": user.id},
+        job_id=job_id,
+        token_version=token_version,
+    )
+
+    return {
+        "ws_chat_token": ws_chat_token,
+        "expires_in_seconds": OAuth2.WS_CHAT_TOKEN_EXPIRE_MINUTES * 60,
+    }
+
+
 @router.post("/jobs/{job_id}/chat/{message_id}/reactions", response_model=schemas.DeliveryChatMessageResponse)
 async def react_to_chat_message(
     job_id: int,
@@ -1206,7 +1231,6 @@ async def react_to_chat_message(
 async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
     """WebSocket endpoint for real-time delivery chat."""
     from fastapi import status as http_status
-    from app.OAuth2 import verify_access_token
     from app.database import SessionLocal
 
     credentials_exception = HTTPException(
@@ -1216,7 +1240,15 @@ async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
 
     # --- Authenticate & authorise with a short-lived session ---
     try:
-        token_data = verify_access_token(token, credentials_exception)
+        try:
+            token_data, _ = OAuth2.verify_ws_chat_token(
+                token,
+                credentials_exception,
+                expected_job_id=job_id,
+            )
+        except Exception:
+            # Backward compatibility for older clients during rollout.
+            token_data = OAuth2.verify_access_token(token, credentials_exception)
         user_id = token_data.id
     except Exception:
         await websocket.close(code=1008)

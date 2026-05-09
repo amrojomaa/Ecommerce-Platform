@@ -24,8 +24,8 @@ const DriverMap = () => {
   const routeRequestSeqRef = useRef(0);
   const mapSessionRef = useRef(0);
 
-  const toRadians = (value) => (value * Math.PI) / 180;
-  const haversineDistanceKm = (startLat, startLng, endLat, endLng) => {
+  const toRadians = useCallback((value) => (value * Math.PI) / 180, []);
+  const haversineDistanceKm = useCallback((startLat, startLng, endLat, endLng) => {
     const earthRadiusKm = 6371;
     const dLat = toRadians(endLat - startLat);
     const dLng = toRadians(endLng - startLng);
@@ -34,7 +34,7 @@ const DriverMap = () => {
       Math.cos(toRadians(startLat)) * Math.cos(toRadians(endLat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return earthRadiusKm * c;
-  };
+  }, [toRadians]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -314,7 +314,7 @@ const DriverMap = () => {
     return () => {
       routeRequestSeqRef.current += 1;
     };
-  }, [jobs, driverPosition]);
+  }, [jobs, driverPosition, haversineDistanceKm]);
 
   // Derive closest job from warehouse (pickup) to delivery distance.
   useEffect(() => {
@@ -341,7 +341,7 @@ const DriverMap = () => {
 
     setClosestJobId(nearest?.id ?? null);
     setClosestDistanceKm(Number.isFinite(nearest?.distanceKm) ? nearest.distanceKm : null);
-  }, [jobs, driverPosition, routeDistancesByJob]);
+  }, [jobs, driverPosition, routeDistancesByJob, haversineDistanceKm]);
 
   // Update driver marker position
   useEffect(() => {

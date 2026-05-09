@@ -17,12 +17,29 @@ router = APIRouter(
 )
 
 
+def _is_truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _use_secure_cookie() -> bool:
+    configured = os.getenv("COOKIE_SECURE")
+    if configured is not None:
+        return _is_truthy(configured)
+    return os.getenv("ENV", "").strip().lower() == "production"
+
+
+def _allow_verification_code_in_response() -> bool:
+    if _is_truthy(os.getenv("RETURN_VERIFICATION_CODE_IN_RESPONSE")):
+        return True
+    return os.getenv("ENV", "").strip().lower() in {"dev", "development", "local"}
+
+
 def _set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
     response.set_cookie(
         key=OAuth2.REFRESH_TOKEN_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        secure=False,
+        secure=_use_secure_cookie(),
         samesite="lax",
         max_age=OAuth2.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         path="/",
@@ -33,7 +50,7 @@ def _clear_refresh_token_cookie(response: Response) -> None:
     response.delete_cookie(
         key=OAuth2.REFRESH_TOKEN_COOKIE_NAME,
         httponly=True,
-        secure=False,
+        secure=_use_secure_cookie(),
         samesite="lax",
         path="/",
     )
@@ -94,14 +111,17 @@ def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
         "email": user_data.email
     }
     
-    # If email wasn't sent (e.g., SMTP not configured), include code in response for development
+    # If email wasn't sent (e.g., SMTP not configured), include code only when explicitly enabled.
     if not email_sent:
         print(f"\n{'='*60}")
         print(f"EMAIL NOT SENT - SMTP not configured")
         print(f"Verification code for {user_data.email}: {verification_code}")
         print(f"{'='*60}\n")
-        response_data["verification_code"] = verification_code
-        response_data["message"] = "Account created successfully. Email service not configured. Use the verification code below."
+        if _allow_verification_code_in_response():
+            response_data["verification_code"] = verification_code
+            response_data["message"] = "Account created successfully. Email service not configured. Use the verification code below."
+        else:
+            response_data["message"] = "Account created successfully. Verification email could not be sent right now. Please contact support."
     
     return response_data 
 
@@ -172,7 +192,7 @@ def verify_email(verification_data: schemas.EmailVerification, db: Session = Dep
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during verification: {str(e)}"
+            detail="An error occurred during verification"
         )
 
 @router.post("/auth/google")
@@ -209,7 +229,7 @@ async def google_auth(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Failed to verify Google token: {str(e)}"
+                detail="Failed to verify Google token"
             )
         
         # Extract user information
@@ -300,7 +320,7 @@ async def google_auth(
             traceback.print_exc()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create/update user: {str(db_error)}"
+                detail="Failed to create or update user"
             )
         
         # Verify user was created/retrieved successfully
@@ -340,7 +360,7 @@ async def google_auth(
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during Google authentication: {str(e)}"
+            detail="An error occurred during Google authentication"
         )
 
 @router.post("/login")
@@ -401,7 +421,7 @@ def login(
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail="Internal server error"
         )
 
 @router.post("/refresh-session")
@@ -535,14 +555,15 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
             "email": request.email
         }
         
-        # If email wasn't sent (e.g., SMTP not configured), include code in response for development
+        # If email wasn't sent (e.g., SMTP not configured), include code only when explicitly enabled.
         if not email_sent:
             print(f"\n{'='*60}")
             print(f"EMAIL NOT SENT - SMTP not configured")
             print(f"Password reset code for {user.email}: {verification_code}")
             print(f"{'='*60}\n")
-            response_data["verification_code"] = verification_code
-            response_data["message"] = "Password reset code generated. Email service not configured. Use the verification code below."
+            if _allow_verification_code_in_response():
+                response_data["verification_code"] = verification_code
+                response_data["message"] = "Password reset code generated. Email service not configured. Use the verification code below."
         
         return response_data
         
@@ -554,7 +575,7 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while processing forgot password"
         )
 
 @router.post("/verify-reset-code")
@@ -608,7 +629,7 @@ def verify_reset_code(verification_data: schemas.VerifyResetCode, db: Session = 
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while verifying reset code"
         )
 
 @router.post("/reset-password")
@@ -670,5 +691,5 @@ def reset_password(reset_data: schemas.ResetPassword, db: Session = Depends(get_
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while resetting password"
         )

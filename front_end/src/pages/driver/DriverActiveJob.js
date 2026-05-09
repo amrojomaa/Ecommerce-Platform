@@ -667,7 +667,7 @@ const DriverActiveJob = () => {
                   ))}
                   {issuePhotos.map((photo) => (
                     <div className="uploaded-photo-card" key={`issue-${photo.id}`}>
-                      <img src={getImageUrl(photo.image_path)} alt="Issue photo" />
+                      <img src={getImageUrl(photo.image_path)} alt="Issue" />
                       <span>Issue</span>
                     </div>
                   ))}

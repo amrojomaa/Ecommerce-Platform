@@ -28,10 +28,12 @@ const AdminComments = () => {
   const { formatCurrency } = useCurrency();
   const commentsBasePath = user?.role === 'support_manager' ? '/support/comments' : '/admin/comments';
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedProductId) {
       fetchComments();
@@ -40,11 +42,12 @@ const AdminComments = () => {
       setComments([]);
       setFilteredComments([]);
     }
-  }, [selectedProductId]);
+  }, [selectedProductId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     filterComments();
-  }, [sentimentFilter, comments]);
+  }, [sentimentFilter, comments]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProducts = async () => {
     try {

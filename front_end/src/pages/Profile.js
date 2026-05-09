@@ -63,7 +63,7 @@ const Profile = () => {
       // This prevents clearing the preview when user object updates for other reasons
       // We'll reset it manually after successful upload
     }
-  }, [user?.email, user?.first_name, user?.last_name, user?.phone, user?.country, user?.city, user?.street]);
+  }, [user, user?.email, user?.first_name, user?.last_name, user?.phone, user?.country, user?.city, user?.street]);
 
   useEffect(() => {
     if (user?.id) {

@@ -126,7 +126,7 @@ const AdminOrders = () => {
     setUpdatingOrderId(orderId);
     try {
       const updateUrl = ORDER_ENDPOINTS.UPDATE_STATUS.replace('{order_id}', orderId);
-      const response = await http.patch(updateUrl, { status: newStatus });
+      await http.patch(updateUrl, { status: newStatus });
       
       // Update the order in both filtered and all orders lists
       const updatedOrder = { ...orders.find(o => o.id === orderId), status: newStatus };

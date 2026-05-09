@@ -11,6 +11,7 @@ import { useCurrency } from '../hooks/useCurrency';
 import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { getImageUrl } from '../utils/helpers';
 import '../styles/pages/Home.css';
 
 const Home = () => {
@@ -149,8 +150,8 @@ const Home = () => {
                     <div className="product-image">
                       <img
                         src={product.images && product.images.length > 0
-                          ? `http://localhost:8000/${product.images[0]}`
-                          : `http://localhost:8000/images/placeholder.jpg`}
+                          ? getImageUrl(product.images[0])
+                          : getImageUrl('/images/placeholder.jpg')}
                         alt={product.name}
                         style={{ objectFit: 'cover' }}
                       />
@@ -228,13 +229,13 @@ const Home = () => {
                   <div className="product-image">
                     <img
                       src={product.images && product.images.length > 0
-                        ? `http://localhost:8000/${product.images[0]}`
-                        : `http://localhost:8000/images/placeholder.jpg`}
+                        ? getImageUrl(product.images[0])
+                        : getImageUrl('/images/placeholder.jpg')}
                       alt={product.name}
                       style={{ objectFit: 'cover' }}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = 'http://localhost:8000/images/placeholder.jpg';
+                        e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
                       }}
                     />
                     {isAuthenticated && (

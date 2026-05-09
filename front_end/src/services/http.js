@@ -1,6 +1,38 @@
 import axios from 'axios';
 import API_BASE_URL, { AUTH_ENDPOINTS } from '../config/api';
 
+const normalizeErrorDetail = (detail) => {
+  if (!detail) return null;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item?.msg) return item.msg;
+        return null;
+      })
+      .filter(Boolean)
+      .join(' | ');
+  }
+  if (typeof detail === 'object') {
+    if (detail.msg) return String(detail.msg);
+    return JSON.stringify(detail);
+  }
+  return String(detail);
+};
+
+const getRequestPath = (requestUrl) => {
+  if (!requestUrl) return '';
+  if (requestUrl.startsWith('http://') || requestUrl.startsWith('https://')) {
+    try {
+      return new URL(requestUrl).pathname;
+    } catch (_) {
+      return requestUrl;
+    }
+  }
+  return requestUrl.split('?')[0];
+};
+
 // Create axios instance
 const http = axios.create({
   baseURL: API_BASE_URL,
@@ -32,6 +64,7 @@ http.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       const requestUrl = error.config?.url || '';
+      const requestPath = getRequestPath(requestUrl);
       const authEndpoints = [
         AUTH_ENDPOINTS.LOGIN,
         AUTH_ENDPOINTS.SIGNUP,
@@ -39,7 +72,9 @@ http.interceptors.response.use(
         AUTH_ENDPOINTS.REFRESH_TOKEN,
         AUTH_ENDPOINTS.LOGOUT,
       ];
-      const isAuthEndpoint = authEndpoints.some((endpoint) => requestUrl.includes(endpoint));
+      const isAuthEndpoint = authEndpoints.some(
+        (endpoint) => requestPath === endpoint || requestPath.endsWith(endpoint)
+      );
       const hadToken = !!localStorage.getItem('token');
       const canUseRefreshToken = localStorage.getItem('auth_persistence') === 'persistent';
       const originalRequest = error.config || {};
@@ -92,7 +127,10 @@ http.interceptors.response.use(
     }
     
     // Unified error handling - preserve backend error messages
-    const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message || 'An error occurred';
+    const normalizedDetail = normalizeErrorDetail(error.response?.data?.detail);
+    const fallbackMessage =
+      typeof error.response?.data?.message === 'string' ? error.response.data.message : null;
+    const errorMessage = normalizedDetail || fallbackMessage || error.message || 'An error occurred';
     return Promise.reject({
       message: errorMessage,
       status: error.response?.status,

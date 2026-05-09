@@ -4,7 +4,7 @@ import http from '../services/http';
 import { COMMENT_ENDPOINTS, buildUrl } from '../config/api';
 import API_BASE_URL from '../config/api';
 import { useAuth } from '../hooks/useAuth';
-import { FaTrash, FaUserCircle } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useConfirm } from '../hooks/useConfirm';
 import '../styles/components/CommentSection.css';
@@ -21,11 +21,12 @@ const CommentSection = ({ productId }) => {
   
   const INITIAL_COMMENTS_COUNT = 3;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (productId) {
       fetchComments();
     }
-  }, [productId]);
+  }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchComments = async (skip = 0, limit = INITIAL_COMMENTS_COUNT) => {
     try {

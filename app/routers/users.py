@@ -75,6 +75,8 @@ def get_users_by_id(id :int, db: Session = Depends (get_db), admin_user = Depend
 @router.put("/users/me", response_model=schemas.User)
 def update_me(user: schemas.UserUpdate, db: Session = Depends (get_db), current_user: int = Depends(OAuth2.get_current_user)):
     update_data = user.dict(exclude_unset=True)
+    # Self-service profile updates must never mutate authorization role.
+    update_data.pop("role", None)
     # Only hash password if it's provided and not empty
     if update_data.get('password'):
         update_data['password'] = utils.hash(update_data['password'])
@@ -89,7 +91,7 @@ def update_me(user: schemas.UserUpdate, db: Session = Depends (get_db), current_
 
 
 @router.put("/users/{id}", response_model=schemas.User)
-def update_user(user: schemas.UserBase, id :int, db: Session = Depends (get_db), ):#admin_user = Depends(require_admin)):
+def update_user(user: schemas.UserBase, id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
     user.password = utils.hash(user.password)
     updateuser = db.query(models.DBUser).filter(models.DBUser.id == id)
     update = updateuser.first()

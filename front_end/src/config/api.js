@@ -217,6 +217,7 @@ export const DELIVERY_ENDPOINTS = {
   JOB_DETAILS: '/delivery/jobs/{job_id}/details',
   GET_CHAT: '/delivery/jobs/{job_id}/chat',
   SEND_CHAT: '/delivery/jobs/{job_id}/chat',
+  CHAT_TICKET: '/delivery/jobs/{job_id}/chat-ticket',
   REACT_CHAT: '/delivery/jobs/{job_id}/chat/{message_id}/reactions',
   WS_CHAT: '/delivery/jobs/{job_id}/ws/chat',
   GET_JOB_BY_ORDER: '/delivery/jobs/by-order/{order_id}',

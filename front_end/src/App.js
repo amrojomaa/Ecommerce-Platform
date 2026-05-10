@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -73,10 +74,22 @@ import PosTerminal from './pages/cashier/PosTerminal';
 
 // Styles
 import './styles/App.css';
+import { isRtlLanguage, normalizeLanguageCode } from './i18n/constants';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 function App() {
+  const { i18n } = useTranslation();
+  const activeLanguage = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
+  const isRtl = isRtlLanguage(activeLanguage);
+
+  useEffect(() => {
+    document.documentElement.lang = activeLanguage;
+    document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    document.body.classList.toggle('app-rtl', isRtl);
+    document.body.classList.toggle('app-ltr', !isRtl);
+  }, [activeLanguage, isRtl]);
+
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <ThemeProvider>
@@ -156,7 +169,12 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} style={{ top: '85px' }} />
+      <ToastContainer
+                      position={isRtl ? "top-left" : "top-right"}
+                      autoClose={3000}
+                      rtl={isRtl}
+                      style={{ top: '85px' }} />
+                    
     </Router>
     </ConfirmProvider>
     </WishlistProvider>
@@ -164,98 +182,8 @@ function App() {
     </AuthProvider>
     </CurrencyProvider>
     </ThemeProvider>
-    </GoogleOAuthProvider>
-  );
+    </GoogleOAuthProvider>);
+
 }
 
 export default App;
-// function App() {
-//   return (
-//     <ThemeProvider>
-//       <AuthProvider>
-//         <CartProvider>
-//           <Router>
-//             <div className="app">
-//               <Routes>
-//                   {/* Main Layout Routes */}
-//                   <Route path="/" element={<MainLayout />}>
-//                     <Route index element={<Home />} />
-//                     <Route path="products" element={<Products />} />
-//                     <Route path="products/:name" element={<ProductDetails />} />
-//                     <Route
-//                       path="cart"
-//                       element={
-//                         <ProtectedRoute>
-//                           <Cart />
-//                         </ProtectedRoute>
-//                       }
-//                     />
-//                     <Route
-//                       path="checkout"
-//                       element={
-//                         <ProtectedRoute>
-//                           <Checkout />
-//                         </ProtectedRoute>
-//                       }
-//                     />
-//                     <Route path="login" element={<Login />} />
-//                     <Route path="signup" element={<Signup />} />
-//                     <Route
-//                       path="orders"
-//                       element={
-//                         <ProtectedRoute>
-//                           <Orders />
-//                         </ProtectedRoute>
-//                       }
-//                     />
-//                     <Route
-//                       path="profile"
-//                       element={
-//                         <ProtectedRoute>
-//                           <Profile />
-//                         </ProtectedRoute>
-//                       }
-//                     />
-//                   </Route>
-
-//                   {/* Admin Layout Routes */}
-//                   <Route
-//                     path="/admin"
-//                     element={
-//                       <ProtectedRoute requireAdmin={true}>
-//                         <AdminLayout />
-//                       </ProtectedRoute>
-//                     }
-//                   >
-//                     <Route index element={<AdminDashboard />} />
-//                     <Route path="products" element={<AdminProducts />} />
-//                     <Route path="categories" element={<AdminCategories />} />
-//                     <Route path="orders" element={<AdminOrders />} />
-//                   </Route>
-
-//                   {/* 404 */}
-//                   <Route path="*" element={<Navigate to="/" replace />} />
-//                 </Routes>
-
-//               <ToastContainer
-//                 position="top-right"
-//                 autoClose={3000}
-//                 hideProgressBar={false}
-//                 newestOnTop={false}
-//                 closeOnClick
-//                 rtl={false}
-//                 pauseOnFocusLoss
-//                 draggable
-//                 pauseOnHover
-//                 theme="dark"
-//               />
-//             </div>
-//           </Router>
-//         </CartProvider>
-//       </AuthProvider>
-//     </ThemeProvider>
-//   );
-// }
-
-// export default App;
-

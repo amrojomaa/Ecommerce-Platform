@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -11,14 +11,14 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { resetPassword } = useAuth();
-  
+
   // Get email and verification code from location state
   const email = location.state?.email || '';
   const verificationCode = location.state?.verification_code || '';
-  
+
   const [formData, setFormData] = useState({
     newPassword: '',
-    confirmPassword: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -36,7 +36,7 @@ const ResetPassword = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     });
     setError('');
   };
@@ -69,7 +69,7 @@ const ResetPassword = () => {
 
     try {
       const result = await resetPassword(email, verificationCode, formData.newPassword);
-      
+
       if (result?.success) {
         toast.success(result.message || 'Password reset successfully!');
         // Navigate to login page after successful reset
@@ -83,7 +83,7 @@ const ResetPassword = () => {
     } catch (err) {
       console.error("RESET PASSWORD ERROR:", err);
       setError('Something went wrong. Please try again.');
-      toast.error('Something went wrong. Please try again.');
+      toast.error(tUi("ui.pages.resetPassword.somethingWentWrongPleaseTry_97ae3887cf"));
     }
 
     setLoading(false);
@@ -99,26 +99,26 @@ const ResetPassword = () => {
         className="auth-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1>Reset Password</h1>
-        <p>Enter your new password below.</p>
+        transition={{ duration: 0.5 }}>
+        
+        <h1>{tUi("ui.pages.resetPassword.resetPassword_3e8e15d37c")}</h1>
+        <p>{tUi("ui.pages.resetPassword.enterYourNewPasswordBelow_cabc85c425")}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="newPassword">New Password</label>
+            <label htmlFor="newPassword">{tUi("ui.pages.resetPassword.newPassword_f79bf0add5")}</label>
             <div style={{ position: 'relative' }}>
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 id="newPassword"
                 name="newPassword"
                 value={formData.newPassword}
                 onChange={handleChange}
                 required
-                placeholder="Enter new password"
+                placeholder={tUi("ui.pages.resetPassword.enterNewPassword_39a115514b")}
                 disabled={loading}
-                minLength={9}
-              />
+                minLength={9} />
+              
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -131,28 +131,28 @@ const ResetPassword = () => {
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '1.2rem',
-                  color: '#666',
-                }}
-              >
+                  color: '#666'
+                }}>
+                
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{tUi("ui.pages.resetPassword.confirmPassword_5f9f1e8060")}</label>
             <div style={{ position: 'relative' }}>
               <input
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                placeholder="Confirm new password"
+                placeholder={tUi("ui.pages.resetPassword.confirmNewPassword_4cf60e82ad")}
                 disabled={loading}
-                minLength={9}
-              />
+                minLength={9} />
+              
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -165,9 +165,9 @@ const ResetPassword = () => {
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '1.2rem',
-                  color: '#666',
-                }}
-              >
+                  color: '#666'
+                }}>
+                
                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
               </button>
             </div>
@@ -179,26 +179,26 @@ const ResetPassword = () => {
             <button
               type="submit"
               className="auth-button"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <LoadingSpinner size="small" />
-                  Resetting...
-                </>
-              ) : (
-                'Reset Password'
-              )}
+              disabled={loading}>
+              
+              {loading ?
+              <>
+                  <LoadingSpinner size="small" />{tUi("ui.pages.resetPassword.resetting_fdf446c9b3")}
+
+              </> : tUi("ui.pages.resetPassword.resetPassword_3e8e15d37c")
+
+
+              }
             </button>
           </motion.div>
         </form>
 
-        <p className="auth-link">
-          Remember your password? <Link to="/login">Login</Link>
+        <p className="auth-link">{tUi("ui.pages.resetPassword.rememberYourPassword_d9b1edb381")}
+          <Link to="/login">{tUi("ui.pages.resetPassword.login_9c9e61f5aa")}</Link>
         </p>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ResetPassword;

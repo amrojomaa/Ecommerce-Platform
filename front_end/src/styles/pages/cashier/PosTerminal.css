@@ -351,3 +351,43 @@
 .dark .pos-product-card:disabled {
   opacity: 0.35;
 }
+
+/* RTL polish for Arabic cashier POS */
+html[dir='rtl'] .pos-terminal,
+html[dir='rtl'] .pos-header,
+html[dir='rtl'] .pos-catalog,
+html[dir='rtl'] .pos-cart-panel,
+html[dir='rtl'] .pos-today {
+  text-align: right;
+}
+
+html[dir='rtl'] .pos-product-grid {
+  padding-right: 0;
+  padding-left: 4px;
+}
+
+html[dir='rtl'] .pos-product-card {
+  text-align: right;
+}
+
+html[dir='rtl'] .pos-input,
+html[dir='rtl'] .pos-select {
+  text-align: right;
+}
+
+html[dir='rtl'] .pos-line-actions {
+  flex-direction: row-reverse;
+}
+
+html[dir='rtl'] .pos-line-total {
+  text-align: left;
+}
+
+html[dir='rtl'] .pos-payment-toggle {
+  justify-content: flex-start;
+}
+
+html[dir='rtl'] .pos-today-table th,
+html[dir='rtl'] .pos-today-table td {
+  text-align: right;
+}

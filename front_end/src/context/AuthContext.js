@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { tUi } from "../i18n/uiText";import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import http from '../services/http';
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../config/api';
 import '../styles/components/SessionExpiryPopup.css';
@@ -38,11 +38,11 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback((options = { syncServer: true }) => {
     if (options.syncServer) {
       http.post(AUTH_ENDPOINTS.LOGOUT, {}).catch(() => {
+
+
+
         // Ignore network/logout endpoint failures and continue local logout.
-      });
-    }
-    clearLocalAuthState();
-  }, [clearLocalAuthState]);
+      });}clearLocalAuthState();}, [clearLocalAuthState]);
 
   const parseTokenExpiryMs = useCallback((token) => {
     if (!token) {
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
       // JWT payload uses URL-safe Base64 encoding.
       const normalizedPayload = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-      const padding = '='.repeat((4 - (normalizedPayload.length % 4)) % 4);
+      const padding = '='.repeat((4 - normalizedPayload.length % 4) % 4);
       const payload = JSON.parse(atob(`${normalizedPayload}${padding}`));
       if (!payload?.exp || typeof payload.exp !== 'number') {
         return null;
@@ -283,26 +283,26 @@ export const AuthProvider = ({ children }) => {
         // This will trigger token version validation on the backend
         // If token version doesn't match, backend returns 401
         const response = await http.get(USER_ENDPOINTS.ME);
-        
+
         // If successful, update user info in case role or other data changed
         if (response.data) {
           const updatedUser = response.data;
           const previousRole = user?.role;
           const newRole = updatedUser.role;
-          
+
           // Check if role changed
           if (previousRole && previousRole !== newRole) {
             console.log(`Role changed from ${previousRole} to ${newRole}`);
             // Dispatch event to notify components about role change
-            window.dispatchEvent(new CustomEvent('user-role-changed', { 
-              detail: { 
-                previousRole, 
+            window.dispatchEvent(new CustomEvent('user-role-changed', {
+              detail: {
+                previousRole,
                 newRole,
-                user: updatedUser 
-              } 
+                user: updatedUser
+              }
             }));
           }
-          
+
           // Always update user state to reflect any changes
           setUser(updatedUser);
           localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -325,11 +325,11 @@ export const AuthProvider = ({ children }) => {
         isChecking = false;
       }
     };
-    
+
     // Run immediately on mount to get fresh data (important for cross-browser sync)
     // This ensures browser2 gets the latest profile image from browser1
     checkAndUpdateUser();
-    
+
     // Then check periodically every minute.
     const sessionCheckInterval = setInterval(checkAndUpdateUser, SESSION_CHECK_INTERVAL_MS);
 
@@ -346,7 +346,7 @@ export const AuthProvider = ({ children }) => {
       // Clear any existing user state before logging in (important when switching accounts)
       setUser(null);
       setIsAuthenticated(false);
-      
+
       // FastAPI OAuth2PasswordRequestForm expects form data with username and password
       const formData = new URLSearchParams();
       formData.append('username', email);
@@ -355,12 +355,12 @@ export const AuthProvider = ({ children }) => {
 
       const response = await http.post(AUTH_ENDPOINTS.LOGIN, formData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
 
       const { access_token } = response.data;
-      
+
       if (access_token) {
         localStorage.setItem('token', access_token);
         if (rememberMe) {
@@ -375,7 +375,7 @@ export const AuthProvider = ({ children }) => {
         window.dispatchEvent(new Event('auth-change'));
         return { success: true };
       }
-      
+
       return { success: false, error: 'Login failed' };
     } catch (error) {
       // Extract error message from backend response
@@ -383,7 +383,7 @@ export const AuthProvider = ({ children }) => {
       const errorMessage = error.message || error.data?.detail || error.response?.data?.detail || 'Login failed. Please check your credentials.';
       return {
         success: false,
-        error: errorMessage,
+        error: errorMessage
       };
     }
   };
@@ -392,8 +392,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await http.post(AUTH_ENDPOINTS.SIGNUP, userData);
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: response.data.message || 'Account created successfully',
         email: response.data.email || userData.email,
         verification_code: response.data.verification_code || null
@@ -401,7 +401,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Signup failed. Please try again.',
+        error: error.response?.data?.detail || error.message || 'Signup failed. Please try again.'
       };
     }
   };
@@ -413,14 +413,14 @@ export const AuthProvider = ({ children }) => {
         verification_code: verificationCode
       });
 
-      return { 
-        success: true, 
-        message: response.data.message || 'Email verified successfully' 
+      return {
+        success: true,
+        message: response.data.message || 'Email verified successfully'
       };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Verification failed. Please try again.',
+        error: error.response?.data?.detail || error.message || 'Verification failed. Please try again.'
       };
     }
   };
@@ -431,8 +431,8 @@ export const AuthProvider = ({ children }) => {
         email
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: response.data.message || 'Verification code sent to your email',
         email: response.data.email,
         verification_code: response.data.verification_code || null
@@ -440,7 +440,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Failed to send verification code. Please try again.',
+        error: error.response?.data?.detail || error.message || 'Failed to send verification code. Please try again.'
       };
     }
   };
@@ -452,14 +452,14 @@ export const AuthProvider = ({ children }) => {
         verification_code: verificationCode
       });
 
-      return { 
-        success: true, 
-        message: response.data.message || 'Verification code is valid' 
+      return {
+        success: true,
+        message: response.data.message || 'Verification code is valid'
       };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Invalid verification code. Please try again.',
+        error: error.response?.data?.detail || error.message || 'Invalid verification code. Please try again.'
       };
     }
   };
@@ -472,14 +472,14 @@ export const AuthProvider = ({ children }) => {
         new_password: newPassword
       });
 
-      return { 
-        success: true, 
-        message: response.data.message || 'Password reset successfully' 
+      return {
+        success: true,
+        message: response.data.message || 'Password reset successfully'
       };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Failed to reset password. Please try again.',
+        error: error.response?.data?.detail || error.message || 'Failed to reset password. Please try again.'
       };
     }
   };
@@ -489,13 +489,13 @@ export const AuthProvider = ({ children }) => {
       // Clear any existing user state before logging in (important when switching accounts)
       setUser(null);
       setIsAuthenticated(false);
-      
+
       const response = await http.post(AUTH_ENDPOINTS.GOOGLE_AUTH, {
         token: googleToken
       });
 
       const { access_token } = response.data;
-      
+
       if (access_token) {
         localStorage.setItem('token', access_token);
         localStorage.setItem(AUTH_PERSISTENCE_KEY, AUTH_PERSISTENCE_PERSISTENT);
@@ -505,13 +505,13 @@ export const AuthProvider = ({ children }) => {
         window.dispatchEvent(new Event('auth-change'));
         return { success: true };
       }
-      
+
       return { success: false, error: 'Google login failed' };
     } catch (error) {
       const errorMessage = error.message || error.data?.detail || error.response?.data?.detail || 'Google login failed. Please try again.';
       return {
         success: false,
-        error: errorMessage,
+        error: errorMessage
       };
     }
   };
@@ -565,46 +565,46 @@ export const AuthProvider = ({ children }) => {
     fetchUserInfo,
     forgotPassword,
     verifyResetCode,
-    resetPassword,
+    resetPassword
   };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {isAuthenticated && sessionWarningOpen && (
-        <div className="session-expiry-popup-overlay" role="presentation">
+      {isAuthenticated && sessionWarningOpen &&
+      <div className="session-expiry-popup-overlay" role="presentation">
           <div
-            className="session-expiry-popup"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="session-expiry-title"
-          >
-            <h3 id="session-expiry-title">Session Expiration Warning</h3>
-            <p>Your session will expire soon. Do you want to extend your session?</p>
-            <p className="session-expiry-popup-countdown">
-              Auto logout in {sessionCountdown} second{sessionCountdown === 1 ? '' : 's'}.
+          className="session-expiry-popup"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-expiry-title">
+          
+            <h3 id="session-expiry-title">{tUi("ui.context.authContext.sessionExpirationWarning_05363572c9")}</h3>
+            <p>{tUi("ui.context.authContext.yourSessionWillExpireSoon_4e454494f0")}</p>
+            <p className="session-expiry-popup-countdown">{tUi("ui.context.authContext.autoLogoutIn_e679cfa7ef")}
+            {sessionCountdown}{tUi("ui.context.authContext.second_3b241123de")}{sessionCountdown === 1 ? '' : 's'}.
             </p>
             <div className="session-expiry-popup-actions">
               <button
-                type="button"
-                className="session-expiry-popup-extend-btn"
-                onClick={extendSession}
-                disabled={isExtendingSession}
-              >
-                {isExtendingSession ? 'Extending...' : 'Extend Session'}
+              type="button"
+              className="session-expiry-popup-extend-btn"
+              onClick={extendSession}
+              disabled={isExtendingSession}>
+              
+                {isExtendingSession ? tUi("ui.context.authContext.extending_278163f027") : tUi("ui.context.authContext.extendSession_71ae016880")}
               </button>
               <button
-                type="button"
-                className="session-expiry-popup-logout-btn"
-                onClick={handleForcedLogout}
-                disabled={isExtendingSession}
-              >
-                Logout
-              </button>
+              type="button"
+              className="session-expiry-popup-logout-btn"
+              onClick={handleForcedLogout}
+              disabled={isExtendingSession}>{tUi("ui.context.authContext.logout_61b5dc00ab")}
+
+
+            </button>
             </div>
           </div>
         </div>
-      )}
-    </AuthContext.Provider>
-  );
+      }
+    </AuthContext.Provider>);
+
 };

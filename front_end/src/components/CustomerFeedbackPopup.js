@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaStar } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import http from '../services/http';
 import { FEEDBACK_ENDPOINTS } from '../config/api';
 import { useAuth } from '../hooks/useAuth';
@@ -13,6 +14,7 @@ const getCurrentMonthKey = () => {
 };
 
 const CustomerFeedbackPopup = () => {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +61,7 @@ const CustomerFeedbackPopup = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (rating < 1 || rating > 5) {
-      toast.error('Please choose a rating between 1 and 5 stars');
+      toast.error(t('ui.feedback.toast.chooseRating'));
       return;
     }
 
@@ -67,16 +69,16 @@ const CustomerFeedbackPopup = () => {
     try {
       const response = await http.post(FEEDBACK_ENDPOINTS.ME, {
         rating,
-        comment: comment.trim() ? comment.trim() : null,
+        comment: comment.trim() ? comment.trim() : null
       });
 
       setRating(response?.data?.rating || rating);
       setComment(response?.data?.comment || '');
       markCurrentMonthHandled();
       setIsOpen(false);
-      toast.success('Feedback submitted successfully');
+      toast.success(t('ui.feedback.toast.submitted'));
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to save feedback');
+      toast.error(error.response?.data?.detail || t('ui.feedback.toast.saveFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -90,22 +92,22 @@ const CustomerFeedbackPopup = () => {
     <div
       className="customer-feedback-popup-overlay"
       role="presentation"
-      onClick={handleMaybeLater}
-    >
+      onClick={handleMaybeLater}>
+      
       <div
         className="customer-feedback-popup"
         role="dialog"
         aria-modal="true"
         aria-labelledby="customer-feedback-popup-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="customer-feedback-popup-title">Customer Feedback</h3>
-        <p>Please rate your experience and leave an optional comment.</p>
+        onClick={(event) => event.stopPropagation()}>
+        
+        <h3 id="customer-feedback-popup-title">{t("feedback.title")}</h3>
+        <p>{t("feedback.description")}</p>
         <form onSubmit={handleSubmit}>
           <div
             className="customer-feedback-popup-stars"
-            onMouseLeave={() => setHoverRating(0)}
-          >
+            onMouseLeave={() => setHoverRating(0)}>
+            
             {[1, 2, 3, 4, 5].map((starValue) => {
               const activeRating = hoverRating || rating;
               const isActive = starValue <= activeRating;
@@ -116,11 +118,11 @@ const CustomerFeedbackPopup = () => {
                   className={`customer-feedback-popup-star-btn ${isActive ? 'active' : ''}`}
                   onClick={() => setRating(starValue)}
                   onMouseEnter={() => setHoverRating(starValue)}
-                  aria-label={`Rate ${starValue} star${starValue > 1 ? 's' : ''}`}
-                >
+                  aria-label={t("feedback.rateAria", { count: starValue })}>
+                  
                   <FaStar />
-                </button>
-              );
+                </button>);
+
             })}
           </div>
 
@@ -128,32 +130,32 @@ const CustomerFeedbackPopup = () => {
             className="customer-feedback-popup-textarea"
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Write your comment (optional)"
+            placeholder={t("feedback.commentPlaceholder")}
             maxLength={1000}
-            rows={4}
-          />
+            rows={4} />
+          
 
           <div className="customer-feedback-popup-actions">
             <button
               type="submit"
               className="customer-feedback-popup-submit-btn"
-              disabled={submitting || rating < 1}
-            >
-              {submitting ? 'Saving...' : 'Submit'}
+              disabled={submitting || rating < 1}>
+              
+              {submitting ? t("feedback.saving") : t("feedback.submit")}
             </button>
             <button
               type="button"
               className="customer-feedback-popup-maybe-later-btn"
               onClick={handleMaybeLater}
-              disabled={submitting}
-            >
-              Maybe later
+              disabled={submitting}>
+              
+              {t("feedback.maybeLater")}
             </button>
           </div>
         </form>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default CustomerFeedbackPopup;

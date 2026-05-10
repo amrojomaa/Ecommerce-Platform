@@ -1,4 +1,5 @@
 // Utility helper functions
+import { getLocaleForLanguage, getStoredLanguage } from '../i18n/constants';
 
 export const CURRENCY_STORAGE_KEY = 'preferred_currency';
 export const EXCHANGE_RATES_STORAGE_KEY = 'usd_exchange_rates';
@@ -177,17 +178,28 @@ export const roundCurrencyAmount = (amount, currencyCode = getCurrentCurrency())
 export const formatPrice = (
   price,
   currencyCode = getCurrentCurrency(),
-  exchangeRates = getStoredExchangeRates()
+  exchangeRates = getStoredExchangeRates(),
+  languageCode = getStoredLanguage()
 ) => {
   const normalized = normalizeCurrencyCode(currencyCode);
   const fractionDigits = getCurrencyFractionDigits(normalized);
   const convertedPrice = convertFromUSD(price, normalized, exchangeRates);
-  return new Intl.NumberFormat('en-US', {
+  const locale = getLocaleForLanguage(languageCode);
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: normalized,
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(convertedPrice);
+};
+
+export const getCurrentLocale = (languageCode = getStoredLanguage()) => {
+  return getLocaleForLanguage(languageCode);
+};
+
+export const formatNumber = (value, options = {}, languageCode = getStoredLanguage()) => {
+  const numericValue = toNumeric(value);
+  return new Intl.NumberFormat(getCurrentLocale(languageCode), options).format(numericValue);
 };
 
 export const fetchLatestExchangeRates = async () => {
@@ -219,13 +231,27 @@ export const fetchLatestExchangeRates = async () => {
   };
 };
 
-export const formatDate = (dateString) => {
+export const formatDate = (dateString, options = {}, languageCode = getStoredLanguage()) => {
   if (!dateString) return '';
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(getCurrentLocale(languageCode), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    ...options,
+  }).format(date);
+};
+
+export const formatDateTime = (dateString, options = {}, languageCode = getStoredLanguage()) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat(getCurrentLocale(languageCode), {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options,
   }).format(date);
 };
 

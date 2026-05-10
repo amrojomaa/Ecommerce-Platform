@@ -1,15 +1,18 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import '../styles/components/ConfirmDialog.css';
 
 const ConfirmDialog = ({
   isOpen,
-  title = 'Please confirm',
+  title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!isOpen) {
       return undefined;
@@ -44,7 +47,7 @@ const ConfirmDialog = ({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
       >
-        <h3 id="confirm-dialog-title">{title}</h3>
+        <h3 id="confirm-dialog-title">{title || t('ui.confirm.defaultTitle')}</h3>
         <p>{message}</p>
         <div className="confirm-dialog-actions">
           <button
@@ -52,14 +55,14 @@ const ConfirmDialog = ({
             className="confirm-dialog-cancel-btn"
             onClick={onCancel}
           >
-            {cancelText}
+            {cancelText || t('ui.confirm.cancel')}
           </button>
           <button
             type="button"
             className="confirm-dialog-confirm-btn"
             onClick={onConfirm}
           >
-            {confirmText}
+            {confirmText || t('ui.confirm.confirm')}
           </button>
         </div>
       </div>

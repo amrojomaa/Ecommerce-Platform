@@ -182,7 +182,7 @@ class Categories(BaseModel):
 
 
 class CategoriesDisplay(BaseModel):
-    # id: int
+    id: int
     name: str
     description: str
     created_at: datetime

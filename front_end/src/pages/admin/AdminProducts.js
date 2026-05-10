@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -27,7 +27,7 @@ const AdminProducts = () => {
     category_name: '',
     discount_enabled: false,
     discount_type: 'percentage',
-    discount_value: '',
+    discount_value: ''
   });
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -36,7 +36,7 @@ const AdminProducts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [quickFilters, setQuickFilters] = useState({
     lowstock: false,
-    discounted: false,
+    discounted: false
   });
   const [sentimentAnalytics, setSentimentAnalytics] = useState({}); // { productId: { total, positive, neutral, negative } }
   const confirm = useConfirm();
@@ -66,7 +66,7 @@ const AdminProducts = () => {
     const filterParam = searchParams.get('filter');
     const isLowStock = filterParam === 'lowstock';
     setIsLowStockFilter(isLowStock);
-    
+
     let filteredProducts = [...allProducts];
 
     if (isLowStock || quickFilters.lowstock) {
@@ -80,8 +80,8 @@ const AdminProducts = () => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (normalizedQuery) {
       filteredProducts = filteredProducts.filter((product) =>
-        product.name?.toLowerCase().includes(normalizedQuery) ||
-        product.category_name?.toLowerCase().includes(normalizedQuery)
+      product.name?.toLowerCase().includes(normalizedQuery) ||
+      product.category_name?.toLowerCase().includes(normalizedQuery)
       );
     }
 
@@ -96,7 +96,7 @@ const AdminProducts = () => {
       // Fetch sentiment analytics for all products
       await fetchSentimentAnalytics(response.data);
     } catch (error) {
-      toast.error('Failed to fetch products');
+      toast.error(tUi("ui.pages.admin.adminProducts.failedToFetchProducts_a8f46599c5"));
     } finally {
       setLoading(false);
     }
@@ -138,40 +138,40 @@ const AdminProducts = () => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
+
     // Check total images count (existing + new)
     const totalImages = images.length + files.length;
     if (totalImages > 3) {
-      toast.error('Maximum 3 images allowed. Please remove some images first.');
+      toast.error(tUi("ui.pages.admin.adminProducts.maximum3ImagesAllowedPlease_7319ac078b"));
       e.target.value = ''; // Reset file input
       return;
     }
-    
+
     setUploading(true);
-    
+
     try {
-      const uploadPromises = files.map(file => {
+      const uploadPromises = files.map((file) => {
         const formData = new FormData();
         formData.append('image', file);
         return http.post(IMAGE_ENDPOINTS.UPLOAD, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+            'Content-Type': 'multipart/form-data'
+          }
         });
       });
 
       const responses = await Promise.all(uploadPromises);
-      const uploadedImages = responses.map(r => r.data.filename);
+      const uploadedImages = responses.map((r) => r.data.filename);
       setImages([...images, ...uploadedImages]);
-      toast.success('Images uploaded successfully');
+      toast.success(tUi("ui.pages.admin.adminProducts.imagesUploadedSuccessfully_fee7383b18"));
     } catch (error) {
-      toast.error('Failed to upload images');
+      toast.error(tUi("ui.pages.admin.adminProducts.failedToUploadImages_f707ddb8e2"));
     } finally {
       setUploading(false);
       e.target.value = ''; // Reset file input
@@ -193,18 +193,18 @@ const AdminProducts = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate images: must have at least 1 image
     if (images.length < 1) {
-      toast.error('At least one image is required');
+      toast.error(tUi("ui.pages.admin.adminProducts.atLeastOneImageIs_8b5c4f7485"));
       return;
     }
-    
+
     if (images.length > 3) {
-      toast.error('Maximum 3 images allowed');
+      toast.error(tUi("ui.pages.admin.adminProducts.maximum3ImagesAllowed_071181eac3"));
       return;
     }
-    
+
     try {
       const basePrice = parseFloat(formData.price);
       let discountEnabled = Boolean(formData.discount_enabled);
@@ -219,23 +219,23 @@ const AdminProducts = () => {
       } else if (discountEnabled) {
         const rawDiscountValue = formData.discount_value;
         if (rawDiscountValue === '' || rawDiscountValue === null || rawDiscountValue === undefined) {
-          toast.error('Discount value is required when discount is enabled.');
+          toast.error(tUi("ui.pages.admin.adminProducts.discountValueIsRequiredWhen_7037da0d1a"));
           return;
         }
         if (!['percentage', 'fixed'].includes(discountType)) {
-          toast.error('Please select a valid discount type.');
+          toast.error(tUi("ui.pages.admin.adminProducts.pleaseSelectAValidDiscount_b85b304c81"));
           return;
         }
         if (Number.isNaN(discountValue) || discountValue <= 0) {
-          toast.error('Discount value must be greater than 0.');
+          toast.error(tUi("ui.pages.admin.adminProducts.discountValueMustBeGreater_ef09745ad2"));
           return;
         }
         if (discountType === 'percentage' && discountValue > 100) {
-          toast.error('Percentage discount cannot be more than 100%.');
+          toast.error(tUi("ui.pages.admin.adminProducts.percentageDiscountCannotBeMore_fa2e324b58"));
           return;
         }
         if (discountType === 'fixed' && discountValue > basePrice) {
-          toast.error('Fixed discount cannot exceed the original price.');
+          toast.error(tUi("ui.pages.admin.adminProducts.fixedDiscountCannotExceedThe_499b7ac30a"));
           return;
         }
       }
@@ -247,24 +247,24 @@ const AdminProducts = () => {
         discount_enabled: discountEnabled,
         discount_type: discountEnabled ? discountType : null,
         discount_value: discountEnabled ? discountValue : 0,
-        images: images,
+        images: images
       };
-      
+
       if (editingProduct) {
         if (!editingProduct.id) {
-          toast.error('Error: Product ID is missing. Please refresh and try again.');
+          toast.error(tUi("ui.pages.admin.adminProducts.errorProductIdIsMissing_7f8228b6c4"));
           return;
         }
         await http.put(
           PRODUCT_ENDPOINTS.UPDATE.replace('{id}', editingProduct.id),
           productData
         );
-        toast.success('Product updated successfully');
+        toast.success(tUi("ui.pages.admin.adminProducts.productUpdatedSuccessfully_32fdf252d5"));
       } else {
         await http.post(PRODUCT_ENDPOINTS.CREATE, productData);
-        toast.success('Product created successfully');
+        toast.success(tUi("ui.pages.admin.adminProducts.productCreatedSuccessfully_132827050a"));
       }
-      
+
       resetForm();
       await fetchProducts();
     } catch (error) {
@@ -283,7 +283,7 @@ const AdminProducts = () => {
       category_name: product.category_name,
       discount_enabled: false,
       discount_type: 'percentage',
-      discount_value: '',
+      discount_value: ''
     });
     // Load existing images
     setImages(product.images || []);
@@ -292,10 +292,10 @@ const AdminProducts = () => {
 
   const handleDelete = async (id) => {
     const confirmed = await confirm({
-      title: 'Delete product',
-      message: 'Are you sure you want to delete this product?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: tUi("ui.pages.admin.adminProducts.deleteProduct_5d6cc29a29"),
+      message: tUi("ui.pages.admin.adminProducts.areYouSureYouWant_4733cf098f"),
+      confirmText: tUi("ui.pages.admin.adminProducts.delete_d93e34aa58"),
+      cancelText: tUi("ui.pages.admin.adminProducts.cancel_bf8eef7581")
     });
     if (!confirmed) {
       return;
@@ -303,7 +303,7 @@ const AdminProducts = () => {
 
     try {
       await http.delete(PRODUCT_ENDPOINTS.DELETE.replace('{id}', id));
-      toast.success('Product deleted successfully');
+      toast.success(tUi("ui.pages.admin.adminProducts.productDeletedSuccessfully_f5f852a577"));
       await fetchProducts();
     } catch (error) {
       toast.error(error.message || 'Failed to delete product');
@@ -319,7 +319,7 @@ const AdminProducts = () => {
       category_name: '',
       discount_enabled: false,
       discount_type: 'percentage',
-      discount_value: '',
+      discount_value: ''
     });
     setImages([]);
     setEditingProduct(null);
@@ -337,7 +337,7 @@ const AdminProducts = () => {
     }
     setQuickFilters((prev) => ({
       ...prev,
-      [filterName]: !prev[filterName],
+      [filterName]: !prev[filterName]
     }));
   };
 
@@ -347,7 +347,7 @@ const AdminProducts = () => {
     }
     setQuickFilters({
       lowstock: false,
-      discounted: false,
+      discounted: false
     });
   };
 
@@ -362,53 +362,53 @@ const AdminProducts = () => {
     <div className="admin-products">
       <div className="admin-products-header">
         <div className="header-left">
-          <h1>Manage Products</h1>
-          <p className="admin-products-subtitle">Track inventory, update details, and manage your catalog faster.</p>
+          <h1>{tUi("ui.pages.admin.adminProducts.manageProducts_273cb9a998")}</h1>
+          <p className="admin-products-subtitle">{tUi("ui.pages.admin.adminProducts.trackInventoryUpdateDetailsAnd_86a8fb17ed")}</p>
           <div className="products-overview">
             <button
               type="button"
               className={`overview-item ${!isAnyQuickFilterActive ? 'active' : ''}`}
-              onClick={clearQuickFilters}
-            >
-              <span className="overview-label">Total</span>
+              onClick={clearQuickFilters}>
+              
+              <span className="overview-label">{tUi("ui.pages.admin.adminProducts.total_e2ad894d2e")}</span>
               <span className="overview-value">{totalProducts}</span>
             </button>
             <button
               type="button"
               className={`overview-item ${isLowStockActive ? 'active warning' : ''}`}
-              onClick={() => handleQuickFilterClick('lowstock')}
-            >
-              <span className="overview-label">Low Stock</span>
+              onClick={() => handleQuickFilterClick("lowstock")}>
+              
+              <span className="overview-label">{tUi("ui.pages.admin.adminProducts.lowStock_4da96beeec")}</span>
               <span className="overview-value warning">{lowStockCount}</span>
             </button>
             <button
               type="button"
               className={`overview-item ${quickFilters.discounted ? 'active success' : ''}`}
-              onClick={() => handleQuickFilterClick('discounted')}
-            >
-              <span className="overview-label">Discounted</span>
+              onClick={() => handleQuickFilterClick("discounted")}>
+              
+              <span className="overview-label">{tUi("ui.pages.admin.adminProducts.discounted_0b5fed5eb6")}</span>
               <span className="overview-value success">{discountedCount}</span>
             </button>
           </div>
-          {isLowStockFilter && (
-            <p className="low-stock-banner">
-              ⚠️ Showing low stock items (quantity {'<'} {lowStockThreshold})
+          {isLowStockFilter &&
+          <p className="low-stock-banner">{tUi("ui.pages.admin.adminProducts.showingLowStockItemsQuantity_52b64ac8b5")}
+            {'<'} {lowStockThreshold})
             </p>
-          )}
+          }
           <div className="products-toolbar">
             <div className="products-search">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by product or category..."
-                aria-label="Search products"
-              />
-              {searchQuery && (
-                <button type="button" className="clear-search-btn" onClick={clearSearch}>
-                  Clear
-                </button>
-              )}
+                placeholder={tUi("ui.pages.admin.adminProducts.searchByProductOrCategory_61793e3378")}
+                aria-label={tUi("ui.pages.admin.adminProducts.searchProducts_ab5d94763a")} />
+              
+              {searchQuery &&
+              <button type="button" className="clear-search-btn" onClick={clearSearch}>{tUi("ui.pages.admin.adminProducts.clear_049e273c52")}
+
+              </button>
+              }
             </div>
           </div>
         </div>
@@ -419,75 +419,75 @@ const AdminProducts = () => {
             setShowModal(true);
           }}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          + Add Product
+          whileTap={{ scale: 0.95 }}>{tUi("ui.pages.admin.adminProducts.addProduct_2792a039d2")}
+
+
         </motion.button>
       </div>
 
-      {loading ? (
-        <div className="products-grid">
-          {[...Array(8)].map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
-        <div className="products-empty-state">
+      {loading ?
+      <div className="products-grid">
+          {[...Array(8)].map((_, i) =>
+        <ProductCardSkeleton key={i} />
+        )}
+        </div> :
+      products.length === 0 ?
+      <div className="products-empty-state">
           <p className="products-empty-text">
-            {isLowStockFilter 
-              ? 'No low stock items found. All products have sufficient inventory.' 
-              : 'No products found.'}
+            {isLowStockFilter ? tUi("ui.pages.admin.adminProducts.noLowStockItemsFound_5b5f901eef") : tUi("ui.pages.admin.adminProducts.noProductsFound_3cff798862")
+
+          }
           </p>
-          {isLowStockFilter && (
-            <button
-              onClick={() => navigate('/admin/products')}
-              className="show-all-btn"
-            >
-              Show All Products
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="products-grid">
-          {products.map((product, index) => (
-            <motion.div
-              key={product.id}
-              className="admin-product-card"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
+          {isLowStockFilter &&
+        <button
+          onClick={() => navigate('/admin/products')}
+          className="show-all-btn">{tUi("ui.pages.admin.adminProducts.showAllProducts_f65c4d16b1")}
+
+
+        </button>
+        }
+        </div> :
+
+      <div className="products-grid">
+          {products.map((product, index) =>
+        <motion.div
+          key={product.id}
+          className="admin-product-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.05 }}>
+          
               <div className="product-image">
                 <img
-                  src={product.images && product.images.length > 0 
-                    ? getImagePreviewUrl(product.images[0])
-                    : `${API_BASE_URL}/images/placeholder.jpg`}
-                  alt={product.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src = `${API_BASE_URL}/images/placeholder.jpg`;
-                  }}
-                />
+              src={product.images && product.images.length > 0 ?
+              getImagePreviewUrl(product.images[0]) : `${
+              API_BASE_URL}/images/placeholder.jpg`}
+              alt={product.name}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = `${API_BASE_URL}/images/placeholder.jpg`;
+              }} />
+            
               </div>
               <div className="product-info">
                 <div className="product-status-row">
-                  {product.discount_enabled && <span className="status-chip discount">Discount</span>}
-                  {product.quantity < lowStockThreshold && <span className="status-chip low">Low Stock</span>}
+                  {product.discount_enabled && <span className="status-chip discount">{tUi("ui.pages.admin.adminProducts.discount_e4537e1136")}</span>}
+                  {product.quantity < lowStockThreshold && <span className="status-chip low">{tUi("ui.pages.admin.adminProducts.lowStock_4da96beeec")}</span>}
                 </div>
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category_name}</p>
-                {product.discount_enabled ? (
-                  <div className="product-price-block">
+                {product.discount_enabled ?
+            <div className="product-price-block">
                     <p className="product-price-original">{formatCurrency(product.price)}</p>
                     <p className="product-price-discounted">{formatCurrency(product.discounted_price ?? product.price)}</p>
-                  </div>
-                ) : (
-                  <p className="product-price">{formatCurrency(product.price)}</p>
-                )}
-                <p className="product-stock">Stock: {product.quantity}</p>
-                {sentimentAnalytics[product.id] && (
-                  <div className="sentiment-analytics">
-                    <p className="sentiment-title">Review Sentiment:</p>
+                  </div> :
+
+            <p className="product-price">{formatCurrency(product.price)}</p>
+            }
+                <p className="product-stock">{tUi("ui.pages.admin.adminProducts.stock_04fad4218b")}{product.quantity}</p>
+                {sentimentAnalytics[product.id] &&
+            <div className="sentiment-analytics">
+                    <p className="sentiment-title">{tUi("ui.pages.admin.adminProducts.reviewSentiment_ab05791b1b")}</p>
                     <div className="sentiment-stats">
                       <span className="sentiment-positive">
                         👍 {sentimentAnalytics[product.id].positive_count}
@@ -499,244 +499,244 @@ const AdminProducts = () => {
                         👎 {sentimentAnalytics[product.id].negative_count}
                       </span>
                     </div>
-                    {sentimentAnalytics[product.id].total_reviews > 0 && (
-                      <div className="sentiment-chart">
+                    {sentimentAnalytics[product.id].total_reviews > 0 &&
+              <div className="sentiment-chart">
                         <div className="sentiment-bar">
                           <div
-                            className="sentiment-bar-positive"
-                            style={{
-                              width: `${(sentimentAnalytics[product.id].positive_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
-                            }}
-                          />
+                    className="sentiment-bar-positive"
+                    style={{
+                      width: `${sentimentAnalytics[product.id].positive_count / sentimentAnalytics[product.id].total_reviews * 100}%`
+                    }} />
+                  
                           <div
-                            className="sentiment-bar-neutral"
-                            style={{
-                              width: `${(sentimentAnalytics[product.id].neutral_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
-                            }}
-                          />
+                    className="sentiment-bar-neutral"
+                    style={{
+                      width: `${sentimentAnalytics[product.id].neutral_count / sentimentAnalytics[product.id].total_reviews * 100}%`
+                    }} />
+                  
                           <div
-                            className="sentiment-bar-negative"
-                            style={{
-                              width: `${(sentimentAnalytics[product.id].negative_count / sentimentAnalytics[product.id].total_reviews) * 100}%`
-                            }}
-                          />
+                    className="sentiment-bar-negative"
+                    style={{
+                      width: `${sentimentAnalytics[product.id].negative_count / sentimentAnalytics[product.id].total_reviews * 100}%`
+                    }} />
+                  
                         </div>
-                        <p className="sentiment-total">
-                          Total: {sentimentAnalytics[product.id].total_reviews} reviews
-                        </p>
+                        <p className="sentiment-total">{tUi("ui.pages.admin.adminProducts.total_e6ca32913e")}
+                  {sentimentAnalytics[product.id].total_reviews}{tUi("ui.pages.admin.adminProducts.reviews_1e5dd01879")}
+                </p>
                       </div>
-                    )}
+              }
                   </div>
-                )}
+            }
               </div>
               <div className="product-actions">
-                <button 
-                  onClick={() => navigate(`/admin/comments/product/${product.id}`)} 
-                  className="reviews-btn"
-                  title="View Reviews"
-                >
-                  Reviews
-                </button>
-                <button onClick={() => handleEdit(product)} className="edit-btn">
-                  Edit
-                </button>
                 <button
-                  onClick={() => handleDelete(product.id)}
-                  className="delete-btn"
-                >
-                  Delete
-                </button>
+              onClick={() => navigate(`/admin/comments/product/${product.id}`)}
+              className="reviews-btn"
+              title={tUi("ui.pages.admin.adminProducts.viewReviews_03abf00f90")}>{tUi("ui.pages.admin.adminProducts.reviews_f2a6d42678")}
+
+
+            </button>
+                <button onClick={() => handleEdit(product)} className="edit-btn">{tUi("ui.pages.admin.adminProducts.edit_6b4f086241")}
+
+            </button>
+                <button
+              onClick={() => handleDelete(product.id)}
+              className="delete-btn">{tUi("ui.pages.admin.adminProducts.delete_d93e34aa58")}
+
+
+            </button>
               </div>
             </motion.div>
-          ))}
+        )}
         </div>
-      )}
+      }
 
       <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={resetForm}
-          >
+        {showModal &&
+        <motion.div
+          className="modal-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={resetForm}>
+          
             <motion.div
-              className="modal-content"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+            className="modal-content"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}>
+            
+              <h2>{editingProduct ? tUi("ui.pages.admin.adminProducts.editProduct_e63de796e6") : tUi("ui.pages.admin.adminProducts.addNewProduct_109f983c59")}</h2>
               
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Product Name *</label>
+                  <label>{tUi("ui.pages.admin.adminProducts.productName_f2fbd60c6e")}</label>
                   <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required />
+                
                 </div>
 
                 <div className="form-group">
-                  <label>Description *</label>
+                  <label>{tUi("ui.pages.admin.adminProducts.description_92d5f9f27a")}</label>
                   <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    required
-                    rows="4"
-                  />
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  required
+                  rows="4" />
+                
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Price *</label>
+                    <label>{tUi("ui.pages.admin.adminProducts.price_e83d5427d6")}</label>
                     <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      step="0.01"
-                      min="0"
-                      required
-                    />
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    min="0"
+                    required />
+                  
                   </div>
 
                   <div className="form-group">
-                    <label>Quantity *</label>
+                    <label>{tUi("ui.pages.admin.adminProducts.quantity_05a793b136")}</label>
                     <input
-                      type="number"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleInputChange}
-                      min="0"
-                      required
-                    />
+                    type="number"
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    min="0"
+                    required />
+                  
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label>Category Name *</label>
+                  <label>{tUi("ui.pages.admin.adminProducts.categoryName_d2ea6c7aa6")}</label>
                   <select
-                    name="category_name"
-                    value={formData.category_name}
-                    onChange={handleInputChange}
-                    required
-                    className="category-select"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category.name} value={category.name}>
+                  name="category_name"
+                  value={formData.category_name}
+                  onChange={handleInputChange}
+                  required
+                  className="category-select">
+                  
+                    <option value="">{tUi("ui.pages.admin.adminProducts.selectACategory_bb39da5ab8")}</option>
+                    {categories.map((category) =>
+                  <option key={category.name} value={category.name}>
                         {category.name}
                       </option>
-                    ))}
+                  )}
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Product Images * (1-3 images required)</label>
+                  <label>{tUi("ui.pages.admin.adminProducts.productImages13Images_b802fc6b5e")}</label>
                   <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading || images.length >= 3}
-                  />
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploading || images.length >= 3} />
+                
                   <small className="image-hint">
-                    {images.length === 0 && 'At least 1 image is required. '}
-                    {images.length > 0 && `${images.length}/3 images selected. `}
-                    {images.length < 3 && 'You can add more images.'}
-                    {images.length >= 3 && 'Maximum 3 images reached.'}
+                    {images.length === 0 && tUi("ui.pages.admin.adminProducts.atLeast1ImageIs_5c02b8c404")}
+                    {images.length > 0 && tUi("ui.pages.admin.adminProducts.value3ImagesSelected_586058179b", { value0: images.length })}
+                    {images.length < 3 && tUi("ui.pages.admin.adminProducts.youCanAddMoreImages_60be49e0df")}
+                    {images.length >= 3 && tUi("ui.pages.admin.adminProducts.maximum3ImagesReached_b22426d304")}
                   </small>
                   {uploading && <LoadingSpinner size="small" />}
-                  {images.length > 0 && (
-                    <div className="uploaded-images">
-                      {images.map((img, idx) => (
-                        <div key={img || idx} className="image-tag">
+                  {images.length > 0 &&
+                <div className="uploaded-images">
+                      {images.map((img, idx) =>
+                  <div key={img || idx} className="image-tag">
                           <img
-                            src={getImagePreviewUrl(img)}
-                            alt={`Product ${idx + 1}`}
-                            className="image-preview-thumb"
-                          />
+                      src={getImagePreviewUrl(img)}
+                      alt={tUi("ui.pages.admin.adminProducts.productValue_68027a6752", { value0: idx + 1 })}
+                      className="image-preview-thumb" />
+                    
                           <span>{img.split('/').pop()}</span>
                           <button
-                            type="button"
-                            onClick={() => handleRemoveImage(idx)}
-                            className="remove-image-btn"
-                            title="Remove image"
-                          >
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="remove-image-btn"
+                      title={tUi("ui.pages.admin.adminProducts.removeImage_f5462c1134")}>
+                      
                             ×
                           </button>
                         </div>
-                      ))}
-                    </div>
                   )}
+                    </div>
+                }
                 </div>
 
-                {!editingProduct && (
-                  <div className="form-group discount-settings">
+                {!editingProduct &&
+              <div className="form-group discount-settings">
                     <label className="discount-toggle">
                       <input
-                        type="checkbox"
-                        name="discount_enabled"
-                        checked={formData.discount_enabled}
-                        onChange={handleInputChange}
-                      />
-                      Enable Discount
-                    </label>
+                    type="checkbox"
+                    name="discount_enabled"
+                    checked={formData.discount_enabled}
+                    onChange={handleInputChange} />{tUi("ui.pages.admin.adminProducts.enableDiscount_6f1ae41f4b")}
+
+
+                </label>
 
                     <div className="form-row">
                       <div className="form-group">
-                        <label>Discount Type</label>
+                        <label>{tUi("ui.pages.admin.adminProducts.discountType_290629062f")}</label>
                         <select
-                          name="discount_type"
-                          value={formData.discount_type}
-                          onChange={handleInputChange}
-                          disabled={!formData.discount_enabled}
-                        >
-                          <option value="percentage">Percentage (%)</option>
-                          <option value="fixed">Fixed Amount</option>
+                      name="discount_type"
+                      value={formData.discount_type}
+                      onChange={handleInputChange}
+                      disabled={!formData.discount_enabled}>
+                      
+                          <option value="percentage">{tUi("ui.pages.admin.adminProducts.percentage_a8cb8ffe45")}</option>
+                          <option value="fixed">{tUi("ui.pages.admin.adminProducts.fixedAmount_3189e1492d")}</option>
                         </select>
                       </div>
 
                       <div className="form-group">
-                        <label>
-                          Discount Value {formData.discount_type === 'percentage' ? '(%)' : '(Amount)'}
+                        <label>{tUi("ui.pages.admin.adminProducts.discountValue_e3feb63e4a")}
+                      {formData.discount_type === "percentage" ? '(%)' : tUi("ui.pages.admin.adminProducts.amount_877f16267e")}
                         </label>
                         <input
-                          type="number"
-                          name="discount_value"
-                          value={formData.discount_value}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                          disabled={!formData.discount_enabled}
-                        />
+                      type="number"
+                      name="discount_value"
+                      value={formData.discount_value}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="0.01"
+                      disabled={!formData.discount_enabled} />
+                    
                       </div>
                     </div>
                   </div>
-                )}
+              }
 
                 <div className="modal-actions">
-                  <button type="button" onClick={resetForm} className="cancel-btn">
-                    Cancel
-                  </button>
+                  <button type="button" onClick={resetForm} className="cancel-btn">{tUi("ui.pages.admin.adminProducts.cancel_bf8eef7581")}
+
+                </button>
                   <button type="submit" className="save-btn">
-                    {editingProduct ? 'Update' : 'Create'}
+                    {editingProduct ? tUi("ui.pages.admin.adminProducts.update_45dc0cf26a") : tUi("ui.pages.admin.adminProducts.create_a62a4e5374")}
                   </button>
                 </div>
               </form>
             </motion.div>
           </motion.div>
-        )}
+        }
       </AnimatePresence>
-    </div>
-  );
+    </div>);
+
 };
 
 export default AdminProducts;

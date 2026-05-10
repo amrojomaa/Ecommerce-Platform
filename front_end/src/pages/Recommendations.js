@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -10,8 +10,8 @@ import { useCurrency } from '../hooks/useCurrency';
 import {
   fetchBatchRecommendations,
   fetchRealtimeRecommendations,
-  resetRecommendationProfile,
-} from '../services/recommendations';
+  resetRecommendationProfile } from
+'../services/recommendations';
 
 import '../styles/pages/Recommendations.css';
 
@@ -47,12 +47,12 @@ const Recommendations = () => {
   }, []);
 
   const loadBatch = useCallback(async (forceRefresh = false) => {
-    if (forceRefresh) setRefreshingBatch(true);
-    else setLoadingBatch(true);
+    if (forceRefresh) setRefreshingBatch(true);else
+    setLoadingBatch(true);
     try {
       const { data } = await fetchBatchRecommendations(15, forceRefresh);
       setBatch(Array.isArray(data) ? data : []);
-      if (forceRefresh) toast.success('Batch recommendations refreshed');
+      if (forceRefresh) toast.success(tUi("ui.pages.recommendations.batchRecommendationsRefreshed_3c588c1cd7"));
     } catch (err) {
       const msg = err?.message || 'Could not load batch recommendations';
       toast.error(msg);
@@ -70,11 +70,11 @@ const Recommendations = () => {
 
   const handleResetRecommendations = async () => {
     const ok = await confirm({
-      title: 'Reset recommendations?',
-      message:
-        'This clears your saved product views, searches, and other signals used only for “For you” recommendations. Your cart, wishlist, and orders are not changed.',
-      confirmText: 'Reset',
-      cancelText: 'Cancel',
+      title: tUi("ui.pages.recommendations.resetRecommendations_849eafbc0e"),
+      message: tUi("ui.pages.recommendations.thisClearsYourSavedProduct_09c55cba3d"),
+
+      confirmText: tUi("ui.pages.recommendations.reset_fa323b2d19"),
+      cancelText: tUi("ui.pages.recommendations.cancel_5a0d97a8e1")
     });
     if (!ok) return;
 
@@ -86,9 +86,9 @@ const Recommendations = () => {
       setBatch([]);
       setHistoryJustCleared(true);
       toast.success(
-        n !== null && n >= 0
-          ? `Cleared ${n} saved browsing signal${n === 1 ? '' : 's'}. Recommendations will stay empty until you browse, search, or add to cart again.`
-          : 'Recommendation history cleared. Recommendations will stay empty until you browse, search, or add to cart again.'
+        n !== null && n >= 0 ?
+        `Cleared ${n} saved browsing signal${n === 1 ? '' : 's'}. Recommendations will stay empty until you browse, search, or add to cart again.` :
+        'Recommendation history cleared. Recommendations will stay empty until you browse, search, or add to cart again.'
       );
     } catch (err) {
       toast.error(err?.message || 'Could not reset recommendations');
@@ -108,11 +108,11 @@ const Recommendations = () => {
         className="reco-card"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: i * 0.03 }}
-      >
+        transition={{ delay: i * 0.03 }}>
+        
         <Link to={`/products/${encName}`} className="reco-card-link">
           <div className="reco-card-image-wrap">
-            <img src={thumb} alt="" className="reco-card-img" onError={(e) => { e.currentTarget.src = imgUrl(null); }} />
+            <img src={thumb} alt="" className="reco-card-img" onError={(e) => {e.currentTarget.src = imgUrl(null);}} />
           </div>
           <div className="reco-card-body">
             <h3 className="reco-card-title">{p.name}</h3>
@@ -120,14 +120,14 @@ const Recommendations = () => {
             <p className="reco-card-price">
               {formatCurrency(p.discounted_price ?? p.price)}
             </p>
-            <p className="reco-card-meta">
-              score {Number(entry.score).toFixed(2)}
-              {entry.sources?.length ? ` · ${entry.sources.slice(0, 2).join(', ')}` : ''}
+            <p className="reco-card-meta">{tUi("ui.pages.recommendations.score_8560416b4d")}
+              {Number(entry.score).toFixed(2)}
+              {entry.sources?.length ? tUi("ui.pages.recommendations.value_01385437d2", { value0: entry.sources.slice(0, 2).join(', ') }) : ''}
             </p>
           </div>
         </Link>
-      </motion.article>
-    );
+      </motion.article>);
+
   };
 
   return (
@@ -136,9 +136,9 @@ const Recommendations = () => {
         <header className="recommendations-header">
           <div className="recommendations-title-row">
             <div>
-              <h1>Recommended for you</h1>
-              <p className="recommendations-sub">
-                Uses your views, searches, wishlist, cart, and purchases. Log some activity, then refresh.
+              <h1>{tUi("ui.pages.recommendations.recommendedForYou_33db7a2db1")}</h1>
+              <p className="recommendations-sub">{tUi("ui.pages.recommendations.usesYourViewsSearchesWishlist_7518b14b04")}
+
               </p>
             </div>
             <button
@@ -146,62 +146,62 @@ const Recommendations = () => {
               className="reco-reset-btn"
               onClick={handleResetRecommendations}
               disabled={resetting}
-              title="Clear recommendation history (does not empty cart or wishlist)"
-            >
-              <FaUndo /> {resetting ? 'Resetting…' : 'Reset recommendations'}
+              title={tUi("ui.pages.recommendations.clearRecommendationHistoryDoesNot_d511c61ddd")}>
+              
+              <FaUndo /> {resetting ? tUi("ui.pages.recommendations.resetting_c7defdfad7") : tUi("ui.pages.recommendations.resetRecommendations_10844cd05c")}
             </button>
           </div>
         </header>
 
-        {historyJustCleared && (
-          <p className="reco-cleared-banner" role="status">
-            Your personalization log was cleared on the server. Both lists will stay <strong>empty</strong>—even after a refresh—until you <strong>view a product</strong>, <strong>search</strong>, or <strong>add something to the cart / wishlist</strong>.
+        {historyJustCleared &&
+        <p className="reco-cleared-banner" role="status">{tUi("ui.pages.recommendations.yourPersonalizationLogWasCleared_99b6775cce")}
+          <strong>{tUi("ui.pages.recommendations.empty_e9fa2b3619")}</strong>{tUi("ui.pages.recommendations.evenAfterARefreshUntil_393b4c5366")}<strong>{tUi("ui.pages.recommendations.viewAProduct_45cf624682")}</strong>, <strong>{tUi("ui.pages.recommendations.search_11d7340d13")}</strong>{tUi("ui.pages.recommendations.or_11ea543640")}<strong>{tUi("ui.pages.recommendations.addSomethingToTheCart_2fde947f12")}</strong>.
           </p>
-        )}
+        }
 
         <section className="reco-section">
           <div className="reco-section-head">
-            <h2>Realtime</h2>
+            <h2>{tUi("ui.pages.recommendations.realtime_37d7df59d7")}</h2>
             <button type="button" className="reco-refresh-btn" onClick={() => loadRealtime()} disabled={loadingRt}>
-              <FaSync className={loadingRt ? 'spin' : ''} /> Refresh
+              <FaSync className={loadingRt ? "spin" : ''} />{tUi("ui.pages.recommendations.refresh_ba2298225f")}
             </button>
           </div>
-          {loadingRt ? (
-            <p className="reco-loading">Loading…</p>
-          ) : realtime.length === 0 ? (
-            <p className="reco-empty">
-              Nothing yet — view a product, search, or add to cart / wishlist while logged in, then press Refresh.
-            </p>
-          ) : (
-            <div className="reco-grid">{realtime.map((e, i) => renderCard(e, i))}</div>
-          )}
+          {loadingRt ?
+          <p className="reco-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</p> :
+          realtime.length === 0 ?
+          <p className="reco-empty">{tUi("ui.pages.recommendations.nothingYetViewAProduct_7f253a9a74")}
+
+          </p> :
+
+          <div className="reco-grid">{realtime.map((e, i) => renderCard(e, i))}</div>
+          }
         </section>
 
         <section className="reco-section">
           <div className="reco-section-head">
-            <h2>Batch (cached)</h2>
+            <h2>{tUi("ui.pages.recommendations.batchCached_5246e3e266")}</h2>
             <div className="reco-batch-actions">
               <button type="button" className="reco-refresh-btn" onClick={() => loadBatch(false)} disabled={loadingBatch || refreshingBatch}>
-                <FaSync className={loadingBatch ? 'spin' : ''} /> Load cache
+                <FaSync className={loadingBatch ? "spin" : ''} />{tUi("ui.pages.recommendations.loadCache_e03259ab79")}
               </button>
               <button type="button" className="reco-refresh-btn primary" onClick={() => loadBatch(true)} disabled={loadingBatch || refreshingBatch}>
-                <FaSync className={refreshingBatch ? 'spin' : ''} /> Recompute now
+                <FaSync className={refreshingBatch ? "spin" : ''} />{tUi("ui.pages.recommendations.recomputeNow_bac7d8c8a7")}
               </button>
             </div>
           </div>
-          {loadingBatch && batch.length === 0 ? (
-            <p className="reco-loading">Loading…</p>
-          ) : batch.length === 0 ? (
-            <p className="reco-empty">
-              No batch results yet — view, search, or add to cart / wishlist first, then press Load cache or Recompute now.
-            </p>
-          ) : (
-            <div className="reco-grid">{batch.map((e, i) => renderCard(e, i))}</div>
-          )}
+          {loadingBatch && batch.length === 0 ?
+          <p className="reco-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</p> :
+          batch.length === 0 ?
+          <p className="reco-empty">{tUi("ui.pages.recommendations.noBatchResultsYetView_1937d58ec4")}
+
+          </p> :
+
+          <div className="reco-grid">{batch.map((e, i) => renderCard(e, i))}</div>
+          }
         </section>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Recommendations;

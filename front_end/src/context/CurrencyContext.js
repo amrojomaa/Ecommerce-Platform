@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import i18n from '../i18n';
 import {
   CURRENCY_STORAGE_KEY,
   DEFAULT_EXCHANGE_RATES,
@@ -13,6 +14,7 @@ import {
   setCurrentCurrency as persistCurrentCurrency,
   setStoredExchangeRates,
 } from '../utils/helpers';
+import { normalizeLanguageCode } from '../i18n/constants';
 
 export const CurrencyContext = createContext();
 
@@ -23,6 +25,9 @@ export const CurrencyProvider = ({ children }) => {
   const [exchangeRates, setExchangeRates] = useState(() => getStoredExchangeRates());
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState(() => getExchangeRatesUpdatedAt());
   const [ratesLoading, setRatesLoading] = useState(false);
+  const [languageCode, setLanguageCode] = useState(() =>
+    normalizeLanguageCode(i18n.resolvedLanguage || i18n.language)
+  );
 
   const refreshExchangeRates = useCallback(async () => {
     setRatesLoading(true);
@@ -67,6 +72,17 @@ export const CurrencyProvider = ({ children }) => {
     return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
+  useEffect(() => {
+    const handleLanguageChanged = (nextLanguage) => {
+      setLanguageCode(normalizeLanguageCode(nextLanguage));
+    };
+
+    i18n.on('languageChanged', handleLanguageChanged);
+    return () => {
+      i18n.off('languageChanged', handleLanguageChanged);
+    };
+  }, []);
+
   const setCurrency = useCallback((currencyCode) => {
     const normalized = persistCurrentCurrency(currencyCode);
     setCurrentCurrencyState(normalized);
@@ -80,8 +96,8 @@ export const CurrencyProvider = ({ children }) => {
 
   const formatCurrency = useCallback(
     (amountInUsd, targetCurrency = currentCurrency) =>
-      formatPrice(amountInUsd, targetCurrency, exchangeRates),
-    [currentCurrency, exchangeRates]
+      formatPrice(amountInUsd, targetCurrency, exchangeRates, languageCode),
+    [currentCurrency, exchangeRates, languageCode]
   );
 
   const value = useMemo(

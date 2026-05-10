@@ -1,89 +1,6 @@
-// import React, { useState } from 'react';
-// import { Link, useNavigate } from 'react-router-dom';
-// import { useAuth } from '../hooks/useAuth';
-// import { useCart } from '../hooks/useCart';
-// import { useTheme } from '../hooks/useTheme';
-// import '../styles/layouts/Navbar.css';
-
-// const Navbar = () => {
-//   const { isAuthenticated, logout } = useAuth();
-//   const navigate = useNavigate();
-
-//   const handleLogout = () => {
-//     logout();        
-//     navigate('/login'); 
-//   };
-//   // const cartItemCount = getCartItemCount();
-
-//   return (
-//     <nav className="navbar">
-//       <div className="navbar-container">
-
-//         <Link to="/" className="navbar-logo">
-//           E-Commerce
-//         </Link>
-
-//         <div className="navbar-menu">
-//           <Link to="/products" className="navbar-link">Products</Link>
-
-//           {!isAuthenticated ? (
-//             <>
-//               <Link to="/login" className="navbar-link">
-//                 Login
-//               </Link>
-
-//               <Link to="/signup" className="navbar-link signup-link">
-//                 Sign Up
-//               </Link>
-//             </>
-//           ) : (
-//             <>
-//             <Link to="/cart" className="navbar-link cart-link">
-//                 Cart
-//                {/* {cartItemCount > 0 && (
-//                   <span className="cart-badge">{cartItemCount}</span>
-//                 )} */}
-//               </Link>
-//               <Link to="/orders" className="navbar-link">
-//                 My Orders
-//               </Link>
-//               <Link to="/profile" className="navbar-link">
-//                 Profile
-//               </Link>
-
-//               <button onClick={handleLogout} className="navbar-link logout-btn">
-//                 Logout
-//               </button>
-//             </>
-//           )}
-
-//         </div>
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useTheme } from '../hooks/useTheme';
@@ -95,8 +12,11 @@ import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
 import API_BASE_URL from '../config/api';
 import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { tUi } from '../i18n/uiText';
 
 const Navbar = () => {
+  const { t } = useTranslation();
   const { isAuthenticated, user, logout, isAdmin, isSupportManager, isWarehouseManager } = useAuth();
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
@@ -121,7 +41,7 @@ const Navbar = () => {
   const isOperationsManager = user?.role === 'operations_manager';
   const isRealAdmin = user?.role === 'admin';
   const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
-  const adminPanelLabel = isOperationsManager ? 'Operations Manager' : 'Admin';
+  const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
   const supportPanelPath = '/support/tickets';
   const warehousePanelPath = '/warehouse/products';
 
@@ -147,7 +67,7 @@ const Navbar = () => {
     navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
     setMobileMenuOpen(false);
   };
-  
+
   // Safety check for isAdmin
   const checkIsAdmin = () => {
     return isAdmin && typeof isAdmin === 'function' ? isAdmin() : false;
@@ -163,61 +83,61 @@ const Navbar = () => {
 
   // Default profile image (same as Profile page)
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
-  
+
   const getProfileImageUrl = () => {
     // Return default if no user
     if (!user) {
       return defaultProfileImage;
     }
-    
+
     // Check if profile_image exists and is not empty/null
     const profileImage = user.profile_image;
-    
+
     if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
       return defaultProfileImage;
     }
-    
+
     // Check if it's already a full URL (e.g., Google profile image)
     // Handle both http:// and https:// URLs
     if (typeof profileImage === 'string' && (profileImage.startsWith('http://') || profileImage.startsWith('https://'))) {
       // For Google images, ensure we use the correct format
       // Google URLs sometimes need to be modified to work properly
       let imageUrl = profileImage;
-      
+
       // If it's a Googleusercontent URL, make sure it's accessible
       if (imageUrl.includes('googleusercontent.com')) {
+
+
+
+
+
+
+
+
+
+
+
+
         // Remove any size restrictions that might cause issues (=s96-c)
         // Or keep them if they work - Google images should work as-is
         // The URL format is usually fine, but we can modify if needed
+      }return imageUrl;} // Normalize path - remove leading slash if present to avoid double slashes
+    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage; // Construct full URL for uploaded images
+    const imageUrl = `${API_BASE_URL}/${normalizedPath}`;return imageUrl;}; // Close dropdown when clicking outside
+  useEffect(() => {const handleClickOutside = (event) => {
+        if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+          setProfileDropdownOpen(false);
+        }
+      };
+
+      if (profileDropdownOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
       }
-      
-      return imageUrl;
-    }
-    
-    // Normalize path - remove leading slash if present to avoid double slashes
-    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
-    // Construct full URL for uploaded images
-    const imageUrl = `${API_BASE_URL}/${normalizedPath}`;
-    return imageUrl;
-  };
 
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
-        setProfileDropdownOpen(false);
-      }
-    };
-
-    if (profileDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [profileDropdownOpen]);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [profileDropdownOpen]);
 
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
@@ -232,7 +152,7 @@ const Navbar = () => {
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
           <span style={{ display: 'inline-block' }}>
-            E-Commerce
+            {t("app.brand")}
           </span>
         </Link>
 
@@ -241,187 +161,193 @@ const Navbar = () => {
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search products..."
-            aria-label="Search products"
-          />
-          <button type="submit">Search</button>
+            placeholder={t("navbar.searchPlaceholder")}
+            aria-label={t("navbar.searchAria")} />
+          
+          <button type="submit">{t("navbar.searchButton")}</button>
         </form>
 
         <div className="navbar-menu">
           <Link to="/products" className="navbar-link">
-            Products
+            {t("navbar.products")}
           </Link>
           
-          {isAuthenticated ? (
-            <>
+          {isAuthenticated ?
+          <>
               <Link to="/cart" className="navbar-link cart-link">
                 {/* Cart
                 {cartItemCount > 0 && (
-                  <span className="cart-badge">{cartItemCount}</span>
+                <span className="cart-badge">{cartItemCount}</span>
                 )} */}
                 <div className="cart-icon-wrapper">
                   <FaShoppingCart className="cart-icon" />
-                  {cartItemCount > 0 && (
-                  <span className="cart-badge">{cartItemCount}</span>
-                  )}
+                  {cartItemCount > 0 &&
+                <span className="cart-badge">{cartItemCount}</span>
+                }
                 </div>
               </Link>
               <Link to="/wishlist" className="navbar-link wishlist-link">
                 <div className="wishlist-icon-wrapper">
                   <FaHeart className="wishlist-icon" />
-                  {wishlistItemCount > 0 && (
-                  <span className="wishlist-badge">{wishlistItemCount}</span>
-                  )}
+                  {wishlistItemCount > 0 &&
+                <span className="wishlist-badge">{wishlistItemCount}</span>
+                }
                 </div>
               </Link>
               <Link to="/recommendations" className="navbar-link">
-                For you
+                {t("navbar.forYou")}
               </Link>
               <Link to="/orders" className="navbar-link">
-                My Orders
+                {t("navbar.myOrders")}
               </Link>
-              {user?.role === 'customer' && (
-                <Link to="/installments" className="navbar-link">
-                  Installments
+              {user?.role === "customer" &&
+            <Link to="/installments" className="navbar-link">
+                  {t("navbar.installments")}
                 </Link>
-              )}
-              {user?.role === 'customer' && (
-                <Link to="/tickets" className="navbar-link">
-                  <span>Tickets</span>
-                  {unreadTicketsCount > 0 && (
-                    <span className="admin-badge">{unreadTicketsCount}</span>
-                  )}
+            }
+              {user?.role === "customer" &&
+            <Link to="/tickets" className="navbar-link">
+                  <span>{t("navbar.tickets")}</span>
+                  {unreadTicketsCount > 0 &&
+              <span className="admin-badge">{unreadTicketsCount}</span>
+              }
                 </Link>
-              )}
-              {checkIsAdmin() && (
-                <Link to={adminPanelPath} className="navbar-link admin-link">
+            }
+              {checkIsAdmin() &&
+            <Link to={adminPanelPath} className="navbar-link admin-link">
                   <span>{adminPanelLabel}</span>
-                  {unreadTicketsCount > 0 && (
-                    <span className="admin-badge">{unreadTicketsCount}</span>
-                  )}
+                  {unreadTicketsCount > 0 &&
+              <span className="admin-badge">{unreadTicketsCount}</span>
+              }
                 </Link>
-              )}
-              {checkIsSupportManager() && (
-                <Link to={supportPanelPath} className="navbar-link admin-link">
-                  <span>Support Manager</span>
-                  {unreadTicketsCount > 0 && (
-                    <span className="admin-badge">{unreadTicketsCount}</span>
-                  )}
+            }
+              {checkIsSupportManager() &&
+            <Link to={supportPanelPath} className="navbar-link admin-link">
+                  <span>{t("navbar.supportManager")}</span>
+                  {unreadTicketsCount > 0 &&
+              <span className="admin-badge">{unreadTicketsCount}</span>
+              }
                 </Link>
-              )}
-              {checkIsWarehouseManager() && (
-                <Link to={warehousePanelPath} className="navbar-link admin-link">
-                  <span>Warehouse Manager</span>
+            }
+              {checkIsWarehouseManager() &&
+            <Link to={warehousePanelPath} className="navbar-link admin-link">
+                  <span>{t("navbar.warehouseManager")}</span>
                 </Link>
-              )}
-              {user?.role === 'employee' && !checkIsAdmin() && (
-                <Link to="/employee" className="navbar-link">
-                  <span>Employee</span>
-                  {unreadTicketsCount > 0 && (
-                    <span className="admin-badge">{unreadTicketsCount}</span>
-                  )}
+            }
+              {user?.role === "employee" && !checkIsAdmin() &&
+            <Link to="/employee" className="navbar-link">
+                  <span>{t("navbar.employee")}</span>
+                  {unreadTicketsCount > 0 &&
+              <span className="admin-badge">{unreadTicketsCount}</span>
+              }
                 </Link>
-              )}
-              {user?.role === 'driver' && (
-                <Link to="/driver" className="navbar-link">
-                  <span>Driver</span>
+            }
+              {user?.role === "driver" &&
+            <Link to="/driver" className="navbar-link">
+                  <span>{t("navbar.driver")}</span>
                 </Link>
-              )}
-              {user?.role === 'cashier' && (
-                <Link to="/cashier" className="navbar-link">
-                  <span>Cashier</span>
+            }
+              {user?.role === "cashier" &&
+            <Link to="/cashier" className="navbar-link">
+                  <span>{t("navbar.cashier")}</span>
                 </Link>
-              )}
-              {isRealAdmin && (
-                <Link to="/cashier" className="navbar-link">
-                  POS
+            }
+              {isRealAdmin &&
+            <Link to="/cashier" className="navbar-link">
+                  {t("navbar.pos")}
                 </Link>
-              )}
+            }
               <div className="navbar-user" ref={profileDropdownRef}>
-                <div 
-                  className="profile-image-wrapper"
-                  onClick={toggleProfileDropdown}
-                  onMouseEnter={() => setProfileDropdownOpen(true)}
-                >
-                  <img 
-                    key={`${user?.id || 'no-user'}-${user?.profile_image || 'default'}`}
-                    src={getProfileImageUrl()} 
-                    alt="Profile" 
-                    className="navbar-profile-image"
-                    loading="eager"
-                    decoding="async"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      // Always fallback to default image on error
-                      if (e.target.src !== defaultProfileImage) {
-                        e.target.src = defaultProfileImage;
-                      }
-                    }}
-                  />
+                <div
+                className="profile-image-wrapper"
+                onClick={toggleProfileDropdown}
+                onMouseEnter={() => setProfileDropdownOpen(true)}>
+                
+                  <img
+                  key={`${user?.id || 'no-user'}-${user?.profile_image || 'default'}`}
+                  src={getProfileImageUrl()}
+                  alt={tUi("ui.layouts.navbar.profile_553de13c4b")}
+                  className="navbar-profile-image"
+                  loading="eager"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    // Always fallback to default image on error
+                    if (e.target.src !== defaultProfileImage) {
+                      e.target.src = defaultProfileImage;
+                    }
+                  }} />
+                
                 </div>
-                {profileDropdownOpen && (
-                  <div className="profile-dropdown">
+                {profileDropdownOpen &&
+              <div className="profile-dropdown">
                     <div className="dropdown-item email-item">
-                      <span className="dropdown-label">Email:</span>
+                      <span className="dropdown-label">{t("navbar.email")}:</span>
                       <span className="dropdown-value">{user?.email}</span>
                     </div>
-                    <Link to="/profile"  className="dropdown-item"
-                      onClick={() => setProfileDropdownOpen(false)}>
-                      Profile
+                    <Link to="/profile" className="dropdown-item"
+                onClick={() => setProfileDropdownOpen(false)}>
+                      {t("navbar.profile")}
                     </Link>
                     <div className="dropdown-item currency-item">
-                      <span className="currency-label">Currency</span>
+                      <span className="currency-label">{t("currency.label")}</span>
                       <select
-                        className="currency-select"
-                        value={currentCurrency}
-                        onChange={handleCurrencyChange}
-                      >
-                        {currencyOptions.map((currency) => (
-                          <option key={currency.code} value={currency.code}>
-                            {currency.label}
+                    className="currency-select"
+                    value={currentCurrency}
+                    onChange={handleCurrencyChange}>
+                    
+                        {currencyOptions.map((currency) =>
+                    <option key={currency.code} value={currency.code}>
+                            {t(`currency.${currency.code}`, { defaultValue: currency.label })}
                           </option>
-                        ))}
+                    )}
                       </select>
                     </div>
-                    <button 
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        handleLogout();
-                      }} 
-                      className="dropdown-item logout-dropdown-btn"
-                    >
+                    <div className="dropdown-item language-item">
+                      <span className="currency-label">{t("language.label")}</span>
+                      <LanguageSwitcher compact />
+                    </div>
+                    <button
+                  onClick={() => {
+                    setProfileDropdownOpen(false);
+                    handleLogout();
+                  }}
+                  className="dropdown-item logout-dropdown-btn">
+                  
                       <FaSignOutAlt className="logout-icon" />
-                      Logout
+                      {t("navbar.logout")}
                     </button>
                   </div>
-                )}
+              }
               </div>
-            </>
-          ) : (
-            <>
+            </> :
+
+          <>
               <Link to="/login" className="navbar-link">
-                Login
+                {t("navbar.login")}
               </Link>
               <Link to="/signup" className="navbar-link signup-link">
-                Sign Up
+                {t("navbar.signup")}
               </Link>
             </>
-          )}
+          }
+
+          <LanguageSwitcher compact className="navbar-language-switcher" />
 
           <button
             onClick={toggleTheme}
             className="theme-toggle"
-            aria-label="Toggle theme"
-          >
+            aria-label={t("theme.toggle")}>
+            
             {/* {isDarkMode ? '☀️' : '🌙'} */}
-            {isDarkMode ? <MdLightMode/> : <MdDarkMode/>}
+            {isDarkMode ? <MdLightMode /> : <MdDarkMode />}
           </button>
 
           <button
             className="mobile-menu-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
+            aria-label={t("menu.toggle")}>
+            
             <span></span>
             <span></span>
             <span></span>
@@ -429,117 +355,122 @@ const Navbar = () => {
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="mobile-menu">
+      {mobileMenuOpen &&
+      <div className="mobile-menu">
           <form className="mobile-search" onSubmit={handleSearchSubmit}>
             <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search products..."
-              aria-label="Search products"
-            />
-            <button type="submit">Search</button>
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("navbar.searchPlaceholder")}
+            aria-label={t("navbar.searchAria")} />
+          
+            <button type="submit">{t("navbar.searchButton")}</button>
           </form>
           <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
-            Products
+            {t("navbar.products")}
           </Link>
-          {isAuthenticated ? (
-            <>
+          {isAuthenticated ?
+        <>
               <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
-                Cart ({cartItemCount})
+                {t("navbar.cart")} ({cartItemCount})
               </Link>
               <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
-                Wishlist ({wishlistItemCount})
+                {t("navbar.wishlist")} ({wishlistItemCount})
               </Link>
               <Link to="/recommendations" onClick={() => setMobileMenuOpen(false)}>
-                For you
+                {t("navbar.forYou")}
               </Link>
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
-                My Orders
+                {t("navbar.myOrders")}
               </Link>
-              {user?.role === 'customer' && (
-                <Link to="/installments" onClick={() => setMobileMenuOpen(false)}>
-                  Installments
+              {user?.role === "customer" &&
+          <Link to="/installments" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.installments")}
                 </Link>
-              )}
-              {user?.role === 'customer' && (
-                <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
-                  Tickets {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+          }
+              {user?.role === "customer" &&
+          <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.tickets")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
                 </Link>
-              )}
+          }
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                Profile
+                {t("navbar.profile")}
               </Link>
               <div className="mobile-currency-switcher">
-                <label htmlFor="mobile-currency">Currency</label>
+                <label htmlFor="mobile-currency">{t("currency.label")}</label>
                 <select
-                  id="mobile-currency"
-                  value={currentCurrency}
-                  onChange={handleCurrencyChange}
-                >
-                  {currencyOptions.map((currency) => (
-                    <option key={currency.code} value={currency.code}>
-                      {currency.label}
+              id="mobile-currency"
+              value={currentCurrency}
+              onChange={handleCurrencyChange}>
+              
+                  {currencyOptions.map((currency) =>
+              <option key={currency.code} value={currency.code}>
+                      {t(`currency.${currency.code}`, { defaultValue: currency.label })}
                     </option>
-                  ))}
+              )}
                 </select>
               </div>
-              {checkIsAdmin() && (
-                <Link to={adminPanelPath} onClick={() => setMobileMenuOpen(false)}>
-                  {adminPanelLabel} {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+              <div className="mobile-language-switcher">
+                <LanguageSwitcher />
+              </div>
+              {checkIsAdmin() &&
+          <Link to={adminPanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  {adminPanelLabel} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
                 </Link>
-              )}
-              {checkIsSupportManager() && (
-                <Link to={supportPanelPath} onClick={() => setMobileMenuOpen(false)}>
-                  Support Manager {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+          }
+              {checkIsSupportManager() &&
+          <Link to={supportPanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.supportManager")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
                 </Link>
-              )}
-              {checkIsWarehouseManager() && (
-                <Link to={warehousePanelPath} onClick={() => setMobileMenuOpen(false)}>
-                  Warehouse Manager
+          }
+              {checkIsWarehouseManager() &&
+          <Link to={warehousePanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.warehouseManager")}
                 </Link>
-              )}
-              {user?.role === 'employee' && !checkIsAdmin() && (
-                <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
-                  Employee {unreadTicketsCount > 0 && `(${unreadTicketsCount})`}
+          }
+              {user?.role === "employee" && !checkIsAdmin() &&
+          <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.employee")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
                 </Link>
-              )}
-              {user?.role === 'driver' && (
-                <Link to="/driver" onClick={() => setMobileMenuOpen(false)}>
-                  Driver
+          }
+              {user?.role === "driver" &&
+          <Link to="/driver" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.driver")}
                 </Link>
-              )}
-              {user?.role === 'cashier' && (
-                <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
-                  Cashier
+          }
+              {user?.role === "cashier" &&
+          <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.cashier")}
                 </Link>
-              )}
-              {isRealAdmin && (
-                <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
-                  POS
+          }
+              {isRealAdmin &&
+          <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.pos")}
                 </Link>
-              )}
+          }
               <div className="mobile-user-info">
                 <span>{user?.email}</span>
               </div>
-              <button onClick={handleLogout}>Logout</button>
-            </>
-          ) : (
-            <>
+              <button onClick={handleLogout}>{t("navbar.logout")}</button>
+            </> :
+
+        <>
               <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                Login
+                {t("navbar.login")}
               </Link>
               <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
-                Sign Up
+                {t("navbar.signup")}
               </Link>
+              <div className="mobile-language-switcher">
+                <LanguageSwitcher />
+              </div>
             </>
-          )}
+        }
         </div>
-      )}
-    </nav>
-  );
+      }
+    </nav>);
+
 };
 
 export default Navbar;
-

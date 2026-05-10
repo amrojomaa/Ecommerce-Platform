@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import http from '../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
@@ -23,7 +23,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
       const payloadPart = token.split('.')[1];
       if (!payloadPart) return null;
       const normalizedPayload = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
-      const padding = '='.repeat((4 - (normalizedPayload.length % 4)) % 4);
+      const padding = '='.repeat((4 - normalizedPayload.length % 4) % 4);
       const payload = JSON.parse(atob(`${normalizedPayload}${padding}`));
       return payload.id ?? payload.user_id ?? payload.sub ?? null;
     } catch (e) {
@@ -167,9 +167,9 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
       sender_id: effectiveCurrentUserId,
       sender_name: 'You',
       message: text,
-      created_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
     };
-    setMessages(prev => [...prev, optimisticMsg]);
+    setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
       // Send via REST API
@@ -179,10 +179,10 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
       );
 
       // Replace optimistic message with the real one from server
-      setMessages(prev => {
-        const filtered = prev.filter(m => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text));
+      setMessages((prev) => {
+        const filtered = prev.filter((m) => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text));
         // Only add if not already present (WS may have already delivered it)
-        if (response.data.id && filtered.some(m => m.id === response.data.id)) {
+        if (response.data.id && filtered.some((m) => m.id === response.data.id)) {
           return filtered;
         }
         return [...filtered, response.data];
@@ -190,7 +190,7 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
     } catch (error) {
       console.error('Error sending message:', error);
       // Remove optimistic message on failure
-      setMessages(prev => prev.filter(m => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text)));
+      setMessages((prev) => prev.filter((m) => !(m.id === null && String(m.sender_id) === String(effectiveCurrentUserId) && m.message === text)));
       // Re-populate the input so user can try again
       setInputMessage(text);
     } finally {
@@ -223,25 +223,25 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="chat-widget active-job-chat-widget"
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          transition={{ duration: 0.2 }}
-          style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}
-        >
+      {isOpen &&
+      <motion.div
+        className="chat-widget active-job-chat-widget"
+        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
+        style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000 }}>
+        
           {/* Chat Header */}
           <div className="chat-header">
             <div className="chat-header-content">
-              <h3>{isDriver ? 'Chat with Customer' : 'Chat with Driver'}</h3>
+              <h3>{isDriver ? tUi("ui.components.deliveryChatModal.chatWithCustomer_a2a4a675d6") : tUi("ui.components.deliveryChatModal.chatWithDriver_84cbaefc47")}</h3>
               <div className="chat-header-actions">
                 <button
-                  onClick={onClose}
-                  className="chat-close-button"
-                  title="Close chat"
-                >
+                onClick={onClose}
+                className="chat-close-button"
+                title={tUi("ui.components.deliveryChatModal.closeChat_449bdac89b")}>
+                
                   ✕
                 </button>
               </div>
@@ -250,96 +250,96 @@ const DeliveryChatModal = ({ isOpen, onClose, jobId, token, currentUserId, isDri
 
           {/* Messages Container */}
           <div className="chat-messages">
-            {isLoading && messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>Loading messages...</div>
-            ) : messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>No messages yet. Send one to start the conversation!</div>
-            ) : (
-              messages.map((msg, index) => {
-                const isMyMessage = isOwnMessage(msg);
-                return (
-                  <div
-                    key={msg.id || `msg-${index}`}
-                    className={`chat-message ${isMyMessage ? 'user-message' : 'assistant-message'}`}
-                    style={{ opacity: msg.id === null ? 0.6 : 1 }}
-                  >
+            {isLoading && messages.length === 0 ?
+          <div style={{ textAlign: 'center', padding: '20px' }}>{tUi("ui.components.deliveryChatModal.loadingMessages_c292bf8b9a")}</div> :
+          messages.length === 0 ?
+          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>{tUi("ui.components.deliveryChatModal.noMessagesYetSendOne_54d7d7dc81")}</div> :
+
+          messages.map((msg, index) => {
+            const isMyMessage = isOwnMessage(msg);
+            return (
+              <div
+                key={msg.id || `msg-${index}`}
+                className={`chat-message ${isMyMessage ? 'user-message' : 'assistant-message'}`}
+                style={{ opacity: msg.id === null ? 0.6 : 1 }}>
+                
                      <div style={{ fontSize: '0.75rem', marginBottom: '2px', opacity: 0.7 }}>
-                        {isMyMessage ? 'You' : msg.sender_name}
+                        {isMyMessage ? tUi("ui.components.deliveryChatModal.you_976043f91d") : msg.sender_name}
                      </div>
                     <div className="message-content">
                       <span>{msg.message}</span>
                     </div>
 
-                    {msg.id && !msg.is_deleted && !isMyMessage && (
-                      <div className="chat-reactions-row" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                        {QUICK_REACTIONS.map((emoji) => (
-                          <button
-                            key={`${msg.id}-${emoji}`}
-                            className="chat-reaction-btn"
-                            style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '12px', padding: '2px 6px', fontSize: '14px', cursor: 'pointer' }}
-                            onClick={() => reactToMessage(msg.id, emoji)}
-                            disabled={actionLoadingId === msg.id}
-                          >
+                    {msg.id && !msg.is_deleted && !isMyMessage &&
+                <div className="chat-reactions-row" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                        {QUICK_REACTIONS.map((emoji) =>
+                  <button
+                    key={`${msg.id}-${emoji}`}
+                    className="chat-reaction-btn"
+                    style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '12px', padding: '2px 6px', fontSize: '14px', cursor: 'pointer' }}
+                    onClick={() => reactToMessage(msg.id, emoji)}
+                    disabled={actionLoadingId === msg.id}>
+                    
                             {emoji}
                           </button>
-                        ))}
+                  )}
                       </div>
-                    )}
+                }
 
-                    {msg.reactions && msg.reactions.length > 0 && (
-                      <div className="chat-reaction-summary" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                        {msg.reactions.map((reaction) => (
-                          <button
-                            key={`${msg.id}-summary-${reaction.emoji}`}
-                            className={`chat-reaction-chip ${reaction.reacted_by_me ? 'active' : ''}`}
-                            style={{ 
-                              border: reaction.reacted_by_me ? '1px solid #667eea' : '1px solid rgba(0,0,0,0.1)', 
-                              background: reaction.reacted_by_me ? 'rgba(102,126,234,0.15)' : '#fff',
-                              borderRadius: '12px', padding: '2px 6px', fontSize: '12px', cursor: isMyMessage ? 'default' : 'pointer'
-                            }}
-                            onClick={() => {
-                              if (!isMyMessage) {
-                                reactToMessage(msg.id, reaction.emoji);
-                              }
-                            }}
-                            disabled={actionLoadingId === msg.id || msg.is_deleted}
-                          >
+                    {msg.reactions && msg.reactions.length > 0 &&
+                <div className="chat-reaction-summary" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {msg.reactions.map((reaction) =>
+                  <button
+                    key={`${msg.id}-summary-${reaction.emoji}`}
+                    className={`chat-reaction-chip ${reaction.reacted_by_me ? 'active' : ''}`}
+                    style={{
+                      border: reaction.reacted_by_me ? '1px solid #667eea' : '1px solid rgba(0,0,0,0.1)',
+                      background: reaction.reacted_by_me ? 'rgba(102,126,234,0.15)' : '#fff',
+                      borderRadius: '12px', padding: '2px 6px', fontSize: '12px', cursor: isMyMessage ? 'default' : 'pointer'
+                    }}
+                    onClick={() => {
+                      if (!isMyMessage) {
+                        reactToMessage(msg.id, reaction.emoji);
+                      }
+                    }}
+                    disabled={actionLoadingId === msg.id || msg.is_deleted}>
+                    
                             {reaction.emoji} {reaction.count}
                           </button>
-                        ))}
+                  )}
                       </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
+                }
+                  </div>);
+
+          })
+          }
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input Area */}
           <div className="chat-input-container">
             <input
-              ref={inputRef}
-              type="text"
-              className="chat-input"
-              placeholder="Type your message..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isSending}
-            />
+            ref={inputRef}
+            type="text"
+            className="chat-input"
+            placeholder={tUi("ui.components.deliveryChatModal.typeYourMessage_abaddd814b")}
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isSending} />
+          
             <button
-              className="chat-send-button"
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isSending}
-            >
+            className="chat-send-button"
+            onClick={sendMessage}
+            disabled={!inputMessage.trim() || isSending}>
+            
               {isSending ? '⏳' : '➤'}
             </button>
           </div>
         </motion.div>
-      )}
-    </AnimatePresence>
-  );
+      }
+    </AnimatePresence>);
+
 };
 
 export default DeliveryChatModal;

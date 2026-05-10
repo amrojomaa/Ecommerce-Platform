@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
@@ -8,7 +8,6 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import '../../styles/pages/admin/AdminFeedback.css';
 
 const RATING_FILTERS = ['all', 5, 4, 3, 2, 1];
-const MONTH_FORMATTER = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
 
 const renderStars = (rating) => {
   const safeRating = Number(rating) || 0;
@@ -33,7 +32,7 @@ const AdminFeedback = () => {
       setFeedbackRows(response.data || []);
     } catch (error) {
       console.error('Error fetching feedback:', error);
-      toast.error('Failed to load customer feedback');
+      toast.error(tUi("ui.pages.admin.adminFeedback.failedToLoadCustomerFeedback_8a3ede622c"));
     } finally {
       setLoading(false);
     }
@@ -55,8 +54,8 @@ const AdminFeedback = () => {
       return (
         fullName.includes(normalized) ||
         email.includes(normalized) ||
-        comment.includes(normalized)
-      );
+        comment.includes(normalized));
+
     });
   }, [feedbackRows, searchTerm]);
 
@@ -67,14 +66,14 @@ const AdminFeedback = () => {
       const dateSource = entry.created_at || entry.updated_at;
       const entryDate = new Date(dateSource);
       const groupKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
-      const groupLabel = MONTH_FORMATTER.format(entryDate);
+      const groupLabel = formatDate(entryDate.toISOString(), { month: 'long', year: 'numeric' });
 
       if (!groupsMap.has(groupKey)) {
         groupsMap.set(groupKey, {
           key: groupKey,
           label: groupLabel,
           sortTs: entryDate.getTime(),
-          entries: [],
+          entries: []
         });
       }
 
@@ -86,18 +85,18 @@ const AdminFeedback = () => {
     });
 
     return Array.from(groupsMap.values())
-      .sort((a, b) => b.sortTs - a.sortTs)
-      .map((group) => ({
-        ...group,
-        commentCount: group.entries.filter((entry) => (entry.comment || '').trim().length > 0).length,
-        averageRating:
-          group.entries.length > 0
-            ? group.entries.reduce((sum, entry) => sum + (Number(entry.rating) || 0), 0) / group.entries.length
-            : 0,
-        entries: group.entries.sort(
-          (a, b) => new Date(b.created_at || b.updated_at).getTime() - new Date(a.created_at || a.updated_at).getTime()
-        ),
-      }));
+    .sort((a, b) => b.sortTs - a.sortTs)
+    .map((group) => ({
+      ...group,
+      commentCount: group.entries.filter((entry) => (entry.comment || '').trim().length > 0).length,
+      averageRating:
+      group.entries.length > 0 ?
+      group.entries.reduce((sum, entry) => sum + (Number(entry.rating) || 0), 0) / group.entries.length :
+      0,
+      entries: group.entries.sort(
+        (a, b) => new Date(b.created_at || b.updated_at).getTime() - new Date(a.created_at || a.updated_at).getTime()
+      )
+    }));
   }, [visibleFeedback]);
 
   useEffect(() => {
@@ -117,76 +116,76 @@ const AdminFeedback = () => {
   const toggleGroup = (groupKey) => {
     setExpandedGroups((prev) => ({
       ...prev,
-      [groupKey]: !prev[groupKey],
+      [groupKey]: !prev[groupKey]
     }));
   };
 
   return (
     <div className="admin-feedback">
       <div className="admin-feedback-header">
-        <h1>Customer Feedback</h1>
-        <p>Ratings and comments.</p>
+        <h1>{tUi("ui.pages.admin.adminFeedback.customerFeedback_4fd4bfed76")}</h1>
+        <p>{tUi("ui.pages.admin.adminFeedback.ratingsAndComments_9672ebdf0c")}</p>
       </div>
 
       <div className="admin-feedback-toolbar">
         <input
           type="text"
           className="admin-feedback-search"
-          placeholder="Search by name, email, or comment..."
+          placeholder={tUi("ui.pages.admin.adminFeedback.searchByNameEmailOr_a135b39828")}
           value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
+          onChange={(event) => setSearchTerm(event.target.value)} />
+        
         <div className="admin-feedback-filters">
-          {RATING_FILTERS.map((filterValue) => (
-            <button
-              key={filterValue}
-              type="button"
-              className={`admin-feedback-filter-btn ${ratingFilter === filterValue ? 'active' : ''}`}
-              onClick={() => setRatingFilter(filterValue)}
-            >
-              {filterValue === 'all' ? 'All Ratings' : `${filterValue} Stars`}
+          {RATING_FILTERS.map((filterValue) =>
+          <button
+            key={filterValue}
+            type="button"
+            className={`admin-feedback-filter-btn ${ratingFilter === filterValue ? 'active' : ''}`}
+            onClick={() => setRatingFilter(filterValue)}>
+            
+              {filterValue === "all" ? tUi("ui.pages.admin.adminFeedback.allRatings_839197b0a4") : tUi("ui.pages.admin.adminFeedback.valueStars_91b0a7fe89", { value0: filterValue })}
             </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="admin-feedback-loading">
+      {loading ?
+      <div className="admin-feedback-loading">
           <LoadingSpinner />
-        </div>
-      ) : groupedFeedback.length === 0 ? (
-        <div className="admin-feedback-empty">
-          <p>No customer feedback found for the current filters.</p>
-        </div>
-      ) : (
-        <div className="admin-feedback-grouped-list">
+        </div> :
+      groupedFeedback.length === 0 ?
+      <div className="admin-feedback-empty">
+          <p>{tUi("ui.pages.admin.adminFeedback.noCustomerFeedbackFoundFor_97a65aec8e")}</p>
+        </div> :
+
+      <div className="admin-feedback-grouped-list">
           {groupedFeedback.map((group) => {
-            const isExpanded = expandedGroups[group.key];
-            return (
-              <section key={group.key} className="admin-feedback-group">
+          const isExpanded = expandedGroups[group.key];
+          return (
+            <section key={group.key} className="admin-feedback-group">
                 <button
-                  type="button"
-                  className="admin-feedback-group-toggle"
-                  onClick={() => toggleGroup(group.key)}
-                >
+                type="button"
+                className="admin-feedback-group-toggle"
+                onClick={() => toggleGroup(group.key)}>
+                
                   <span className="admin-feedback-group-label">{group.label}</span>
                   <span className="admin-feedback-group-meta">
-                    {group.commentCount} {group.commentCount === 1 ? 'comment' : 'comments'} • Avg {group.averageRating.toFixed(1)} ({group.entries.length}{' '}
-                    {group.entries.length === 1 ? 'rating' : 'ratings'}) {isExpanded ? '▾' : '▸'}
+                    {group.commentCount} {group.commentCount === 1 ? tUi("ui.pages.admin.adminFeedback.comment_9e8582da81") : tUi("ui.pages.admin.adminFeedback.comments_2c5add3272")}{tUi("ui.pages.admin.adminFeedback.avg_88b67561cc")}{group.averageRating.toFixed(1)} ({group.entries.length}{' '}
+                    {group.entries.length === 1 ? tUi("ui.pages.admin.adminFeedback.rating_f79d1f1958") : tUi("ui.pages.admin.adminFeedback.ratings_1c705eb178")}) {isExpanded ? '▾' : '▸'}
                   </span>
                 </button>
 
                 <div className={`admin-feedback-group-body ${isExpanded ? 'expanded' : ''}`}>
-                  {isExpanded && (
-                    <div className="admin-feedback-list">
-                      {group.entries.map((entry, index) => (
-                        <motion.article
-                          key={entry.id}
-                          className="admin-feedback-card"
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.02 }}
-                        >
+                  {isExpanded &&
+                <div className="admin-feedback-list">
+                      {group.entries.map((entry, index) =>
+                  <motion.article
+                    key={entry.id}
+                    className="admin-feedback-card"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}>
+                    
                           <div className="admin-feedback-card-header">
                             <div>
                               <h3>
@@ -195,7 +194,7 @@ const AdminFeedback = () => {
                               <p>{entry.user?.email}</p>
                             </div>
                             <div className="admin-feedback-rating-wrap">
-                              <span className="admin-feedback-stars" aria-label={`${entry.rating} out of 5`}>
+                              <span className="admin-feedback-stars" aria-label={tUi("ui.pages.admin.adminFeedback.valueOutOf5_9ae6dcd335", { value0: entry.rating })}>
                                 {renderStars(entry.rating)}
                               </span>
                               <span className="admin-feedback-rating-text">{entry.rating}/5</span>
@@ -203,24 +202,24 @@ const AdminFeedback = () => {
                           </div>
 
                           <p className="admin-feedback-comment">
-                            {entry.comment || 'No comment provided.'}
+                            {entry.comment || tUi("ui.pages.admin.adminFeedback.noCommentProvided_041e34567f")}
                           </p>
 
-                          <p className="admin-feedback-meta">
-                            Updated: {formatDate(entry.updated_at)} | Submitted: {formatDate(entry.created_at)}
+                          <p className="admin-feedback-meta">{tUi("ui.pages.admin.adminFeedback.updated_675637bd9d")}
+                      {formatDate(entry.updated_at)}{tUi("ui.pages.admin.adminFeedback.submitted_43310e0039")}{formatDate(entry.created_at)}
                           </p>
                         </motion.article>
-                      ))}
-                    </div>
                   )}
+                    </div>
+                }
                 </div>
-              </section>
-            );
-          })}
+              </section>);
+
+        })}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default AdminFeedback;

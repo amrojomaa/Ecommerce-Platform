@@ -1,14 +1,14 @@
-import React, { createContext, useCallback, useRef, useState } from 'react';
+import { tUi } from "../i18n/uiText";import React, { createContext, useCallback, useRef, useState } from 'react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export const ConfirmContext = createContext(null);
 
 const initialDialogState = {
   isOpen: false,
-  title: 'Please confirm',
+  title: tUi("ui.context.confirmContext.pleaseConfirm_9a38bd4323"),
   message: '',
-  confirmText: 'Confirm',
-  cancelText: 'Cancel',
+  confirmText: tUi("ui.context.confirmContext.confirm_92f10c418f"),
+  cancelText: tUi("ui.context.confirmContext.cancel_c50fab1ce7")
 };
 
 export const ConfirmProvider = ({ children }) => {
@@ -31,7 +31,7 @@ export const ConfirmProvider = ({ children }) => {
         title: options.title || initialDialogState.title,
         message: options.message || '',
         confirmText: options.confirmText || initialDialogState.confirmText,
-        cancelText: options.cancelText || initialDialogState.cancelText,
+        cancelText: options.cancelText || initialDialogState.cancelText
       });
     });
   }, []);
@@ -46,8 +46,8 @@ export const ConfirmProvider = ({ children }) => {
         confirmText={dialogState.confirmText}
         cancelText={dialogState.cancelText}
         onConfirm={() => closeDialog(true)}
-        onCancel={() => closeDialog(false)}
-      />
-    </ConfirmContext.Provider>
-  );
+        onCancel={() => closeDialog(false)} />
+      
+    </ConfirmContext.Provider>);
+
 };

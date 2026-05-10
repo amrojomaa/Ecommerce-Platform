@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -11,6 +11,12 @@ import { useConfirm } from '../../hooks/useConfirm';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminComments.css';
+
+const SENTIMENT_LABEL_KEYS = {
+  positive: 'ui.pages.admin.adminComments.sentimentPositive_70da220f7a',
+  neutral: 'ui.pages.admin.adminComments.sentimentNeutral_1adf64fbd4',
+  negative: 'ui.pages.admin.adminComments.sentimentNegative_78ec8a0d98',
+};
 
 const AdminComments = () => {
   const { productId } = useParams();
@@ -52,23 +58,23 @@ const AdminComments = () => {
   const fetchProducts = async () => {
     try {
       const productsEndpoint =
-        user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
+      user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
       const response = await http.get(productsEndpoint);
       setProducts(response.data || []);
-      
+
       // If productId from URL, set it as selected
       if (productId) {
         setSelectedProductId(parseInt(productId));
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
+      toast.error(tUi("ui.pages.admin.adminComments.failedToFetchProducts_91dffdab28"));
     }
   };
 
   const fetchComments = async () => {
     if (!selectedProductId) return;
-    
+
     setLoading(true);
     try {
       const response = await http.get(
@@ -78,7 +84,7 @@ const AdminComments = () => {
       setComments(response.data || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
-      toast.error('Failed to fetch comments');
+      toast.error(tUi("ui.pages.admin.adminComments.failedToFetchComments_a09ce4627e"));
     } finally {
       setLoading(false);
     }
@@ -94,17 +100,17 @@ const AdminComments = () => {
       setFilteredComments(comments);
     } else {
       setFilteredComments(
-        comments.filter(comment => comment.sentiment === sentimentFilter)
+        comments.filter((comment) => comment.sentiment === sentimentFilter)
       );
     }
   };
 
   const handleDelete = async (commentId) => {
     const confirmed = await confirm({
-      title: 'Delete comment',
-      message: 'Are you sure you want to delete this comment?',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: tUi("ui.pages.admin.adminComments.deleteComment_d6666490e7"),
+      message: tUi("ui.pages.admin.adminComments.areYouSureYouWant_b3d0559f52"),
+      confirmText: tUi("ui.pages.admin.adminComments.delete_66f5dde37d"),
+      cancelText: tUi("ui.pages.admin.adminComments.cancel_117ba1126e")
     });
     if (!confirmed) {
       return;
@@ -113,12 +119,12 @@ const AdminComments = () => {
     setDeleting(commentId);
     try {
       await http.delete(buildUrl(COMMENT_ENDPOINTS.DELETE, { comment_id: commentId }));
-      toast.success('Comment deleted successfully');
+      toast.success(tUi("ui.pages.admin.adminComments.commentDeletedSuccessfully_a8f689dd50"));
       if (selectedProductId) {
         await fetchComments();
       }
     } catch (error) {
-      toast.error('Failed to delete comment');
+      toast.error(tUi("ui.pages.admin.adminComments.failedToDeleteComment_1a364f7e19"));
     } finally {
       setDeleting(null);
     }
@@ -126,29 +132,36 @@ const AdminComments = () => {
 
   const getSentimentBadge = (sentiment) => {
     if (!sentiment) return null;
-    
-    const badges = {
-      positive: { text: 'Positive', class: 'sentiment-badge-positive', icon: '👍' },
-      neutral: { text: 'Neutral', class: 'sentiment-badge-neutral', icon: '😐' },
-      negative: { text: 'Negative', class: 'sentiment-badge-negative', icon: '👎' }
+    const normalized = sentiment.toLowerCase();
+
+    const getSentimentLabel = (value) => {
+      const key = SENTIMENT_LABEL_KEYS[value];
+      if (key) return tUi(key);
+      return value;
     };
 
-    const badge = badges[sentiment.toLowerCase()];
+    const badges = {
+      positive: { text: getSentimentLabel('positive'), class: 'sentiment-badge-positive', icon: '👍' },
+      neutral: { text: getSentimentLabel('neutral'), class: 'sentiment-badge-neutral', icon: '😐' },
+      negative: { text: getSentimentLabel('negative'), class: 'sentiment-badge-negative', icon: '👎' },
+    };
+
+    const badge = badges[normalized];
     if (!badge) return null;
 
     return (
       <span className={`sentiment-badge ${badge.class}`}>
         {badge.icon} {badge.text}
-      </span>
-    );
+      </span>);
+
   };
 
   const getSentimentCounts = () => {
     const counts = {
       all: comments.length,
-      positive: comments.filter(c => c.sentiment === 'positive').length,
-      neutral: comments.filter(c => c.sentiment === 'neutral').length,
-      negative: comments.filter(c => c.sentiment === 'negative').length
+      positive: comments.filter((c) => c.sentiment === 'positive').length,
+      neutral: comments.filter((c) => c.sentiment === 'neutral').length,
+      negative: comments.filter((c) => c.sentiment === 'negative').length
     };
     return counts;
   };
@@ -161,12 +174,12 @@ const AdminComments = () => {
     if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
       return defaultProfileImage;
     }
-    
+
     // Check if it's already a full URL (e.g., Google profile image)
     if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
       return profileImage;
     }
-    
+
     // Normalize path - remove leading slash if present to avoid double slashes
     const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
     // Construct full URL for uploaded images
@@ -186,142 +199,147 @@ const AdminComments = () => {
   };
 
   const counts = getSentimentCounts();
+  const getSentimentLabel = (value) => {
+    const key = SENTIMENT_LABEL_KEYS[value];
+    if (key) return tUi(key);
+    return value;
+  };
 
-  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
   const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  product.name.toLowerCase().includes(productSearch.toLowerCase())
   );
-  const visibleProducts = selectedProductId
-    ? products.filter((product) => product.id === selectedProductId)
-    : filteredProducts;
+  const visibleProducts = selectedProductId ?
+  products.filter((product) => product.id === selectedProductId) :
+  filteredProducts;
 
   return (
     <div className="admin-comments">
       <div className="admin-comments-header">
-        <h1>Manage Reviews</h1>
+        <h1>{tUi("ui.pages.admin.adminComments.manageReviews_9e45000031")}</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="product-selector">
-            <label htmlFor="product-search">Search Product:</label>
+            <label htmlFor="product-search">{tUi("ui.pages.admin.adminComments.searchProduct_e0487af2dc")}</label>
             <input
               id="product-search"
               type="text"
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
               className="product-search-input"
-              placeholder="Search by product name..."
-            />
+              placeholder={tUi("ui.pages.admin.adminComments.searchByProductName_7e4227491a")} />
+            
           </div>
-          {selectedProductId && (
-            <button
-              className="clear-product-btn"
-              onClick={() => {
-                setSelectedProductId(null);
-                navigate(commentsBasePath, { replace: true });
-              }}
-            >
-              Clear Product
-            </button>
-          )}
-          {selectedProductId && (
-            <div className="sentiment-filters">
+          {selectedProductId &&
+          <button
+            className="clear-product-btn"
+            onClick={() => {
+              setSelectedProductId(null);
+              navigate(commentsBasePath, { replace: true });
+            }}>{tUi("ui.pages.admin.adminComments.clearProduct_e4db72bc41")}
+
+
+          </button>
+          }
+          {selectedProductId &&
+          <div className="sentiment-filters">
               <button
-                className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setSentimentFilter('all')}
-              >
-                All ({counts.all})
+              className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter("all")}>{tUi("ui.pages.admin.adminComments.all_a69a334f44")}
+
+              {counts.all})
               </button>
               <button
-                className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
-                onClick={() => setSentimentFilter('positive')}
-              >
-                Positive ({counts.positive})
+              className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter("positive")}>{tUi("ui.pages.admin.adminComments.positive_4bd9e10f4f")}
+
+              {counts.positive})
               </button>
               <button
-                className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
-                onClick={() => setSentimentFilter('neutral')}
-              >
-                Neutral ({counts.neutral})
+              className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter("neutral")}>{tUi("ui.pages.admin.adminComments.neutral_415b26d261")}
+
+              {counts.neutral})
               </button>
               <button
-                className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
-                onClick={() => setSentimentFilter('negative')}
-              >
-                Negative ({counts.negative})
+              className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter("negative")}>{tUi("ui.pages.admin.adminComments.negative_5bd4ee87d5")}
+
+              {counts.negative})
               </button>
             </div>
-          )}
+          }
         </div>
       </div>
 
       <div className="products-grid">
-        {visibleProducts.map((product) => (
-          <button
-            key={product.id}
-            className={`product-card-btn ${selectedProductId === product.id ? 'selected' : ''}`}
-            onClick={() => handleProductSelect(product.id)}
-          >
+        {visibleProducts.map((product) =>
+        <button
+          key={product.id}
+          className={`product-card-btn ${selectedProductId === product.id ? 'selected' : ''}`}
+          onClick={() => handleProductSelect(product.id)}>
+          
             <div className="product-card-image-wrap">
-              {getProductImageUrl(product) ? (
-                <img
-                  src={getProductImageUrl(product)}
-                  alt={product.name}
-                  className="product-card-image"
-                />
-              ) : (
-                <div className="product-card-image-placeholder">No Image</div>
-              )}
+              {getProductImageUrl(product) ?
+            <img
+              src={getProductImageUrl(product)}
+              alt={product.name}
+              className="product-card-image" /> :
+
+
+            <div className="product-card-image-placeholder">{tUi("ui.pages.admin.adminComments.noImage_8d9d7be0cc")}</div>
+            }
             </div>
             <div className="product-card-title">{product.name}</div>
             <div className="product-card-meta">
               {formatCurrency(product.price || 0)}
             </div>
           </button>
-        ))}
+        )}
       </div>
 
-      {loading ? (
-        <div className="loading-container">
+      {loading ?
+      <div className="loading-container">
           <LoadingSpinner />
-        </div>
-      ) : !selectedProductId ? (
-        <div className="no-comments">
-          <p>Please select a product to view its reviews.</p>
-        </div>
-      ) : filteredComments.length === 0 ? (
-        <div className="no-comments">
+        </div> :
+      !selectedProductId ?
+      <div className="no-comments">
+          <p>{tUi("ui.pages.admin.adminComments.pleaseSelectAProductTo_d3bc28ed58")}</p>
+        </div> :
+      filteredComments.length === 0 ?
+      <div className="no-comments">
           <p>
-            {selectedProduct ? `No reviews found for "${selectedProduct.name}"` : 'No reviews found'}
-            {sentimentFilter !== 'all' ? ` with ${sentimentFilter} sentiment` : ''}.
+            {selectedProduct ? tUi("ui.pages.admin.adminComments.noReviewsFoundForValue_43ab341080", { value0: selectedProduct.name }) : tUi("ui.pages.admin.adminComments.noReviewsFound_6ae1b83edd")}
+            {sentimentFilter !== "all" ? tUi("ui.pages.admin.adminComments.withValueSentiment_41ae6e47d3", { value0: getSentimentLabel(sentimentFilter) }) : ''}.
           </p>
-        </div>
-      ) : (
-        <div className="comments-list">
-          {filteredComments.map((comment, index) => (
-            <motion.div
-              key={comment.id}
-              className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
+        </div> :
+
+      <div className="comments-list">
+          {filteredComments.map((comment, index) =>
+        <motion.div
+          key={comment.id}
+          className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.05 }}>
+          
               <div className="comment-header">
                 <div className="comment-user">
-                  {comment.user?.profile_image ? (
-                    <img
-                      src={getProfileImageUrl(comment.user.profile_image)}
-                      alt={comment.user.first_name}
-                      className="user-avatar"
-                      onError={(e) => {
-                        if (e.target.src !== defaultProfileImage) {
-                          e.target.src = defaultProfileImage;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="user-avatar-placeholder">
+                  {comment.user?.profile_image ?
+              <img
+                src={getProfileImageUrl(comment.user.profile_image)}
+                alt={comment.user.first_name}
+                className="user-avatar"
+                onError={(e) => {
+                  if (e.target.src !== defaultProfileImage) {
+                    e.target.src = defaultProfileImage;
+                  }
+                }} /> :
+
+
+              <div className="user-avatar-placeholder">
                       {comment.user?.first_name?.[0] || 'U'}
                     </div>
-                  )}
+              }
                   <div className="user-info">
                     <p className="user-name">
                       {comment.user?.first_name} {comment.user?.last_name}
@@ -332,33 +350,33 @@ const AdminComments = () => {
                 <div className="comment-actions">
                   {getSentimentBadge(comment.sentiment)}
                   <button
-                    className="delete-comment-btn"
-                    onClick={() => handleDelete(comment.id)}
-                    disabled={deleting === comment.id}
-                  >
-                    {deleting === comment.id ? <LoadingSpinner size="small" /> : 'Delete'}
+                className="delete-comment-btn"
+                onClick={() => handleDelete(comment.id)}
+                disabled={deleting === comment.id}>
+                
+                    {deleting === comment.id ? <LoadingSpinner size="small" /> : tUi("ui.pages.admin.adminComments.delete_66f5dde37d")}
                   </button>
                 </div>
               </div>
               <div className="comment-content">
                 <p>{comment.content}</p>
-                {selectedProduct && (
-                  <p className="product-info" style={{ 
-                    marginTop: '0.5rem', 
-                    fontSize: '0.85rem', 
-                    color: 'var(--text-secondary)',
-                    fontStyle: 'italic'
-                  }}>
-                    Product: {selectedProduct.name}
+                {selectedProduct &&
+            <p className="product-info" style={{
+              marginTop: '0.5rem',
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              fontStyle: 'italic'
+            }}>{tUi("ui.pages.admin.adminComments.product_7793c81682")}
+              {selectedProduct.name}
                   </p>
-                )}
+            }
               </div>
             </motion.div>
-          ))}
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default AdminComments;

@@ -5,6 +5,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html[dir='rtl'] body {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir='ltr'] body {
+  direction: ltr;
+  text-align: left;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

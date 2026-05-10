@@ -20,6 +20,21 @@
   min-height: calc(100vh - 80px);
 }
 
+html[dir='rtl'] .cashier-content {
+  margin-left: 0;
+  margin-right: 250px;
+}
+
+@media (max-width: 1024px) {
+  .cashier-content {
+    margin-left: 0;
+  }
+
+  html[dir='rtl'] .cashier-content {
+    margin-right: 0;
+  }
+}
+
 @media (max-width: 768px) {
   .cashier-container {
     flex-direction: column;
@@ -30,5 +45,9 @@
     padding: 1rem;
     margin-left: 0;
     min-height: auto;
+  }
+
+  html[dir='rtl'] .cashier-content {
+    margin-right: 0;
   }
 }

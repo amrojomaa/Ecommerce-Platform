@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -10,11 +10,11 @@ const VerifyResetCode = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { verifyResetCode } = useAuth();
-  
+
   // Get email and verification code from location state (passed from forgot password)
   const email = location.state?.email || '';
   const providedCode = location.state?.verification_code || null;
-  
+
   const [verificationCode, setVerificationCode] = useState(
     providedCode ? providedCode.split('') : ['', '', '', '', '', '']
   );
@@ -82,7 +82,7 @@ const VerifyResetCode = () => {
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').trim();
-    
+
     if (/^\d{6}$/.test(pastedData)) {
       const codeArray = pastedData.split('');
       setVerificationCode(codeArray);
@@ -94,9 +94,9 @@ const VerifyResetCode = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const code = verificationCode.join('');
-    
+
     if (code.length !== 6) {
       setError('Please enter the complete 6-digit code');
       return;
@@ -137,60 +137,60 @@ const VerifyResetCode = () => {
         className="auth-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1>Verify Reset Code</h1>
-        {providedCode ? (
-          <>
-            <p style={{ color: '#e67e22', marginBottom: '10px', fontWeight: 'bold' }}>
-              ⚠️ Email service not configured
-            </p>
-            <p>Use the verification code below:</p>
-            <p style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold', 
-              color: '#3498db',
-              marginBottom: '20px',
-              letterSpacing: '0.5rem'
-            }}>
+        transition={{ duration: 0.5 }}>
+        
+        <h1>{tUi("ui.pages.verifyResetCode.verifyResetCode_4118199b66")}</h1>
+        {providedCode ?
+        <>
+            <p style={{ color: '#e67e22', marginBottom: '10px', fontWeight: 'bold' }}>{tUi("ui.pages.verifyResetCode.emailServiceNotConfigured_367dd7e92d")}
+
+          </p>
+            <p>{tUi("ui.pages.verifyResetCode.useTheVerificationCodeBelow_5e39b94941")}</p>
+            <p style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: '#3498db',
+            marginBottom: '20px',
+            letterSpacing: '0.5rem'
+          }}>
               {providedCode}
             </p>
-          </>
-        ) : (
-          <>
-            <p>We've sent a 6-digit verification code to</p>
+          </> :
+
+        <>
+            <p>{tUi("ui.pages.verifyResetCode.weVeSentA6_2e1b379629")}</p>
             <p style={{ fontWeight: 'bold', marginBottom: '20px' }}>{email}</p>
           </>
-        )}
+        }
 
-        {timeLeft > 0 ? (
-          <p style={{ color: '#666', marginBottom: '30px' }}>
-            Code expires in: <strong>{formatTime(timeLeft)}</strong>
-          </p>
-        ) : (
-          <p style={{ color: '#e74c3c', marginBottom: '30px' }}>
-            Code has expired. Please request a new one.
-          </p>
-        )}
+        {timeLeft > 0 ?
+        <p style={{ color: '#666', marginBottom: '30px' }}>{tUi("ui.pages.verifyResetCode.codeExpiresIn_71d0e59e29")}
+          <strong>{formatTime(timeLeft)}</strong>
+          </p> :
+
+        <p style={{ color: '#e74c3c', marginBottom: '30px' }}>{tUi("ui.pages.verifyResetCode.codeHasExpiredPleaseRequest_2d7fc2e562")}
+
+        </p>
+        }
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="verification-code-container">
-            {verificationCode.map((digit, index) => (
-              <input
-                key={index}
-                id={`code-${index}`}
-                type="text"
-                inputMode="numeric"
-                maxLength="1"
-                value={digit}
-                onChange={(e) => handleCodeChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={handlePaste}
-                className={`verification-input ${error ? 'error' : ''}`}
-                disabled={loading || timeLeft === 0}
-                autoFocus={index === 0}
-              />
-            ))}
+            {verificationCode.map((digit, index) =>
+            <input
+              key={index}
+              id={`code-${index}`}
+              type="text"
+              inputMode="numeric"
+              maxLength="1"
+              value={digit}
+              onChange={(e) => handleCodeChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              onPaste={handlePaste}
+              className={`verification-input ${error ? 'error' : ''}`}
+              disabled={loading || timeLeft === 0}
+              autoFocus={index === 0} />
+
+            )}
           </div>
 
           {error && <div className="error-message" style={{ marginTop: '15px' }}>{error}</div>}
@@ -200,29 +200,29 @@ const VerifyResetCode = () => {
               type="submit"
               className="auth-button"
               disabled={loading || timeLeft === 0 || verificationCode.join('').length !== 6}
-              style={{ marginTop: '30px' }}
-            >
-              {loading ? (
-                <>
-                  <LoadingSpinner size="small" />
-                  Verifying...
-                </>
-              ) : (
-                'Verify Code'
-              )}
+              style={{ marginTop: '30px' }}>
+              
+              {loading ?
+              <>
+                  <LoadingSpinner size="small" />{tUi("ui.pages.verifyResetCode.verifying_a64f8c3407")}
+
+              </> : tUi("ui.pages.verifyResetCode.verifyCode_c2dae9fade")
+
+
+              }
             </button>
           </motion.div>
         </form>
 
-        <p className="auth-link" style={{ marginTop: '20px' }}>
-          Didn't receive the code?{' '}
-          <Link to="/forgot-password" style={{ color: '#3498db' }}>
-            Request again
+        <p className="auth-link" style={{ marginTop: '20px' }}>{tUi("ui.pages.verifyResetCode.didnTReceiveTheCode_fe6cf53a4a")}
+          {' '}
+          <Link to="/forgot-password" style={{ color: '#3498db' }}>{tUi("ui.pages.verifyResetCode.requestAgain_fbf257db51")}
+
           </Link>
         </p>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default VerifyResetCode;

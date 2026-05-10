@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -38,9 +38,9 @@ const ProductDetails = () => {
   // Reset selected image index when product images change
   useEffect(() => {
     if (product) {
-      const productImages = product.images && product.images.length > 0
-        ? product.images
-        : [];
+      const productImages = product.images && product.images.length > 0 ?
+      product.images :
+      [];
       if (selectedImageIndex >= productImages.length) {
         setSelectedImageIndex(0);
       }
@@ -66,7 +66,7 @@ const ProductDetails = () => {
       console.log('Product data:', response.data);
     } catch (error) {
       console.error('Error fetching product:', error);
-      toast.error('Product not found');
+      toast.error(tUi("ui.pages.productDetails.productNotFound_6a7319bc51"));
       navigate('/products');
     } finally {
       setLoading(false);
@@ -75,14 +75,14 @@ const ProductDetails = () => {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      toast.info('Please login to add items to cart');
+      toast.info(tUi("ui.pages.productDetails.pleaseLoginToAddItems_ded862e3e0"));
       navigate('/login');
       return;
     }
 
     setAddingToCart(true);
     const result = await addToCart(product.name, quantity);
-    
+
     if (result.success) {
       if (product.id) trackRecommendationEvent({ event_type: 'add_to_cart', product_id: product.id });
       toast.success(`Added ${quantity} ${product.name} to cart!`);
@@ -95,7 +95,7 @@ const ProductDetails = () => {
 
   const handleToggleWishlist = async () => {
     if (!product) return;
-    
+
     if (isInWishlist(product.name)) {
       removeFromWishlist(product.name);
       toast.success(`${product.name} removed from wishlist`);
@@ -113,8 +113,8 @@ const ProductDetails = () => {
     return (
       <div className="product-details-loading">
         <LoadingSpinner size="large" />
-      </div>
-    );
+      </div>);
+
   }
 
   if (!product) {
@@ -122,9 +122,9 @@ const ProductDetails = () => {
   }
 
   // Get product images from API response
-  const productImages = product.images && product.images.length > 0
-    ? product.images.map((img) => getImageUrl(img))
-    : [getImageUrl('/images/placeholder.jpg')];
+  const productImages = product.images && product.images.length > 0 ?
+  product.images.map((img) => getImageUrl(img)) :
+  [getImageUrl('/images/placeholder.jpg')];
 
   // Get quantity from product, defaulting to 0 if not available
   const maxQuantity = product.quantity !== undefined && product.quantity !== null ? product.quantity : 0;
@@ -136,8 +136,8 @@ const ProductDetails = () => {
         className="product-details-container"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+        transition={{ duration: 0.5 }}>
+        
         {/* Back Button */}
         <motion.button
           className="back-button"
@@ -147,10 +147,10 @@ const ProductDetails = () => {
           transition={{ delay: 0.1 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          aria-label="Back to products"
-        >
+          aria-label={tUi("ui.pages.productDetails.backToProducts_354bdfbc98")}>
+          
           <FaArrowLeft />
-          <span>Back to Products</span>
+          <span>{tUi("ui.pages.productDetails.backToProducts_349cc09ded")}</span>
         </motion.button>
 
         <div className="product-details-grid">
@@ -167,24 +167,24 @@ const ProductDetails = () => {
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
-                }}
-              />
+                }} />
+              
             </div>
-            {productImages.length > 1 && (
-              <div className="image-thumbnails">
-                {productImages.map((img, index) => (
-                  <motion.button
-                    key={index}
-                    className={`thumbnail ${selectedImageIndex === index ? 'active' : ''}`}
-                    onClick={() => setSelectedImageIndex(index)}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <img src={img} alt={`${product.name} ${index + 1}`} />
+            {productImages.length > 1 &&
+            <div className="image-thumbnails">
+                {productImages.map((img, index) =>
+              <motion.button
+                key={index}
+                className={`thumbnail ${selectedImageIndex === index ? 'active' : ''}`}
+                onClick={() => setSelectedImageIndex(index)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}>
+                
+                    <img src={img} alt={tUi("ui.pages.productDetails.valueValue_b44629bf6a", { value0: product.name, value1: index + 1 })} />
                   </motion.button>
-                ))}
+              )}
               </div>
-            )}
+            }
           </div>
 
           {/* Product Info */}
@@ -192,8 +192,8 @@ const ProductDetails = () => {
             <motion.h1
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
+              transition={{ delay: 0.2 }}>
+              
               {product.name}
             </motion.h1>
             
@@ -201,8 +201,8 @@ const ProductDetails = () => {
               className="product-category"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
+              transition={{ delay: 0.3 }}>
+              
               {product.category_name}
             </motion.p>
 
@@ -210,51 +210,51 @@ const ProductDetails = () => {
               className="product-price"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              {product.discount_enabled ? (
-                <div>
+              transition={{ delay: 0.4 }}>
+              
+              {product.discount_enabled ?
+              <div>
                   <div className="product-price-before">{formatCurrency(product.price)}</div>
                   <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
-                </div>
-              ) : (
-                formatCurrency(product.price)
-              )}
+                </div> :
+
+              formatCurrency(product.price)
+              }
             </motion.div>
 
             <motion.div
               className="product-rating"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.45 }}
-            >
-              {product && product.id && (
-                <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
-              )}
+              transition={{ delay: 0.45 }}>
+              
+              {product && product.id &&
+              <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
+              }
             </motion.div>
 
             <motion.div
               className="product-stock"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              {isOutOfStock ? (
-                <span className="out-of-stock">Out of Stock</span>
-              ) : (
-                <span className="in-stock">
-                  Available
-                </span>
-              )}
+              transition={{ delay: 0.5 }}>
+              
+              {isOutOfStock ?
+              <span className="out-of-stock">{tUi("ui.pages.productDetails.outOfStock_2f92caa56c")}</span> :
+
+              <span className="in-stock">{tUi("ui.pages.productDetails.available_d8d9652e8f")}
+
+              </span>
+              }
             </motion.div>
 
             <motion.div
               className="product-description"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <h3>Description</h3>
+              transition={{ delay: 0.6 }}>
+              
+              <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
               <p>{product.description}</p>
             </motion.div>
 
@@ -263,35 +263,35 @@ const ProductDetails = () => {
               className="product-actions"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              {isAuthenticated && (
-                <div className="wishlist-button-container">
+              transition={{ delay: 0.7 }}>
+              
+              {isAuthenticated &&
+              <div className="wishlist-button-container">
                   <motion.button
-                    className={`wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
-                    onClick={handleToggleWishlist}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    title={isInWishlist(product.name) ? 'Remove from wishlist' : 'Add to wishlist'}
-                  >
-                    {isInWishlist(product.name) ? (
-                      <FaHeart className="wishlist-icon-filled" />
-                    ) : (
-                      <FaRegHeart className="wishlist-icon-outline" />
-                    )}
-                    <span>{isInWishlist(product.name) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
+                  className={`wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                  onClick={handleToggleWishlist}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  title={isInWishlist(product.name) ? tUi("ui.pages.productDetails.removeFromWishlist_6c3e57631c") : tUi("ui.pages.productDetails.addToWishlist_5c31978d93")}>
+                  
+                    {isInWishlist(product.name) ?
+                  <FaHeart className="wishlist-icon-filled" /> :
+
+                  <FaRegHeart className="wishlist-icon-outline" />
+                  }
+                    <span>{isInWishlist(product.name) ? tUi("ui.pages.productDetails.removeFromWishlist_5fe25f164f") : tUi("ui.pages.productDetails.addToWishlist_19396088e9")}</span>
                   </motion.button>
                 </div>
-              )}
+              }
               <div className="add-to-cart-container">
                 <div className="quantity-controls">
-                  <label>Quantity:</label>
+                  <label>{tUi("ui.pages.productDetails.quantity_de67f4b600")}</label>
                   <div className="quantity-input">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1 || isOutOfStock}
-                      className="quantity-btn"
-                    >
+                      className="quantity-btn">
+                      
                       -
                     </button>
                     <input
@@ -303,13 +303,13 @@ const ProductDetails = () => {
                       onChange={(e) => {
                         const val = parseInt(e.target.value) || 1;
                         setQuantity(Math.min(maxQuantity, Math.max(1, val)));
-                      }}
-                    />
+                      }} />
+                    
                     <button
                       onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
                       disabled={quantity >= maxQuantity || isOutOfStock}
-                      className="quantity-btn"
-                    >
+                      className="quantity-btn">
+                      
                       +
                     </button>
                   </div>
@@ -320,18 +320,18 @@ const ProductDetails = () => {
                   onClick={handleAddToCart}
                   disabled={addingToCart || isOutOfStock}
                   whileHover={{ scale: isOutOfStock ? 1 : 1.05 }}
-                  whileTap={{ scale: isOutOfStock ? 1 : 0.95 }}
-                >
-                  {addingToCart ? (
-                    <>
-                      <LoadingSpinner size="small" />
-                      Adding...
-                    </>
-                  ) : isOutOfStock ? (
-                    'Out of Stock'
-                  ) : (
-                    'Add to Cart'
-                  )}
+                  whileTap={{ scale: isOutOfStock ? 1 : 0.95 }}>
+                  
+                  {addingToCart ?
+                  <>
+                      <LoadingSpinner size="small" />{tUi("ui.pages.productDetails.adding_257a62f16d")}
+
+                  </> :
+                  isOutOfStock ? tUi("ui.pages.productDetails.outOfStock_2f92caa56c") : tUi("ui.pages.productDetails.addToCart_39ede17f50")
+
+
+
+                  }
                 </motion.button>
               </div>
             </motion.div>
@@ -339,18 +339,18 @@ const ProductDetails = () => {
         </div>
 
         {/* Comments Section */}
-        {product && product.id && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
+        {product && product.id &&
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}>
+          
             <CommentSection productId={product.id} />
           </motion.div>
-        )}
+        }
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ProductDetails;

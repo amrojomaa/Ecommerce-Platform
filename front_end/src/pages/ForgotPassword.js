@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -20,7 +20,7 @@ const ForgotPassword = () => {
 
     try {
       const result = await forgotPassword(email);
-      
+
       if (result?.success) {
         toast.success(result.message || 'Verification code sent to your email');
         // Navigate to verify reset code page with email
@@ -37,7 +37,7 @@ const ForgotPassword = () => {
     } catch (err) {
       console.error("FORGOT PASSWORD ERROR:", err);
       setError('Something went wrong. Please try again.');
-      toast.error('Something went wrong. Please try again.');
+      toast.error(tUi("ui.pages.forgotPassword.somethingWentWrongPleaseTry_fa9ec3dd4b"));
     }
 
     setLoading(false);
@@ -49,14 +49,14 @@ const ForgotPassword = () => {
         className="auth-container"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1>Forgot Password</h1>
-        <p>Enter your email address and we'll send you a verification code to reset your password.</p>
+        transition={{ duration: 0.5 }}>
+        
+        <h1>{tUi("ui.pages.forgotPassword.forgotPassword_44e42269c0")}</h1>
+        <p>{tUi("ui.pages.forgotPassword.enterYourEmailAddressAnd_a30a91a5df")}</p>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{tUi("ui.pages.forgotPassword.email_52fee565c6")}</label>
             <input
               type="email"
               id="email"
@@ -67,9 +67,9 @@ const ForgotPassword = () => {
                 setError('');
               }}
               required
-              placeholder="Enter your email"
-              disabled={loading}
-            />
+              placeholder={tUi("ui.pages.forgotPassword.enterYourEmail_dd05194064")}
+              disabled={loading} />
+            
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -78,26 +78,26 @@ const ForgotPassword = () => {
             <button
               type="submit"
               className="auth-button"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <LoadingSpinner size="small" />
-                  Sending...
-                </>
-              ) : (
-                'Send Verification Code'
-              )}
+              disabled={loading}>
+              
+              {loading ?
+              <>
+                  <LoadingSpinner size="small" />{tUi("ui.pages.forgotPassword.sending_4ecdfd8d99")}
+
+              </> : tUi("ui.pages.forgotPassword.sendVerificationCode_54c2f06c38")
+
+
+              }
             </button>
           </motion.div>
         </form>
 
-        <p className="auth-link">
-          Remember your password? <Link to="/login">Login</Link>
+        <p className="auth-link">{tUi("ui.pages.forgotPassword.rememberYourPassword_5c46335c87")}
+          <Link to="/login">{tUi("ui.pages.forgotPassword.login_a2083e5051")}</Link>
         </p>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default ForgotPassword;

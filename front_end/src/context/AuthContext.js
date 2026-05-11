@@ -12,6 +12,10 @@ const AUTH_PERSISTENCE_KEY = 'auth_persistence';
 const AUTH_PERSISTENCE_PERSISTENT = 'persistent';
 const AUTH_PERSISTENCE_SESSION = 'session';
 const SESSION_AUTH_ACTIVE_KEY = 'session_auth_active';
+const SESSION_AUTH_CHANNEL = 'session_auth_channel';
+const SESSION_AUTH_PROBE_REQUEST = 'session-auth-probe-request';
+const SESSION_AUTH_PROBE_RESPONSE = 'session-auth-probe-response';
+const SESSION_AUTH_PROBE_TIMEOUT_MS = 300;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -144,16 +148,60 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const confirmActiveSessionAuth = useCallback(() => {
+    if (sessionStorage.getItem(SESSION_AUTH_ACTIVE_KEY)) {
+      return Promise.resolve(true);
+    }
+
+    if (typeof BroadcastChannel === 'undefined') {
+      return Promise.resolve(true);
+    }
+
+    return new Promise((resolve) => {
+      const requestId = `${Date.now()}-${Math.random()}`;
+      const channel = new BroadcastChannel(SESSION_AUTH_CHANNEL);
+      let isResolved = false;
+
+      const finish = (hasActiveSession) => {
+        if (isResolved) {
+          return;
+        }
+        isResolved = true;
+        window.clearTimeout(timeoutId);
+        channel.close();
+        resolve(hasActiveSession);
+      };
+
+      const timeoutId = window.setTimeout(() => finish(false), SESSION_AUTH_PROBE_TIMEOUT_MS);
+
+      channel.onmessage = (event) => {
+        const message = event.data;
+        if (message?.type !== SESSION_AUTH_PROBE_RESPONSE || message.requestId !== requestId) {
+          return;
+        }
+        sessionStorage.setItem(SESSION_AUTH_ACTIVE_KEY, '1');
+        finish(true);
+      };
+
+      channel.postMessage({
+        type: SESSION_AUTH_PROBE_REQUEST,
+        requestId
+      });
+    });
+  }, []);
+
   // Check if user is logged in on mount
   useEffect(() => {
     let isMounted = true;
 
     const initAuth = async () => {
       const persistenceMode = localStorage.getItem(AUTH_PERSISTENCE_KEY);
-      const hasActiveSessionMarker = !!sessionStorage.getItem(SESSION_AUTH_ACTIVE_KEY);
 
-      // Session-only mode: if browser was restarted, force re-login.
-      if (persistenceMode === AUTH_PERSISTENCE_SESSION && !hasActiveSessionMarker) {
+      // Session-only mode: distinguish a browser restart from opening a new tab.
+      const hasActiveSession = persistenceMode !== AUTH_PERSISTENCE_SESSION ||
+        await confirmActiveSessionAuth();
+
+      if (!hasActiveSession) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem(AUTH_PERSISTENCE_KEY);
@@ -189,7 +237,36 @@ export const AuthProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [fetchUserInfo, restoreSessionFromRefreshToken]);
+  }, [confirmActiveSessionAuth, fetchUserInfo, restoreSessionFromRefreshToken]);
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') {
+      return undefined;
+    }
+
+    const channel = new BroadcastChannel(SESSION_AUTH_CHANNEL);
+    channel.onmessage = (event) => {
+      const message = event.data;
+      if (message?.type !== SESSION_AUTH_PROBE_REQUEST || !message.requestId) {
+        return;
+      }
+
+      const hasSessionAuth = localStorage.getItem(AUTH_PERSISTENCE_KEY) === AUTH_PERSISTENCE_SESSION &&
+        !!sessionStorage.getItem(SESSION_AUTH_ACTIVE_KEY);
+      if (!hasSessionAuth) {
+        return;
+      }
+
+      channel.postMessage({
+        type: SESSION_AUTH_PROBE_RESPONSE,
+        requestId: message.requestId
+      });
+    };
+
+    return () => {
+      channel.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {

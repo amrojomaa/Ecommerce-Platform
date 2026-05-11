@@ -21,7 +21,8 @@ const getGenericToastMessage = (method) => {
 const translateToastContent = (content, method) => {
   if (typeof content === 'string') {
     const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
-    if (languageCode !== 'en' && hasLatinText(content)) {
+    // Error/warning/info toasts can contain actionable backend details; keep them specific.
+    if (languageCode !== 'en' && method === 'success' && hasLatinText(content)) {
       return getGenericToastMessage(method);
     }
     return content;

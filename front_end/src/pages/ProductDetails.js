@@ -189,81 +189,12 @@ const ProductDetails = () => {
 
           {/* Product Info */}
           <div className="product-info">
-            <motion.h1
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}>
-              
-              {product.name}
-            </motion.h1>
-            
-            <motion.p
-              className="product-category"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}>
-              
-              {product.category_name}
-            </motion.p>
-
-            <motion.div
-              className="product-price"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}>
-              
-              {product.discount_enabled ?
-              <div>
-                  <div className="product-price-before">{formatCurrency(product.price)}</div>
-                  <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
-                </div> :
-
-              formatCurrency(product.price)
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-rating"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.45 }}>
-              
-              {product && product.id &&
-              <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-stock"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}>
-              
-              {isOutOfStock ?
-              <span className="out-of-stock">{tUi("ui.pages.productDetails.outOfStock_2f92caa56c")}</span> :
-
-              <span className="in-stock">{tUi("ui.pages.productDetails.available_d8d9652e8f")}
-
-              </span>
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-description"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}>
-              
-              <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
-              <p>{product.description}</p>
-            </motion.div>
-
             {/* Quantity and Add to Cart */}
             <motion.div
               className="product-actions"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}>
+              transition={{ delay: 0.2 }}>
               
               {isAuthenticated &&
               <div className="wishlist-button-container">
@@ -334,6 +265,75 @@ const ProductDetails = () => {
                   }
                 </motion.button>
               </div>
+            </motion.div>
+
+            <motion.h1
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}>
+              
+              {product.name}
+            </motion.h1>
+
+            <motion.p
+              className="product-category"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}>
+              
+              {product.category_name}
+            </motion.p>
+
+            <motion.div
+              className="product-price"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.45 }}>
+              
+              {product.discount_enabled ?
+              <div>
+                  <div className="product-price-before">{formatCurrency(product.price)}</div>
+                  <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
+                </div> :
+
+              formatCurrency(product.price)
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-rating"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}>
+              
+              {product && product.id &&
+              <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-stock"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}>
+              
+              {isOutOfStock ?
+              <span className="out-of-stock">{tUi("ui.pages.productDetails.outOfStock_2f92caa56c")}</span> :
+
+              <span className="in-stock">{tUi("ui.pages.productDetails.available_d8d9652e8f")}
+
+              </span>
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-description"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}>
+              
+              <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
+              <p>{product.description}</p>
             </motion.div>
           </div>
         </div>

@@ -28,10 +28,12 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const viewTrackedRef = useRef(null);
 
   useEffect(() => {
     fetchProduct();
+    setIsCommentsOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
@@ -340,13 +342,23 @@ const ProductDetails = () => {
 
         {/* Comments Section */}
         {product && product.id &&
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}>
-          
-            <CommentSection productId={product.id} />
-          </motion.div>
+        <div className="product-comments-section">
+            <button
+            type="button"
+            className="product-comments-toggle-btn"
+            onClick={() => setIsCommentsOpen((prev) => !prev)}>
+              {isCommentsOpen ? 'Hide Comments & Reviews' : 'Open Comments & Reviews'}
+            </button>
+
+            {isCommentsOpen &&
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}>
+                <CommentSection productId={product.id} variant="productDetails" />
+              </motion.div>
+          }
+          </div>
         }
       </motion.div>
     </div>);

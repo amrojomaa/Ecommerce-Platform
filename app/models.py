@@ -303,6 +303,10 @@ class DBTicketResponse(Base):
 
 class DBComment(Base):
     __tablename__ = "comments"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'product_id', name='unique_user_product_comment'),
+    )
+
     id = Column(Integer, primary_key=True, nullable=False)
     content = Column(String, nullable=False)
     sentiment = Column(String, nullable=True)  # 'positive', 'neutral', or 'negative'

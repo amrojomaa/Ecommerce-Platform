@@ -788,8 +788,28 @@ class TicketResponseCreate(BaseModel):
 
 # Comment Schemas
 class CommentCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=500)
     product_id: Optional[int] = None  # Optional since it comes from URL path
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = (value or "").strip()
+        if not normalized:
+            raise ValueError("Comment content is required")
+        return normalized
+
+
+class CommentUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = (value or "").strip()
+        if not normalized:
+            raise ValueError("Comment content is required")
+        return normalized
 
 
 class CommentUser(BaseModel):

@@ -163,6 +163,7 @@ export const TICKET_ENDPOINTS = {
 export const COMMENT_ENDPOINTS = {
   GET_PRODUCT: '/products/{product_id}/comments',
   CREATE: '/products/{product_id}/comments',
+  UPDATE: '/comments/{comment_id}',
   DELETE: '/comments/{comment_id}',
   ALL: '/comments/all', // Admin only
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only

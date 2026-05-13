@@ -29,6 +29,7 @@ const ProductDetails = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [starRatingKey, setStarRatingKey] = useState(0);
   const viewTrackedRef = useRef(null);
 
   useEffect(() => {

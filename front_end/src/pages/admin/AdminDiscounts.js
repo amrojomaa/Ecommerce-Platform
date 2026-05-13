@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS } from '../../config/api';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import { useCurrency } from '../../hooks/useCurrency';
+import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminDiscounts.css';
 
 const AdminDiscounts = () => {
@@ -18,7 +19,7 @@ const AdminDiscounts = () => {
   const buildDraft = (product) => ({
     discount_enabled: Boolean(product.discount_enabled),
     discount_type: product.discount_type || 'percentage',
-    discount_value: product.discount_value ?? 0,
+    discount_value: product.discount_value ?? 0
   });
 
   const fetchProducts = useCallback(async () => {
@@ -33,7 +34,7 @@ const AdminDiscounts = () => {
       });
       setDrafts(initialDrafts);
     } catch (error) {
-      toast.error('Failed to fetch products for discounts');
+      toast.error(tUi("ui.pages.admin.adminDiscounts.failedToFetchProductsFor_b7ed6e5511"));
     } finally {
       setLoading(false);
     }
@@ -48,8 +49,8 @@ const AdminDiscounts = () => {
       ...prev,
       [productId]: {
         ...prev[productId],
-        [field]: value,
-      },
+        [field]: value
+      }
     }));
   };
 
@@ -87,7 +88,7 @@ const AdminDiscounts = () => {
       await http.patch(PRODUCT_ENDPOINTS.UPDATE_DISCOUNT.replace('{id}', product.id), {
         discount_enabled: Boolean(draft.discount_enabled),
         discount_type: draft.discount_enabled ? draft.discount_type : null,
-        discount_value: draft.discount_enabled ? parseFloat(draft.discount_value || 0) : 0,
+        discount_value: draft.discount_enabled ? parseFloat(draft.discount_value || 0) : 0
       });
       toast.success(`Discount updated for ${product.name}`);
       await fetchProducts();
@@ -100,12 +101,12 @@ const AdminDiscounts = () => {
 
   const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const matchedProducts = !term
-      ? [...products]
-      : products.filter((product) =>
-          product.name.toLowerCase().includes(term) ||
-          product.category_name.toLowerCase().includes(term)
-        );
+    const matchedProducts = !term ?
+    [...products] :
+    products.filter((product) =>
+    product.name.toLowerCase().includes(term) ||
+    product.category_name.toLowerCase().includes(term)
+    );
 
     // Keep products with active discounts at the top.
     return matchedProducts.sort((a, b) => {
@@ -119,8 +120,8 @@ const AdminDiscounts = () => {
   return (
     <div className="admin-discounts">
       <div className="admin-discounts-header">
-        <h1>Discounts</h1>
-        <p>Manage all product discounts from one place.</p>
+        <h1>{tUi("ui.pages.admin.adminDiscounts.discounts_5acbd929a0")}</h1>
+        <p>{tUi("ui.pages.admin.adminDiscounts.manageAllProductDiscountsFrom_052f906975")}</p>
       </div>
 
       <div className="discounts-search">
@@ -128,44 +129,44 @@ const AdminDiscounts = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by product name or category..."
-        />
+          placeholder={tUi("ui.pages.admin.adminDiscounts.searchByProductNameOr_231a9422f6")} />
+        
         <button
           type="button"
           className="discounts-search-clear"
           onClick={() => setSearchTerm('')}
-          disabled={!searchTerm.trim()}
-        >
-          Clear
+          disabled={!searchTerm.trim()}>{tUi("ui.pages.admin.adminDiscounts.clear_66301d428d")}
+
+
         </button>
       </div>
 
-      {loading ? (
-        <div className="discounts-grid">
-          {[...Array(8)].map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : (
-        <div className="discounts-grid">
+      {loading ?
+      <div className="discounts-grid">
+          {[...Array(8)].map((_, i) =>
+        <ProductCardSkeleton key={i} />
+        )}
+        </div> :
+
+      <div className="discounts-grid">
           {filteredProducts.map((product, index) => {
-            const draft = drafts[product.id] || buildDraft(product);
-            const finalPrice = product.discount_enabled ? (product.discounted_price ?? product.price) : product.price;
-            return (
-              <motion.div
-                key={product.id}
-                className="discount-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-              >
+          const draft = drafts[product.id] || buildDraft(product);
+          const finalPrice = product.discount_enabled ? product.discounted_price ?? product.price : product.price;
+          return (
+            <motion.div
+              key={product.id}
+              className="discount-card"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}>
+              
                 <div className="discount-card-image">
                   <img
-                    src={product.images && product.images.length > 0
-                      ? `http://localhost:8000/${product.images[0]}`
-                      : 'http://localhost:8000/images/placeholder.jpg'}
-                    alt={product.name}
-                  />
+                  src={product.images && product.images.length > 0 ?
+                  getImageUrl(product.images[0]) :
+                  getImageUrl('/images/placeholder.jpg')}
+                  alt={product.name} />
+                
                 </div>
                 <div className="discount-card-body">
                   <h3>{product.name}</h3>
@@ -180,54 +181,54 @@ const AdminDiscounts = () => {
 
                   <label className="discount-toggle-row">
                     <input
-                      type="checkbox"
-                      checked={draft.discount_enabled}
-                      onChange={(e) => handleDraftChange(product.id, 'discount_enabled', e.target.checked)}
-                    />
-                    Enable discount
-                  </label>
+                    type="checkbox"
+                    checked={draft.discount_enabled}
+                    onChange={(e) => handleDraftChange(product.id, "discount_enabled", e.target.checked)} />{tUi("ui.pages.admin.adminDiscounts.enableDiscount_a54df19510")}
+
+
+                </label>
 
                   <div className="discount-controls">
                     <select
-                      value={draft.discount_type}
-                      onChange={(e) => handleDraftChange(product.id, 'discount_type', e.target.value)}
-                      disabled={!draft.discount_enabled}
-                    >
-                      <option value="percentage">Percentage (%)</option>
-                      <option value="fixed">Fixed amount</option>
+                    value={draft.discount_type}
+                    onChange={(e) => handleDraftChange(product.id, "discount_type", e.target.value)}
+                    disabled={!draft.discount_enabled}>
+                    
+                      <option value="percentage">{tUi("ui.pages.admin.adminDiscounts.percentage_d8edf1d60e")}</option>
+                      <option value="fixed">{tUi("ui.pages.admin.adminDiscounts.fixedAmount_17d721b6a9")}</option>
                     </select>
 
                     <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={draft.discount_value}
-                      onChange={(e) => handleDraftChange(product.id, 'discount_value', e.target.value)}
-                      disabled={!draft.discount_enabled}
-                      placeholder={draft.discount_type === 'percentage' ? 'e.g. 15' : 'e.g. 25.50'}
-                    />
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={draft.discount_value}
+                    onChange={(e) => handleDraftChange(product.id, "discount_value", e.target.value)}
+                    disabled={!draft.discount_enabled}
+                    placeholder={draft.discount_type === "percentage" ? tUi("ui.pages.admin.adminDiscounts.eG15_654d286fe1") : tUi("ui.pages.admin.adminDiscounts.eG2550_a1fe96880e")} />
+                  
                   </div>
 
                   <button
-                    className="save-discount-btn"
-                    onClick={() => handleSaveDiscount(product)}
-                    disabled={savingId === product.id}
-                  >
-                    {savingId === product.id ? 'Saving...' : 'Save Discount'}
+                  className="save-discount-btn"
+                  onClick={() => handleSaveDiscount(product)}
+                  disabled={savingId === product.id}>
+                  
+                    {savingId === product.id ? tUi("ui.pages.admin.adminDiscounts.saving_03e4229f21") : tUi("ui.pages.admin.adminDiscounts.saveDiscount_daa834be56")}
                   </button>
                 </div>
-              </motion.div>
-            );
-          })}
-          {filteredProducts.length === 0 && (
-            <div className="discounts-empty">
-              No products match your search.
-            </div>
-          )}
+              </motion.div>);
+
+        })}
+          {filteredProducts.length === 0 &&
+        <div className="discounts-empty">{tUi("ui.pages.admin.adminDiscounts.noProductsMatchYourSearch_ddd67f60ff")}
+
         </div>
-      )}
-    </div>
-  );
+        }
+        </div>
+      }
+    </div>);
+
 };
 
 export default AdminDiscounts;

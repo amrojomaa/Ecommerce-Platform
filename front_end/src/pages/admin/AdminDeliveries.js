@@ -1,12 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
-import { formatDate, getImageUrl } from '../../utils/helpers';
+import { formatDate, formatDateTime, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDeliveries.css';
+
+const DELIVERY_STATUS_LABEL_KEYS = {
+  available: 'ui.pages.admin.adminDeliveries.available_66883aa01e',
+  assigned: 'ui.pages.orders.status.assigned',
+  picked_up: 'ui.pages.orders.status.pickedUp',
+  delivering: 'ui.pages.orders.status.delivering',
+  delivered: 'ui.pages.orders.status.delivered',
+  cancelled: 'ui.pages.orders.status.cancelled',
+};
+
+const ROLE_LABEL_KEYS = {
+  admin: 'ui.pages.admin.adminUsers.admin_9b8c8c337f',
+  support_manager: 'ui.pages.admin.adminUsers.supportManager_2a7bb3b941',
+  operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
+  warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
+  employee: 'ui.pages.admin.adminUsers.employee_bdab2112d6',
+  driver: 'ui.pages.admin.adminUsers.driver_533424916e',
+  customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
+  cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
+};
 
 const AdminDeliveries = () => {
   const { formatCurrency } = useCurrency();
@@ -39,8 +59,8 @@ const AdminDeliveries = () => {
     if (status === 'cancelled' || status === 'delivered') return false;
 
     const photos = Array.isArray(job.photos) ? job.photos : [];
-    const hasPickup = photos.some(photo => photo.photo_type === 'pickup');
-    const hasDelivery = photos.some(photo => photo.photo_type === 'delivery');
+    const hasPickup = photos.some((photo) => photo.photo_type === 'pickup');
+    const hasDelivery = photos.some((photo) => photo.photo_type === 'delivery');
 
     const needsPickupReview = hasPickup && !job.pickup_photo_checked;
     const needsDeliveryReview = hasDelivery && !job.delivery_photo_checked;
@@ -57,8 +77,8 @@ const AdminDeliveries = () => {
     if (allJobs.length > 0) {
       let filtered = allJobs;
       if (statusFilter !== 'all') {
-        filtered = allJobs.filter(job =>
-          (job.status || '').toLowerCase() === statusFilter.toLowerCase()
+        filtered = allJobs.filter((job) =>
+        (job.status || '').toLowerCase() === statusFilter.toLowerCase()
         );
       }
 
@@ -138,7 +158,7 @@ const AdminDeliveries = () => {
     setResolvingIssue(true);
     try {
       await http.patch(buildUrl(DELIVERY_ENDPOINTS.RESOLVE_ISSUE, { job_id: jobId }));
-      toast.success('Issue marked as solved');
+      toast.success(tUi("ui.pages.admin.adminDeliveries.issueMarkedAsSolved_9610dc7d9b"));
       await fetchJobs();
     } catch (error) {
       toast.error(error.message || 'Failed to resolve issue');
@@ -155,7 +175,7 @@ const AdminDeliveries = () => {
       );
 
       const updatedJob = response.data;
-      setAllJobs(prevJobs => prevJobs.map(job => (job.id === jobId ? updatedJob : job)));
+      setAllJobs((prevJobs) => prevJobs.map((job) => job.id === jobId ? updatedJob : job));
       toast.success(`${photoType === 'pickup' ? 'Pickup' : 'Delivery'} photos marked as OK`);
     } catch (error) {
       toast.error(error.response?.data?.detail || error.message || 'Failed to review photos');
@@ -167,7 +187,7 @@ const AdminDeliveries = () => {
   const handleAssignDriver = async (jobId) => {
     const selectedDriverId = selectedDriverByJob[jobId];
     if (!selectedDriverId) {
-      toast.error('Please select a driver first');
+      toast.error(tUi("ui.pages.admin.adminDeliveries.pleaseSelectADriverFirst_409da1b2f7"));
       return;
     }
 
@@ -179,8 +199,8 @@ const AdminDeliveries = () => {
       );
 
       const updatedJob = response.data;
-      setAllJobs(prevJobs => prevJobs.map(job => (job.id === jobId ? updatedJob : job)));
-      toast.success('Driver assigned successfully');
+      setAllJobs((prevJobs) => prevJobs.map((job) => job.id === jobId ? updatedJob : job));
+      toast.success(tUi("ui.pages.admin.adminDeliveries.driverAssignedSuccessfully_d1e7b8c241"));
     } catch (error) {
       toast.error(error.response?.data?.detail || error.message || 'Failed to assign driver');
     } finally {
@@ -209,190 +229,192 @@ const AdminDeliveries = () => {
   const proofPhotoCount = allJobs.filter(hasProofPhotos).length;
 
   const getStatusLabel = (status) => {
-    const labels = {
-      available: 'Available',
-      assigned: 'Assigned',
-      picked_up: 'Picked Up',
-      delivering: 'Delivering',
-      delivered: 'Delivered',
-      cancelled: 'Cancelled',
-    };
-    return labels[status] || status;
+    const normalized = String(status || '').toLowerCase();
+    const key = DELIVERY_STATUS_LABEL_KEYS[normalized];
+    if (key) return tUi(key);
+    return normalized.replace(/_/g, ' ');
+  };
+
+  const getRoleLabel = (role) => {
+    const normalized = String(role || '').toLowerCase();
+    const key = ROLE_LABEL_KEYS[normalized];
+    if (key) return tUi(key);
+    return normalized.replace(/_/g, ' ');
   };
 
   if (loading) {
     return (
       <div className="admin-deliveries-loading">
         <LoadingSpinner size="large" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="admin-deliveries">
-      {issueCount > 0 && (
-        <div className="delivery-issue-notice" role="status" aria-live="polite">
+      {issueCount > 0 &&
+      <div className="delivery-issue-notice" role="status" aria-live="polite">
           <div className="notice-icon-wrap" aria-hidden="true">
             <span className="notice-bell">🔔</span>
             <span className="notice-count">{issueCount}</span>
           </div>
           <div className="notice-text">
-            <strong>{issueCount}</strong> delivery {issueCount === 1 ? 'issue report needs' : 'issue reports need'} admin attention.
-          </div>
-          <button
-            type="button"
-            className="notice-action-btn"
-            onClick={() => {
-              setShowIssueOnly(true);
-              setShowProofOnly(false);
-              setStatusFilter('all');
-              setExpandedJobId(null);
-            }}
-          >
-            View issue orders
-          </button>
-          {showIssueOnly && (
-            <button
-              type="button"
-              className="notice-clear-btn"
-              onClick={() => {
-                setShowIssueOnly(false);
-              }}
-            >
-              Clear
-            </button>
-          )}
+            <strong>{issueCount}</strong>{tUi("ui.pages.admin.adminDeliveries.delivery_8e33d75337")}{issueCount === 1 ? tUi("ui.pages.admin.adminDeliveries.issueReportNeeds_9d4a2961c3") : tUi("ui.pages.admin.adminDeliveries.issueReportsNeed_06c771831a")}{tUi("ui.pages.admin.adminDeliveries.adminAttention_5a79bc3bce")}
         </div>
-      )}
+          <button
+          type="button"
+          className="notice-action-btn"
+          onClick={() => {
+            setShowIssueOnly(true);
+            setShowProofOnly(false);
+            setStatusFilter("all");
+            setExpandedJobId(null);
+          }}>{tUi("ui.pages.admin.adminDeliveries.viewIssueOrders_863af5a2ad")}
 
-      {proofPhotoCount > 0 && (
-        <div className="delivery-photo-notice" role="status" aria-live="polite">
+
+        </button>
+          {showIssueOnly &&
+        <button
+          type="button"
+          className="notice-clear-btn"
+          onClick={() => {
+            setShowIssueOnly(false);
+          }}>{tUi("ui.pages.admin.adminDeliveries.clear_9b77f46f9c")}
+
+
+        </button>
+        }
+        </div>
+      }
+
+      {proofPhotoCount > 0 &&
+      <div className="delivery-photo-notice" role="status" aria-live="polite">
           <div className="notice-icon-wrap" aria-hidden="true">
             <span className="notice-bell">📸</span>
             <span className="notice-count">{proofPhotoCount}</span>
           </div>
           <div className="notice-text">
-            <strong>{proofPhotoCount}</strong> delivery {proofPhotoCount === 1 ? 'job has' : 'jobs have'} proof photos uploaded by drivers.
-          </div>
-          <button
-            type="button"
-            className="notice-action-btn"
-            onClick={() => {
-              setShowProofOnly(true);
-              setShowIssueOnly(false);
-              setStatusFilter('all');
-              setExpandedJobId(null);
-            }}
-          >
-            View photo orders
-          </button>
-          {showProofOnly && (
-            <button
-              type="button"
-              className="notice-clear-btn"
-              onClick={() => {
-                setShowProofOnly(false);
-              }}
-            >
-              Clear
-            </button>
-          )}
+            <strong>{proofPhotoCount}</strong>{tUi("ui.pages.admin.adminDeliveries.delivery_8e33d75337")}{proofPhotoCount === 1 ? tUi("ui.pages.admin.adminDeliveries.jobHas_b7c5f7c5de") : tUi("ui.pages.admin.adminDeliveries.jobsHave_aa577eee49")}{tUi("ui.pages.admin.adminDeliveries.proofPhotosUploadedByDrivers_6d35ed5c58")}
         </div>
-      )}
+          <button
+          type="button"
+          className="notice-action-btn"
+          onClick={() => {
+            setShowProofOnly(true);
+            setShowIssueOnly(false);
+            setStatusFilter("all");
+            setExpandedJobId(null);
+          }}>{tUi("ui.pages.admin.adminDeliveries.viewPhotoOrders_58b886c5cd")}
+
+
+        </button>
+          {showProofOnly &&
+        <button
+          type="button"
+          className="notice-clear-btn"
+          onClick={() => {
+            setShowProofOnly(false);
+          }}>{tUi("ui.pages.admin.adminDeliveries.clear_9b77f46f9c")}
+
+
+        </button>
+        }
+        </div>
+      }
 
       <div className="admin-deliveries-header">
-        <h1>Delivery Management</h1>
+        <h1>{tUi("ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811")}</h1>
         <div className="deliveries-filter">
-          <label htmlFor="delivery-status-filter">Filter by Status:</label>
+          <label htmlFor="delivery-status-filter">{tUi("ui.pages.admin.adminDeliveries.filterByStatus_25f69a210d")}</label>
           <select
             id="delivery-status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="status-filter-select"
-          >
-            {deliveryStatuses.map(status => (
-              <option key={status} value={status}>
-                {status === 'all' ? 'All' : getStatusLabel(status)}
+            className="status-filter-select">
+            
+            {deliveryStatuses.map((status) =>
+            <option key={status} value={status}>
+                {status === "all" ? tUi("ui.pages.admin.adminDeliveries.all_37e6961373") : getStatusLabel(status)}
               </option>
-            ))}
+            )}
           </select>
-          {statusFilter !== 'all' && (
-            <span className="filter-count">
-              ({jobs.length} {jobs.length === 1 ? 'job' : 'jobs'})
+          {statusFilter !== "all" &&
+          <span className="filter-count">
+              ({jobs.length} {jobs.length === 1 ? tUi("ui.pages.admin.adminDeliveries.job_40eab796f5") : tUi("ui.pages.admin.adminDeliveries.jobs_e4035b76af")})
             </span>
-          )}
-          {showIssueOnly && (
-            <span className="issue-only-pill">Issue reports only</span>
-          )}
-          {showProofOnly && (
-            <span className="issue-only-pill photo-only-pill">Proof photos only</span>
-          )}
+          }
+          {showIssueOnly &&
+          <span className="issue-only-pill">{tUi("ui.pages.admin.adminDeliveries.issueReportsOnly_098fbc0bc3")}</span>
+          }
+          {showProofOnly &&
+          <span className="issue-only-pill photo-only-pill">{tUi("ui.pages.admin.adminDeliveries.proofPhotosOnly_35ed213543")}</span>
+          }
         </div>
       </div>
 
-      {error ? (
-        <motion.div
-          className="error-message"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            padding: '20px',
-            backgroundColor: '#ffebee',
-            color: '#c62828',
-            borderRadius: '8px',
-            margin: '20px 0'
-          }}
-        >
-          <p><strong>Error:</strong> {error}</p>
-          <button onClick={fetchJobs} className="retry-btn">Retry</button>
-        </motion.div>
-      ) : jobs.length === 0 ? (
-        <motion.div
-          className="empty-deliveries"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      {error ?
+      <motion.div
+        className="error-message"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          padding: '20px',
+          backgroundColor: '#ffebee',
+          color: '#c62828',
+          borderRadius: '8px',
+          margin: '20px 0'
+        }}>
+        
+          <p><strong>{tUi("ui.pages.admin.adminDeliveries.error_c7f47eee32")}</strong> {error}</p>
+          <button onClick={fetchJobs} className="retry-btn">{tUi("ui.pages.admin.adminDeliveries.retry_4ec5161833")}</button>
+        </motion.div> :
+      jobs.length === 0 ?
+      <motion.div
+        className="empty-deliveries"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}>
+        
           <p>
-            {statusFilter === 'all'
-              ? 'No delivery jobs found.'
-              : `No delivery jobs with status "${getStatusLabel(statusFilter)}".`}
+            {statusFilter === "all" ? tUi("ui.pages.admin.adminDeliveries.noDeliveryJobsFound_80dac255bf") : tUi("ui.pages.admin.adminDeliveries.noDeliveryJobsWithStatus_64e7ce84ea", { value0:
+
+            getStatusLabel(statusFilter) })}
           </p>
-          {statusFilter !== 'all' && (
-            <button onClick={() => setStatusFilter('all')} className="show-all-btn">
-              Show All Jobs
-            </button>
-          )}
-        </motion.div>
-      ) : (
-        <div className="deliveries-table-container">
+          {statusFilter !== "all" &&
+        <button onClick={() => setStatusFilter("all")} className="show-all-btn">{tUi("ui.pages.admin.adminDeliveries.showAllJobs_7eacebe8db")}
+
+        </button>
+        }
+        </motion.div> :
+
+      <div className="deliveries-table-container">
           <table className="deliveries-table">
             <thead>
               <tr>
-                <th>Job ID</th>
-                <th>Order ID</th>
-                <th>Driver</th>
-                <th>Status</th>
-                <th>Pickup</th>
-                <th>Delivery</th>
-                <th>Payment</th>
-                <th>Created</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.jobId_e9870f1542")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.orderId_722c965e70")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.driver_98ea19431c")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.status_e033fc5e4f")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.pickup_b758cea6c8")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.delivery_e0a72301c9")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.payment_ca9b9e5f35")}</th>
+                <th>{tUi("ui.pages.admin.adminDeliveries.created_138ce7b7fa")}</th>
               </tr>
             </thead>
             <tbody>
               {jobs.map((job, index) => {
-                const normalizedStatus = (job.status || '').toLowerCase();
-                const canAssignDriver = normalizedStatus === 'available' || normalizedStatus === 'assigned';
-                const pickupPhotos = Array.isArray(job.photos)
-                  ? job.photos.filter(photo => photo.photo_type === 'pickup')
-                  : [];
-                const deliveryPhotos = Array.isArray(job.photos)
-                  ? job.photos.filter(photo => photo.photo_type === 'delivery')
-                  : [];
-                const issuePhotos = Array.isArray(job.photos)
-                  ? job.photos.filter(photo => photo.photo_type === 'issue')
-                  : [];
+              const normalizedStatus = (job.status || '').toLowerCase();
+              const canAssignDriver = normalizedStatus === "available" || normalizedStatus === "assigned";
+              const pickupPhotos = Array.isArray(job.photos) ?
+              job.photos.filter((photo) => photo.photo_type === "pickup") :
+              [];
+              const deliveryPhotos = Array.isArray(job.photos) ?
+              job.photos.filter((photo) => photo.photo_type === "delivery") :
+              [];
+              const issuePhotos = Array.isArray(job.photos) ?
+              job.photos.filter((photo) => photo.photo_type === "issue") :
+              [];
 
-                return (
+              return (
                 <React.Fragment key={job.id}>
                   <motion.tr
                     initial={{ opacity: 0, y: 10 }}
@@ -400,256 +422,256 @@ const AdminDeliveries = () => {
                     transition={{ delay: index * 0.03 }}
                     className={`delivery-row ${expandedJobId === job.id ? 'expanded' : ''}`}
                     onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td data-label="Job ID">#{job.id}</td>
-                    <td data-label="Order ID">#{job.order_id}</td>
-                    <td data-label="Driver">{job.driver_name || <span className="no-driver">Unassigned</span>}</td>
-                    <td data-label="Status">
+                    style={{ cursor: 'pointer' }}>
+                    
+                    <td data-label={tUi("ui.pages.admin.adminDeliveries.jobId_e9870f1542")}>#{job.id}</td>
+                    <td data-label={tUi("ui.pages.admin.adminDeliveries.orderId_722c965e70")}>#{job.order_id}</td>
+                    <td data-label={tUi("ui.pages.admin.adminDeliveries.driver_98ea19431c")}>{job.driver_name || <span className="no-driver">{tUi("ui.pages.admin.adminDeliveries.unassigned_28bca48db4")}</span>}</td>
+                    <td data-label={tUi("ui.pages.admin.adminDeliveries.status_e033fc5e4f")}>
                       <span className={`delivery-status status-${job.status}`}>
                         {getStatusLabel(job.status)}
                       </span>
                     </td>
-                    <td className="address-cell" data-label="Pickup">{job.pickup_address || 'N/A'}</td>
-                    <td className="address-cell" data-label="Delivery">{job.delivery_address || 'N/A'}</td>
-                    <td className="payment-cell" data-label="Payment">{formatCurrency(job.payment_amount || 0)}</td>
-                    <td data-label="Created">{formatDate(job.created_at)}</td>
+                    <td className="address-cell" data-label={tUi("ui.pages.admin.adminDeliveries.pickup_b758cea6c8")}>{job.pickup_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</td>
+                    <td className="address-cell" data-label={tUi("ui.pages.admin.adminDeliveries.delivery_e0a72301c9")}>{job.delivery_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</td>
+                    <td className="payment-cell" data-label={tUi("ui.pages.admin.adminDeliveries.payment_ca9b9e5f35")}>{formatCurrency(job.payment_amount || 0)}</td>
+                    <td data-label={tUi("ui.pages.admin.adminDeliveries.created_138ce7b7fa")}>{formatDate(job.created_at)}</td>
                   </motion.tr>
-                  {expandedJobId === job.id && (
-                    <tr className="expanded-row">
+                  {expandedJobId === job.id &&
+                  <tr className="expanded-row">
                       <td colSpan="8">
                         <div className="job-expanded-details">
                           <>
                           <div className="expanded-grid">
                             <div className="detail-card">
-                              <h4>📦 Pickup</h4>
-                              <p>{job.pickup_address || 'N/A'}</p>
-                              {job.pickup_latitude && (
-                                <p className="coords">({job.pickup_latitude?.toFixed(4)}, {job.pickup_longitude?.toFixed(4)})</p>
-                              )}
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.pickup_d7b7e7a679")}</h4>
+                              <p>{job.pickup_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
+                              {job.pickup_latitude &&
+                              <p className="coords">({job.pickup_latitude?.toFixed(4)}, {job.pickup_longitude?.toFixed(4)})</p>
+                              }
                             </div>
                             <div className="detail-card">
-                              <h4>📍 Delivery</h4>
-                              <p>{job.delivery_address || 'N/A'}</p>
-                              {job.delivery_latitude && (
-                                <p className="coords">({job.delivery_latitude?.toFixed(4)}, {job.delivery_longitude?.toFixed(4)})</p>
-                              )}
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.delivery_bf08aa740b")}</h4>
+                              <p>{job.delivery_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
+                              {job.delivery_latitude &&
+                              <p className="coords">({job.delivery_latitude?.toFixed(4)}, {job.delivery_longitude?.toFixed(4)})</p>
+                              }
                             </div>
                             <div className="detail-card">
-                              <h4>👤 Customer</h4>
-                              {job.customer ? (
-                                <p>{job.customer.first_name} {job.customer.last_name}
-                                  {job.customer.phone && ` • ${job.customer.phone}`}
-                                </p>
-                              ) : (
-                                <p>N/A</p>
-                              )}
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.customer_6ce1add7ce")}</h4>
+                              {job.customer ?
+                              <p>{job.customer.first_name} {job.customer.last_name}
+                                  {job.customer.phone && tUi("ui.pages.admin.adminDeliveries.value_9e10da0234", { value0: job.customer.phone })}
+                                </p> :
+
+                              <p>{tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
+                              }
                             </div>
                             <div className="detail-card">
-                              <h4>🚚 Driver</h4>
-                              <p>{job.driver_name || 'Not assigned'}</p>
-                              {canAssignDriver && (
-                                <div
-                                  className="assign-driver-controls"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.driver_f405bc2809")}</h4>
+                              <p>{job.driver_name || tUi("ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1")}</p>
+                              {canAssignDriver &&
+                              <div
+                                className="assign-driver-controls"
+                                onClick={(e) => e.stopPropagation()}>
+                                
                                   <select
-                                    value={selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : '')}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
-                                    }}
-                                  >
-                                    <option value="">Select driver...</option>
-                                    {drivers.map((driver) => (
-                                      <option key={driver.id} value={String(driver.id)}>
+                                  value={selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : '')}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
+                                  }}>
+                                  
+                                    <option value="">{tUi("ui.pages.admin.adminDeliveries.selectDriver_a679aadb8d")}</option>
+                                    {drivers.map((driver) =>
+                                  <option key={driver.id} value={String(driver.id)}>
                                         {driver.first_name} {driver.last_name} ({driver.email})
                                       </option>
-                                    ))}
+                                  )}
                                   </select>
                                   <button
-                                    type="button"
-                                    className="assign-driver-btn"
-                                    disabled={
-                                      assigningDriverJobId === job.id ||
-                                      !(selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : ''))
-                                    }
-                                    onClick={() => handleAssignDriver(job.id)}
-                                  >
-                                    {assigningDriverJobId === job.id ? 'Assigning...' : 'Assign Driver'}
+                                  type="button"
+                                  className="assign-driver-btn"
+                                  disabled={
+                                  assigningDriverJobId === job.id ||
+                                  !(selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : ''))
+                                  }
+                                  onClick={() => handleAssignDriver(job.id)}>
+                                  
+                                    {assigningDriverJobId === job.id ? tUi("ui.pages.admin.adminDeliveries.assigning_0faec53f0e") : tUi("ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a")}
                                   </button>
                                 </div>
-                              )}
+                              }
                             </div>
                           </div>
-                          {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (
-                            <div className="proof-photos-section">
-                              <h4>Delivery Proof Photos</h4>
+                          {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) &&
+                          <div className="proof-photos-section">
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.deliveryProofPhotos_2ec00d3e69")}</h4>
                               <div className="proof-photo-groups">
-                                {pickupPhotos.length > 0 && (
-                                  <div className="proof-photo-group">
+                                {pickupPhotos.length > 0 &&
+                              <div className="proof-photo-group">
                                     <div className="proof-photo-group-header">
-                                      <h5>Picked Up</h5>
+                                      <h5>{tUi("ui.pages.admin.adminDeliveries.pickedUp_519b67e151")}</h5>
                                       <button
-                                        type="button"
-                                        className="proof-ok-btn"
-                                        disabled={job.pickup_photo_checked || reviewingPhotoType === `${job.id}-pickup`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleReviewPhotoType(job.id, 'pickup');
-                                        }}
-                                      >
-                                        {job.pickup_photo_checked
-                                          ? 'Checked OK'
-                                          : reviewingPhotoType === `${job.id}-pickup`
-                                            ? 'Saving...'
-                                            : 'Mark OK'}
-                                      </button>
-                                    </div>
-                                    <div className="proof-photo-grid">
-                                      {pickupPhotos.map((photo) => (
-                                        <div className="proof-photo-card" key={`pickup-photo-${photo.id}`}>
-                                          <img
-                                            src={getImageUrl(photo.image_path)}
-                                            alt="Pickup proof"
-                                            className="proof-preview-photo"
-                                          />
-                                          <span>{formatDate(photo.created_at)}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+                                    type="button"
+                                    className="proof-ok-btn"
+                                    disabled={job.pickup_photo_checked || reviewingPhotoType === `${job.id}-pickup`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReviewPhotoType(job.id, "pickup");
+                                    }}>
+                                    
+                                        {job.pickup_photo_checked ? tUi("ui.pages.admin.adminDeliveries.checkedOk_c8b794882a") :
 
-                                {deliveryPhotos.length > 0 && (
-                                  <div className="proof-photo-group">
-                                    <div className="proof-photo-group-header">
-                                      <h5>Delivered</h5>
-                                      <button
-                                        type="button"
-                                        className="proof-ok-btn"
-                                        disabled={job.delivery_photo_checked || reviewingPhotoType === `${job.id}-delivery`}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleReviewPhotoType(job.id, 'delivery');
-                                        }}
-                                      >
-                                        {job.delivery_photo_checked
-                                          ? 'Checked OK'
-                                          : reviewingPhotoType === `${job.id}-delivery`
-                                            ? 'Saving...'
-                                            : 'Mark OK'}
+                                    reviewingPhotoType === `${job.id}-pickup` ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markOk_245791044e")
+
+                                    }
                                       </button>
                                     </div>
                                     <div className="proof-photo-grid">
-                                      {deliveryPhotos.map((photo) => (
-                                        <div className="proof-photo-card" key={`delivery-photo-${photo.id}`}>
+                                      {pickupPhotos.map((photo) =>
+                                  <div className="proof-photo-card" key={`pickup-photo-${photo.id}`}>
                                           <img
-                                            src={getImageUrl(photo.image_path)}
-                                            alt="Delivery proof"
-                                            className="proof-preview-photo"
-                                          />
+                                      src={getImageUrl(photo.image_path)}
+                                      alt={tUi("ui.pages.admin.adminDeliveries.pickupProof_de18bafb10")}
+                                      className="proof-preview-photo" />
+                                    
                                           <span>{formatDate(photo.created_at)}</span>
                                         </div>
-                                      ))}
+                                  )}
                                     </div>
                                   </div>
-                                )}
+                              }
+
+                                {deliveryPhotos.length > 0 &&
+                              <div className="proof-photo-group">
+                                    <div className="proof-photo-group-header">
+                                      <h5>{tUi("ui.pages.admin.adminDeliveries.delivered_7131e29334")}</h5>
+                                      <button
+                                    type="button"
+                                    className="proof-ok-btn"
+                                    disabled={job.delivery_photo_checked || reviewingPhotoType === `${job.id}-delivery`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleReviewPhotoType(job.id, "delivery");
+                                    }}>
+                                    
+                                        {job.delivery_photo_checked ? tUi("ui.pages.admin.adminDeliveries.checkedOk_c8b794882a") :
+
+                                    reviewingPhotoType === `${job.id}-delivery` ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markOk_245791044e")
+
+                                    }
+                                      </button>
+                                    </div>
+                                    <div className="proof-photo-grid">
+                                      {deliveryPhotos.map((photo) =>
+                                  <div className="proof-photo-card" key={`delivery-photo-${photo.id}`}>
+                                          <img
+                                      src={getImageUrl(photo.image_path)}
+                                      alt={tUi("ui.pages.admin.adminDeliveries.deliveryProof_8e26a61d41")}
+                                      className="proof-preview-photo" />
+                                    
+                                          <span>{formatDate(photo.created_at)}</span>
+                                        </div>
+                                  )}
+                                    </div>
+                                  </div>
+                              }
                               </div>
                             </div>
-                          )}
+                          }
 
-                          {job.issue_type && (
-                            <div className="issue-alert">
-                              <strong>⚠️ Issue Reported:</strong> {job.issue_type.replace(/_/g, ' ')}
-                              {job.issue_resolved && (
-                                <span className="issue-solved-pill">Solved</span>
-                              )}
+                          {job.issue_type &&
+                          <div className="issue-alert">
+                              <strong>{tUi("ui.pages.admin.adminDeliveries.issueReported_44c3c7d44b")}</strong> {job.issue_type.replace(/_/g, ' ')}
+                              {job.issue_resolved &&
+                            <span className="issue-solved-pill">{tUi("ui.pages.admin.adminDeliveries.solved_1bad684e4b")}</span>
+                            }
                               {job.issue_description && <p>{job.issue_description}</p>}
-                              {issuePhotos.length > 0 && (
-                                <div className="issue-photo-strip">
-                                  {issuePhotos.map((photo) => (
-                                      <img
-                                        key={`issue-photo-${photo.id}`}
-                                        src={getImageUrl(photo.image_path)}
-                                        alt="Issue report"
-                                        className="issue-preview-photo"
-                                      />
-                                    ))}
-                                </div>
+                              {issuePhotos.length > 0 &&
+                            <div className="issue-photo-strip">
+                                  {issuePhotos.map((photo) =>
+                              <img
+                                key={`issue-photo-${photo.id}`}
+                                src={getImageUrl(photo.image_path)}
+                                alt={tUi("ui.pages.admin.adminDeliveries.issueReport_8c535704c0")}
+                                className="issue-preview-photo" />
+
                               )}
+                                </div>
+                            }
 
                               <div className="issue-thread-admin-box">
-                                <h5>Issue Discussion (Admin ↔ Driver)</h5>
-                                {issueChatLoading ? (
-                                  <p className="issue-thread-empty">Loading discussion...</p>
-                                ) : issueMessages.length === 0 ? (
-                                  <p className="issue-thread-empty">No messages yet.</p>
-                                ) : (
-                                  <div className="issue-thread-admin-list">
-                                    {issueMessages.map((msg) => (
-                                      <div key={msg.id} className="issue-thread-admin-message">
+                                <h5>{tUi("ui.pages.admin.adminDeliveries.issueDiscussionAdminDriver_e2c77dbbbc")}</h5>
+                                {issueChatLoading ?
+                              <p className="issue-thread-empty">{tUi("ui.pages.admin.adminDeliveries.loadingDiscussion_a617f0a9e2")}</p> :
+                              issueMessages.length === 0 ?
+                              <p className="issue-thread-empty">{tUi("ui.pages.admin.adminDeliveries.noMessagesYet_3b81b04428")}</p> :
+
+                              <div className="issue-thread-admin-list">
+                                    {issueMessages.map((msg) =>
+                                <div key={msg.id} className="issue-thread-admin-message">
                                         <div className="issue-thread-admin-meta">
-                                          <strong>{msg.sender_name || 'User'}</strong>
-                                          <span>{msg.sender_role || 'user'} • {new Date(msg.created_at).toLocaleString()}</span>
+                                          <strong>{msg.sender_name || tUi("ui.pages.admin.adminDeliveries.user_78896fd17c")}</strong>
+                                          <span>{msg.sender_role ? getRoleLabel(msg.sender_role) : tUi("ui.pages.admin.adminDeliveries.user_532f4a40ae")} • {formatDateTime(msg.created_at)}</span>
                                         </div>
                                         <p>{msg.message}</p>
                                       </div>
-                                    ))}
-                                  </div>
                                 )}
+                                  </div>
+                              }
 
-                                {!job.issue_resolved ? (
-                                  <div className="issue-thread-admin-actions">
+                                {!job.issue_resolved ?
+                              <div className="issue-thread-admin-actions">
                                     <input
-                                      type="text"
-                                      value={issueMessageText}
-                                      onChange={(e) => setIssueMessageText(e.target.value)}
-                                      placeholder="Reply to driver..."
-                                    />
+                                  type="text"
+                                  value={issueMessageText}
+                                  onChange={(e) => setIssueMessageText(e.target.value)}
+                                  placeholder={tUi("ui.pages.admin.adminDeliveries.replyToDriver_f3e492b4fe")} />
+                                
                                     <button onClick={handleSendIssueMessage} disabled={issueSending || !issueMessageText.trim()}>
-                                      {issueSending ? 'Sending...' : 'Send'}
+                                      {issueSending ? tUi("ui.pages.admin.adminDeliveries.sending_c686f867c6") : tUi("ui.pages.admin.adminDeliveries.send_50281357f3")}
                                     </button>
                                     <button
-                                      className="resolve-issue-btn"
-                                      onClick={() => handleResolveIssue(job.id)}
-                                      disabled={resolvingIssue}
-                                    >
-                                      {resolvingIssue ? 'Saving...' : 'Mark as Solved'}
+                                  className="resolve-issue-btn"
+                                  onClick={() => handleResolveIssue(job.id)}
+                                  disabled={resolvingIssue}>
+                                  
+                                      {resolvingIssue ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7")}
                                     </button>
-                                  </div>
-                                ) : (
-                                  <p className="issue-thread-closed">Issue closed by admin.</p>
-                                )}
+                                  </div> :
+
+                              <p className="issue-thread-closed">{tUi("ui.pages.admin.adminDeliveries.issueClosedByAdmin_a88a36322d")}</p>
+                              }
                               </div>
                             </div>
-                          )}
-                          {job.items && job.items.length > 0 && (
-                            <div className="expanded-items">
-                              <h4>Items</h4>
+                          }
+                          {job.items && job.items.length > 0 &&
+                          <div className="expanded-items">
+                              <h4>{tUi("ui.pages.admin.adminDeliveries.items_fa39ea7cbb")}</h4>
                               <div className="items-list">
-                                {job.items.map((item, idx) => (
-                                  <span key={idx} className="item-tag">
+                                {job.items.map((item, idx) =>
+                              <span key={idx} className="item-tag">
                                     {item.product?.name} x{item.quantity}
                                   </span>
-                                ))}
+                              )}
                               </div>
                             </div>
-                          )}
+                          }
                           </>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-                );
-              })}
+                  }
+                </React.Fragment>);
+
+            })}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default AdminDeliveries;

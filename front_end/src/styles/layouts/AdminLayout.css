@@ -18,6 +18,11 @@
   margin-left: 250px;
 }
 
+html[dir='rtl'] .admin-content {
+  margin-left: auto;
+  margin-right: 250px;
+}
+
 @media (max-width: 1024px) {
   .admin-container {
     flex-direction: column;
@@ -25,6 +30,7 @@
 
   .admin-content {
     margin-left: 0;
+    margin-right: 0;
     max-width: 100%;
     padding: 1.25rem;
   }
@@ -34,5 +40,6 @@
   .admin-content {
     padding: 1rem;
     margin-left: 0;
+    margin-right: 0;
   }
 }

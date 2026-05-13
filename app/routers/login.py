@@ -1,4 +1,4 @@
-from fastapi import Depends, status, HTTPException, APIRouter
+from fastapi import Depends, status, HTTPException, APIRouter, Response, Request, Form
 from sqlalchemy.orm import Session
 from app import models
 from ..database import get_db
@@ -15,6 +15,46 @@ import httpx
 router = APIRouter(
      tags=['Login']
 )
+
+
+def _is_truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _use_secure_cookie() -> bool:
+    configured = os.getenv("COOKIE_SECURE")
+    if configured is not None:
+        return _is_truthy(configured)
+    return os.getenv("ENV", "").strip().lower() == "production"
+
+
+def _allow_verification_code_in_response() -> bool:
+    if _is_truthy(os.getenv("RETURN_VERIFICATION_CODE_IN_RESPONSE")):
+        return True
+    return os.getenv("ENV", "").strip().lower() in {"dev", "development", "local"}
+
+
+def _set_refresh_token_cookie(response: Response, refresh_token: str) -> None:
+    response.set_cookie(
+        key=OAuth2.REFRESH_TOKEN_COOKIE_NAME,
+        value=refresh_token,
+        httponly=True,
+        secure=_use_secure_cookie(),
+        samesite="lax",
+        max_age=OAuth2.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/",
+    )
+
+
+def _clear_refresh_token_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=OAuth2.REFRESH_TOKEN_COOKIE_NAME,
+        httponly=True,
+        secure=_use_secure_cookie(),
+        samesite="lax",
+        path="/",
+    )
+
 
 def generate_verification_code() -> str:
     """Generate a 6-digit verification code"""
@@ -71,14 +111,17 @@ def new_user(user_data: schemas.UserBase, db: Session = Depends(get_db)):
         "email": user_data.email
     }
     
-    # If email wasn't sent (e.g., SMTP not configured), include code in response for development
+    # If email wasn't sent (e.g., SMTP not configured), include code only when explicitly enabled.
     if not email_sent:
         print(f"\n{'='*60}")
         print(f"EMAIL NOT SENT - SMTP not configured")
         print(f"Verification code for {user_data.email}: {verification_code}")
         print(f"{'='*60}\n")
-        response_data["verification_code"] = verification_code
-        response_data["message"] = "Account created successfully. Email service not configured. Use the verification code below."
+        if _allow_verification_code_in_response():
+            response_data["verification_code"] = verification_code
+            response_data["message"] = "Account created successfully. Email service not configured. Use the verification code below."
+        else:
+            response_data["message"] = "Account created successfully. Verification email could not be sent right now. Please contact support."
     
     return response_data 
 
@@ -149,11 +192,15 @@ def verify_email(verification_data: schemas.EmailVerification, db: Session = Dep
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during verification: {str(e)}"
+            detail="An error occurred during verification"
         )
 
 @router.post("/auth/google")
-async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(get_db)):
+async def google_auth(
+    google_token: schemas.GoogleAuth,
+    response: Response,
+    db: Session = Depends(get_db)
+):
     """Authenticate user with Google OAuth token"""
     try:
         # Verify the Google token
@@ -168,21 +215,21 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         try:
             async with httpx.AsyncClient() as client:
                 # Use v3 endpoint which is more reliable and includes picture
-                response = await client.get(
+                google_response = await client.get(
                     'https://www.googleapis.com/oauth2/v3/userinfo',
                     headers={'Authorization': f'Bearer {google_token.token}'},
                     params={'alt': 'json'}
                 )
-                if response.status_code != 200:
+                if google_response.status_code != 200:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="Invalid Google token"
                     )
-                user_info = response.json()
+                user_info = google_response.json()
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Failed to verify Google token: {str(e)}"
+                detail="Failed to verify Google token"
             )
         
         # Extract user information
@@ -273,7 +320,7 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
             traceback.print_exc()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create/update user: {str(db_error)}"
+                detail="Failed to create or update user"
             )
         
         # Verify user was created/retrieved successfully
@@ -294,8 +341,10 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         db.commit()
         db.refresh(user)
         
-        # Generate JWT token
+        # Generate JWT token pair
         token = OAuth2.create_access_token(data={"user_id": user.id}, token_version=user.token_version)
+        refresh_token = OAuth2.create_refresh_token(data={"user_id": user.id}, token_version=user.token_version)
+        _set_refresh_token_cookie(response, refresh_token)
         
         return {
             "access_token": token,
@@ -311,11 +360,16 @@ async def google_auth(google_token: schemas.GoogleAuth, db: Session = Depends(ge
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred during Google authentication: {str(e)}"
+            detail="An error occurred during Google authentication"
         )
 
 @router.post("/login")
-def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends (get_db)): 
+def login(
+    response: Response,
+    remember_me: bool = Form(False),
+    user_credentials: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+): 
     try:
         getuser = db.query(models.DBUser).filter(models.DBUser.email == user_credentials.username).first()
         if not getuser :
@@ -327,11 +381,11 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
                 detail="This account has been suspended.",
             )
 
-        # Check if user is OAuth user (no password)
-        if getuser.provider == "google" or not getuser.password:
+        # Allow Google accounts to login with email/password only after they set one.
+        if not getuser.password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This account was created with Google. Please use Google Sign-In."
+                detail="This account does not have a password yet. Please sign in with Google first, then set a password from Profile."
             )
 
         if not utils.verify(user_credentials.password, getuser.password):
@@ -342,7 +396,15 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         db.commit()
         db.refresh(getuser)
         
-        token = OAuth2.create_access_token(data = {"user_id": getuser.id}, token_version=getuser.token_version)
+        token = OAuth2.create_access_token(data={"user_id": getuser.id}, token_version=getuser.token_version)
+        refresh_token = OAuth2.create_refresh_token(
+            data={"user_id": getuser.id},
+            token_version=getuser.token_version,
+        )
+        if remember_me:
+            _set_refresh_token_cookie(response, refresh_token)
+        else:
+            _clear_refresh_token_cookie(response)
 
         return {"access_token" : token , 
                 "token_type" : 'bearer',
@@ -359,8 +421,91 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {str(e)}"
+            detail="Internal server error"
         )
+
+@router.post("/refresh-session")
+def refresh_session(
+    current_user: schemas.TokenData = Depends(OAuth2.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Issue a new access token with a fresh expiration window."""
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    token = OAuth2.create_access_token(
+        data={"user_id": user.id},
+        token_version=user.token_version or 0,
+    )
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+    }
+
+
+@router.post("/refresh-token")
+def refresh_token(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Issue a fresh access token using a refresh token cookie."""
+    raw_refresh_token = request.cookies.get(OAuth2.REFRESH_TOKEN_COOKIE_NAME)
+    if not raw_refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is missing.",
+        )
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    token_data = OAuth2.verify_refresh_token(raw_refresh_token, credentials_exception)
+
+    user = db.query(models.DBUser).filter(models.DBUser.id == token_data.id).first()
+    if user is None:
+        raise credentials_exception
+
+    user_token_version = user.token_version if user.token_version is not None else 0
+    token_token_version = token_data.token_version if token_data.token_version is not None else 0
+    if user_token_version != token_token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired. Please login again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account has been suspended.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    new_access_token = OAuth2.create_access_token(
+        data={"user_id": user.id},
+        token_version=user_token_version,
+    )
+    new_refresh_token = OAuth2.create_refresh_token(
+        data={"user_id": user.id},
+        token_version=user_token_version,
+    )
+    _set_refresh_token_cookie(response, new_refresh_token)
+
+    return {"access_token": new_access_token, "token_type": "bearer"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Clear the refresh token cookie on this device."""
+    _clear_refresh_token_cookie(response)
+    return {"message": "Logged out successfully"}
 
 @router.post("/forgot-password")
 def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
@@ -375,11 +520,11 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
                 "email": request.email
             }
         
-        # Check if user is OAuth user (no password)
-        if user.provider == "google" or not user.password:
+        # Allow reset for Google accounts that already have a password set.
+        if not user.password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This account was created with Google. Please use Google Sign-In."
+                detail="This account does not have a password yet. Please sign in with Google first, then set a password from Profile."
             )
         
         # Generate verification code
@@ -410,14 +555,15 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
             "email": request.email
         }
         
-        # If email wasn't sent (e.g., SMTP not configured), include code in response for development
+        # If email wasn't sent (e.g., SMTP not configured), include code only when explicitly enabled.
         if not email_sent:
             print(f"\n{'='*60}")
             print(f"EMAIL NOT SENT - SMTP not configured")
             print(f"Password reset code for {user.email}: {verification_code}")
             print(f"{'='*60}\n")
-            response_data["verification_code"] = verification_code
-            response_data["message"] = "Password reset code generated. Email service not configured. Use the verification code below."
+            if _allow_verification_code_in_response():
+                response_data["verification_code"] = verification_code
+                response_data["message"] = "Password reset code generated. Email service not configured. Use the verification code below."
         
         return response_data
         
@@ -429,7 +575,7 @@ def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depend
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while processing forgot password"
         )
 
 @router.post("/verify-reset-code")
@@ -483,7 +629,7 @@ def verify_reset_code(verification_data: schemas.VerifyResetCode, db: Session = 
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while verifying reset code"
         )
 
 @router.post("/reset-password")
@@ -545,5 +691,5 @@ def reset_password(reset_data: schemas.ResetPassword, db: Session = Depends(get_
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred: {str(e)}"
+            detail="An error occurred while resetting password"
         )

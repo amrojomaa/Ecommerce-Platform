@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { RATING_ENDPOINTS, buildUrl } from '../config/api';
@@ -14,15 +14,13 @@ const StarRating = ({
   size = 'medium',
   initialAverageRating,
   initialTotalRatings,
-  initialUserRating,
-  fetchOnMount = true,
+  fetchOnMount = true
 }) => {
   const { isAuthenticated } = useAuth();
-  const hasPreloadedSummary = Number.isFinite(Number(initialAverageRating))
-    && Number.isFinite(Number(initialTotalRatings));
+  const hasPreloadedSummary = Number.isFinite(Number(initialAverageRating)) &&
+  Number.isFinite(Number(initialTotalRatings));
   const [averageRating, setAverageRating] = useState(Number(initialAverageRating) || 0);
   const [totalRatings, setTotalRatings] = useState(Number(initialTotalRatings) || 0);
-  const [userRating, setUserRating] = useState(initialUserRating ?? null);
   const [hoveredRating, setHoveredRating] = useState(null);
   const [loading, setLoading] = useState(!hasPreloadedSummary);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +31,6 @@ const StarRating = ({
       const response = await http.get(buildUrl(RATING_ENDPOINTS.GET_PRODUCT, { product_id: productId }));
       setAverageRating(response.data.average_rating || 0);
       setTotalRatings(response.data.total_ratings || 0);
-      setUserRating(response.data.user_rating || null);
     } catch (error) {
       console.error('Error fetching rating:', error);
     } finally {
@@ -58,28 +55,27 @@ const StarRating = ({
     if (!hasPreloadedSummary) return;
     setAverageRating(Number(initialAverageRating) || 0);
     setTotalRatings(Number(initialTotalRatings) || 0);
-    setUserRating(initialUserRating ?? null);
     setLoading(false);
-  }, [hasPreloadedSummary, initialAverageRating, initialTotalRatings, initialUserRating]);
+  }, [hasPreloadedSummary, initialAverageRating, initialTotalRatings]);
 
   const handleStarClick = async (rating) => {
     if (!interactive || !isAuthenticated || submitting) {
       if (!isAuthenticated) {
-        toast.info('Please login to rate this product');
+        toast.info(tUi("ui.components.starRating.pleaseLoginToRateThis_b201bdd7dd"));
       }
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await http.post(
+      await http.post(
         buildUrl(RATING_ENDPOINTS.CREATE_OR_UPDATE, { product_id: productId }),
         { rating }
       );
-      
+
       // Refresh rating data
       await fetchRating();
-      toast.success('Rating submitted successfully!');
+      toast.success(tUi("ui.components.starRating.ratingSubmittedSuccessfully_6601c9e682"));
     } catch (error) {
       console.error('Error submitting rating:', error);
       toast.error(error.response?.data?.detail || 'Failed to submit rating');
@@ -105,8 +101,8 @@ const StarRating = ({
           onClick={() => handleStarClick(i + 1)}
           onMouseEnter={() => interactive && isAuthenticated && setHoveredRating(i + 1)}
           whileHover={interactive && isAuthenticated ? { scale: 1.2 } : {}}
-          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}
-        >
+          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}>
+          
           <FaStar />
         </motion.div>
       );
@@ -121,8 +117,8 @@ const StarRating = ({
           onClick={() => handleStarClick(fullStars + 1)}
           onMouseEnter={() => interactive && isAuthenticated && setHoveredRating(fullStars + 1)}
           whileHover={interactive && isAuthenticated ? { scale: 1.2 } : {}}
-          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}
-        >
+          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}>
+          
           <FaStarHalfAlt />
         </motion.div>
       );
@@ -138,8 +134,8 @@ const StarRating = ({
           onMouseEnter={() => interactive && isAuthenticated && setHoveredRating(fullStars + (hasHalfStar ? 1 : 0) + i + 1)}
           onMouseLeave={() => setHoveredRating(null)}
           whileHover={interactive && isAuthenticated ? { scale: 1.2 } : {}}
-          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}
-        >
+          whileTap={interactive && isAuthenticated ? { scale: 0.9 } : {}}>
+          
           <FaStar />
         </motion.div>
       );
@@ -152,41 +148,41 @@ const StarRating = ({
     return (
       <div className={`star-rating star-rating-${size}`}>
         <div className="stars-container">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="star star-loading">
+          {[...Array(5)].map((_, i) =>
+          <div key={i} className="star star-loading">
               <FaStar />
             </div>
-          ))}
+          )}
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
-    <div 
+    <div
       className={`star-rating star-rating-${size}`}
-      onMouseLeave={() => setHoveredRating(null)}
-    >
+      onMouseLeave={() => setHoveredRating(null)}>
+      
       <div className="stars-container">
         {renderStars()}
       </div>
-      {showLabel && (
-        <div className="rating-info">
+      {showLabel &&
+      <div className="rating-info">
           <span className="rating-value">
             {averageRating > 0 ? averageRating.toFixed(1) : '0.0'}
           </span>
-          {totalRatings > 0 && (
-            <span className="rating-count">
-              ({totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})
+          {totalRatings > 0 &&
+        <span className="rating-count">
+              ({totalRatings} {totalRatings === 1 ? tUi("ui.components.starRating.rating_5bd901ae20") : tUi("ui.components.starRating.ratings_8aa35770e7")})
             </span>
-          )}
-          {!totalRatings && (
-            <span className="rating-count">No ratings yet</span>
-          )}
+        }
+          {!totalRatings &&
+        <span className="rating-count">{tUi("ui.components.starRating.noRatingsYet_94fd652938")}</span>
+        }
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default StarRating;

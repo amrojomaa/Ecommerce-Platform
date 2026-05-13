@@ -6,6 +6,8 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 // Authentication endpoints
 export const AUTH_ENDPOINTS = {
   LOGIN: '/login',
+  REFRESH_SESSION: '/refresh-session',
+  REFRESH_TOKEN: '/refresh-token',
   SIGNUP: '/signup',
   VERIFY_EMAIL: '/verify-email',
   GOOGLE_AUTH: '/auth/google',
@@ -215,6 +217,7 @@ export const DELIVERY_ENDPOINTS = {
   JOB_DETAILS: '/delivery/jobs/{job_id}/details',
   GET_CHAT: '/delivery/jobs/{job_id}/chat',
   SEND_CHAT: '/delivery/jobs/{job_id}/chat',
+  CHAT_TICKET: '/delivery/jobs/{job_id}/chat-ticket',
   REACT_CHAT: '/delivery/jobs/{job_id}/chat/{message_id}/reactions',
   WS_CHAT: '/delivery/jobs/{job_id}/ws/chat',
   GET_JOB_BY_ORDER: '/delivery/jobs/by-order/{order_id}',

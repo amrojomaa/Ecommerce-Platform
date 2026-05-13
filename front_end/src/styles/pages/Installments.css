@@ -175,6 +175,7 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   gap: 12px;
+  min-width: 0;
 }
 
 .request-lines-panel {
@@ -214,6 +215,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .request-line-top {
@@ -227,6 +230,7 @@
 
 .request-details-panel {
   min-width: 0;
+  overflow-x: hidden;
 }
 
 .request-card {
@@ -306,6 +310,14 @@
   gap: 8px;
   margin-bottom: 10px;
   color: var(--text-primary);
+  min-width: 0;
+}
+
+.request-summary p,
+.request-note,
+.payment-history li {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .request-note {
@@ -345,7 +357,7 @@
   min-width: 0;
   white-space: normal;
   word-break: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .request-actions-row {
@@ -538,11 +550,48 @@
 .upload-input-inline {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 8px;
   background: var(--background);
+}
+
+.upload-file-input {
+  display: none;
+}
+
+.upload-file-controls {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-file-trigger {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.upload-file-trigger:hover {
+  border-color: var(--primary-color);
+}
+
+.upload-file-name {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .upload-input-inline input[type="file"] {
@@ -623,6 +672,51 @@
   margin: 0;
   padding-left: 20px;
   color: var(--text-primary);
+}
+
+html[dir='rtl'] .installments-page,
+html[dir='rtl'] .installment-request-card,
+html[dir='rtl'] .installment-history-card,
+html[dir='rtl'] .request-card {
+  text-align: right;
+}
+
+html[dir='rtl'] .request-line {
+  text-align: right;
+}
+
+html[dir='rtl'] .request-confirmation-check {
+  direction: rtl;
+  grid-template-columns: 18px minmax(0, 1fr);
+  text-align: right;
+}
+
+html[dir='rtl'] .request-confirmation-check input[type="checkbox"] {
+  margin: 2px 0 0;
+}
+
+html[dir='rtl'] .schedule-table th,
+html[dir='rtl'] .schedule-table td {
+  text-align: right;
+}
+
+html[dir='rtl'] .payment-history ul {
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+html[dir='rtl'] .upload-input-inline input[type="file"]::file-selector-button {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+html[dir='rtl'] .upload-file-controls {
+  direction: rtl;
+  flex-direction: row;
+}
+
+html[dir='rtl'] .upload-file-name {
+  text-align: right;
 }
 
 .installments-loading {

@@ -15,6 +15,19 @@ import logging
 from .database import SessionLocal, engine, get_db
 from app import models
 from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments
+from app.utils.image_storage import IMAGES_ROOT_DIR, ensure_images_root
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+IS_PRODUCTION = os.getenv("ENV", "").strip().lower() == "production"
+RUN_STARTUP_SCHEMA_UPDATES = _env_bool("RUN_STARTUP_SCHEMA_UPDATES", not IS_PRODUCTION)
+RUN_STARTUP_SCHEMA_PATCHES = _env_bool("RUN_STARTUP_SCHEMA_PATCHES", not IS_PRODUCTION)
 
 
 def apply_schema_updates():
@@ -141,8 +154,8 @@ def apply_schema_updates():
             )
         """))
 
-
-apply_schema_updates()
+if RUN_STARTUP_SCHEMA_UPDATES:
+    apply_schema_updates()
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -410,12 +423,37 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_users_profile_image
+                ON users(profile_image)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_delivery_photos_image_path
+                ON delivery_photos(image_path)
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS idx_installment_documents_file_path
+                ON installment_documents(file_path)
+                """
+            )
+        )
 
-
-apply_schema_patches()
+if RUN_STARTUP_SCHEMA_PATCHES:
+    apply_schema_patches()
 print("Data Base connected successfully!")
 
 app = FastAPI()
+ensure_images_root()
 
 origins = [
     "http://localhost:3000",
@@ -463,12 +501,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     # Log the full traceback for debugging
-    logging.error(f"Unhandled exception: {exc}")
+    logging.error("Unhandled exception: %s", exc)
     logging.error(traceback.format_exc())
     
     response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": "Internal server error"}
     )
     # Add CORS headers manually
     origin = request.headers.get("origin")
@@ -499,4 +537,4 @@ app.include_router(pos.router)
 app.include_router(promotions.router)
 app.include_router(installments.router)
 
-app.mount("/images", StaticFiles(directory="images"), name="images")
+app.mount("/images", StaticFiles(directory=str(IMAGES_ROOT_DIR)), name="images")

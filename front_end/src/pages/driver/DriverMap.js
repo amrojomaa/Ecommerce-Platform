@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useState, useEffect, useRef, useCallback } from 'react';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
@@ -24,17 +24,17 @@ const DriverMap = () => {
   const routeRequestSeqRef = useRef(0);
   const mapSessionRef = useRef(0);
 
-  const toRadians = (value) => (value * Math.PI) / 180;
-  const haversineDistanceKm = (startLat, startLng, endLat, endLng) => {
+  const toRadians = useCallback((value) => value * Math.PI / 180, []);
+  const haversineDistanceKm = useCallback((startLat, startLng, endLat, endLng) => {
     const earthRadiusKm = 6371;
     const dLat = toRadians(endLat - startLat);
     const dLng = toRadians(endLng - startLng);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRadians(startLat)) * Math.cos(toRadians(endLat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(startLat)) * Math.cos(toRadians(endLat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return earthRadiusKm * c;
-  };
+  }, [toRadians]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -57,7 +57,7 @@ const DriverMap = () => {
           // Update location on server
           http.patch(DELIVERY_ENDPOINTS.UPDATE_LOCATION, {
             latitude: newPos.lat,
-            longitude: newPos.lng,
+            longitude: newPos.lng
           }).catch(() => {});
         },
         (err) => {
@@ -90,7 +90,7 @@ const DriverMap = () => {
     const map = L.map(mapRef.current).setView([driverPosition.lat, driverPosition.lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
+      maxZoom: 19
     }).addTo(map);
 
     mapInstanceRef.current = map;
@@ -100,7 +100,7 @@ const DriverMap = () => {
       className: 'driver-marker',
       html: '<div class="driver-marker-inner">🚚</div>',
       iconSize: [40, 40],
-      iconAnchor: [20, 20],
+      iconAnchor: [20, 20]
     });
     driverMarkerRef.current = L.marker([driverPosition.lat, driverPosition.lng], { icon: driverIcon }).addTo(map);
 
@@ -154,15 +154,15 @@ const DriverMap = () => {
           className: `job-marker pickup-marker${isClosest ? ' closest-marker' : ''}`,
           html: '<div class="job-marker-inner">📦</div>',
           iconSize: [36, 36],
-          iconAnchor: [18, 18],
+          iconAnchor: [18, 18]
         });
         const marker = L.marker([job.pickup_latitude, job.pickup_longitude], { icon: pickupIcon })
-          .addTo(mapInstanceRef.current)
-          .bindPopup(
-            `${isClosest ? 'Closest order' : 'Order'} #${job.order_id}` +
-            (isClosest && closestDistanceKm !== null ? ` (${closestDistanceKm.toFixed(2)} km)` : '')
-          )
-          .on('click', () => setSelectedJob(job));
+        .addTo(mapInstanceRef.current)
+        .bindPopup(
+          `${isClosest ? 'Closest order' : 'Order'} #${job.order_id}` + (
+          isClosest && closestDistanceKm !== null ? ` (${closestDistanceKm.toFixed(2)} km)` : '')
+        )
+        .on('click', () => setSelectedJob(job));
         markersRef.current.push(marker);
       }
       if (job.delivery_latitude && job.delivery_longitude) {
@@ -170,11 +170,11 @@ const DriverMap = () => {
           className: 'job-marker delivery-marker',
           html: '<div class="job-marker-inner">📍</div>',
           iconSize: [36, 36],
-          iconAnchor: [18, 18],
+          iconAnchor: [18, 18]
         });
         const marker = L.marker([job.delivery_latitude, job.delivery_longitude], { icon: deliveryIcon })
-          .addTo(mapInstanceRef.current)
-          .on('click', () => setSelectedJob(job));
+        .addTo(mapInstanceRef.current)
+        .on('click', () => setSelectedJob(job));
         markersRef.current.push(marker);
       }
     });
@@ -187,9 +187,9 @@ const DriverMap = () => {
 
     const activeSession = mapSessionRef.current;
     const isMapValid = () =>
-      mapInstanceRef.current &&
-      mapInstanceRef.current._loaded &&
-      mapSessionRef.current === activeSession;
+    mapInstanceRef.current &&
+    mapInstanceRef.current._loaded &&
+    mapSessionRef.current === activeSession;
 
     routeLayersRef.current.forEach((layer) => {
       try {
@@ -223,7 +223,7 @@ const DriverMap = () => {
           const layer = L.polyline(routeCoordinates, lineStyle).addTo(mapInstanceRef.current);
           return {
             layer,
-            distanceKm: Number.isFinite(data.routes[0].distance) ? data.routes[0].distance / 1000 : null,
+            distanceKm: Number.isFinite(data.routes[0].distance) ? data.routes[0].distance / 1000 : null
           };
         }
       } catch (error) {
@@ -233,15 +233,15 @@ const DriverMap = () => {
       if (!isMapValid()) return null;
       const fallbackLayer = L.polyline(
         [
-          [startLat, startLng],
-          [endLat, endLng],
-        ],
+        [startLat, startLng],
+        [endLat, endLng]],
+
         fallbackStyle
       ).addTo(mapInstanceRef.current);
 
       return {
         layer: fallbackLayer,
-        distanceKm: haversineDistanceKm(startLat, startLng, endLat, endLng),
+        distanceKm: haversineDistanceKm(startLat, startLng, endLat, endLng)
       };
     };
 
@@ -270,9 +270,9 @@ const DriverMap = () => {
         if (!toPickup) return;
 
         newLayers.push(toPickup.layer);
-        const pickupDistanceKm = Number.isFinite(toPickup.distanceKm)
-          ? toPickup.distanceKm
-          : haversineDistanceKm(driverPosition.lat, driverPosition.lng, job.pickup_latitude, job.pickup_longitude);
+        const pickupDistanceKm = Number.isFinite(toPickup.distanceKm) ?
+        toPickup.distanceKm :
+        haversineDistanceKm(driverPosition.lat, driverPosition.lng, job.pickup_latitude, job.pickup_longitude);
         let totalDistanceKm = pickupDistanceKm;
         let warehouseToDeliveryDistanceKm = null;
 
@@ -290,9 +290,9 @@ const DriverMap = () => {
           if (!pickupToDelivery) return;
           newLayers.push(pickupToDelivery.layer);
 
-          const deliveryDistanceKm = Number.isFinite(pickupToDelivery.distanceKm)
-            ? pickupToDelivery.distanceKm
-            : haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude);
+          const deliveryDistanceKm = Number.isFinite(pickupToDelivery.distanceKm) ?
+          pickupToDelivery.distanceKm :
+          haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude);
           warehouseToDeliveryDistanceKm = deliveryDistanceKm;
           totalDistanceKm += deliveryDistanceKm;
         }
@@ -300,7 +300,7 @@ const DriverMap = () => {
         nextRouteDistancesByJob[job.id] = {
           pickupDistanceKm,
           totalDistanceKm,
-          warehouseToDeliveryDistanceKm,
+          warehouseToDeliveryDistanceKm
         };
       }
 
@@ -314,7 +314,7 @@ const DriverMap = () => {
     return () => {
       routeRequestSeqRef.current += 1;
     };
-  }, [jobs, driverPosition]);
+  }, [jobs, driverPosition, haversineDistanceKm]);
 
   // Derive closest job from warehouse (pickup) to delivery distance.
   useEffect(() => {
@@ -330,9 +330,9 @@ const DriverMap = () => {
       if (!Number.isFinite(job.pickup_latitude) || !Number.isFinite(job.pickup_longitude)) return;
       if (!Number.isFinite(job.delivery_latitude) || !Number.isFinite(job.delivery_longitude)) return;
 
-      const warehouseToDeliveryDistanceKm = Number.isFinite(routeDistancesByJob[job.id]?.warehouseToDeliveryDistanceKm)
-        ? routeDistancesByJob[job.id].warehouseToDeliveryDistanceKm
-        : haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude);
+      const warehouseToDeliveryDistanceKm = Number.isFinite(routeDistancesByJob[job.id]?.warehouseToDeliveryDistanceKm) ?
+      routeDistancesByJob[job.id].warehouseToDeliveryDistanceKm :
+      haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude);
 
       if (!nearest || warehouseToDeliveryDistanceKm < nearest.distanceKm) {
         nearest = { id: job.id, distanceKm: warehouseToDeliveryDistanceKm };
@@ -341,7 +341,7 @@ const DriverMap = () => {
 
     setClosestJobId(nearest?.id ?? null);
     setClosestDistanceKm(Number.isFinite(nearest?.distanceKm) ? nearest.distanceKm : null);
-  }, [jobs, driverPosition, routeDistancesByJob]);
+  }, [jobs, driverPosition, routeDistancesByJob, haversineDistanceKm]);
 
   // Update driver marker position
   useEffect(() => {
@@ -354,7 +354,7 @@ const DriverMap = () => {
     setAccepting(true);
     try {
       await http.post(buildUrl(DELIVERY_ENDPOINTS.ACCEPT_JOB, { job_id: jobId }));
-      toast.success('Job accepted successfully!');
+      toast.success(tUi("ui.pages.driver.driverMap.jobAcceptedSuccessfully_f36ff52c4a"));
       setSelectedJob(null);
       fetchJobs();
     } catch (error) {
@@ -368,7 +368,7 @@ const DriverMap = () => {
   const handleDecline = async (jobId) => {
     try {
       await http.post(buildUrl(DELIVERY_ENDPOINTS.DECLINE_JOB, { job_id: jobId }));
-      toast.info('Job declined');
+      toast.info(tUi("ui.pages.driver.driverMap.jobDeclined_9191aaa2f6"));
       setSelectedJob(null);
       fetchJobs();
     } catch (error) {
@@ -401,22 +401,22 @@ const DriverMap = () => {
     return (
       <div className="loading-container">
         <LoadingSpinner size="large" />
-      </div>
-    );
+      </div>);
+
   }
 
   return (
     <div className="driver-map-page">
       <div className="map-header">
-        <h1>Find Delivery Jobs</h1>
+        <h1>{tUi("ui.pages.driver.driverMap.findDeliveryJobs_cfe3d4c660")}</h1>
         <div className="jobs-header-meta">
-          <span className="jobs-count">{jobs.length} available</span>
-          {closestJobId && (
-            <span className="closest-order-banner">
-              Shortest warehouse route: #{jobs.find((job) => job.id === closestJobId)?.order_id || closestJobId}
-              {closestDistanceKm !== null ? ` (${closestDistanceKm.toFixed(2)} km)` : ''}
+          <span className="jobs-count">{jobs.length}{tUi("ui.pages.driver.driverMap.available_9488931dee")}</span>
+          {closestJobId &&
+          <span className="closest-order-banner">{tUi("ui.pages.driver.driverMap.shortestWarehouseRoute_2b3db79613")}
+            {jobs.find((job) => job.id === closestJobId)?.order_id || closestJobId}
+              {closestDistanceKm !== null ? tUi("ui.pages.driver.driverMap.valueKm_71f82fee49", { value0: closestDistanceKm.toFixed(2) }) : ''}
             </span>
-          )}
+          }
         </div>
       </div>
 
@@ -425,137 +425,137 @@ const DriverMap = () => {
 
         {/* Job list sidebar */}
         <div className="jobs-sidebar">
-          <h3>Available Jobs</h3>
-          {jobs.length === 0 ? (
-            <p className="no-jobs">No delivery jobs available right now.</p>
-          ) : (
-            <div className="jobs-list">
-              {jobs.map((job) => (
-                <div
-                  key={job.id}
-                  className={`job-item ${selectedJob?.id === job.id ? 'selected' : ''} ${closestJobId === job.id ? 'closest-job-item' : ''}`}
-                  onClick={() => {
-                    setSelectedJob(job);
-                    if (mapInstanceRef.current && mapInstanceRef.current._loaded && job.pickup_latitude) {
-                      try {
-                        mapInstanceRef.current.flyTo([job.pickup_latitude, job.pickup_longitude], 15);
-                      } catch (e) {}
-                    }
-                  }}
-                >
+          <h3>{tUi("ui.pages.driver.driverMap.availableJobs_6dffe10ec4")}</h3>
+          {jobs.length === 0 ?
+          <p className="no-jobs">{tUi("ui.pages.driver.driverMap.noDeliveryJobsAvailableRight_53630e0d5a")}</p> :
+
+          <div className="jobs-list">
+              {jobs.map((job) =>
+            <div
+              key={job.id}
+              className={`job-item ${selectedJob?.id === job.id ? 'selected' : ''} ${closestJobId === job.id ? 'closest-job-item' : ''}`}
+              onClick={() => {
+                setSelectedJob(job);
+                if (mapInstanceRef.current && mapInstanceRef.current._loaded && job.pickup_latitude) {
+                  try {
+                    mapInstanceRef.current.flyTo([job.pickup_latitude, job.pickup_longitude], 15);
+                  } catch (e) {}
+                }
+              }}>
+              
                   <div className="job-item-header">
-                    <span className="job-order">Order #{job.order_id}</span>
+                    <span className="job-order">{tUi("ui.pages.driver.driverMap.order_78ea594e7c")}{job.order_id}</span>
                     <span className="job-pay">{formatCurrency(job.payment_amount || 0)}</span>
                   </div>
                   <div className="job-distance-row">
-                    {Number.isFinite(job.pickup_latitude) && Number.isFinite(job.pickup_longitude) && Number.isFinite(job.delivery_latitude) && Number.isFinite(job.delivery_longitude) && (
-                      <span className="job-distance">
-                        Warehouse route {(Number.isFinite(routeDistancesByJob[job.id]?.warehouseToDeliveryDistanceKm)
-                          ? routeDistancesByJob[job.id].warehouseToDeliveryDistanceKm
-                          : haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude)
-                        ).toFixed(2)} km
+                    {Number.isFinite(job.pickup_latitude) && Number.isFinite(job.pickup_longitude) && Number.isFinite(job.delivery_latitude) && Number.isFinite(job.delivery_longitude) &&
+                <span className="job-distance">{tUi("ui.pages.driver.driverMap.warehouseRoute_91242014d8")}
+                  {(Number.isFinite(routeDistancesByJob[job.id]?.warehouseToDeliveryDistanceKm) ?
+                  routeDistancesByJob[job.id].warehouseToDeliveryDistanceKm :
+                  haversineDistanceKm(job.pickup_latitude, job.pickup_longitude, job.delivery_latitude, job.delivery_longitude))
+                  .toFixed(2)} km
                       </span>
-                    )}
-                    {closestJobId === job.id && (
-                      <span className="closest-job-badge">Closest</span>
-                    )}
+                }
+                    {closestJobId === job.id &&
+                <span className="closest-job-badge">{tUi("ui.pages.driver.driverMap.closest_8047e0ec83")}</span>
+                }
                   </div>
-                  {Number.isFinite(routeDistancesByJob[job.id]?.totalDistanceKm) && (
-                    <div className="job-total-distance-row">
-                      <span className="job-total-distance">From your current position {routeDistancesByJob[job.id].totalDistanceKm.toFixed(2)} km</span>
+                  {Number.isFinite(routeDistancesByJob[job.id]?.totalDistanceKm) &&
+              <div className="job-total-distance-row">
+                      <span className="job-total-distance">{tUi("ui.pages.driver.driverMap.fromYourCurrentPosition_4f5a911a22")}{routeDistancesByJob[job.id].totalDistanceKm.toFixed(2)} km</span>
                     </div>
-                  )}
+              }
                   <div className="job-item-details">
                     <div className="job-location">
                       <span className="location-icon">📦</span>
-                      <span>{job.pickup_address || 'Pickup location'}</span>
+                      <span>{job.pickup_address || tUi("ui.pages.driver.driverMap.pickupLocation_5815f6573b")}</span>
                     </div>
                     <div className="job-location">
                       <span className="location-icon">📍</span>
-                      <span>{job.delivery_address || 'Delivery location'}</span>
+                      <span>{job.delivery_address || tUi("ui.pages.driver.driverMap.deliveryLocation_2873c757f3")}</span>
                     </div>
                   </div>
-                  {job.items && job.items.length > 0 && (
-                    <div className="job-items-preview">
-                      {job.items.map((item, idx) => (
-                        <span key={idx} className="item-tag">
+                  {job.items && job.items.length > 0 &&
+              <div className="job-items-preview">
+                      {job.items.map((item, idx) =>
+                <span key={idx} className="item-tag">
                           {item.product?.name} x{item.quantity}
                         </span>
-                      ))}
+                )}
                     </div>
-                  )}
+              }
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
         </div>
       </div>
 
       {/* Selected job detail modal */}
-      {selectedJob && (
-        <div className="job-detail-modal">
+      {selectedJob &&
+      <div className="job-detail-modal">
           <div className="job-detail-content">
             <button className="close-modal" onClick={() => setSelectedJob(null)}>×</button>
-            <h2>Delivery Job - Order #{selectedJob.order_id}</h2>
+            <h2>{tUi("ui.pages.driver.driverMap.deliveryJobOrder_41762bc75b")}{selectedJob.order_id}</h2>
             
             <div className="detail-grid">
               <div className="detail-section">
-                <h3>📦 Pickup</h3>
-                <p>{selectedJob.pickup_address || 'N/A'}</p>
+                <h3>{tUi("ui.pages.driver.driverMap.pickup_d73f705138")}</h3>
+                <p>{selectedJob.pickup_address || tUi("ui.pages.driver.driverMap.nA_de3570823c")}</p>
               </div>
               <div className="detail-section">
-                <h3>📍 Delivery</h3>
-                <p>{selectedJob.delivery_address || 'N/A'}</p>
+                <h3>{tUi("ui.pages.driver.driverMap.delivery_08ebebf690")}</h3>
+                <p>{selectedJob.delivery_address || tUi("ui.pages.driver.driverMap.nA_de3570823c")}</p>
               </div>
               <div className="detail-section">
-                <h3>👤 Customer</h3>
-                {selectedJob.customer ? (
-                  <p>{selectedJob.customer.first_name} {selectedJob.customer.last_name}</p>
-                ) : (
-                  <p>N/A</p>
-                )}
+                <h3>{tUi("ui.pages.driver.driverMap.customer_d9db49ed61")}</h3>
+                {selectedJob.customer ?
+              <p>{selectedJob.customer.first_name} {selectedJob.customer.last_name}</p> :
+
+              <p>{tUi("ui.pages.driver.driverMap.nA_de3570823c")}</p>
+              }
               </div>
               <div className="detail-section">
-                <h3>💰 Payment</h3>
+                <h3>{tUi("ui.pages.driver.driverMap.payment_690e237bd5")}</h3>
                 <p className="payment-amount">{formatCurrency(selectedJob.payment_amount || 0)}</p>
               </div>
             </div>
 
-            {selectedJob.items && selectedJob.items.length > 0 && (
-              <div className="items-section">
-                <h3>Items to Deliver</h3>
+            {selectedJob.items && selectedJob.items.length > 0 &&
+          <div className="items-section">
+                <h3>{tUi("ui.pages.driver.driverMap.itemsToDeliver_0daaf38580")}</h3>
                 <div className="items-list">
-                  {selectedJob.items.map((item, idx) => (
-                    <div key={idx} className="item-row">
+                  {selectedJob.items.map((item, idx) =>
+              <div key={idx} className="item-row">
                       <span className="item-name">{item.product?.name}</span>
                       <span className="item-qty">x{item.quantity}</span>
                       <span className="item-price">{formatCurrency(item.total || 0)}</span>
                     </div>
-                  ))}
+              )}
                 </div>
               </div>
-            )}
+          }
 
             <div className="job-actions">
               <button
-                className="btn-accept"
-                onClick={() => handleAccept(selectedJob.id)}
-                disabled={accepting}
-              >
-                {accepting ? 'Accepting...' : '✅ Accept Job'}
+              className="btn-accept"
+              onClick={() => handleAccept(selectedJob.id)}
+              disabled={accepting}>
+              
+                {accepting ? tUi("ui.pages.driver.driverMap.accepting_40f0cb67bc") : tUi("ui.pages.driver.driverMap.acceptJob_83dec8187c")}
               </button>
               <button
-                className="btn-decline"
-                onClick={() => handleDecline(selectedJob.id)}
-              >
-                ❌ Decline
-              </button>
+              className="btn-decline"
+              onClick={() => handleDecline(selectedJob.id)}>{tUi("ui.pages.driver.driverMap.decline_7e736d807b")}
+
+
+            </button>
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default DriverMap;

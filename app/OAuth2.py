@@ -7,18 +7,24 @@ from app import schemas, models
 from sqlalchemy.orm import Session
 from app.database import get_db
 from typing import Optional
+import os
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/login')
 
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+DEFAULT_DEV_SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+SECRET_KEY = os.getenv("JWT_SECRET_KEY") or os.getenv("SECRET_KEY") or DEFAULT_DEV_SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 180
+REFRESH_TOKEN_EXPIRE_DAYS = 30
+REFRESH_TOKEN_COOKIE_NAME = "refresh_token"
+WS_CHAT_TOKEN_EXPIRE_MINUTES = int(os.getenv("WS_CHAT_TOKEN_EXPIRE_MINUTES", "2"))
 
 def create_access_token(data: dict, token_version: int = 0): #data = used_id + expire
     
     to_encode = data.copy()
     to_encode.update({"token_version": token_version})
+    to_encode.update({"token_type": "access"})
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
 
@@ -27,9 +33,35 @@ def create_access_token(data: dict, token_version: int = 0): #data = used_id + e
     return encoded_jwt
 
 
+def create_refresh_token(data: dict, token_version: int = 0):
+    to_encode = data.copy()
+    to_encode.update({"token_version": token_version})
+    to_encode.update({"token_type": "refresh"})
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_ws_chat_token(data: dict, job_id: int, token_version: int = 0):
+    to_encode = data.copy()
+    to_encode.update({"token_version": token_version})
+    to_encode.update({"token_type": "ws_chat"})
+    to_encode.update({"job_id": int(job_id)})
+    expire = datetime.utcnow() + timedelta(minutes=WS_CHAT_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
 def verify_access_token(token: str, credentials_exception):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type: str = payload.get("token_type", "access")
+        if token_type != "access":
+            raise credentials_exception
         id: str = payload.get("user_id")
         token_version: int = payload.get("token_version", 0)
         if id is None:
@@ -41,6 +73,50 @@ def verify_access_token(token: str, credentials_exception):
     if token_data is None:
             raise credentials_exception
     return token_data #TokenData(id=7, token_version=0)
+
+
+def verify_ws_chat_token(token: str, credentials_exception, expected_job_id: Optional[int] = None):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type: str = payload.get("token_type")
+        if token_type != "ws_chat":
+            raise credentials_exception
+
+        id: str = payload.get("user_id")
+        token_version: int = payload.get("token_version", 0)
+        job_id = payload.get("job_id")
+        if id is None or job_id is None:
+            raise credentials_exception
+
+        job_id = int(job_id)
+        if expected_job_id is not None and int(expected_job_id) != job_id:
+            raise credentials_exception
+    except (jwt.JWTError, ValueError, TypeError):
+        raise credentials_exception
+
+    token_data = schemas.TokenData(id=id, token_version=token_version)
+    if token_data is None:
+        raise credentials_exception
+    return token_data, job_id
+
+
+def verify_refresh_token(token: str, credentials_exception):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type: str = payload.get("token_type")
+        if token_type != "refresh":
+            raise credentials_exception
+        id: str = payload.get("user_id")
+        token_version: int = payload.get("token_version", 0)
+        if id is None:
+            raise credentials_exception
+    except jwt.JWTError:
+        raise credentials_exception
+
+    token_data = schemas.TokenData(id=id, token_version=token_version)
+    if token_data is None:
+        raise credentials_exception
+    return token_data
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,

@@ -14,6 +14,7 @@
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 450px;
+  border: 1px solid var(--border-color);
 }
 
 .auth-container h1 {
@@ -26,6 +27,11 @@
   text-align: center;
   color: var(--text-secondary);
   margin-bottom: 0.75rem;
+}
+
+.required-mark {
+  color: var(--error-color);
+  font-weight: 700;
 }
 
 .auth-form {
@@ -90,6 +96,22 @@
   align-items: center;
 }
 
+.password-strength-line {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--border-color);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.password-strength-line-progress {
+  height: 100%;
+  width: 0;
+  background-color: var(--success-color);
+  transition: width 0.2s ease;
+}
+
 .password-input-wrapper input {
   width: 100%;
   padding: 0.625rem;
@@ -100,6 +122,12 @@
   color: var(--text-primary);
 }
 
+/* Prevent duplicate browser-native password reveal controls (Edge/IE). */
+.password-input-wrapper input::-ms-reveal,
+.password-input-wrapper input::-ms-clear {
+  display: none;
+}
+
 .form-group input {
   width: 100%;
   padding: 0.625rem;
@@ -107,6 +135,17 @@
   border-radius: 0.5rem;
   background-color: var(--background);
   color: var(--text-primary);
+}
+
+/* In RTL, keep phone numbers anchored to the right side. */
+html[dir='rtl'] .form-group input[type='tel'] {
+  text-align: right;
+  direction: ltr;
+}
+
+.form-group input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 
 .password-toggle {
@@ -137,8 +176,39 @@
   height: 20px;
 }
 
+/* Keep password toggle placement and input spacing correct in RTL. */
+html[dir='rtl'] .password-input-wrapper input {
+  padding-right: 0.625rem;
+  padding-left: 2.5rem;
+}
+
+html[dir='rtl'] .password-toggle {
+  right: auto;
+  left: 0.75rem;
+}
+
 .form-group input.error {
   border-color: var(--error-color);
+}
+
+.remember-me-row {
+  margin: 0.1rem 0 0.75rem;
+}
+
+.remember-me-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.remember-me-label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--primary-color);
 }
 
 .error-message {
@@ -205,6 +275,19 @@
 
 .google-button svg {
   margin-right: 0.5rem;
+}
+
+.dark .google-button {
+  background-color: var(--background) !important;
+}
+
+/* Keep browser autofill readable in dark mode. */
+.dark .auth-form input:-webkit-autofill,
+.dark .auth-form input:-webkit-autofill:hover,
+.dark .auth-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--background) inset;
+  transition: background-color 9999s ease-out 0s;
 }
 
 .auth-link {

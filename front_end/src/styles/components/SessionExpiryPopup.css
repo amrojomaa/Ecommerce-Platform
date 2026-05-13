@@ -1,0 +1,66 @@
+.session-expiry-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+  padding: 1rem;
+}
+
+.session-expiry-popup {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.session-expiry-popup h3 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.session-expiry-popup p {
+  margin: 0.65rem 0 0;
+  color: var(--text-secondary);
+}
+
+.session-expiry-popup-countdown {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.session-expiry-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.session-expiry-popup-extend-btn,
+.session-expiry-popup-logout-btn {
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.62rem 0.9rem;
+  cursor: pointer;
+}
+
+.session-expiry-popup-extend-btn {
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+.session-expiry-popup-logout-btn {
+  background: var(--border-color);
+  color: var(--text-primary);
+}
+
+.session-expiry-popup-extend-btn:disabled,
+.session-expiry-popup-logout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { tUi } from "../../i18n/uiText";import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import http from '../../services/http';
 import { POS_ENDPOINTS } from '../../config/api';
 import API_BASE_URL from '../../config/api';
@@ -29,14 +29,14 @@ const PosTerminal = () => {
     subtotal: 0,
     promotion_discount: 0,
     grand_total: 0,
-    applied_promotion: null,
+    applied_promotion: null
   });
 
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
     try {
       const { data } = await http.get(POS_ENDPOINTS.PRODUCTS, {
-        params: { q: search.trim(), category: category.trim() },
+        params: { q: search.trim(), category: category.trim() }
       });
       setCatalog(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -70,7 +70,7 @@ const PosTerminal = () => {
 
   const addProduct = (p) => {
     if (p.quantity < 1) {
-      toast.warn('Out of stock');
+      toast.warn(tUi("ui.pages.cashier.posTerminal.outOfStock_1bf2a299b1"));
       return;
     }
     setLines((prev) => {
@@ -93,12 +93,12 @@ const PosTerminal = () => {
     const n = parseInt(qty, 10);
     if (Number.isNaN(n) || n < 1) return;
     setLines((prev) =>
-      prev.map((row) => {
-        if (row.product_id !== productId) return row;
-        const capped = Math.min(n, row.maxStock);
-        if (capped < n) toast.warn(`Quantity capped at ${row.maxStock} for ${row.name}`);
-        return { ...row, quantity: capped };
-      })
+    prev.map((row) => {
+      if (row.product_id !== productId) return row;
+      const capped = Math.min(n, row.maxStock);
+      if (capped < n) toast.warn(`Quantity capped at ${row.maxStock} for ${row.name}`);
+      return { ...row, quantity: capped };
+    })
     );
   };
 
@@ -112,20 +112,20 @@ const PosTerminal = () => {
         subtotal: 0,
         promotion_discount: 0,
         grand_total: 0,
-        applied_promotion: null,
+        applied_promotion: null
       });
       return;
     }
 
     try {
       const { data } = await http.post(POS_ENDPOINTS.PROMOTION_PREVIEW, {
-        items: currentLines.map(({ product_id, quantity }) => ({ product_id, quantity })),
+        items: currentLines.map(({ product_id, quantity }) => ({ product_id, quantity }))
       });
       setPromotionSummary({
         subtotal: Number(data?.subtotal || 0),
         promotion_discount: Number(data?.promotion_discount || 0),
         grand_total: Number(data?.grand_total || 0),
-        applied_promotion: data?.applied_promotion || null,
+        applied_promotion: data?.applied_promotion || null
       });
     } catch {
       const fallbackSubtotal = currentLines.reduce((s, row) => s + row.unit * row.quantity, 0);
@@ -133,7 +133,7 @@ const PosTerminal = () => {
         subtotal: fallbackSubtotal,
         promotion_discount: 0,
         grand_total: fallbackSubtotal,
-        applied_promotion: null,
+        applied_promotion: null
       });
     }
   }, []);
@@ -147,20 +147,20 @@ const PosTerminal = () => {
 
   const completeSale = async () => {
     if (lines.length === 0) {
-      toast.warn('Add items to the sale');
+      toast.warn(tUi("ui.pages.cashier.posTerminal.addItemsToTheSale_5c282636c6"));
       return;
     }
     setSubmitting(true);
     try {
       const { data } = await http.post(POS_ENDPOINTS.SALE, {
         items: lines.map(({ product_id, quantity }) => ({ product_id, quantity })),
-        payment_method: paymentMethod,
+        payment_method: paymentMethod
       });
       const saved = Number(data?.promotion_discount || 0);
       if (saved > 0) {
         toast.success(`Sale completed. Promotion saved ${formatCurrency(saved)}.`);
       } else {
-        toast.success('Sale completed');
+        toast.success(tUi("ui.pages.cashier.posTerminal.saleCompleted_09843ea178"));
       }
       setLines([]);
       fetchToday();
@@ -184,8 +184,8 @@ const PosTerminal = () => {
   return (
     <div className="pos-terminal">
       <header className="pos-header">
-        <h1>Point of sale</h1>
-        <p className="pos-sub">Search products, build the cart, take payment, and complete the sale.</p>
+        <h1>{tUi("ui.pages.cashier.posTerminal.pointOfSale_dd320e4c12")}</h1>
+        <p className="pos-sub">{tUi("ui.pages.cashier.posTerminal.searchProductsBuildTheCart_9022e9704c")}</p>
       </header>
 
       <div className="pos-grid">
@@ -193,174 +193,174 @@ const PosTerminal = () => {
           <div className="pos-filters">
             <input
               type="search"
-              placeholder="Search by name…"
+              placeholder={tUi("ui.pages.cashier.posTerminal.searchByName_1a90c9550d")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pos-input"
-              aria-label="Search products"
-            />
+              aria-label={tUi("ui.pages.cashier.posTerminal.searchProducts_ac70437f7f")} />
+            
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="pos-select"
-              aria-label="Filter category"
-            >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
+              aria-label={tUi("ui.pages.cashier.posTerminal.filterCategory_93d0a059ec")}>
+              
+              <option value="">{tUi("ui.pages.cashier.posTerminal.allCategories_0c74d6af15")}</option>
+              {categories.map((c) =>
+              <option key={c} value={c}>
                   {c}
                 </option>
-              ))}
+              )}
             </select>
           </div>
 
-          {loadingCatalog ? (
-            <div className="pos-loading">
+          {loadingCatalog ?
+          <div className="pos-loading">
               <LoadingSpinner size="medium" />
-            </div>
-          ) : (
-            <div className="pos-product-grid">
-              {catalog.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className="pos-product-card"
-                  onClick={() => addProduct(p)}
-                  disabled={p.quantity < 1}
-                >
+            </div> :
+
+          <div className="pos-product-grid">
+              {catalog.map((p) =>
+            <button
+              key={p.id}
+              type="button"
+              className="pos-product-card"
+              onClick={() => addProduct(p)}
+              disabled={p.quantity < 1}>
+              
                   <div className="pos-product-thumb">
-                    {p.images?.[0] ? (
-                      <img src={thumbUrl(p.images[0])} alt="" loading="lazy" />
-                    ) : (
-                      <span className="pos-no-img">No image</span>
-                    )}
+                    {p.images?.[0] ?
+                <img src={thumbUrl(p.images[0])} alt="" loading="lazy" /> :
+
+                <span className="pos-no-img">{tUi("ui.pages.cashier.posTerminal.noImage_bbc5075c44")}</span>
+                }
                   </div>
                   <div className="pos-product-meta">
                     <span className="pos-product-name">{p.name}</span>
                     <span className="pos-product-price">{formatCurrency(p.discounted_price)}</span>
-                    <span className="pos-product-stock">Stock: {p.quantity}</span>
+                    <span className="pos-product-stock">{tUi("ui.pages.cashier.posTerminal.stock_968b5e6ede")}{p.quantity}</span>
                   </div>
                 </button>
-              ))}
+            )}
             </div>
-          )}
+          }
         </section>
 
         <section className="pos-cart-panel">
-          <h2>Current sale</h2>
-          {lines.length === 0 ? (
-            <p className="pos-empty-cart">Tap products to add lines.</p>
-          ) : (
-            <ul className="pos-lines">
-              {lines.map((row) => (
-                <li key={row.product_id} className="pos-line">
+          <h2>{tUi("ui.pages.cashier.posTerminal.currentSale_53867b9445")}</h2>
+          {lines.length === 0 ?
+          <p className="pos-empty-cart">{tUi("ui.pages.cashier.posTerminal.tapProductsToAddLines_b80cc10ecb")}</p> :
+
+          <ul className="pos-lines">
+              {lines.map((row) =>
+            <li key={row.product_id} className="pos-line">
                   <div className="pos-line-info">
                     <span className="pos-line-name">{row.name}</span>
-                    <span className="pos-line-unit">{formatCurrency(row.unit)} each</span>
+                    <span className="pos-line-unit">{formatCurrency(row.unit)}{tUi("ui.pages.cashier.posTerminal.each_6bbbc233de")}</span>
                   </div>
                   <div className="pos-line-actions">
                     <input
-                      type="number"
-                      min={1}
-                      max={row.maxStock}
-                      value={row.quantity}
-                      onChange={(e) => setQty(row.product_id, e.target.value)}
-                      className="pos-qty"
-                      aria-label={`Quantity for ${row.name}`}
-                    />
+                  type="number"
+                  min={1}
+                  max={row.maxStock}
+                  value={row.quantity}
+                  onChange={(e) => setQty(row.product_id, e.target.value)}
+                  className="pos-qty"
+                  aria-label={tUi("ui.pages.cashier.posTerminal.quantityForValue_d612186b0f", { value0: row.name })} />
+                
                     <span className="pos-line-total">{formatCurrency(row.unit * row.quantity)}</span>
-                    <button type="button" className="pos-remove" onClick={() => removeLine(row.product_id)} aria-label="Remove line">
+                    <button type="button" className="pos-remove" onClick={() => removeLine(row.product_id)} aria-label={tUi("ui.pages.cashier.posTerminal.removeLine_de0acbfd5f")}>
                       ×
                     </button>
                   </div>
                 </li>
-              ))}
+            )}
             </ul>
-          )}
+          }
 
           <div className="pos-total-row">
-            <span>Subtotal</span>
+            <span>{tUi("ui.pages.cashier.posTerminal.subtotal_60eb12d249")}</span>
             <strong>{formatCurrency(previewSubtotal)}</strong>
           </div>
 
-          {promotionSummary.promotion_discount > 0 && (
-            <div className="pos-promo-row">
-              <span>
-                Promotion
-                {promotionSummary.applied_promotion?.name
-                  ? ` (${promotionSummary.applied_promotion.name})`
-                  : ''}
+          {promotionSummary.promotion_discount > 0 &&
+          <div className="pos-promo-row">
+              <span>{tUi("ui.pages.cashier.posTerminal.promotion_1c2c8ebd71")}
+
+              {promotionSummary.applied_promotion?.name ? tUi("ui.pages.cashier.posTerminal.value_d9b1cbaf2c", { value0:
+                promotionSummary.applied_promotion.name }) :
+              ''}
               </span>
               <strong>-{formatCurrency(promotionSummary.promotion_discount)}</strong>
             </div>
-          )}
+          }
 
           <div className="pos-total-row pos-total-row-final">
-            <span>Total</span>
+            <span>{tUi("ui.pages.cashier.posTerminal.total_2fbdddbccd")}</span>
             <strong>{formatCurrency(previewGrandTotal)}</strong>
           </div>
 
           <div className="pos-payment">
-            <span className="pos-payment-label">Payment</span>
+            <span className="pos-payment-label">{tUi("ui.pages.cashier.posTerminal.payment_870a684c6e")}</span>
             <div className="pos-payment-toggle">
               <label>
                 <input
                   type="radio"
                   name="pay"
-                  checked={paymentMethod === 'cash'}
-                  onChange={() => setPaymentMethod('cash')}
-                />
-                Cash
+                  checked={paymentMethod === "cash"}
+                  onChange={() => setPaymentMethod("cash")} />{tUi("ui.pages.cashier.posTerminal.cash_3c02cb4939")}
+
+
               </label>
               <label>
                 <input
                   type="radio"
                   name="pay"
-                  checked={paymentMethod === 'card'}
-                  onChange={() => setPaymentMethod('card')}
-                />
-                Card
+                  checked={paymentMethod === "card"}
+                  onChange={() => setPaymentMethod("card")} />{tUi("ui.pages.cashier.posTerminal.card_b06f050926")}
+
+
               </label>
             </div>
           </div>
 
           <button type="button" className="pos-complete-btn" onClick={completeSale} disabled={submitting || lines.length === 0}>
-            {submitting ? 'Processing…' : 'Complete sale'}
+            {submitting ? tUi("ui.pages.cashier.posTerminal.processing_94fb04c5f3") : tUi("ui.pages.cashier.posTerminal.completeSale_1b0458b1b4")}
           </button>
         </section>
       </div>
 
       <section className="pos-today">
-        <h2>My sales today</h2>
-        {loadingToday ? (
-          <LoadingSpinner size="small" />
-        ) : todaySales.length === 0 ? (
-          <p className="pos-muted">No POS sales yet today.</p>
-        ) : (
-          <table className="pos-today-table">
+        <h2>{tUi("ui.pages.cashier.posTerminal.mySalesToday_69ede91d75")}</h2>
+        {loadingToday ?
+        <LoadingSpinner size="small" /> :
+        todaySales.length === 0 ?
+        <p className="pos-muted">{tUi("ui.pages.cashier.posTerminal.noPosSalesYetToday_18d914dd0f")}</p> :
+
+        <table className="pos-today-table">
             <thead>
               <tr>
-                <th>Order</th>
-                <th>Time</th>
-                <th>Total</th>
-                <th>Method</th>
+                <th>{tUi("ui.pages.cashier.posTerminal.order_38c040619b")}</th>
+                <th>{tUi("ui.pages.cashier.posTerminal.time_4c0efc4233")}</th>
+                <th>{tUi("ui.pages.cashier.posTerminal.total_2fbdddbccd")}</th>
+                <th>{tUi("ui.pages.cashier.posTerminal.method_91f619558e")}</th>
               </tr>
             </thead>
             <tbody>
-              {todaySales.map((s) => (
-                <tr key={s.id}>
+              {todaySales.map((s) =>
+            <tr key={s.id}>
                   <td>#{s.id}</td>
                   <td>{new Date(s.created_at).toLocaleTimeString()}</td>
                   <td>{formatCurrency(s.total_amount)}</td>
                   <td>{s.payment_method || '—'}</td>
                 </tr>
-              ))}
+            )}
             </tbody>
           </table>
-        )}
+        }
       </section>
-    </div>
-  );
+    </div>);
+
 };
 
 export default PosTerminal;

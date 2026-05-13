@@ -79,14 +79,12 @@ export const WishlistProvider = ({ children }) => {
     };
 
     window.addEventListener('auth-change', handleAuthChange);
-
-    // Also check periodically for same-tab changes
-    const interval = setInterval(checkUserChange, 2000);
+    window.addEventListener('focus', checkUserChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
-      clearInterval(interval);
+      window.removeEventListener('focus', checkUserChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);

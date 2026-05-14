@@ -5,17 +5,18 @@ import http from '../services/http';
 import { COMMENT_ENDPOINTS, buildUrl } from '../config/api';
 import API_BASE_URL from '../config/api';
 import { useAuth } from '../hooks/useAuth';
-import { FaEdit, FaPen, FaRegCommentDots, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaPen, FaRegCommentDots, FaStar, FaTimes, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useConfirm } from '../hooks/useConfirm';
 import { formatDate as formatLocalizedDate, getCurrentLocale } from '../utils/helpers';
 import '../styles/components/CommentSection.css';
 
-const CommentSection = ({ productId, variant = 'default' }) => {
+const CommentSection = ({ productId, variant = 'default', onReviewsChanged }) => {
   const { isAuthenticated, user } = useAuth();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [newRating, setNewRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [sortOrder, setSortOrder] = useState('newest');
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -70,9 +71,11 @@ const CommentSection = ({ productId, variant = 'default' }) => {
     if (myComment) {
       setEditingCommentId(myComment.id);
       setNewComment(myComment.content);
+      setNewRating(myComment.rating || 0);
     } else {
       setEditingCommentId(null);
       setNewComment('');
+      setNewRating(0);
     }
     setIsComposerOpen(true);
   };
@@ -80,12 +83,14 @@ const CommentSection = ({ productId, variant = 'default' }) => {
   const handleStartEdit = (comment) => {
     setEditingCommentId(comment.id);
     setNewComment(comment.content);
+    setNewRating(comment.rating || 0);
     setIsComposerOpen(true);
   };
 
   const handleCloseComposer = () => {
     setEditingCommentId(null);
     setNewComment('');
+    setNewRating(0);
     setIsComposerOpen(false);
   };
 
@@ -94,6 +99,11 @@ const CommentSection = ({ productId, variant = 'default' }) => {
 
     if (!newComment.trim()) {
       toast.error(tUi("ui.components.commentSection.pleaseEnterAComment_11b45d3326"));
+      return;
+    }
+
+    if (newRating < 1 || newRating > 5) {
+      toast.error(tUi("ui.components.commentSection.pleaseChooseARatingBetween_5a85d8f04d"));
       return;
     }
 
@@ -106,14 +116,16 @@ const CommentSection = ({ productId, variant = 'default' }) => {
     try {
       if (editingCommentId) {
         await http.put(buildUrl(COMMENT_ENDPOINTS.UPDATE, { comment_id: editingCommentId }), {
-          content: newComment.trim()
+          content: newComment.trim(),
+          rating: newRating
         });
-        toast.success('Comment updated successfully');
+        toast.success(tUi("ui.components.commentSection.commentUpdatedSuccessfully_21e9f1a0c1"));
       } else {
         await http.post(
           buildUrl(COMMENT_ENDPOINTS.CREATE, { product_id: productId }),
           {
             content: newComment.trim(),
+            rating: newRating,
             product_id: productId
           }
         );
@@ -122,6 +134,7 @@ const CommentSection = ({ productId, variant = 'default' }) => {
 
       handleCloseComposer();
       await fetchComments(sortOrder);
+      onReviewsChanged?.();
     } catch (error) {
       console.error('Error saving comment:', error);
       const errorMessage = error.response?.data?.detail || 'Failed to save comment';
@@ -152,6 +165,7 @@ const CommentSection = ({ productId, variant = 'default' }) => {
         handleCloseComposer();
       }
       setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+      onReviewsChanged?.();
       toast.success(tUi("ui.components.commentSection.commentDeletedSuccessfully_95b2007ac1"));
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -194,6 +208,24 @@ const CommentSection = ({ productId, variant = 'default' }) => {
 
     const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
     return `${API_BASE_URL}/${normalizedPath}`;
+  };
+
+  const renderRatingStars = (rating, onSelect = null) => {
+    return (
+      <div className={onSelect ? 'comment-rating-picker' : 'comment-rating-display'}>
+        {[1, 2, 3, 4, 5].map((value) =>
+          <button
+            key={value}
+            type="button"
+            className={`comment-rating-star ${value <= rating ? 'is-filled' : ''}`}
+            onClick={onSelect ? () => onSelect(value) : undefined}
+            disabled={!onSelect}
+            aria-label={tUi("ui.components.commentSection.selectStars_086c6d4ff1", { value0: value })}>
+            <FaStar aria-hidden />
+          </button>
+        )}
+      </div>
+    );
   };
 
   const sectionClassName =
@@ -241,16 +273,16 @@ const CommentSection = ({ productId, variant = 'default' }) => {
             {isComposerOpen ?
             <>
                 <FaTimes className="comment-open-composer-btn__icon" aria-hidden />
-                <span>Close</span>
+                <span>{tUi("ui.components.commentSection.close_2bcc546846")}</span>
               </> :
             myComment ?
             <>
                 <FaEdit className="comment-open-composer-btn__icon" aria-hidden />
-                <span>Edit your comment</span>
+                <span>{tUi("ui.components.commentSection.editYourComment_b8fffd9d7d")}</span>
               </> :
             <>
                 <FaPen className="comment-open-composer-btn__icon" aria-hidden />
-                <span>Write a comment</span>
+                <span>{tUi("ui.components.commentSection.writeAComment_ba8d4e9e56")}</span>
               </>
             }
           </button>
@@ -259,7 +291,7 @@ const CommentSection = ({ productId, variant = 'default' }) => {
 
       {isAuthenticated && myComment && !isComposerOpen &&
       <p className="comment-single-note">
-          You can post one comment per product. Use Edit your comment to update it.
+          {tUi("ui.components.commentSection.oneCommentPerProduct_16050a4ba2")}
         </p>
       }
 
@@ -307,9 +339,15 @@ const CommentSection = ({ productId, variant = 'default' }) => {
                   <span className="comment-date">
                     {formatDate(comment.created_at)}
                   </span>
+                  {comment.rating &&
+                  <div className="comment-user-rating" aria-label={tUi("ui.components.commentSection.ratingOutOfFive_302e4cfd67", { value0: comment.rating })}>
+                    {renderRatingStars(comment.rating)}
+                    <span>{comment.rating}/5</span>
+                  </div>
+                  }
                 </div>
                 {isAuthenticated && user && comment.user.id === user.id &&
-                <span className="comment-owner-badge">Your review</span>
+                <span className="comment-owner-badge">{tUi("ui.components.commentSection.yourReview_4f6098c3a9")}</span>
                 }
               </div>
 
@@ -318,7 +356,7 @@ const CommentSection = ({ productId, variant = 'default' }) => {
                   <button
                   className="comment-edit-btn"
                   onClick={() => handleStartEdit(comment)}
-                  title="Edit comment">
+                  title={tUi("ui.components.commentSection.editComment_198a1f6826")}>
                     <FaEdit />
                   </button>
                   <button
@@ -362,7 +400,7 @@ const CommentSection = ({ productId, variant = 'default' }) => {
                 {user.first_name || ''} {user.last_name || ''}
               </span>
             </div>
-            {editingCommentId && <span className="comment-editing-label">Editing comment</span>}
+            {editingCommentId && <span className="comment-editing-label">{tUi("ui.components.commentSection.editingComment_c7df7e5d35")}</span>}
           </div>
           <textarea
           className="comment-input"
@@ -372,6 +410,18 @@ const CommentSection = ({ productId, variant = 'default' }) => {
           rows={4}
           maxLength={500} />
 
+          <div className="comment-rating-field">
+            <span className="comment-rating-label">{tUi("ui.components.commentSection.yourRating_3f51e8b913")}</span>
+            {renderRatingStars(newRating, setNewRating)}
+            <button
+              type="button"
+              className="comment-clear-rating-btn"
+              onClick={() => setNewRating(0)}
+              disabled={newRating < 1}>
+              {tUi("ui.components.commentSection.clearRating_d5f66e8daa")}
+            </button>
+          </div>
+
           <div className="comment-form-footer">
             <span className="comment-char-count">
               {newComment.length}/500
@@ -379,10 +429,10 @@ const CommentSection = ({ productId, variant = 'default' }) => {
             <button
             type="submit"
             className="comment-submit-btn"
-            disabled={submitting || !newComment.trim()}>
+            disabled={submitting || !newComment.trim() || newRating < 1}>
               {submitting ?
               tUi("ui.components.commentSection.posting_98e8cf4a51") :
-              editingCommentId ? 'Update comment' : tUi("ui.components.commentSection.postComment_f0058919df")}
+              editingCommentId ? tUi("ui.components.commentSection.updateComment_6ba61b8776") : tUi("ui.components.commentSection.postComment_f0058919df")}
             </button>
           </div>
         </motion.form>

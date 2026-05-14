@@ -2,13 +2,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--navbar-height);
 }
 
 .employee-container {
   display: flex;
   flex: 1;
-  margin-top: 80px; /* Adjust based on navbar height */
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - var(--navbar-height));
 }
 
 .employee-content {
@@ -17,13 +17,12 @@
   overflow-y: hidden;
   background: var(--bg-color);
   margin-left: 250px; /* Account for fixed sidebar width */
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - var(--navbar-height));
 }
 
 @media (max-width: 768px) {
   .employee-container {
     flex-direction: column;
-    margin-top: 0;
   }
 
   .employee-content {

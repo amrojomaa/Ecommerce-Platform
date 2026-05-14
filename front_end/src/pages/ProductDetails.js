@@ -310,7 +310,14 @@ const ProductDetails = () => {
               transition={{ delay: 0.5 }}>
               
               {product && product.id &&
-              <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
+              <StarRating
+                key={starRatingKey}
+                productId={product.id}
+                showLabel={true}
+                interactive={false}
+                size="large"
+                initialAverageRating={product.average_rating}
+                initialTotalRatings={product.total_ratings} />
               }
             </motion.div>
 
@@ -348,7 +355,9 @@ const ProductDetails = () => {
             type="button"
             className="product-comments-toggle-btn"
             onClick={() => setIsCommentsOpen((prev) => !prev)}>
-              {isCommentsOpen ? 'Hide Comments & Reviews' : 'Open Comments & Reviews'}
+              {isCommentsOpen ?
+              tUi("ui.pages.productDetails.hideCommentsReviews_695cb75f4d") :
+              tUi("ui.pages.productDetails.openCommentsReviews_2a13485a67")}
             </button>
 
             {isCommentsOpen &&
@@ -356,7 +365,10 @@ const ProductDetails = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}>
-                <CommentSection productId={product.id} variant="productDetails" />
+                <CommentSection
+                  productId={product.id}
+                  variant="productDetails"
+                  onReviewsChanged={() => setStarRatingKey((key) => key + 1)} />
               </motion.div>
           }
           </div>

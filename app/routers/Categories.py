@@ -4,7 +4,7 @@ import string
 from fastapi import File, HTTPException, UploadFile, status, Depends
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from app.routers.admin import require_admin
+from app.routers.admin import require_admin, require_admin_or_warehouse_manager
 from ..database import get_db
 from app import models, utils, schemas
 from app import OAuth2
@@ -30,7 +30,7 @@ def create_Category(category: schemas.Categories ,db: Session = Depends (get_db)
 
 
 @router.get("/Categories/all", response_model=List[schemas.CategoriesDisplay])
-def get_all_Categories(db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_all_Categories(db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     categories = db.query(models.DBCategory).all() 
     return categories
 
@@ -41,7 +41,7 @@ def get_all_Categories(db: Session = Depends (get_db), admin_user = Depends(requ
 
 
 @router.get("/Categories/name", response_model=schemas.CategoriesDisplay)
-def get_category_by_name(name: str, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_category_by_name(name: str, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)):
     category = db.query(models.DBCategory).filter(models.DBCategory.name == name).first()
     if category == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the category not a found")
@@ -55,7 +55,7 @@ def get_category_by_name(name: str, db: Session = Depends (get_db), admin_user =
 #     return product
 
 @router.get("/Categories/{id}", response_model=schemas.CategoriesDisplay)
-def get_category_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)): 
+def get_category_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin_or_warehouse_manager)): 
     category = db.query(models.DBCategory).filter(models.DBCategory.id == id).first()
     if category == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the category not a found")

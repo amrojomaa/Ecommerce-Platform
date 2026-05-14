@@ -564,6 +564,11 @@ html[dir='rtl'] .product-details-page .product-price {
   text-align: right;
 }
 
+html[dir='rtl'] .product-comments-section {
+  direction: rtl;
+  text-align: right;
+}
+
 html[dir='rtl'] .back-button svg {
   transform: scaleX(-1);
 }

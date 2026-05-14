@@ -381,6 +381,10 @@ class Updateoutputcart(BaseModel):
     product: UpdateCartOut
     quantity: int
     total: float
+    subtotal: Optional[float] = None
+    promotion_discount: Optional[float] = None
+    grand_total: Optional[float] = None
+    applied_promotion: Optional[AppliedPromotion] = None
 
 
 class Orderitemname(BaseModel):
@@ -789,6 +793,7 @@ class TicketResponseCreate(BaseModel):
 # Comment Schemas
 class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=500)
+    rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating must be between 1 and 5")
     product_id: Optional[int] = None  # Optional since it comes from URL path
 
     @field_validator("content")
@@ -802,6 +807,7 @@ class CommentCreate(BaseModel):
 
 class CommentUpdate(BaseModel):
     content: str = Field(..., min_length=1, max_length=500)
+    rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating must be between 1 and 5")
 
     @field_validator("content")
     @classmethod
@@ -825,6 +831,7 @@ class CommentUser(BaseModel):
 class CommentDisplay(BaseModel):
     id: int
     content: str
+    rating: Optional[int] = None
     sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
     created_at: datetime
     user: CommentUser

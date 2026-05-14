@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, asc, func
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional, Literal
+from datetime import datetime
 from app import OAuth2, models, schemas
 from app.database import get_db
 from app.routers.admin import require_admin_or_support_manager
@@ -11,6 +12,54 @@ from app.utils.sentiment_analysis import analyze_sentiment
 router = APIRouter(
     tags=['Comments']
 )
+
+
+def _ratings_map_for_comments(db: Session, comments: List[models.DBComment]) -> dict[tuple[int, int], int]:
+    if not comments:
+        return {}
+
+    product_ids = {comment.product_id for comment in comments}
+    user_ids = {comment.user_id for comment in comments}
+    ratings = db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id.in_(product_ids),
+        models.DBProductRating.user_id.in_(user_ids)
+    ).all()
+    return {
+        (rating.product_id, rating.user_id): rating.rating
+        for rating in ratings
+    }
+
+
+def _comment_to_display(comment: models.DBComment, ratings_map: dict[tuple[int, int], int]) -> dict:
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "rating": ratings_map.get((comment.product_id, comment.user_id)),
+        "sentiment": comment.sentiment,
+        "created_at": comment.created_at,
+        "user": comment.user,
+    }
+
+
+def _upsert_product_rating(db: Session, product_id: int, user_id: int, rating_value: Optional[int]) -> None:
+    if rating_value is None:
+        return
+
+    existing_rating = db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id == product_id,
+        models.DBProductRating.user_id == user_id
+    ).first()
+
+    if existing_rating:
+        existing_rating.rating = rating_value
+        existing_rating.updated_at = datetime.utcnow()
+        return
+
+    db.add(models.DBProductRating(
+        rating=rating_value,
+        product_id=product_id,
+        user_id=user_id
+    ))
 
 
 @router.get("/products/{product_id}/comments", response_model=List[schemas.CommentDisplay])
@@ -51,7 +100,8 @@ def get_product_comments(
         .limit(limit)\
         .all()
     
-    return comments
+    ratings_map = _ratings_map_for_comments(db, comments)
+    return [_comment_to_display(comment, ratings_map) for comment in comments]
 
 
 @router.post("/products/{product_id}/comments", response_model=schemas.CommentDisplay, status_code=status.HTTP_201_CREATED)
@@ -95,6 +145,7 @@ def create_comment(
     )
     
     db.add(new_comment)
+    _upsert_product_rating(db, product_id, current_user.id, comment.rating)
     try:
         db.commit()
     except IntegrityError:
@@ -105,7 +156,8 @@ def create_comment(
         )
     db.refresh(new_comment)
     
-    return new_comment
+    ratings_map = _ratings_map_for_comments(db, [new_comment])
+    return _comment_to_display(new_comment, ratings_map)
 
 
 @router.put("/comments/{comment_id}", response_model=schemas.CommentDisplay)
@@ -134,9 +186,11 @@ def update_comment(
 
     comment.content = comment_data.content
     comment.sentiment = analyze_sentiment(comment_data.content)
+    _upsert_product_rating(db, comment.product_id, comment.user_id, comment_data.rating)
     db.commit()
     db.refresh(comment)
-    return comment
+    ratings_map = _ratings_map_for_comments(db, [comment])
+    return _comment_to_display(comment, ratings_map)
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -165,6 +219,10 @@ def delete_comment(
             detail="You don't have permission to delete this comment"
         )
     
+    db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id == comment.product_id,
+        models.DBProductRating.user_id == comment.user_id
+    ).delete(synchronize_session=False)
     db.delete(comment)
     db.commit()
     
@@ -188,7 +246,8 @@ def get_all_comments(
         .limit(limit)\
         .all()
     
-    return comments
+    ratings_map = _ratings_map_for_comments(db, comments)
+    return [_comment_to_display(comment, ratings_map) for comment in comments]
 
 
 @router.get("/products/{product_id}/sentiment-analytics", response_model=schemas.ProductSentimentAnalytics)

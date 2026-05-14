@@ -274,6 +274,12 @@ const AdminProducts = () => {
   };
 
   const handleEdit = (product) => {
+    if (product.category_name && !categories.some((category) => category.name === product.category_name)) {
+      setCategories((prev) => [
+        ...prev,
+        { id: `current-${product.category_name}`, name: product.category_name, description: '' }
+      ]);
+    }
     setEditingProduct(product);
     setFormData({
       name: product.name,

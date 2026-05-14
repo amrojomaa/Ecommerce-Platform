@@ -41,6 +41,16 @@
   overflow: hidden;
 }
 
+html[dir='rtl'] .chat-toggle-button {
+  right: auto;
+  left: 20px;
+}
+
+html[dir='rtl'] .chat-widget {
+  right: auto;
+  left: 20px;
+}
+
 .dark .chat-widget {
   background: #1e1e1e;
   color: #e0e0e0;
@@ -447,5 +457,10 @@
     width: 50px;
     height: 50px;
     font-size: 20px;
+  }
+
+  html[dir='rtl'] .chat-toggle-button {
+    right: auto;
+    left: 15px;
   }
 }

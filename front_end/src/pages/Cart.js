@@ -7,10 +7,15 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { getImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useTranslation } from 'react-i18next';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 import '../styles/pages/Cart.css';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const {
     cartItems,
     subtotal,
@@ -147,7 +152,7 @@ const Cart = () => {
                 src={item.product?.images && item.product.images.length > 0 ?
                 getImageUrl(item.product.images[0]) :
                 getImageUrl('/images/placeholder.jpg')}
-                alt={item.product?.name || tUi("ui.pages.cart.product_d44e1d3515")}
+                alt={localizeProduct(item.product || {}, languageCode).localized_name || tUi("ui.pages.cart.product_d44e1d3515")}
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
@@ -157,6 +162,7 @@ const Cart = () => {
                 
                 <div className="cart-item-info">
                   {(() => {
+                const localizedItem = localizeProduct(item.product || {}, languageCode);
                 const originalPrice = Number(item.product?.original_price ?? item.product?.price ?? 0);
                 const discountedPrice = Number(item.product?.discounted_price ?? item.product?.price ?? 0);
                 const hasDiscount = Boolean(item.product?.has_discount) || discountedPrice < originalPrice;
@@ -164,7 +170,7 @@ const Cart = () => {
                   <>
                   <h3>
                     <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
-                      {item.product?.name || tUi("ui.pages.cart.product_d44e1d3515")}
+                      {localizedItem.localized_name || tUi("ui.pages.cart.product_d44e1d3515")}
                     </Link>
                   </h3>
                   <p className="cart-item-price">

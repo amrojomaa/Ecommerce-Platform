@@ -16,6 +16,7 @@ import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
 import { getImageUrl } from '../utils/helpers';
 import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 
 const formatPromotionMessage = (message, languageCode) => {
   if (!message) {
@@ -175,7 +176,7 @@ const Products = () => {
   };
 
   const sortedProducts = useMemo(() => {
-    const sorted = [...products];
+    const sorted = [...products.map((product) => localizeProduct(product, languageCode))];
     switch (sortBy) {
       case 'price-low':
         return sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
@@ -183,9 +184,9 @@ const Products = () => {
         return sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
       case 'name':
       default:
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        return sorted.sort((a, b) => a.localized_name.localeCompare(b.localized_name));
     }
-  }, [products, sortBy]);
+  }, [products, sortBy, languageCode]);
 
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -201,6 +202,11 @@ const Products = () => {
     () => formatPromotionMessage(activePromotionMessage, languageCode),
     [activePromotionMessage, languageCode]
   );
+  const getCategoryLabel = (categoryValue) => {
+    const matched = products.find((p) => p.category_name === categoryValue);
+    if (!matched) return categoryValue;
+    return localizeProduct(matched, languageCode).localized_category_name;
+  };
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -239,7 +245,7 @@ const Products = () => {
               <option value="">{tUi("ui.pages.products.allCategories_9fd1de45e8")}</option>
               {categories.map((cat) =>
               <option key={cat} value={cat}>
-                  {cat}
+                  {getCategoryLabel(cat)}
                 </option>
               )}
             </select>
@@ -310,13 +316,13 @@ const Products = () => {
                       src={product.images && product.images.length > 0 ?
                       getImageUrl(product.images[0]) :
                       getImageUrl('/images/placeholder.jpg')}
-                      alt={product.name}
+                      alt={product.localized_name}
                       style={{ objectFit: 'cover' }} />
                     
                       </div>
                       <div className="product-info">
-                        <h3>{product.name}</h3>
-                        <p className="product-category">{product.category_name}</p>
+                        <h3>{product.localized_name}</h3>
+                        <p className="product-category">{product.localized_category_name}</p>
                         <div className="product-price-container">
                           <div className="product-price-stack">
                             <p className="product-price-before">{formatCurrency(product.price)}</p>
@@ -362,7 +368,7 @@ const Products = () => {
                       src={product.images && product.images.length > 0 ?
                       getImageUrl(product.images[0]) :
                       getImageUrl('/images/placeholder.jpg')}
-                      alt={product.name}
+                      alt={product.localized_name}
                       style={{ objectFit: 'cover' }}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
@@ -392,8 +398,8 @@ const Products = () => {
                     }
                       </div>
                       <div className="product-info">
-                        <h3>{product.name}</h3>
-                        <p className="product-category">{product.category_name}</p>
+                        <h3>{product.localized_name}</h3>
+                        <p className="product-category">{product.localized_category_name}</p>
                         {product.id &&
                     <div className="product-rating-container">
                             <StarRating

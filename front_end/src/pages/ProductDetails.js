@@ -15,9 +15,14 @@ import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
 import { trackRecommendationEvent } from '../services/recommendations';
 import { getImageUrl } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 
 const ProductDetails = () => {
   const { name } = useParams();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
@@ -124,6 +129,8 @@ const ProductDetails = () => {
     return null;
   }
 
+  const localizedProduct = localizeProduct(product, languageCode);
+
   // Get product images from API response
   const productImages = product.images && product.images.length > 0 ?
   product.images.map((img) => getImageUrl(img)) :
@@ -163,7 +170,7 @@ const ProductDetails = () => {
               <motion.img
                 key={selectedImageIndex}
                 src={productImages[selectedImageIndex]}
-                alt={product.name}
+                alt={localizedProduct.localized_name}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
@@ -183,7 +190,7 @@ const ProductDetails = () => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}>
                 
-                    <img src={img} alt={tUi("ui.pages.productDetails.valueValue_b44629bf6a", { value0: product.name, value1: index + 1 })} />
+                    <img src={img} alt={tUi("ui.pages.productDetails.valueValue_b44629bf6a", { value0: localizedProduct.localized_name, value1: index + 1 })} />
                   </motion.button>
               )}
               </div>
@@ -275,7 +282,7 @@ const ProductDetails = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}>
               
-              {product.name}
+              {localizedProduct.localized_name}
             </motion.h1>
 
             <motion.p
@@ -284,7 +291,7 @@ const ProductDetails = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}>
               
-              {product.category_name}
+              {localizedProduct.localized_category_name}
             </motion.p>
 
             <motion.div
@@ -343,7 +350,7 @@ const ProductDetails = () => {
               transition={{ delay: 0.7 }}>
               
               <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
-              <p>{product.description}</p>
+              <p>{localizedProduct.localized_description}</p>
             </motion.div>
           </div>
         </div>

@@ -7,11 +7,16 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import API_BASE_URL from '../config/api';
+import { useTranslation } from 'react-i18next';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 import '../styles/pages/Wishlist.css';
 
 const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading, fetchWishlist } =
   useWishlist();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
 
@@ -111,15 +116,15 @@ const Wishlist = () => {
                 <div className="wishlist-item-image">
                   <img
                   src={getProductImage(product)}
-                  alt={product.name}
+                  alt={localizeProduct(product, languageCode).localized_name}
                   onError={(e) => {
                     e.target.src = `${API_BASE_URL}/images/placeholder.jpg`;
                   }} />
                 
                 </div>
                 <div className="wishlist-item-info">
-                  <h3>{product.name}</h3>
-                  <p className="wishlist-item-category">{product.category_name}</p>
+                  <h3>{localizeProduct(product, languageCode).localized_name}</h3>
+                  <p className="wishlist-item-category">{localizeProduct(product, languageCode).localized_category_name}</p>
                   {(() => {
                   const originalPrice = Number(
                     product.original_price ?? product.price ?? 0

@@ -15,9 +15,19 @@
   margin-bottom: var(--space-9);
   position: relative;
   overflow: hidden;
-  color: white;
+  color: var(--text-primary);
 
-  /* Dark navy base + radial spotlight + dot grid */
+  /* Light mode base */
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 40%, rgba(37, 99, 235, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 85% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 60%),
+    radial-gradient(circle 1px at center, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+    var(--background);
+  background-size: 100%, 100%, 32px 32px, 100%;
+}
+
+.dark .hero-section {
+  color: white;
   background:
     radial-gradient(ellipse 80% 60% at 15% 40%, rgba(37, 99, 235, 0.18) 0%, transparent 70%),
     radial-gradient(ellipse 50% 50% at 85% 20%, rgba(99, 102, 241, 0.10) 0%, transparent 60%),
@@ -26,22 +36,42 @@
   background-size: 100%, 100%, 32px 32px, 100%;
 }
 
+.dark .hero-section::before {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark .hero-section::after {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark .hero-content::before {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #93c5fd;
+}
+
 /* ===== Floating Glass Card — top right ("Trending") ===== */
 .hero-section::before {
   content: '▲  +250%  Trending';
   position: absolute;
   top: 18%;
   right: 8%;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-5);
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
-  box-shadow: var(--shadow-lg);
+  color: #0f172a;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
   animation: heroFloat 6s ease-in-out infinite;
   z-index: 2;
   pointer-events: none;
@@ -55,16 +85,16 @@
   position: absolute;
   bottom: 22%;
   right: 14%;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: var(--radius-md);
   padding: var(--space-5) var(--space-6);
   font-size: 0.8rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
-  box-shadow: var(--shadow-lg);
+  color: #1e293b;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
   animation: heroFloat 6s ease-in-out 2s infinite;
   z-index: 2;
   pointer-events: none;
@@ -74,15 +104,15 @@
 
 /* ===== "New Collection" Badge — above headline ===== */
 .hero-content::before {
-  content: '✦  New Collection 2025';
+  content: '✦  New Collection 2026';
   display: inline-block;
-  background: rgba(37, 99, 235, 0.2);
-  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.30);
   border-radius: var(--radius-pill);
   padding: var(--space-1) var(--space-4);
   font-size: 0.72rem;
   font-weight: 600;
-  color: #93c5fd;
+  color: #1d4ed8;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: var(--space-4);
@@ -106,16 +136,24 @@
   line-height: 0.95;
   letter-spacing: -0.03em;
   margin-bottom: var(--space-4);
-  color: white;
+  color: var(--text-primary);
 }
 
 .hero-content p {
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-secondary);
   line-height: 1.7;
   margin-bottom: var(--space-5);
   max-width: 400px;
   font-weight: 400;
+}
+
+.dark .hero-content h1 {
+  color: white;
+}
+
+.dark .hero-content p {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* ===== Hero CTA Button ===== */
@@ -653,3 +691,4 @@ html[dir='rtl'] .product-add-to-cart-btn {
     padding: var(--space-3) var(--space-4);
   }
 }
+

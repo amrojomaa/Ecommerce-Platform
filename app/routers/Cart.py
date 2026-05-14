@@ -19,11 +19,19 @@ def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
         "total": float(cart_item.total),
         "product": {
             "name": cart_item.product.name,
+            "name_ar": cart_item.product.name_ar,
+            "name_fr": cart_item.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cart_item.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cart_item.product.category_name,
+            "category_name_ar": cart_item.product.category.name_ar if cart_item.product.category else None,
+            "category_name_fr": cart_item.product.category.name_fr if cart_item.product.category else None,
+            "description": cart_item.product.description,
+            "description_ar": cart_item.product.description_ar,
+            "description_fr": cart_item.product.description_fr,
             "images": [img.image_path for img in cart_item.product.images]
         }
     }
@@ -110,11 +118,19 @@ def add_to_cart(request :schemas.AddCart, db: Session = Depends (get_db), curren
     return {
         "product": {
             "name": cart_item.product.name,
+            "name_ar": cart_item.product.name_ar,
+            "name_fr": cart_item.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cart_item.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cart_item.product.category_name,
+            "category_name_ar": cart_item.product.category.name_ar if cart_item.product.category else None,
+            "category_name_fr": cart_item.product.category.name_fr if cart_item.product.category else None,
+            "description": cart_item.product.description,
+            "description_ar": cart_item.product.description_ar,
+            "description_fr": cart_item.product.description_fr,
             "images": [img.image_path for img in cart_item.product.images]
         },
         "quantity": cart_item.quantity,
@@ -171,11 +187,19 @@ def update_cart(item_id: int, request :schemas.Updateinputcart, db: Session = De
     return {
         "product": {
             "name": cartitem.product.name,
+            "name_ar": cartitem.product.name_ar,
+            "name_fr": cartitem.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cartitem.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cartitem.product.category_name,
+            "category_name_ar": cartitem.product.category.name_ar if cartitem.product.category else None,
+            "category_name_fr": cartitem.product.category.name_fr if cartitem.product.category else None,
+            "description": cartitem.product.description,
+            "description_ar": cartitem.product.description_ar,
+            "description_fr": cartitem.product.description_fr,
             "images": [img.image_path for img in cartitem.product.images]
         },
         "quantity": cartitem.quantity,

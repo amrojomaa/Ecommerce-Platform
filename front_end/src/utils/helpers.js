@@ -1,5 +1,5 @@
 // Utility helper functions
-import { getLocaleForLanguage, getStoredLanguage } from '../i18n/constants';
+import { getLocaleForLanguage, getStoredLanguage, normalizeLanguageCode } from '../i18n/constants';
 
 export const CURRENCY_STORAGE_KEY = 'preferred_currency';
 export const EXCHANGE_RATES_STORAGE_KEY = 'usd_exchange_rates';
@@ -182,9 +182,27 @@ export const formatPrice = (
   languageCode = getStoredLanguage()
 ) => {
   const normalized = normalizeCurrencyCode(currencyCode);
+  const normalizedLanguage = normalizeLanguageCode(languageCode);
   const fractionDigits = getCurrencyFractionDigits(normalized);
   const convertedPrice = convertFromUSD(price, normalized, exchangeRates);
   const locale = getLocaleForLanguage(languageCode);
+
+  // Arabic currency display overrides requested by product requirements:
+  // USD => ($), JOD => (دينار)
+  if (normalizedLanguage === 'ar') {
+    const formattedNumber = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(convertedPrice);
+
+    if (normalized === 'USD') {
+      return `${formattedNumber} $`;
+    }
+    if (normalized === 'JOD') {
+      return `${formattedNumber} دينار`;
+    }
+  }
+
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: normalized,

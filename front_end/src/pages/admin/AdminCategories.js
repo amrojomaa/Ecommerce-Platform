@@ -14,7 +14,11 @@ const AdminCategories = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    name_ar: '',
+    name_fr: '',
+    description: '',
+    description_ar: '',
+    description_fr: ''
   });
   const confirm = useConfirm();
 
@@ -67,7 +71,11 @@ const AdminCategories = () => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
-      description: category.description
+      name_ar: category.name_ar || '',
+      name_fr: category.name_fr || '',
+      description: category.description,
+      description_ar: category.description_ar || '',
+      description_fr: category.description_fr || ''
     });
     setShowModal(true);
   };
@@ -95,7 +103,11 @@ const AdminCategories = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      description: ''
+      name_ar: '',
+      name_fr: '',
+      description: '',
+      description_ar: '',
+      description_fr: ''
     });
     setEditingCategory(null);
     setShowModal(false);
@@ -130,8 +142,7 @@ const AdminCategories = () => {
           className="category-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          whileHover={{ scale: 1.02 }}>
+          transition={{ delay: index * 0.05 }}>
           
               <div className="category-icon">🏷️</div>
               <h3>{category.name}</h3>
@@ -186,6 +197,22 @@ const AdminCategories = () => {
                   required />
                 
                 </div>
+                <div className="form-group">
+                  <label>Category Name (Arabic)</label>
+                  <input
+                  type="text"
+                  name="name_ar"
+                  value={formData.name_ar}
+                  onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                  <label>Category Name (French)</label>
+                  <input
+                  type="text"
+                  name="name_fr"
+                  value={formData.name_fr}
+                  onChange={handleInputChange} />
+                </div>
 
                 <div className="form-group">
                   <label>{tUi("ui.pages.admin.adminCategories.description_da743ae7b0")}</label>
@@ -196,6 +223,22 @@ const AdminCategories = () => {
                   required
                   rows="4" />
                 
+                </div>
+                <div className="form-group">
+                  <label>Description (Arabic)</label>
+                  <textarea
+                  name="description_ar"
+                  value={formData.description_ar}
+                  onChange={handleInputChange}
+                  rows="3" />
+                </div>
+                <div className="form-group">
+                  <label>Description (French)</label>
+                  <textarea
+                  name="description_fr"
+                  value={formData.description_fr}
+                  onChange={handleInputChange}
+                  rows="3" />
                 </div>
 
                 <div className="modal-actions">

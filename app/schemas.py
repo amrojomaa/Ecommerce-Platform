@@ -178,19 +178,31 @@ class FilterProducts(BaseModel):
 
 class Categories(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
 
 
 class CategoriesDisplay(BaseModel):
     id: int
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     created_at: datetime
 
 class ProductBase(BaseModel):
     id: Optional[int] = None
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -198,6 +210,8 @@ class ProductBase(BaseModel):
     discounted_price: Optional[float] = None
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
     class Config:
@@ -206,7 +220,11 @@ class ProductBase(BaseModel):
 class Product(BaseModel):
     id: Optional[int] = None
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -214,6 +232,8 @@ class Product(BaseModel):
     discounted_price: Optional[float] = None
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
     average_rating: float = 0.0
     total_ratings: int = 0
@@ -334,11 +354,19 @@ class AddCart(BaseModel):
 
 class ShowCartOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
+    category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
     # quantity: int
     # total: float
@@ -367,11 +395,19 @@ class Updateinputcart(BaseModel):
 
 class UpdateCartOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
+    category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
     class Config:
@@ -643,7 +679,11 @@ class POSPromotionPreviewRequest(BaseModel):
 class POSProductRow(BaseModel):
     id: int
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -651,6 +691,8 @@ class POSProductRow(BaseModel):
     discounted_price: float
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: List[str] = []
 
     class Config:
@@ -692,13 +734,19 @@ class AddWishlist(BaseModel):
 
 class WishlistProductOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
     category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
 

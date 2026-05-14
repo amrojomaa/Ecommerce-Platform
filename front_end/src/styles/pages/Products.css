@@ -3,7 +3,7 @@
   width: 100%;
 }
 
-/* ===== Page Header — Dark Banner ===== */
+/* ===== Page Header ===== */
 .products-header {
   text-align: center;
   margin-bottom: var(--space-5);
@@ -14,9 +14,9 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 70% 60% at 20% 50%, rgba(37, 99, 235, 0.14) 0%, transparent 70%),
-    radial-gradient(circle 1px at center, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    #0f172a;
+    radial-gradient(ellipse 70% 60% at 20% 50%, rgba(37, 99, 235, 0.09) 0%, transparent 70%),
+    radial-gradient(circle 1px at center, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    var(--background);
   background-size: 100%, 32px 32px, 100%;
 }
 
@@ -24,15 +24,31 @@
   font-size: clamp(1.8rem, 3.5vw, 2.6rem);
   font-weight: 800;
   margin-bottom: var(--space-2);
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
 .products-header p {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.dark .products-header {
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 50%, rgba(37, 99, 235, 0.14) 0%, transparent 70%),
+    radial-gradient(circle 1px at center, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    #0f172a;
+  background-size: 100%, 32px 32px, 100%;
+}
+
+.dark .products-header h1 {
+  color: #ffffff;
+}
+
+.dark .products-header p {
+  color: rgba(255, 255, 255, 0.45);
 }
 
 /* ===== Layout: Sidebar + Main ===== */
@@ -44,12 +60,12 @@
 
 /* ===== Filters Sidebar — Premium Glassmorphism ===== */
 .filters-sidebar {
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: var(--space-5);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
   height: fit-content;
   position: sticky;
   top: 80px;
@@ -90,9 +106,9 @@
 .filter-group select {
   width: 100%;
   padding: 0.6rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: var(--background);
   color: var(--text-primary);
   font-size: 0.85rem;
   transition: border-color var(--transition-base), box-shadow var(--transition-base),
@@ -109,7 +125,7 @@
   outline: none;
   border-color: rgba(37, 99, 235, 0.5);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--background);
 }
 
 .filter-group select option {

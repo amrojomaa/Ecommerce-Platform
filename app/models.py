@@ -48,7 +48,11 @@ class DBCategory(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     name = Column(String, nullable=False, unique=True)
+    name_ar = Column(String, nullable=True)
+    name_fr = Column(String, nullable=True)
     description = Column(String, nullable=False)
+    description_ar = Column(String, nullable=True)
+    description_fr = Column(String, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True),nullable=False, server_default=text('now()'))
 
     products = relationship("DBProduct", back_populates="category")
@@ -59,7 +63,11 @@ class DBProduct(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     name = Column(String, nullable=False, unique=True)
+    name_ar = Column(String, nullable=True)
+    name_fr = Column(String, nullable=True)
     description = Column(String, nullable=False)
+    description_ar = Column(String, nullable=True)
+    description_fr = Column(String, nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
     discount_enabled = Column(Boolean, nullable=False, server_default='FALSE')
     discount_type = Column(String, nullable=True)  # "percentage" or "fixed"

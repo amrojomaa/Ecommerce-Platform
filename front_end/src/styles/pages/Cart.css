@@ -247,9 +247,18 @@ body.cart-updating {
   color: var(--text-secondary);
 }
 
-.summary-row.summary-row-discount {
+.cart-summary .summary-card .summary-row.summary-row-discount {
   color: #16a34a;
   font-weight: 600;
+}
+
+.cart-summary .summary-card .summary-row.summary-row-discount span {
+  color: #16a34a;
+}
+
+.dark .cart-summary .summary-card .summary-row.summary-row-discount,
+.dark .cart-summary .summary-card .summary-row.summary-row-discount span {
+  color: #22c55e;
 }
 
 .summary-row.total {

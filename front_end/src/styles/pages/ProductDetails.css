@@ -584,10 +584,44 @@ html[dir='rtl'] .add-to-cart-btn {
   color: var(--text-primary);
 }
 
+.dark .product-details-page .wishlist-btn {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(241, 245, 249, 0.85);
+}
+
+.dark .product-details-page .wishlist-btn:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+}
+
+.dark .product-details-page .wishlist-btn.active {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
 .product-details-page .product-comments-toggle-btn {
   color: var(--text-primary);
   border-color: var(--border-color);
   background: rgba(255, 255, 255, 0.8);
+}
+
+.product-details-page .product-comments-toggle-btn:hover {
+  border-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.dark .product-details-page .product-comments-toggle-btn {
+  color: #ffffff;
+  border-color: #16a34a;
+  background: #16a34a;
+}
+
+.dark .product-details-page .product-comments-toggle-btn:hover {
+  border-color: #15803d;
+  background: #15803d;
 }
 
 .dark .product-details-page .product-info h1 {

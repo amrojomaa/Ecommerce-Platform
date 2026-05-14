@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -78,6 +78,16 @@ import { isRtlLanguage, normalizeLanguageCode } from './i18n/constants';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   const { i18n } = useTranslation();
   const activeLanguage = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
@@ -99,6 +109,7 @@ function App() {
       <WishlistProvider>
       <ConfirmProvider>
     <Router>
+      <ScrollToTop />
       <Routes>
 
         <Route path="/" element={<MainLayout />}>

@@ -1253,6 +1253,7 @@
   "ui.pages.profile.shareYourFeedbackOptional_1e9b66d587": "Share your feedback (optional)",
   "ui.pages.profile.saving_944600e80a": "Saving...",
   "ui.pages.profile.submitFeedback_86e110a0e0": "Submit Feedback",
+  "ui.pages.profile.feedbackAlreadySubmittedThisMonth_b1a12a9a77": "You already submitted feedback this month. You can submit again next month.",
   "ui.pages.profile.lastUpdated_9589c4356b": "Last updated:",
   "ui.pages.recommendations.batchRecommendationsRefreshed_3c588c1cd7": "Batch recommendations refreshed",
   "ui.pages.recommendations.resetRecommendations_849eafbc0e": "Reset recommendations?",

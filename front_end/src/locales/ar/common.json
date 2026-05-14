@@ -1819,6 +1819,7 @@
   "ui.pages.profile.shareYourFeedbackOptional_1e9b66d587": "شارك ملاحظاتك (اختياري)",
   "ui.pages.profile.saving_944600e80a": "جارٍ الحفظ...",
   "ui.pages.profile.submitFeedback_86e110a0e0": "إرسال الملاحظات",
+  "ui.pages.profile.feedbackAlreadySubmittedThisMonth_b1a12a9a77": "لقد أرسلت تقييماً هذا الشهر بالفعل. يمكنك الإرسال مرة أخرى الشهر القادم.",
   "ui.pages.profile.lastUpdated_9589c4356b": "آخر تحديث:",
   "ui.pages.recommendations.batchRecommendationsRefreshed_3c588c1cd7": "تم تحديث التوصيات المجمعة",
   "ui.pages.recommendations.resetRecommendations_849eafbc0e": "إعادة تعيين التوصيات؟",

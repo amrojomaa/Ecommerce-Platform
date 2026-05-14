@@ -402,5 +402,6 @@
   "ui.pages.productDetails.openCommentsReviews_2a13485a67": "Ouvrir commentaires et avis",
   "ui.pages.productDetails.hideCommentsReviews_695cb75f4d": "Masquer commentaires et avis",
   "ui.pages.admin.adminComments.productAverageRating_85b4f2b45a": "Note moyenne du produit",
-  "ui.pages.admin.adminComments.noRating_2de474f2ce": "Aucune note"
+  "ui.pages.admin.adminComments.noRating_2de474f2ce": "Aucune note",
+  "ui.pages.profile.feedbackAlreadySubmittedThisMonth_b1a12a9a77": "Vous avez déjà envoyé un avis ce mois-ci. Vous pourrez en envoyer un nouveau le mois prochain."
 }

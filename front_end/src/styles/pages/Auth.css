@@ -5,11 +5,12 @@
   min-height: calc(100vh - 300px);
   padding: 1rem;
   padding-top: 0rem;
+  margin-top: -20px;
 }
 
 .auth-container {
   background-color: var(--surface);
-  padding: 1.5rem;
+  padding: 0.95rem 1rem;
   border-radius: 1rem;
   box-shadow: var(--shadow-lg);
   width: 100%;
@@ -19,14 +20,14 @@
 
 .auth-container h1 {
   text-align: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
   color: var(--text-primary);
 }
 
 .auth-container > p {
   text-align: center;
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
 }
 
 .required-mark {
@@ -40,7 +41,7 @@
 }
 
 .form-group {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.45rem;
 }
 
 .form-row {
@@ -192,7 +193,7 @@ html[dir='rtl'] .password-toggle {
 }
 
 .remember-me-row {
-  margin: 0.1rem 0 0.75rem;
+  margin: 0.05rem 0 0.35rem;
 }
 
 .remember-me-label {
@@ -246,7 +247,7 @@ html[dir='rtl'] .password-toggle {
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 0.75rem 0;
+  margin: 0.35rem 0;
   color: var(--text-secondary);
 }
 
@@ -292,7 +293,7 @@ html[dir='rtl'] .password-toggle {
 
 .auth-link {
   text-align: center;
-  margin-top: 0.75rem;
+  margin-top: 0.3rem;
   color: var(--text-secondary);
 }
 
@@ -338,7 +339,7 @@ html[dir='rtl'] .password-toggle {
 
 @media (max-width: 768px) {
   .auth-container {
-    padding: 2rem;
+    padding: 1rem;
   }
 
   .form-row,

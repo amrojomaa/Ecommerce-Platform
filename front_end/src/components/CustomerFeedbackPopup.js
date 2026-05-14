@@ -13,6 +13,13 @@ const getCurrentMonthKey = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const getMonthKeyFromDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
 const CustomerFeedbackPopup = () => {
   const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
@@ -43,20 +50,62 @@ const CustomerFeedbackPopup = () => {
   }, [markCurrentMonthHandled]);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!canShowPopup) {
       setIsOpen(false);
-      return undefined;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const handledMonth = localStorage.getItem(popupStorageKey);
     const currentMonth = getCurrentMonthKey();
-    if (handledMonth !== currentMonth) {
-      openPopup();
-    } else {
+
+    if (handledMonth === currentMonth) {
       setIsOpen(false);
+      return () => {
+        cancelled = true;
+      };
     }
-    return undefined;
-  }, [canShowPopup, openPopup, popupStorageKey]);
+
+    const checkFeedbackAndMaybeShow = async () => {
+      try {
+        const response = await http.get(FEEDBACK_ENDPOINTS.ME);
+        const feedback = response?.data;
+        const feedbackMonth =
+        getMonthKeyFromDate(feedback?.updated_at) || getMonthKeyFromDate(feedback?.created_at);
+
+        if (cancelled) return;
+
+        if (feedbackMonth === currentMonth) {
+          // Persist month gate locally so we skip future checks for this browser session.
+          markCurrentMonthHandled();
+          setIsOpen(false);
+          return;
+        }
+
+        openPopup();
+      } catch (error) {
+        if (cancelled) return;
+
+        if (error?.response?.status === 404) {
+          // No feedback exists yet; allow popup for this month.
+          openPopup();
+          return;
+        }
+
+        // Preserve existing local behavior as fallback when the feedback check fails.
+        openPopup();
+      }
+    };
+
+    checkFeedbackAndMaybeShow();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canShowPopup, markCurrentMonthHandled, openPopup, popupStorageKey]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

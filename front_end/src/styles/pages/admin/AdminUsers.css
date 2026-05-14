@@ -531,8 +531,8 @@ body.dark .form-group select,
 .dark .form-group select option,
 body.dark .form-group select option,
 [data-theme="dark"] .form-group select option {
-  background-color: #1e293b !important;
-  color: #f1f5f9 !important;
+  background-color: var(--control-bg) !important;
+  color: var(--control-text) !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -542,8 +542,8 @@ body.dark .form-group select option,
   }
   
   .form-group select option {
-    background-color: #1e293b !important;
-    color: #f1f5f9 !important;
+    background-color: var(--control-bg) !important;
+    color: var(--control-text) !important;
   }
 }
 
@@ -672,3 +672,4 @@ body.dark .form-group select option,
     width: 100%;
   }
 }
+

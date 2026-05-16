@@ -611,10 +611,6 @@ const AdminProducts = () => {
                 <div className="product-info product-info-dashboard">
                   <div className="product-heading-row">
                     <h3>{product.name}</h3>
-                    <div className="product-score">
-                      <FaArrowTrendUp />
-                      <span>{sentiment.positiveRate}%</span>
-                    </div>
                   </div>
 
                   <div className="product-status-row product-status-row-dashboard">

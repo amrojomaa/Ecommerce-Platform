@@ -607,6 +607,67 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-edit-btn:hover {
+  color: var(--primary-color);
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.comment-delete-btn:hover {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.comment-owner-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-inline-start: 0.5rem;
+}
+
+.comment-content {
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.comment-view-all-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.comment-view-all-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .comment-view-all-btn:hover {
@@ -615,7 +676,7 @@
   transform: translateY(-1px);
 }
 
-/* Product details — Comments & Reviews panel (dark glass, matches product page) */
+/* Product details — Comments & Reviews panel (Matches product page container style) */
 .comment-section.comment-section--product-details {
   margin-top: 1rem;
   margin-bottom: 2rem;
@@ -625,9 +686,7 @@
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-lg);
 }
 
 .comment-section--product-details .comment-section-title {
@@ -638,152 +697,84 @@
 }
 
 .comment-section--product-details .comment-review-count {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.dark .comment-section--product-details .comment-review-count {
   background: rgba(37, 99, 235, 0.35);
   color: #e0e7ff;
   border-color: rgba(165, 180, 252, 0.45);
 }
 
-.comment-section--product-details .comment-sort-label {
-  color: var(--text-secondary);
-}
-
 .comment-section--product-details .comment-sort-select {
-  background-color: var(--control-bg);
-  border-color: var(--control-border);
-  color: var(--control-text);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
-}
-
-.comment-section--product-details .comments-loading,
-.comment-section--product-details .comments-empty {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(15, 23, 42, 0.4);
-  color: rgba(148, 163, 184, 0.95);
-}
-
-.comment-section--product-details .comments-empty-icon {
-  color: rgba(148, 163, 184, 0.65);
-}
-
-.comment-section--product-details .comment-loading-skeleton__line {
-  background: rgba(255, 255, 255, 0.1);
+  background-color: var(--background);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 .comment-section--product-details .comment-item {
-  background: rgba(15, 23, 42, 0.5);
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  background: var(--surface);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .comment-section--product-details .comment-item:hover {
-  border-color: rgba(96, 165, 250, 0.45);
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12);
+  border-color: var(--primary-color);
 }
 
 .comment-section--product-details .comment-username {
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 .comment-section--product-details .comment-date {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--text-secondary);
 }
 
 .comment-section--product-details .comment-content {
-  color: rgba(226, 232, 240, 0.92);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
-.comment-section--product-details .comment-single-note {
-  color: rgba(148, 163, 184, 0.95);
-  padding: 0.65rem 0.9rem;
-  border-radius: var(--radius-sm);
-  background: rgba(37, 99, 235, 0.1);
-  border: 1px solid rgba(37, 99, 235, 0.22);
-}
-
 .comment-section--product-details .comment-form {
-  background: var(--surface);
+  background: var(--background);
   border-color: var(--border-color);
 }
 
-.comment-section--product-details .comment-form-username {
-  color: #f8fafc;
-}
-
+.comment-section--product-details .comment-form-username,
 .comment-section--product-details .comment-rating-label {
-  color: #f8fafc;
+  color: var(--text-primary);
 }
 
 .comment-section--product-details .comment-input {
-  background: var(--control-bg);
-  border-color: var(--control-border);
-  color: var(--control-text);
+  background: var(--surface);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
-.comment-section--product-details .comment-rating-star {
-  color: rgba(148, 163, 184, 0.5);
+/* Dark-mode specific glass refinements */
+.dark .comment-section--product-details .comment-item {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-.comment-section--product-details .comment-rating-star.is-filled {
-  color: #fbbf24;
+.dark .comment-section--product-details .comment-username {
+  color: #f8fafc;
 }
 
-.comment-section--product-details .comment-user-rating {
-  color: rgba(203, 213, 225, 0.9);
+.dark .comment-section--product-details .comment-content {
+  color: rgba(226, 232, 240, 0.92);
 }
 
-.comment-section--product-details .comment-clear-rating-btn {
-  background: rgba(15, 23, 42, 0.45);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: rgba(203, 213, 225, 0.9);
-}
-
-.comment-section--product-details .comment-clear-rating-btn:hover:not(:disabled) {
-  border-color: rgba(147, 197, 253, 0.45);
-  color: #bfdbfe;
-  background: rgba(37, 99, 235, 0.16);
-}
-
-.comment-section--product-details .comment-char-count {
-  color: rgba(148, 163, 184, 0.85);
-}
-
-.comment-section--product-details .comment-submit-btn {
-  border-radius: var(--radius-pill);
+.dark .comment-section--product-details .comment-submit-btn {
   background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%);
-  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.35);
-}
-
-.comment-section--product-details .comment-delete-btn,
-.comment-section--product-details .comment-edit-btn {
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(203, 213, 225, 0.9);
-}
-
-.comment-section--product-details .comment-edit-btn:hover {
-  color: #93c5fd;
-  background: rgba(37, 99, 235, 0.2);
-}
-
-.comment-section--product-details .comment-delete-btn:hover {
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.comment-section--product-details .comment-owner-badge {
-  background: rgba(37, 99, 235, 0.28);
-  color: #bfdbfe;
-  border: 1px solid rgba(147, 197, 253, 0.25);
-}
-
-.comment-section--product-details .comment-editing-label {
-  color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 .comment-section--product-details .comment-avatar,
 .comment-section--product-details .comment-user-avatar {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-color);
 }
 
 .comment-section--product-details .comments-list {

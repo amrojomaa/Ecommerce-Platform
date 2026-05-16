@@ -529,6 +529,9 @@
 
 .product-info-dashboard {
   padding: 0.82rem 0.82rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 .product-heading-row {

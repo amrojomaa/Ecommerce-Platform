@@ -90,12 +90,29 @@ const AdminUserDetails = () => {
     });
   };
 
+  const getRoleLabel = (role) => {
+    const normalized = String(role || '').toLowerCase();
+    const ROLE_LABEL_KEYS = {
+      admin: 'ui.pages.admin.adminUsers.admin_9b8c8c337f',
+      support_manager: 'ui.pages.admin.adminUsers.supportManager_2a7bb3b941',
+      support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
+      operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
+      warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
+      driver: 'ui.pages.admin.adminUsers.driver_533424916e',
+      customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
+      cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
+    };
+    const key = ROLE_LABEL_KEYS[normalized];
+    if (key) return tUi(key);
+    return normalized.replace(/_/g, ' ');
+  };
+
   const getRoleBadgeClass = (role) => {
     switch (role) {
       case 'admin':
         return 'role-badge admin';
-      case 'employee':
-        return 'role-badge employee';
+      case 'support_agent':
+        return 'role-badge support_agent';
       case 'operations_manager':
         return 'role-badge operations_manager';
       case 'support_manager':
@@ -170,7 +187,7 @@ const AdminUserDetails = () => {
             <div className="user-name-header">
               <h2>{user.first_name} {user.last_name}</h2>
               <span className={getRoleBadgeClass(user.role)}>
-                {user.role}
+                {getRoleLabel(user.role)}
               </span>
             </div>
           </div>
@@ -231,7 +248,7 @@ const AdminUserDetails = () => {
               <div className="info-item">
                 <label>{tUi("ui.pages.admin.adminUserDetails.role_3d4eb768fa")}</label>
                 <span className={getRoleBadgeClass(user.role)}>
-                  {user.role}
+                  {getRoleLabel(user.role)}
                 </span>
               </div>
               <div className="info-item">

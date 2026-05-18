@@ -6,6 +6,8 @@ import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
 import { useConfirm } from '../../hooks/useConfirm';
+import SupportTicketChatModal from '../../components/SupportTicketChatModal';
+import { useAuth } from '../../hooks/useAuth';
 import '../../styles/pages/admin/AdminTickets.css';
 
 const TICKET_STATUS_LABEL_KEYS = {
@@ -19,14 +21,14 @@ const normalizeTicketStatus = (status) => String(status || '').trim().toLowerCas
 const AdminTickets = () => {
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [supportAgents, setSupportAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [assignedToFilter, setAssignedToFilter] = useState('all');
   const [expandedTicketId, setExpandedTicketId] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [selectedSupportAgentId, setSelectedSupportAgentId] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [responseMessage, setResponseMessage] = useState('');
@@ -35,13 +37,15 @@ const AdminTickets = () => {
   const [deleting, setDeleting] = useState(null);
   const [approvingDelete, setApprovingDelete] = useState(null);
   const [rejectingDelete, setRejectingDelete] = useState(null);
+  const [activeChatTicketId, setActiveChatTicketId] = useState(null);
   const { markAsViewed } = useUnreadTickets();
+  const { currentUser } = useAuth();
   const confirm = useConfirm();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTickets();
-    fetchEmployees();
+    fetchSupportAgents();
     fetchPendingDeletes();
     // Mark tickets as viewed when page loads
     markAsViewed();
@@ -67,14 +71,14 @@ const AdminTickets = () => {
     }
   };
 
-  const fetchEmployees = async () => {
+  const fetchSupportAgents = async () => {
     try {
       const response = await http.get(USER_ENDPOINTS.ALL, {
-        params: { role: 'employee' }
+        params: { role: 'support_agent' }
       });
-      setEmployees(response.data || []);
+      setSupportAgents(response.data || []);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      console.error('Error fetching support agents:', error);
     }
   };
 
@@ -126,20 +130,20 @@ const AdminTickets = () => {
 
   const handleAssignTicket = (ticket) => {
     setSelectedTicket(ticket);
-    setSelectedEmployeeId(ticket.employee_id || '');
+    setSelectedSupportAgentId(ticket.employee_id || '');
     setShowAssignModal(true);
   };
 
   const handleConfirmAssign = async () => {
-    if (!selectedTicket || !selectedEmployeeId) {
-      toast.error(tUi("ui.pages.admin.adminTickets.pleaseSelectAnEmployee_6b43f647e4"));
+    if (!selectedTicket || !selectedSupportAgentId) {
+      toast.error(tUi("ui.pages.admin.adminTickets.pleaseSelectASupportAgent_6b43f647e4"));
       return;
     }
 
     setAssigning(true);
     try {
       const url = buildUrl(TICKET_ENDPOINTS.ASSIGN, { ticket_id: selectedTicket.id });
-      await http.patch(url, { employee_id: parseInt(selectedEmployeeId) });
+      await http.patch(url, { employee_id: parseInt(selectedSupportAgentId) });
       toast.success(tUi("ui.pages.admin.adminTickets.ticketAssignedSuccessfully_e8f368d365"));
       setShowAssignModal(false);
       fetchTickets();
@@ -344,9 +348,9 @@ const AdminTickets = () => {
               
               <option value="all">{tUi("ui.pages.admin.adminTickets.all_89e88f8e70")}</option>
               <option value="unassigned">{tUi("ui.pages.admin.adminTickets.unassigned_0796076cc1")}</option>
-              {employees.map((emp) =>
-              <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name}
+              {supportAgents.map((agent) =>
+              <option key={agent.id} value={agent.id}>
+                  {agent.first_name} {agent.last_name}
                 </option>
               )}
             </select>
@@ -399,7 +403,7 @@ const AdminTickets = () => {
 
                     <div className="ticket-actions">
                       <div className="action-group">
-                        <label>{tUi("ui.pages.admin.adminTickets.assignToEmployee_4abaeb3f1c")}</label>
+                        <label>{tUi("ui.pages.admin.adminTickets.assignToSupportAgent_4abaeb3f1c")}</label>
                         <select
                       value={ticket.employee_id || ''}
                       onChange={(e) => {
@@ -408,10 +412,10 @@ const AdminTickets = () => {
                         }
                       }}>
                       
-                          <option value="">{tUi("ui.pages.admin.adminTickets.selectEmployee_6385419f6d")}</option>
-                          {employees.map((emp) =>
-                      <option key={emp.id} value={emp.id}>
-                              {emp.first_name} {emp.last_name} ({emp.email})
+                          <option value="">{tUi("ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d")}</option>
+                          {supportAgents.map((agent) =>
+                      <option key={agent.id} value={agent.id}>
+                              {agent.first_name} {agent.last_name} ({agent.email})
                             </option>
                       )}
                         </select>
@@ -454,22 +458,33 @@ const AdminTickets = () => {
                   }
                     </div>
 
-                    <div className="add-response">
-                      <h4>{tUi("ui.pages.admin.adminTickets.addResponse_aefbf99ded")}</h4>
-                      <textarea
-                    value={responseMessage}
-                    onChange={(e) => setResponseMessage(e.target.value)}
-                    placeholder={tUi("ui.pages.admin.adminTickets.typeYourResponse_3b25ee5a90")}
-                    rows="3" />
-                  
-                      <button
-                    className="submit-response-btn"
-                    onClick={() => handleAddResponse(ticket.id)}
-                    disabled={respondingTicketId === ticket.id || !responseMessage.trim()}>
+                    {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
+                      <div className="add-response">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <h4 style={{ margin: 0 }}>{tUi("ui.pages.admin.adminTickets.addResponse_aefbf99ded")}</h4>
+                          <button 
+                            className="btn-primary-action" 
+                            style={{ backgroundColor: '#4f46e5', color: '#fff', padding: '5px 15px', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer', border: 'none' }}
+                            onClick={() => setActiveChatTicketId(ticket.id)}
+                          >
+                            💬 Join Live Chat
+                          </button>
+                        </div>
+                        <textarea
+                      value={responseMessage}
+                      onChange={(e) => setResponseMessage(e.target.value)}
+                      placeholder={tUi("ui.pages.admin.adminTickets.typeYourResponse_3b25ee5a90")}
+                      rows="3" />
                     
-                        {respondingTicketId === ticket.id ? tUi("ui.pages.admin.adminTickets.sending_7c92c00154") : tUi("ui.pages.admin.adminTickets.sendResponse_19ad5c5ebf")}
-                      </button>
-                    </div>
+                        <button
+                      className="submit-response-btn"
+                      onClick={() => handleAddResponse(ticket.id)}
+                      disabled={respondingTicketId === ticket.id || !responseMessage.trim()}>
+                      
+                          {respondingTicketId === ticket.id ? tUi("ui.pages.admin.adminTickets.sending_7c92c00154") : tUi("ui.pages.admin.adminTickets.sendResponse_19ad5c5ebf")}
+                        </button>
+                      </div>
+                    )}
 
                     <div className="ticket-delete-section">
                       {ticket.pending_delete ?
@@ -514,15 +529,15 @@ const AdminTickets = () => {
       <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2>{tUi("ui.pages.admin.adminTickets.assignTicket_a1cbabca83")}</h2>
-            <p>{tUi("ui.pages.admin.adminTickets.assignTicket_81adca4b2c")}{selectedTicket?.title}{tUi("ui.pages.admin.adminTickets.toAnEmployee_7f18876815")}</p>
+            <p>{tUi("ui.pages.admin.adminTickets.assignTicket_81adca4b2c")}{selectedTicket?.title}{tUi("ui.pages.admin.adminTickets.toASupportAgent_7f18876815")}</p>
             <select
-            value={selectedEmployeeId}
-            onChange={(e) => setSelectedEmployeeId(e.target.value)}>
+            value={selectedSupportAgentId}
+            onChange={(e) => setSelectedSupportAgentId(e.target.value)}>
             
-              <option value="">{tUi("ui.pages.admin.adminTickets.selectEmployee_6385419f6d")}</option>
-              {employees.map((emp) =>
-            <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name} ({emp.email})
+              <option value="">{tUi("ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d")}</option>
+              {supportAgents.map((agent) =>
+            <option key={agent.id} value={agent.id}>
+                  {agent.first_name} {agent.last_name} ({agent.email})
                 </option>
             )}
             </select>
@@ -530,7 +545,7 @@ const AdminTickets = () => {
               <button onClick={() => setShowAssignModal(false)}>{tUi("ui.pages.admin.adminTickets.cancel_b33ccf8e29")}</button>
               <button
               onClick={handleConfirmAssign}
-              disabled={assigning || !selectedEmployeeId}>
+              disabled={assigning || !selectedSupportAgentId}>
               
                 {assigning ? tUi("ui.pages.admin.adminTickets.assigning_2d95e01d36") : tUi("ui.pages.admin.adminTickets.assign_b71a20df8c")}
               </button>
@@ -538,6 +553,13 @@ const AdminTickets = () => {
           </div>
         </div>
       }
+      <SupportTicketChatModal 
+        isOpen={!!activeChatTicketId}
+        onClose={() => setActiveChatTicketId(null)}
+        ticketId={activeChatTicketId}
+        currentUserId={currentUser?.id}
+        userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+      />
     </div>);
 
 };

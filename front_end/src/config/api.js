@@ -79,6 +79,7 @@ export const POS_ENDPOINTS = {
   PROMOTION_PREVIEW: '/pos/promotion-preview',
   SALE: '/pos/sale',
   SALES_TODAY: '/pos/sales/today',
+  SALES_ALL_TODAY: '/pos/sales/all/today',
 };
 
 export const PROMOTION_ENDPOINTS = {
@@ -147,6 +148,8 @@ export const TICKET_ENDPOINTS = {
   MY: '/tickets/my',
   ALL: '/tickets/all',
   ASSIGNED: '/tickets/assigned',
+  UNASSIGNED: '/tickets/unassigned',
+  CLAIM: '/tickets/{ticket_id}/claim',
   BY_ID: '/tickets/{ticket_id}',
   ASSIGN: '/tickets/{ticket_id}/assign',
   UPDATE_STATUS: '/tickets/{ticket_id}/status',
@@ -157,6 +160,9 @@ export const TICKET_ENDPOINTS = {
   PENDING_DELETES: '/tickets/pending-deletes',
   APPROVE_DELETE: '/tickets/{ticket_id}/approve-delete',
   REJECT_DELETE: '/tickets/{ticket_id}/reject-delete',
+  CHAT_LIST: '/tickets/chat-list',
+  CHAT_TICKET: '/tickets/{ticket_id}/chat-ticket',
+  WS_CHAT: '/tickets/{ticket_id}/ws/chat',
 };
 
 // Comment endpoints
@@ -165,6 +171,8 @@ export const COMMENT_ENDPOINTS = {
   CREATE: '/products/{product_id}/comments',
   DELETE: '/comments/{comment_id}',
   ALL: '/comments/all', // Admin only
+  REPORT: '/comments/{comment_id}/report',
+  APPROVE: '/comments/{comment_id}/approve',
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only
   BACKFILL_SENTIMENT: '/comments/backfill-sentiment', // Admin only
 };

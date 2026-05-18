@@ -1,10 +1,11 @@
 from fastapi import File, HTTPException, UploadFile, status, Depends, Query
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from app.routers.admin import require_admin
+from sqlalchemy.exc import IntegrityError
+from .admin import require_admin, require_admin_or_support_manager
 from ..database import get_db
-from app import models, utils, schemas
-from app import OAuth2
+from .. import models, utils, schemas
+from .. import OAuth2
 from typing import List, Optional
 from app.utils.image_storage import delete_local_image, is_local_image_path, save_uploaded_image
 
@@ -29,19 +30,19 @@ router = APIRouter(
 def get_all_user(
     role: Optional[str] = Query(
         None,
-        description="Filter by role: admin, support_manager, operations_manager, warehouse_manager, employee, driver, cashier, or customer",
+        description="Filter by role: admin, support_manager, operations_manager, warehouse_manager, support_agent, driver, cashier, or customer",
     ),
     db: Session = Depends (get_db), 
-    admin_user = Depends(require_admin)
+    current_user = Depends(require_admin_or_support_manager)
 ):
     query = db.query(models.DBUser)
     
     # Filter by role if provided
     if role:
-        if role not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+        if role not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier"
+                detail="Invalid role. Must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier"
             )
         query = query.filter(models.DBUser.role == role)
     
@@ -164,15 +165,69 @@ def update_user_blocked(
 @router.delete("/users/{id}",  status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin), current_user: int = Depends(OAuth2.get_current_user)):
 
-    deleteuser = db.query(models.DBUser).filter(models.DBUser.id == id)
-    if deleteuser.first() is None:
+    user = db.query(models.DBUser).filter(models.DBUser.id == id).first()
+    if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     if (current_user.id == id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="You're admin dont delete yoreself")
     
-    deleteuser.delete(synchronize_session=False)
-    db.commit()
+    try:
+        # 1. Nullify references where this user acted as an employee/manager/driver
+        db.query(models.DBOrder).filter(models.DBOrder.driver_id == id).update({models.DBOrder.driver_id: None}, synchronize_session=False)
+        db.query(models.DBOrder).filter(models.DBOrder.cashier_id == id).update({models.DBOrder.cashier_id: None}, synchronize_session=False)
+        db.query(models.DBTicket).filter(models.DBTicket.employee_id == id).update({models.DBTicket.employee_id: None}, synchronize_session=False)
+        db.query(models.DBTicket).filter(models.DBTicket.assigned_by == id).update({models.DBTicket.assigned_by: None}, synchronize_session=False)
+        db.query(models.DBTicket).filter(models.DBTicket.delete_requested_by == id).update({models.DBTicket.delete_requested_by: None}, synchronize_session=False)
+        db.query(models.DBTicket).filter(models.DBTicket.last_updated_by == id).update({models.DBTicket.last_updated_by: None}, synchronize_session=False)
+        db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.driver_id == id).update({models.DBDeliveryJob.driver_id: None}, synchronize_session=False)
+        db.query(models.DBInstallmentRequest).filter(models.DBInstallmentRequest.reviewed_by == id).update({models.DBInstallmentRequest.reviewed_by: None}, synchronize_session=False)
+        db.query(models.DBInstallmentPayment).filter(models.DBInstallmentPayment.marked_by == id).update({models.DBInstallmentPayment.marked_by: None}, synchronize_session=False)
+
+        # 2. Hard delete records owned by the user (Cascading manually to avoid FK errors)
+        db.query(models.DBUserInteraction).filter(models.DBUserInteraction.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBRecommendationBatchCache).filter(models.DBRecommendationBatchCache.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBTicketResponse).filter(models.DBTicketResponse.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBComment).filter(models.DBComment.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBProductRating).filter(models.DBProductRating.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBCustomerFeedback).filter(models.DBCustomerFeedback.user_id == id).delete(synchronize_session=False)
+        db.query(models.DBInstallmentRequest).filter(models.DBInstallmentRequest.user_id == id).delete(synchronize_session=False)
+
+        # Orders and associated items
+        order_ids = [o.id for o in db.query(models.DBOrder.id).filter(models.DBOrder.user_id == id).all()]
+        if order_ids:
+            db.query(models.DBOrderItem).filter(models.DBOrderItem.order_id.in_(order_ids)).delete(synchronize_session=False)
+            db.query(models.DBDeliveryJob).filter(models.DBDeliveryJob.order_id.in_(order_ids)).delete(synchronize_session=False)
+            db.query(models.DBInstallmentRequest).filter(models.DBInstallmentRequest.order_id.in_(order_ids)).delete(synchronize_session=False)
+            db.query(models.DBOrder).filter(models.DBOrder.id.in_(order_ids)).delete(synchronize_session=False)
+
+        # Carts and associated items
+        cart_ids = [c.id for c in db.query(models.DBCart.id).filter(models.DBCart.user_id == id).all()]
+        if cart_ids:
+            db.query(models.DBCartItem).filter(models.DBCartItem.cart_id.in_(cart_ids)).delete(synchronize_session=False)
+            db.query(models.DBCart).filter(models.DBCart.id.in_(cart_ids)).delete(synchronize_session=False)
+
+        # Wishlists and associated items
+        wishlist_ids = [w.id for w in db.query(models.DBWishlist.id).filter(models.DBWishlist.user_id == id).all()]
+        if wishlist_ids:
+            db.query(models.DBWishlistItem).filter(models.DBWishlistItem.wishlist_id.in_(wishlist_ids)).delete(synchronize_session=False)
+            db.query(models.DBWishlist).filter(models.DBWishlist.id.in_(wishlist_ids)).delete(synchronize_session=False)
+
+        # Tickets and associated items
+        ticket_ids = [t.id for t in db.query(models.DBTicket.id).filter(models.DBTicket.customer_id == id).all()]
+        if ticket_ids:
+            db.query(models.DBTicketResponse).filter(models.DBTicketResponse.ticket_id.in_(ticket_ids)).delete(synchronize_session=False)
+            db.query(models.DBTicket).filter(models.DBTicket.id.in_(ticket_ids)).delete(synchronize_session=False)
+
+        # 3. Delete the user
+        db.delete(user)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Force deletion failed due to an unhandled database constraint: {str(e.__cause__)}"
+        )
 
 
 

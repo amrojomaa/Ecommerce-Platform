@@ -1,10 +1,10 @@
 from fastapi import HTTPException, status, Response, Depends
 from fastapi import APIRouter
-from app import OAuth2, models, schemas
+from .. import OAuth2, models, schemas
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from app.routers.admin import require_admin_or_warehouse_manager
+from .admin import require_admin_or_warehouse_manager
 from ..database import get_db
 from typing import List, Dict
 

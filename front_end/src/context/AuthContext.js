@@ -609,8 +609,9 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'warehouse_manager';
   };
 
-  const isEmployee = () => {
-    return user?.role === 'employee' || user?.role === 'admin';
+  const isSupportAgent = () => {
+    const r = user?.role;
+    return r === 'support_agent' || r === 'support_manager' || r === 'admin';
   };
 
   const isDriver = () => {
@@ -636,7 +637,7 @@ export const AuthProvider = ({ children }) => {
     isOperationsManager,
     isSupportManager,
     isWarehouseManager,
-    isEmployee,
+    isSupportAgent,
     isDriver,
     isCashier,
     fetchUserInfo,

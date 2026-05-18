@@ -214,6 +214,7 @@ class DBOrder(Base):
     payment_method = Column(String, nullable=True)
     promotion_discount = Column(Float, nullable=False, server_default=text("0"))
     promotion_name = Column(String, nullable=True)
+    customer_name = Column(String, nullable=True)
 
     user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
     driver = relationship("DBUser", foreign_keys=[driver_id])
@@ -276,6 +277,7 @@ class DBTicket(Base):
     # Assignment tracking
     assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     assigned_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    assigned_by_user = relationship("DBUser", foreign_keys=[assigned_by])
     
     # Delete request fields
     pending_delete = Column(Boolean, nullable=False, server_default='FALSE')
@@ -295,6 +297,7 @@ class DBTicketResponse(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    is_chat = Column(Boolean, nullable=False, server_default='FALSE')
     ticket = relationship("DBTicket", back_populates="responses")
     
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -306,6 +309,7 @@ class DBComment(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     content = Column(String, nullable=False)
     sentiment = Column(String, nullable=True)  # 'positive', 'neutral', or 'negative'
+    is_reported = Column(Boolean, nullable=False, server_default='FALSE')
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)

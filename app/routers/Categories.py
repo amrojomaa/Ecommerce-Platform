@@ -4,10 +4,10 @@ import string
 from fastapi import File, HTTPException, UploadFile, status, Depends
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from app.routers.admin import require_admin
+from .admin import require_admin
 from ..database import get_db
-from app import models, utils, schemas
-from app import OAuth2
+from .. import models, utils, schemas
+from .. import OAuth2
 from typing import List
 
 

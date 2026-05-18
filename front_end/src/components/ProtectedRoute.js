@@ -6,7 +6,7 @@ import LoadingSpinner from './LoadingSpinner';
 const ProtectedRoute = ({
   children,
   requireAdmin = false,
-  requireEmployee = false,
+  requireSupportAgent = false,
   requireDriver = false,
   requireCashier = false,
   requireSupportManager = false,
@@ -16,7 +16,7 @@ const ProtectedRoute = ({
     isAuthenticated,
     loading,
     isAdmin,
-    isEmployee,
+    isSupportAgent,
     isDriver,
     isCashier,
     isSupportManager,
@@ -39,7 +39,7 @@ const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
 
-  if (requireEmployee && isEmployee && typeof isEmployee === 'function' && !isEmployee()) {
+  if (requireSupportAgent && isSupportAgent && typeof isSupportAgent === 'function' && !isSupportAgent()) {
     return <Navigate to="/" replace />;
   }
 

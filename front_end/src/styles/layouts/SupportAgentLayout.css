@@ -1,17 +1,17 @@
-.employee-layout {
+.SupportAgent-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.employee-container {
+.SupportAgent-container {
   display: flex;
   flex: 1;
   margin-top: 80px; /* Adjust based on navbar height */
   min-height: calc(100vh - 80px);
 }
 
-.employee-content {
+.SupportAgent-content {
   flex: 1;
   padding: 2rem;
   overflow-y: hidden;
@@ -21,12 +21,12 @@
 }
 
 @media (max-width: 768px) {
-  .employee-container {
+  .SupportAgent-container {
     flex-direction: column;
     margin-top: 0;
   }
 
-  .employee-content {
+  .SupportAgent-content {
     padding: 1rem;
     margin-left: 0;
     min-height: auto;

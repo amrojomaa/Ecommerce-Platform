@@ -11,7 +11,7 @@ class UserRole(str, Enum):
     SUPPORT_MANAGER = "support_manager"
     OPERATIONS_MANAGER = "operations_manager"
     WAREHOUSE_MANAGER = "warehouse_manager"
-    EMPLOYEE = "employee"
+    SUPPORT_AGENT = "support_agent"
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
@@ -255,8 +255,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
         return v
 
     @field_validator('password')
@@ -282,8 +282,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
         return v
 
     @field_validator('password')
@@ -306,7 +306,7 @@ class User(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
-    role: str  # admin, employee, or customer
+    role: str  # admin, support_agent, or customer
     is_verified: bool
     is_blocked: bool = False
     created_at: datetime
@@ -314,8 +314,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
         return v
 
     class Config:
@@ -505,6 +505,7 @@ class AdminOrderResponse(BaseModel):
     sale_channel: str = "online"
     payment_method: Optional[str] = None
     cashier: Optional[OrderCashierInfo] = None
+    customer_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -613,8 +614,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
         return v
 
 
@@ -630,6 +631,7 @@ class POSLineItem(BaseModel):
 class POSCheckoutRequest(BaseModel):
     items: List[POSLineItem]
     payment_method: Literal["cash", "card"]
+    customer_name: Optional[str] = None
 
 
 class POSPromotionPreviewRequest(BaseModel):
@@ -661,6 +663,8 @@ class POSSaleSummaryRow(BaseModel):
     promotion_name: Optional[str] = None
     payment_method: Optional[str] = None
     status: str
+    customer_name: Optional[str] = None
+    cashier: Optional[OrderCashierInfo] = None
 
     class Config:
         from_attributes = True
@@ -730,6 +734,7 @@ class TicketResponseUser(BaseModel):
     first_name: str
     last_name: str
     email: str
+    role: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -740,6 +745,7 @@ class TicketResponseMessage(BaseModel):
     message: str
     created_at: datetime
     user: TicketResponseUser
+    is_chat: bool = False
     
     class Config:
         from_attributes = True
@@ -759,6 +765,7 @@ class TicketBase(BaseModel):
     responses: List[TicketResponseMessage] = []
     assigned_by: Optional[int] = None
     assigned_at: Optional[datetime] = None
+    assigned_by_user: Optional[TicketResponseUser] = None
     pending_delete: Optional[bool] = False
     delete_requested_by: Optional[int] = None
     delete_requested_at: Optional[datetime] = None
@@ -784,6 +791,7 @@ class TicketStatusUpdate(BaseModel):
 
 class TicketResponseCreate(BaseModel):
     message: str
+    is_chat: bool = False
 
 
 # Comment Schemas
@@ -806,6 +814,7 @@ class CommentDisplay(BaseModel):
     id: int
     content: str
     sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
+    is_reported: bool = False
     created_at: datetime
     user: CommentUser
     

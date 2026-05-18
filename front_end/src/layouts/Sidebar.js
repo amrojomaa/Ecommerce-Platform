@@ -30,6 +30,7 @@ const OPERATIONS_MANAGER_MENU_ITEMS = [
 
 
 const SUPPORT_MANAGER_MENU_ITEMS = [
+{ path: '/support', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
 { path: '/support/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: '🎫' },
 { path: '/support/comments', labelKey: 'ui.sidebar.menu.reviews', icon: '💬' },
 { path: '/support/feedback', labelKey: 'ui.sidebar.menu.feedback', icon: '⭐' }];

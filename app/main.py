@@ -37,7 +37,13 @@ def apply_schema_updates():
             ALTER TABLE delivery_jobs
                 ADD COLUMN IF NOT EXISTS issue_resolved BOOLEAN NOT NULL DEFAULT FALSE,
                 ADD COLUMN IF NOT EXISTS issue_resolved_at TIMESTAMPTZ,
-                ADD COLUMN IF NOT EXISTS issue_resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+                ADD COLUMN IF NOT EXISTS issue_resolved_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+            
+            ALTER TABLE comments
+                ADD COLUMN IF NOT EXISTS is_reported BOOLEAN NOT NULL DEFAULT FALSE;
+            
+            ALTER TABLE ticket_responses
+                ADD COLUMN IF NOT EXISTS is_chat BOOLEAN NOT NULL DEFAULT FALSE;
         """))
 
         conn.execute(text("""

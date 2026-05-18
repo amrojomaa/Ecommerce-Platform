@@ -3,9 +3,9 @@ from fastapi import HTTPException, status, Response, Depends, Security
 from fastapi import APIRouter
 from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
-from app import models, schemas
-from app import OAuth2
-from app.routers.admin import require_admin_or_operations_manager
+from .. import models, schemas
+from .. import OAuth2
+from .admin import require_admin_or_operations_manager
 from app.services import promotion_engine
 
 

@@ -157,7 +157,7 @@ const PaymentForm = ({
 const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { clearCart } = useCart();
+  const { clearCart, fetchCart } = useCart();
   const { currentCurrency, stripeCurrency, convertPrice, formatCurrency } = useCurrency();
   const [orderId, setOrderId] = useState(null);
   const [installmentRequestId, setInstallmentRequestId] = useState(null);
@@ -263,6 +263,8 @@ const Payment = () => {
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
+    } finally {
+      await fetchCart();
     }
 
     // Redirect to orders page

@@ -3,8 +3,8 @@ from fastapi import HTTPException, status, Response, Depends, Security
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from ..database import get_db
-from app import models, schemas
-from app import OAuth2
+from .. import models, schemas
+from .. import OAuth2
 from app.services import promotion_engine
 
 

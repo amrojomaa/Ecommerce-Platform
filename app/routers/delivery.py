@@ -4,10 +4,10 @@ from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status, Depen
 from fastapi import APIRouter
 from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
-from app import models, schemas, OAuth2
+from .. import models, schemas, OAuth2
 from app.utils.geocoding import geocode_address_with_fallback
 from app.utils.image_storage import delete_local_image, save_uploaded_image
-from app.routers.admin import require_driver, require_employee, require_admin_or_operations_manager
+from .admin import require_driver, require_operations_manager, require_admin_or_operations_manager
 import json
 
 router = APIRouter(
@@ -844,9 +844,9 @@ def assign_driver_to_job(
 def get_delivery_job_details(
     job_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(require_employee),
+    current_user=Depends(require_operations_manager),
 ):
-    """Get delivery job details (Admin/Employee)."""
+    """Get delivery job details (Admin/Operations Manager)."""
     job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -986,7 +986,7 @@ def get_delivery_job_by_order(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    if job.order.user_id != user.id and user.role not in ["admin", "employee", "operations_manager"]:
+    if job.order.user_id != user.id and user.role not in ["admin", "operations_manager"]:
         raise HTTPException(status_code=403, detail="Not authorized to view this delivery job")
 
     return _job_to_response(job)
@@ -1231,7 +1231,7 @@ async def react_to_chat_message(
 async def websocket_chat(websocket: WebSocket, job_id: int, token: str):
     """WebSocket endpoint for real-time delivery chat."""
     from fastapi import status as http_status
-    from app.database import SessionLocal
+    from ..database import SessionLocal
 
     credentials_exception = HTTPException(
         status_code=http_status.HTTP_401_UNAUTHORIZED,

@@ -8,9 +8,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin_or_operations_manager
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin_or_operations_manager
 from app.utils.image_storage import delete_local_image, save_uploaded_image
 
 

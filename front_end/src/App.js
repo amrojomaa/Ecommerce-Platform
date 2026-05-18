@@ -54,11 +54,19 @@ import AdminDeliveries from './pages/admin/AdminDeliveries';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
 import AdminPromotions from './pages/admin/AdminPromotions';
 import AdminInstallments from './pages/admin/AdminInstallments';
+import AdminPosAnalytics from './pages/admin/AdminPosAnalytics';
 
-//Pages - Employee
-import EmployeeLayout from './layouts/EmployeeLayout';
-import EmployeeDashboard from './pages/employee/EmployeeDashboard';
-import EmployeeTickets from './pages/employee/EmployeeTickets';
+//Pages - Support Manager
+import SupportManagerDashboard from './pages/support-manager/SupportManagerDashboard';
+import SupportManagerTickets from './pages/support-manager/SupportManagerTickets';
+import SupportManagerComments from './pages/support-manager/SupportManagerComments';
+import SupportManagerFeedback from './pages/support-manager/SupportManagerFeedback';
+
+//Pages - Support Agent
+import SupportAgentLayout from './layouts/SupportAgentLayout';
+import SupportAgentDashboard from './pages/support-agent/SupportAgentDashboard';
+import SupportAgentTickets from './pages/support-agent/SupportAgentTickets';
+import SupportAgentChats from './pages/support-agent/SupportAgentChats';
 
 //Pages - Driver
 import DriverLayout from './layouts/DriverLayout';
@@ -137,21 +145,22 @@ function App() {
                     <Route path="comments" element={<AdminComments />} />
                     <Route path="comments/product/:productId" element={<AdminComments />} />
                     <Route path="feedback" element={<AdminFeedback />} />
+                    <Route path="pos-analytics" element={<AdminPosAnalytics />} />
         </Route>
         <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
-                    <Route index element={<AdminTickets />} />
-                    <Route path="tickets" element={<AdminTickets />} />
-                    <Route path="comments" element={<AdminComments />} />
-                    <Route path="comments/product/:productId" element={<AdminComments />} />
-                    <Route path="feedback" element={<AdminFeedback />} />
+                    <Route index element={<SupportManagerDashboard />} />
+                    <Route path="tickets" element={<SupportManagerTickets />} />
+                    <Route path="comments" element={<SupportManagerComments />} />
+                    <Route path="feedback" element={<SupportManagerFeedback />} />
         </Route>
         <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<Navigate to="products" replace />} />
                     <Route path="products" element={<AdminProducts />} />
         </Route>
-        <Route path="/employee" element={<ProtectedRoute requireEmployee={true}><EmployeeLayout /></ProtectedRoute>}>
-                    <Route index element={<EmployeeDashboard />} />
-                    <Route path="tickets" element={<EmployeeTickets />} />
+        <Route path="/support-agent" element={<ProtectedRoute requireSupportAgent={true}><SupportAgentLayout /></ProtectedRoute>}>
+                    <Route index element={<SupportAgentDashboard />} />
+                    <Route path="tickets" element={<SupportAgentTickets />} />
+                    <Route path="chats" element={<SupportAgentChats />} />
         </Route>
 
         <Route path="/driver" element={<ProtectedRoute requireDriver={true}><DriverLayout /></ProtectedRoute>}>

@@ -51,10 +51,18 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       // Fetch products
-      const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-      const products = productsResponse.data;
-
-      const lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+      let totalProductsCount = 0;
+      let lowStock = 0;
+      if (!isOperationsManager) {
+        try {
+          const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+          const products = productsResponse.data || [];
+          totalProductsCount = products.length;
+          lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+        } catch (productError) {
+          console.error('Error fetching products:', productError);
+        }
+      }
 
       // Fetch orders
       let totalOrders = 0;
@@ -94,7 +102,7 @@ const AdminDashboard = () => {
       }
 
       setStats({
-        totalProducts: products.length,
+        totalProducts: totalProductsCount,
         totalOrders: totalOrders,
         totalRevenue: totalRevenue,
         lowStockProducts: lowStock,
@@ -105,13 +113,9 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [lowStockThreshold]);
+  }, [lowStockThreshold, isOperationsManager]);
 
   useEffect(() => {
-    if (isOperationsManager) {
-      navigate('/admin/orders', { replace: true });
-      return;
-    }
     const initializeData = async () => {
       const threshold = await fetchLowStockThreshold();
       await fetchStats(threshold);
@@ -120,9 +124,6 @@ const AdminDashboard = () => {
   }, [isOperationsManager, navigate, fetchLowStockThreshold, fetchStats]);
 
   useEffect(() => {
-    if (isOperationsManager) {
-      return;
-    }
     // Refetch stats when threshold changes (but not on initial mount)
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -167,42 +168,45 @@ const AdminDashboard = () => {
   }
 
   const statCards = [
-  {
-    title: tUi("ui.pages.admin.adminDashboard.totalProducts_d457551dae"),
-    value: stats.totalProducts,
-    icon: '📦',
-    color: '#4CAF50',
-    path: '/admin/products'
-  },
-  {
-    title: tUi("ui.pages.admin.adminDashboard.totalOrders_3968b1aea2"),
-    value: stats.totalOrders,
-    icon: '📋',
-    color: '#2196F3',
-    path: '/admin/orders'
-  },
-  {
-    title: tUi("ui.pages.admin.adminDashboard.totalRevenue_8625d01bf6"),
-    value: formatCurrency(stats.totalRevenue),
-    icon: '💰',
-    color: '#FF9800',
-    path: '/admin/orders?filter=revenue'
-  },
-  {
-    title: tUi("ui.pages.admin.adminDashboard.lowStockItems_5d20c43c41"),
-    value: stats.lowStockProducts,
-    icon: '⚠️',
-    color: '#F44336',
-    path: '/admin/products?filter=lowstock',
-    threshold: lowStockThreshold
-  },
-  {
-    title: tUi("ui.pages.admin.adminDashboard.activeDeliveries_88b2551152"),
-    value: stats.activeDeliveries,
-    icon: '🚚',
-    color: '#9C27B0',
-    path: '/admin/deliveries'
-  }];
+    {
+      title: tUi("ui.pages.admin.adminDashboard.totalProducts_d457551dae"),
+      value: stats.totalProducts,
+      icon: '📦',
+      color: '#4CAF50',
+      path: '/admin/products',
+      hideForOps: true
+    },
+    {
+      title: tUi("ui.pages.admin.adminDashboard.totalOrders_3968b1aea2"),
+      value: stats.totalOrders,
+      icon: '📋',
+      color: '#2196F3',
+      path: '/admin/orders'
+    },
+    {
+      title: tUi("ui.pages.admin.adminDashboard.totalRevenue_8625d01bf6"),
+      value: formatCurrency(stats.totalRevenue),
+      icon: '💰',
+      color: '#FF9800',
+      path: '/admin/orders?filter=revenue'
+    },
+    {
+      title: tUi("ui.pages.admin.adminDashboard.lowStockItems_5d20c43c41"),
+      value: stats.lowStockProducts,
+      icon: '⚠️',
+      color: '#F44336',
+      path: '/admin/products?filter=lowstock',
+      threshold: lowStockThreshold,
+      hideForOps: true
+    },
+    {
+      title: tUi("ui.pages.admin.adminDashboard.activeDeliveries_88b2551152"),
+      value: stats.activeDeliveries,
+      icon: '🚚',
+      color: '#9C27B0',
+      path: '/admin/deliveries'
+    }
+  ].filter(card => !(isOperationsManager && card.hideForOps));
 
 
   return (
@@ -363,35 +367,39 @@ const AdminDashboard = () => {
       }
 
       <div className="dashboard-actions">
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}>
-          
-          <Link to="/admin/products" className="dashboard-action-card">
-            <h3>{tUi("ui.pages.admin.adminDashboard.manageProducts_f61663679a")}</h3>
-            <p>{tUi("ui.pages.admin.adminDashboard.addEditOrDeleteProducts_e0122eec91")}</p>
-          </Link>
-        </motion.div>
+        {!isOperationsManager && (
+          <>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}>
+              
+              <Link to="/admin/products" className="dashboard-action-card">
+                <h3>{tUi("ui.pages.admin.adminDashboard.manageProducts_f61663679a")}</h3>
+                <p>{tUi("ui.pages.admin.adminDashboard.addEditOrDeleteProducts_e0122eec91")}</p>
+              </Link>
+            </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}>
-          
-          <Link to="/admin/promotions" className="dashboard-action-card">
-            <h3>{tUi("ui.pages.admin.adminDashboard.managePromotions_48a31a922f")}</h3>
-            <p>{tUi("ui.pages.admin.adminDashboard.createRuleBasedCartAnd_1861c140e1")}</p>
-          </Link>
-        </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}>
+              
+              <Link to="/admin/promotions" className="dashboard-action-card">
+                <h3>{tUi("ui.pages.admin.adminDashboard.managePromotions_48a31a922f")}</h3>
+                <p>{tUi("ui.pages.admin.adminDashboard.createRuleBasedCartAnd_1861c140e1")}</p>
+              </Link>
+            </motion.div>
 
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}>
-          
-          <Link to="/admin/categories" className="dashboard-action-card">
-            <h3>{tUi("ui.pages.admin.adminDashboard.manageCategories_ca9b3bad2a")}</h3>
-            <p>{tUi("ui.pages.admin.adminDashboard.organizeYourProductCategories_4e86f7c153")}</p>
-          </Link>
-        </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}>
+              
+              <Link to="/admin/categories" className="dashboard-action-card">
+                <h3>{tUi("ui.pages.admin.adminDashboard.manageCategories_ca9b3bad2a")}</h3>
+                <p>{tUi("ui.pages.admin.adminDashboard.organizeYourProductCategories_4e86f7c153")}</p>
+              </Link>
+            </motion.div>
+          </>
+        )}
 
         <motion.div
           whileHover={{ scale: 1.02 }}
@@ -400,6 +408,16 @@ const AdminDashboard = () => {
           <Link to="/admin/orders" className="dashboard-action-card">
             <h3>{tUi("ui.pages.admin.adminDashboard.viewOrders_9d4d2887cf")}</h3>
             <p>{tUi("ui.pages.admin.adminDashboard.monitorCustomerOrders_026e4ad4df")}</p>
+          </Link>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}>
+          
+          <Link to="/admin/pos-analytics" className="dashboard-action-card">
+            <h3>POS Analytics</h3>
+            <p>Supervise cashier sales and view terminal performance</p>
           </Link>
         </motion.div>
       </div>

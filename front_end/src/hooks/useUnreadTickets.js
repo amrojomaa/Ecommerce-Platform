@@ -36,7 +36,7 @@ export const useUnreadTickets = () => {
       !user ||
       (user.role !== 'admin' &&
         user.role !== 'support_manager' &&
-        user.role !== 'employee' &&
+        user.role !== 'support_agent' &&
         user.role !== 'customer')
     ) {
       setUnreadCount(0);
@@ -69,7 +69,7 @@ export const useUnreadTickets = () => {
       user &&
       (user.role === 'admin' ||
         user.role === 'support_manager' ||
-        user.role === 'employee' ||
+        user.role === 'support_agent' ||
         user.role === 'customer')
     ) {
       fetchUnreadCount();

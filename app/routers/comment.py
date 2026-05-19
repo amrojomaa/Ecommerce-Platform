@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc, func
 from typing import List, Optional
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin_or_support_manager
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin_or_support_manager
 from app.utils.sentiment_analysis import analyze_sentiment
 
 router = APIRouter(
@@ -116,20 +116,63 @@ def delete_comment(
 def get_all_comments(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=1000),
+    is_reported: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
     current_user = Depends(require_admin_or_support_manager)
 ):
     """
     Get all comments. Admin/Support Manager endpoint.
     """
-    comments = db.query(models.DBComment)\
-        .options(joinedload(models.DBComment.user))\
-        .order_by(desc(models.DBComment.created_at))\
+    query = db.query(models.DBComment)\
+        .options(joinedload(models.DBComment.user))
+    
+    if is_reported is not None:
+        query = query.filter(models.DBComment.is_reported == is_reported)
+        
+    comments = query.order_by(desc(models.DBComment.created_at))\
         .offset(skip)\
         .limit(limit)\
         .all()
     
     return comments
+
+
+@router.patch("/comments/{comment_id}/report", response_model=schemas.CommentDisplay)
+def report_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """
+    Report a comment for moderation. Any authenticated user can report.
+    """
+    comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    
+    comment.is_reported = True
+    db.commit()
+    db.refresh(comment)
+    return comment
+
+
+@router.patch("/comments/{comment_id}/approve", response_model=schemas.CommentDisplay)
+def approve_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_admin_or_support_manager)
+):
+    """
+    Approve a reported comment (clears the reported flag). Admin/Support Manager only.
+    """
+    comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    
+    comment.is_reported = False
+    db.commit()
+    db.refresh(comment)
+    return comment
 
 
 @router.get("/products/{product_id}/sentiment-analytics", response_model=schemas.ProductSentimentAnalytics)

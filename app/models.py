@@ -214,6 +214,7 @@ class DBOrder(Base):
     payment_method = Column(String, nullable=True)
     promotion_discount = Column(Float, nullable=False, server_default=text("0"))
     promotion_name = Column(String, nullable=True)
+    customer_name = Column(String, nullable=True)
 
     user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
     driver = relationship("DBUser", foreign_keys=[driver_id])
@@ -221,6 +222,7 @@ class DBOrder(Base):
     orderitems = relationship("DBOrderItem", back_populates="order", cascade="all, delete")
     delivery_job = relationship("DBDeliveryJob", back_populates="order", uselist=False)
     installment_requests = relationship("DBInstallmentRequest", back_populates="order")
+    warehouse_issues = relationship("DBWarehouseIssue", back_populates="order", cascade="all, delete")
 
 
 class DBOrderItem(Base):
@@ -276,6 +278,7 @@ class DBTicket(Base):
     # Assignment tracking
     assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     assigned_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    assigned_by_user = relationship("DBUser", foreign_keys=[assigned_by])
     
     # Delete request fields
     pending_delete = Column(Boolean, nullable=False, server_default='FALSE')
@@ -295,6 +298,7 @@ class DBTicketResponse(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    is_chat = Column(Boolean, nullable=False, server_default='FALSE')
     ticket = relationship("DBTicket", back_populates="responses")
     
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -306,6 +310,7 @@ class DBComment(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     content = Column(String, nullable=False)
     sentiment = Column(String, nullable=True)  # 'positive', 'neutral', or 'negative'
+    is_reported = Column(Boolean, nullable=False, server_default='FALSE')
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
@@ -580,3 +585,42 @@ class DBInstallmentPayment(Base):
     request = relationship("DBInstallmentRequest", back_populates="payments")
     schedule = relationship("DBInstallmentSchedule", back_populates="payments")
     marked_by_user = relationship("DBUser", foreign_keys=[marked_by], back_populates="installment_payments_marked")
+
+
+class DBOrderItemVerification(Base):
+    """Tracks verification status of each item during warehouse packing."""
+    __tablename__ = "order_item_verifications"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    order_item_id = Column(Integer, ForeignKey("order_items.id", ondelete="CASCADE"), nullable=False)
+    verified = Column(Boolean, nullable=False, server_default='FALSE')
+    verified_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    verified_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    order = relationship("DBOrder", foreign_keys=[order_id])
+    order_item = relationship("DBOrderItem", foreign_keys=[order_item_id])
+    verifier = relationship("DBUser", foreign_keys=[verified_by])
+
+
+class DBWarehouseIssue(Base):
+    """Tracks issues reported by warehouse staff (missing/damaged items)."""
+    __tablename__ = "warehouse_issues"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
+    order_item_id = Column(Integer, ForeignKey("order_items.id", ondelete="CASCADE"), nullable=True)
+    issue_type = Column(String, nullable=False)  # "missing", "damaged"
+    description = Column(String, nullable=False)
+    reported_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String, nullable=False, server_default="open")  # "open", "resolved"
+    resolved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resolved_at = Column(TIMESTAMP(timezone=True), nullable=True)
+    resolution_note = Column(String, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    order = relationship("DBOrder", back_populates="warehouse_issues", foreign_keys=[order_id])
+    order_item = relationship("DBOrderItem", foreign_keys=[order_item_id])
+    reporter = relationship("DBUser", foreign_keys=[reported_by])
+    resolver = relationship("DBUser", foreign_keys=[resolved_by])

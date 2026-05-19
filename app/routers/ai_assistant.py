@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from ..database import get_db
-from app import models, schemas
+from .. import models, schemas
 import google.generativeai as genai
 
 router = APIRouter(

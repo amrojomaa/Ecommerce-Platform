@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
@@ -11,10 +12,13 @@ class UserRole(str, Enum):
     SUPPORT_MANAGER = "support_manager"
     OPERATIONS_MANAGER = "operations_manager"
     WAREHOUSE_MANAGER = "warehouse_manager"
-    EMPLOYEE = "employee"
+    SUPPORT_AGENT = "support_agent"
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
+    WALKIN = "walkin"
+    SELLER = "seller"
+    WAREHOUSE_STAFF = "warehouse_staff"
 
 
 PASSWORD_MIN_LENGTH = 9  # More than 8 characters
@@ -255,8 +259,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     @field_validator('password')
@@ -282,8 +286,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     @field_validator('password')
@@ -306,7 +310,7 @@ class User(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
-    role: str  # admin, employee, or customer
+    role: str  # admin, support_agent, or customer
     is_verified: bool
     is_blocked: bool = False
     created_at: datetime
@@ -314,8 +318,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     class Config:
@@ -348,11 +352,13 @@ class ShowCartOut(BaseModel):
 
 class ShowCart(BaseModel):
     id: int
+    cart_id: Optional[int] = None
     product: ShowCartOut
     quantity: int
     total: float
     
 class CartResponse(BaseModel):
+    cart_id: Optional[int] = None
     items: List[ShowCart]
     subtotal: float = 0
     promotion_discount: float = 0
@@ -451,6 +457,8 @@ class CheckoutRequest(BaseModel):
     zipCode: Optional[str] = None
     country: Optional[str] = None
     phone: Optional[str] = None
+    shipping_region: Optional[str] = None
+    shipping_fee: Optional[float] = 0.0
 
 
 class OrderUserInfo(BaseModel):
@@ -505,6 +513,8 @@ class AdminOrderResponse(BaseModel):
     sale_channel: str = "online"
     payment_method: Optional[str] = None
     cashier: Optional[OrderCashierInfo] = None
+    customer_name: Optional[str] = None
+    warehouse_issues: Optional[List[WarehouseIssueResponse]] = None
 
     class Config:
         from_attributes = True
@@ -613,8 +623,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
 
@@ -630,6 +640,7 @@ class POSLineItem(BaseModel):
 class POSCheckoutRequest(BaseModel):
     items: List[POSLineItem]
     payment_method: Literal["cash", "card"]
+    customer_name: Optional[str] = None
 
 
 class POSPromotionPreviewRequest(BaseModel):
@@ -661,6 +672,8 @@ class POSSaleSummaryRow(BaseModel):
     promotion_name: Optional[str] = None
     payment_method: Optional[str] = None
     status: str
+    customer_name: Optional[str] = None
+    cashier: Optional[OrderCashierInfo] = None
 
     class Config:
         from_attributes = True
@@ -730,6 +743,7 @@ class TicketResponseUser(BaseModel):
     first_name: str
     last_name: str
     email: str
+    role: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -740,6 +754,7 @@ class TicketResponseMessage(BaseModel):
     message: str
     created_at: datetime
     user: TicketResponseUser
+    is_chat: bool = False
     
     class Config:
         from_attributes = True
@@ -759,6 +774,7 @@ class TicketBase(BaseModel):
     responses: List[TicketResponseMessage] = []
     assigned_by: Optional[int] = None
     assigned_at: Optional[datetime] = None
+    assigned_by_user: Optional[TicketResponseUser] = None
     pending_delete: Optional[bool] = False
     delete_requested_by: Optional[int] = None
     delete_requested_at: Optional[datetime] = None
@@ -784,6 +800,7 @@ class TicketStatusUpdate(BaseModel):
 
 class TicketResponseCreate(BaseModel):
     message: str
+    is_chat: bool = False
 
 
 # Comment Schemas
@@ -806,6 +823,7 @@ class CommentDisplay(BaseModel):
     id: int
     content: str
     sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
+    is_reported: bool = False
     created_at: datetime
     user: CommentUser
     
@@ -1304,3 +1322,39 @@ class InstallmentCancelPayload(BaseModel):
 class InstallmentRequestUpdatePayload(BaseModel):
     duration_months: Optional[int] = None
     user_note: Optional[str] = None
+
+
+# Warehouse Schemas
+
+class OrderItemVerificationUpdate(BaseModel):
+    order_item_id: int
+    verified: bool
+
+class WarehouseIssueCreate(BaseModel):
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+
+class WarehouseIssueResolve(BaseModel):
+    resolution_note: str
+
+class WarehouseIssueBase(BaseModel):
+    order_id: int
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+    reported_by: Optional[int] = None
+    status: str
+    resolved_by: Optional[int] = None
+    resolved_at: Optional[datetime] = None
+    resolution_note: Optional[str] = None
+
+class WarehouseIssueResponse(WarehouseIssueBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ProductStockUpdate(BaseModel):
+    quantity: int

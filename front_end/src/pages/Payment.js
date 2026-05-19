@@ -91,6 +91,13 @@ const PaymentForm = ({
           await http.patch(endpoint, {
             payment_intent_id: payment_intent_id
           });
+        } else if (installmentRequestId) {
+          const endpoint = buildUrl(INSTALLMENT_ENDPOINTS.MY_PAY_REMAINING, {
+            request_id: installmentRequestId
+          });
+          await http.patch(endpoint, {
+            payment_intent_id: payment_intent_id
+          });
         } else {
           // Confirm payment on backend
           await http.post(PAYMENT_ENDPOINTS.CONFIRM, {
@@ -157,7 +164,7 @@ const PaymentForm = ({
 const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { clearCart } = useCart();
+  const { clearCart, fetchCart } = useCart();
   const { currentCurrency, stripeCurrency, convertPrice, formatCurrency } = useCurrency();
   const [orderId, setOrderId] = useState(null);
   const [installmentRequestId, setInstallmentRequestId] = useState(null);
@@ -205,9 +212,9 @@ const Payment = () => {
         if (orderAmount) {
           setAmount(orderAmount);
 
-          if (targetInstallmentRequestId && targetInstallmentScheduleId) {
+          if (targetInstallmentRequestId) {
             setInstallmentRequestId(targetInstallmentRequestId);
-            setInstallmentScheduleId(targetInstallmentScheduleId);
+            setInstallmentScheduleId(targetInstallmentScheduleId || null);
             setOrderCreated(true);
             return;
           }
@@ -244,7 +251,7 @@ const Payment = () => {
   }, [initializeStripe]);
 
   const handlePaymentSuccess = async () => {
-    if (installmentRequestId && installmentScheduleId) {
+    if (installmentRequestId) {
       setTimeout(() => {
         navigate('/installments');
       }, 1200);
@@ -263,6 +270,8 @@ const Payment = () => {
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
+    } finally {
+      await fetchCart();
     }
 
     // Redirect to orders page

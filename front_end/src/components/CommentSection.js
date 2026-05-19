@@ -124,6 +124,29 @@ const CommentSection = ({ productId }) => {
     }
   };
 
+  const handleReportComment = async (commentId) => {
+    const confirmed = await confirm({
+      title: 'Report Comment',
+      message: 'Are you sure you want to report this comment for moderation?',
+      confirmText: 'Report',
+      cancelText: 'Cancel'
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await http.patch(buildUrl(COMMENT_ENDPOINTS.REPORT, { comment_id: commentId }));
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, is_reported: true } : c))
+      );
+      toast.success('Comment reported successfully to the support manager');
+    } catch (error) {
+      console.error('Error reporting comment:', error);
+      toast.error(error.response?.data?.detail || 'Failed to report comment');
+    }
+  };
+
   const handleViewAll = async () => {
     if (showAll) {
       // Reset to initial view
@@ -266,15 +289,42 @@ const CommentSection = ({ productId }) => {
                       </span>
                     </div>
                   </div>
-                  {canDelete(comment) &&
-              <button
-                className="comment-delete-btn"
-                onClick={() => handleDeleteComment(comment.id)}
-                title={tUi("ui.components.commentSection.deleteComment_dc055a305c")}>
-                
+                  {canDelete(comment) ? (
+                    <button
+                      className="comment-delete-btn"
+                      onClick={() => handleDeleteComment(comment.id)}
+                      title={tUi("ui.components.commentSection.deleteComment_dc055a305c")}>
                       <FaTrash />
                     </button>
-              }
+                  ) : (
+                    isAuthenticated && (
+                      comment.is_reported ? (
+                        <span className="comment-reported-tag" style={{ color: '#e74c3c', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          🚩 Reported
+                        </span>
+                      ) : (
+                        <button
+                          className="comment-report-btn"
+                          onClick={() => handleReportComment(comment.id)}
+                          title="Report Comment"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#e74c3c',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            padding: '4px 8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          🚩 Report
+                        </button>
+                      )
+                    )
+                  )}
                 </div>
                 <div className="comment-content">
                   {comment.content}

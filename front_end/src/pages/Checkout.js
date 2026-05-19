@@ -7,10 +7,12 @@ import { ORDER_ENDPOINTS } from '../config/api';
 import { formatPrice } from '../utils/helpers';
 import { useCart } from '../hooks/useCart';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useTranslation } from 'react-i18next';
 import '../styles/pages/Checkout.css';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  useTranslation();
   const { cartItems, subtotal, promotionDiscount, appliedPromotion, grandTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,6 +22,16 @@ const Checkout = () => {
     zipCode: '',
     country: '',
     phone: ''
+  });
+
+  const [shippingRegion] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedShippingRegion');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return { name: 'West Bank and Gaza', fee: 20 };
   });
 
   useEffect(() => {
@@ -47,7 +59,12 @@ const Checkout = () => {
     setLoading(true);
     try {
       // Create order via checkout endpoint and send formData
-      await http.post(ORDER_ENDPOINTS.CHECKOUT, formData);
+      const payload = {
+        ...formData,
+        shipping_region: shippingRegion.name,
+        shipping_fee: shippingRegion.fee
+      };
+      await http.post(ORDER_ENDPOINTS.CHECKOUT, payload);
 
       toast.success(tUi("ui.pages.checkout.orderPlacedSuccessfully_4042f7157d"));
 
@@ -206,12 +223,12 @@ const Checkout = () => {
               </div>
             }
             <div className="total-row">
-              <span>{tUi("ui.pages.checkout.shipping_c4ae97807a")}</span>
-              <span>{tUi("ui.pages.checkout.free_2693393a08")}</span>
+              <span>{tUi("ui.pages.checkout.shipping_c4ae97807a")} ({shippingRegion.name}):</span>
+              <span>{formatPrice(shippingRegion.fee)}</span>
             </div>
             <div className="total-row final-total">
               <span>{tUi("ui.pages.checkout.total_bdf441497c")}</span>
-              <span>{formatPrice(grandTotal)}</span>
+              <span>{formatPrice(grandTotal + shippingRegion.fee)}</span>
             </div>
           </div>
         </motion.div>

@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin_or_support_manager
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin_or_support_manager
 
 router = APIRouter(tags=["Customer Feedback"])
 

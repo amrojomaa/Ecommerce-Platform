@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin
 from datetime import datetime
 
 router = APIRouter(

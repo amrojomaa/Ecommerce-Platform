@@ -57,6 +57,12 @@ export const ORDER_ENDPOINTS = {
   UPDATE_STATUS: '/orders/{order_id}/status',
 };
 
+// Seller endpoints
+export const SELLER_ENDPOINTS = {
+  ORDERS: '/orders/seller',
+  UPDATE_STATUS: '/orders/{order_id}/status',
+};
+
 export const INSTALLMENT_ENDPOINTS = {
   CREATE_REQUEST: '/installments/requests',
   MY_REQUESTS: '/installments/my',
@@ -64,6 +70,7 @@ export const INSTALLMENT_ENDPOINTS = {
   MY_UPDATE_REQUEST: '/installments/my/{request_id}',
   MY_CANCEL: '/installments/my/{request_id}/cancel',
   MY_MARK_PAID: '/installments/my/{request_id}/schedules/{schedule_id}/pay',
+  MY_PAY_REMAINING: '/installments/my/{request_id}/pay-remaining',
   MY_UPSERT_DOCUMENT: '/installments/my/{request_id}/documents/{document_type}',
   MY_DELETE_DOCUMENT: '/installments/my/{request_id}/documents/{document_id}',
   ADMIN_REQUESTS: '/installments/admin/requests',
@@ -79,6 +86,7 @@ export const POS_ENDPOINTS = {
   PROMOTION_PREVIEW: '/pos/promotion-preview',
   SALE: '/pos/sale',
   SALES_TODAY: '/pos/sales/today',
+  SALES_ALL_TODAY: '/pos/sales/all/today',
 };
 
 export const PROMOTION_ENDPOINTS = {
@@ -147,6 +155,8 @@ export const TICKET_ENDPOINTS = {
   MY: '/tickets/my',
   ALL: '/tickets/all',
   ASSIGNED: '/tickets/assigned',
+  UNASSIGNED: '/tickets/unassigned',
+  CLAIM: '/tickets/{ticket_id}/claim',
   BY_ID: '/tickets/{ticket_id}',
   ASSIGN: '/tickets/{ticket_id}/assign',
   UPDATE_STATUS: '/tickets/{ticket_id}/status',
@@ -157,6 +167,9 @@ export const TICKET_ENDPOINTS = {
   PENDING_DELETES: '/tickets/pending-deletes',
   APPROVE_DELETE: '/tickets/{ticket_id}/approve-delete',
   REJECT_DELETE: '/tickets/{ticket_id}/reject-delete',
+  CHAT_LIST: '/tickets/chat-list',
+  CHAT_TICKET: '/tickets/{ticket_id}/chat-ticket',
+  WS_CHAT: '/tickets/{ticket_id}/ws/chat',
 };
 
 // Comment endpoints
@@ -165,6 +178,8 @@ export const COMMENT_ENDPOINTS = {
   CREATE: '/products/{product_id}/comments',
   DELETE: '/comments/{comment_id}',
   ALL: '/comments/all', // Admin only
+  REPORT: '/comments/{comment_id}/report',
+  APPROVE: '/comments/{comment_id}/approve',
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only
   BACKFILL_SENTIMENT: '/comments/backfill-sentiment', // Admin only
 };
@@ -189,6 +204,21 @@ export const ADMIN_SETTINGS_ENDPOINTS = {
   UPDATE_LOW_STOCK_THRESHOLD: '/admin/settings/low-stock-threshold',
   GET_WAREHOUSE_ADDRESS: '/admin/settings/warehouse-address',
   UPDATE_WAREHOUSE_ADDRESS: '/admin/settings/warehouse-address',
+};
+
+// Warehouse endpoints (staff + manager)
+export const WAREHOUSE_ENDPOINTS = {
+  PREPARING_ORDERS: '/warehouse/orders/preparing',
+  PACKED_ORDERS: '/warehouse/orders/packed',
+  PACKED_REVIEW: '/warehouse/orders/packed-review',
+  VERIFY_ITEM: '/warehouse/orders/{order_id}/verify',
+  GET_VERIFICATIONS: '/warehouse/orders/{order_id}/verifications',
+  PACK_ORDER: '/warehouse/orders/{order_id}/pack',
+  APPROVE_ORDER: '/warehouse/orders/{order_id}/approve',
+  REPORT_ISSUE: '/warehouse/orders/{order_id}/report-issue',
+  ALL_ISSUES: '/warehouse/issues',
+  RESOLVE_ISSUE: '/warehouse/issues/{issue_id}/resolve',
+  UPDATE_STOCK: '/warehouse/products/{product_id}/stock',
 };
 
 // Delivery / Driver endpoints

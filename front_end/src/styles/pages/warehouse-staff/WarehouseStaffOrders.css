@@ -1,0 +1,446 @@
+.ws-orders {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ws-orders h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Tabs */
+.ws-orders-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ws-orders-tabs button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+}
+
+.ws-orders-tabs button:hover {
+  color: #f59e0b;
+}
+
+.ws-orders-tabs button.active {
+  color: #f59e0b;
+  border-bottom-color: #f59e0b;
+}
+
+.ws-tab-count {
+  background: #fef3c7;
+  color: #d97706;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  font-weight: 700;
+}
+
+/* Order cards */
+.ws-order-card {
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.ws-order-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.ws-order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ws-order-card-header:hover {
+  background: #fafafe;
+}
+
+.ws-order-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ws-order-id {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.ws-order-meta {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.ws-order-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ws-status-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.ws-status-badge.preparing {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.ws-status-badge.packed {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.ws-status-badge.ready_for_pickup {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.ws-expand-icon {
+  transition: transform 0.2s ease;
+  font-size: 1.2rem;
+  color: #94a3b8;
+}
+
+.ws-expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Expanded content */
+.ws-order-details {
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.ws-verification-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.75rem;
+  color: #1e293b;
+}
+
+/* Verification checklist */
+.ws-verify-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.ws-verify-item.verified {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.ws-verify-item .verify-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  accent-color: #16a34a;
+  flex-shrink: 0;
+}
+
+.ws-verify-item img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ws-verify-item-info {
+  flex: 1;
+}
+
+.ws-verify-item-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.ws-verify-item-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.1rem;
+}
+
+.ws-verify-item-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ws-report-btn {
+  padding: 0.35rem 0.75rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ws-report-btn:hover {
+  background: #fecaca;
+}
+
+/* Pack button */
+.ws-pack-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ws-verify-progress {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ws-verify-progress strong {
+  color: #16a34a;
+}
+
+.ws-pack-btn {
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ws-pack-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+}
+
+.ws-pack-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Report issue modal */
+.ws-issue-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.ws-issue-modal {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+}
+
+.ws-issue-modal h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: #1e293b;
+}
+
+.ws-issue-modal .form-group {
+  margin-bottom: 1rem;
+}
+
+.ws-issue-modal .form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #475569;
+}
+
+.ws-issue-modal .form-group select,
+.ws-issue-modal .form-group textarea {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.ws-issue-modal .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.ws-issue-modal .modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.ws-issue-modal .modal-actions button {
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.ws-issue-modal .cancel-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.ws-issue-modal .submit-btn {
+  background: #ef4444;
+  border: none;
+  color: white;
+}
+
+.ws-issue-modal .submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.ws-orders-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #94a3b8;
+}
+
+.ws-orders-empty .empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.ws-orders-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* Dark mode */
+.dark .ws-order-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dark .ws-order-card-header:hover {
+  background: #334155;
+}
+
+.dark .ws-order-id, .dark .ws-verify-item-name, .dark .ws-verification-section h3 {
+  color: #f1f5f9;
+}
+
+.dark .ws-order-meta, .dark .ws-verify-item-meta {
+  color: #94a3b8;
+}
+
+.dark .ws-verify-item {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .ws-verify-item.verified {
+  background: #052e16;
+  border-color: #166534;
+}
+
+.dark .ws-order-details {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.dark .ws-orders-tabs {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .ws-orders-tabs button {
+  color: #94a3b8;
+}
+
+.dark .ws-orders-tabs button.active {
+  color: #fbbf24;
+  border-bottom-color: #fbbf24;
+}
+
+.dark .ws-issue-modal {
+  background: #1e293b;
+}
+
+.dark .ws-issue-modal h3,
+.dark .ws-issue-modal .form-group label {
+  color: #f1f5f9;
+}
+
+.dark .ws-issue-modal .form-group select,
+.dark .ws-issue-modal .form-group textarea {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .ws-order-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .ws-order-card-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

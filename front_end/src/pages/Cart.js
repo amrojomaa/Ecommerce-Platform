@@ -1,4 +1,4 @@
-import { tUi } from "../i18n/uiText";import React from 'react';
+import { tUi } from "../i18n/uiText";import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -7,10 +7,12 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { getImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useTranslation } from 'react-i18next';
 import '../styles/pages/Cart.css';
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const {
     cartItems,
     subtotal,
@@ -23,6 +25,22 @@ const Cart = () => {
   } = useCart();
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
+
+  const [shippingRegion, setShippingRegion] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedShippingRegion');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return { name: 'West Bank and Gaza', fee: 20 };
+  });
+
+  const handleRegionChange = (name, fee) => {
+    const regionObj = { name, fee };
+    setShippingRegion(regionObj);
+    localStorage.setItem('selectedShippingRegion', JSON.stringify(regionObj));
+  };
 
   // useEffect(() => {
   //   fetchCart();
@@ -248,6 +266,18 @@ const Cart = () => {
             transition={{ delay: 0.3 }}>
             
               <h2>{tUi("ui.pages.cart.orderSummary_97f6cd5623")}</h2>
+              
+              <div className="summary-products" style={{ marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+                {cartItems.map((item, index) => (
+                  <div key={item.id || index} className="summary-row" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                    <span style={{ flexShrink: 1, maxWidth: '65%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.quantity}x {item.product?.name || tUi("ui.pages.cart.product_d44e1d3515")}
+                    </span>
+                    <span style={{ flexShrink: 0 }}>{formatCurrency(item.total || 0)}</span>
+                  </div>
+                ))}
+              </div>
+
               <div className="summary-row">
                 <span>{tUi("ui.pages.cart.subtotal_a87a323a5f")}</span>
                 <span>{formatCurrency(subtotal)}</span>
@@ -260,13 +290,45 @@ const Cart = () => {
                   <span>-{formatCurrency(promotionDiscount)}</span>
                 </div>
             }
+              <div className="shipping-region-selector" style={{ margin: '1rem 0', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', padding: '1rem 0' }}>
+                <label style={{ fontWeight: 600, fontSize: '0.95rem', display: 'block', marginBottom: '8px' }}>
+                  {i18n.language && i18n.language.startsWith('ar') ? 'اختر منطقة التوصيل:' : i18n.language && i18n.language.startsWith('fr') ? 'Région de livraison :' : 'Select Delivery Region:'}
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                      type="radio"
+                      name="shippingRegion"
+                      checked={shippingRegion.fee === 20}
+                      onChange={() => handleRegionChange(i18n.language && i18n.language.startsWith('ar') ? 'الضفة الغربية وغزة' : i18n.language && i18n.language.startsWith('fr') ? 'Cisjordanie et Gaza' : 'West Bank and Gaza', 20)}
+                      style={{ accentColor: 'var(--primary-color)' }}
+                    />
+                    <span>
+                      {i18n.language && i18n.language.startsWith('ar') ? 'الضفة الغربية وغزة (20$)' : i18n.language && i18n.language.startsWith('fr') ? 'Cisjordanie et Gaza (20 $)' : 'West Bank and Gaza ($20)'}
+                    </span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                      type="radio"
+                      name="shippingRegion"
+                      checked={shippingRegion.fee === 40}
+                      onChange={() => handleRegionChange(i18n.language && i18n.language.startsWith('ar') ? 'أراضي الـ 48' : i18n.language && i18n.language.startsWith('fr') ? 'Territoires de 1948' : 'Palestine within the 1948 borders', 40)}
+                      style={{ accentColor: 'var(--primary-color)' }}
+                    />
+                    <span>
+                      {i18n.language && i18n.language.startsWith('ar') ? 'أراضي الـ 48 (40$)' : i18n.language && i18n.language.startsWith('fr') ? 'Territoires de 1948 (40 $)' : 'Palestine within the 1948 borders ($40)'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               <div className="summary-row">
-                <span>{tUi("ui.pages.cart.shipping_1bc05a98aa")}</span>
-                <span>{tUi("ui.pages.cart.free_0b31c2b7fd")}</span>
+                <span>{tUi("ui.pages.cart.shipping_1bc05a98aa")} ({shippingRegion.name}):</span>
+                <span>{formatCurrency(shippingRegion.fee)}</span>
               </div>
               <div className="summary-row total">
                 <span>{tUi("ui.pages.cart.total_cf0b507074")}</span>
-                <span>{formatCurrency(grandTotal)}</span>
+                <span>{formatCurrency(grandTotal + shippingRegion.fee)}</span>
               </div>
               <motion.button
               className="checkout-btn"

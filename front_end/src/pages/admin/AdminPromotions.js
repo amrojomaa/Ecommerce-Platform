@@ -54,6 +54,7 @@ const AdminPromotions = () => {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [optionSearch, setOptionSearch] = useState('');
   const isCreatePage = location.pathname.endsWith('/create');
+  const basePath = location.pathname.startsWith('/seller') ? '/seller/promotions' : '/admin/promotions';
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -168,7 +169,7 @@ const AdminPromotions = () => {
       resetForm();
       await loadData();
       if (isCreatePage) {
-        navigate('/admin/promotions');
+        navigate(basePath);
       }
     } catch (error) {
       toast.error(error.message || 'Failed to save promotion.');
@@ -237,7 +238,7 @@ const AdminPromotions = () => {
           <button
             type="button"
             className="promotion-header-btn btn-secondary"
-            onClick={() => navigate('/admin/promotions')}>{tUi("ui.pages.admin.adminPromotions.backToPromotions_1e790d9cc2")}
+            onClick={() => navigate(basePath)}>{tUi("ui.pages.admin.adminPromotions.backToPromotions_1e790d9cc2")}
 
 
           </button> :
@@ -247,7 +248,7 @@ const AdminPromotions = () => {
             className="promotion-header-btn"
             onClick={() => {
               resetForm();
-              navigate('/admin/promotions/create');
+              navigate(`${basePath}/create`);
             }}>{tUi("ui.pages.admin.adminPromotions.createPromotion_6315caab13")}
 
 

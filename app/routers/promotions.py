@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from .admin import require_admin
+from .admin import require_admin, require_seller
 
 router = APIRouter(prefix="/promotions", tags=["Promotions"])
 
@@ -70,7 +70,7 @@ def _build_customer_message(promotion: models.DBPromotion) -> str:
 @router.get("/products/options", response_model=List[str])
 def get_product_name_options(
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     rows = db.query(models.DBProduct.name).order_by(models.DBProduct.name.asc()).all()
     return [name for (name,) in rows]
@@ -79,7 +79,7 @@ def get_product_name_options(
 @router.get("/categories/options", response_model=List[str])
 def get_category_name_options(
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     rows = db.query(models.DBCategory.name).order_by(models.DBCategory.name.asc()).all()
     return [name for (name,) in rows]
@@ -88,7 +88,7 @@ def get_category_name_options(
 @router.get("", response_model=List[schemas.PromotionResponse])
 def get_promotions(
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     return (
         db.query(models.DBPromotion)
@@ -143,7 +143,7 @@ def _ensure_unique_name(
 def create_promotion(
     payload: schemas.PromotionCreate,
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     _ensure_unique_name(db, payload.name)
 
@@ -164,7 +164,7 @@ def update_promotion(
     promotion_id: int,
     payload: schemas.PromotionUpdate,
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     promotion = db.query(models.DBPromotion).filter(models.DBPromotion.id == promotion_id).first()
     if not promotion:
@@ -191,7 +191,7 @@ def set_promotion_active_state(
     promotion_id: int,
     payload: schemas.PromotionStatusUpdate,
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     promotion = db.query(models.DBPromotion).filter(models.DBPromotion.id == promotion_id).first()
     if not promotion:
@@ -212,7 +212,7 @@ def set_promotion_active_state(
 def delete_promotion(
     promotion_id: int,
     db: Session = Depends(get_db),
-    _admin_user: models.DBUser = Depends(require_admin),
+    _admin_user: models.DBUser = Depends(require_seller),
 ):
     promotion = db.query(models.DBPromotion).filter(models.DBPromotion.id == promotion_id).first()
     if not promotion:

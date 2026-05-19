@@ -22,10 +22,15 @@ router = APIRouter(prefix="/pos", tags=["POS"])
 def _ensure_walkin_user(db: Session) -> models.DBUser:
     u = db.query(models.DBUser).filter(models.DBUser.email == WALKIN_EMAIL).first()
     if u:
+        if u.role != "walkin":
+            u.role = "walkin"
+            db.commit()
+            db.refresh(u)
         return u
     legacy = db.query(models.DBUser).filter(models.DBUser.email == _LEGACY_WALKIN_EMAIL).first()
     if legacy:
         legacy.email = WALKIN_EMAIL
+        legacy.role = "walkin"
         db.commit()
         db.refresh(legacy)
         return legacy
@@ -34,7 +39,7 @@ def _ensure_walkin_user(db: Session) -> models.DBUser:
         password=utils.hash(secrets.token_urlsafe(32)),
         first_name="Walk-in",
         last_name="Customer",
-        role="customer",
+        role="walkin",
         provider="email",
         is_verified=True,
     )

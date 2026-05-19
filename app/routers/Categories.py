@@ -4,7 +4,7 @@ import string
 from fastapi import File, HTTPException, UploadFile, status, Depends
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from .admin import require_admin
+from .admin import require_admin, require_seller
 from ..database import get_db
 from .. import models, utils, schemas
 from .. import OAuth2
@@ -18,7 +18,7 @@ router = APIRouter(
 
 
 @router.post("/Categories/create", status_code=status.HTTP_201_CREATED, response_model=schemas.CategoriesDisplay)
-def create_Category(category: schemas.Categories ,db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def create_Category(category: schemas.Categories ,db: Session = Depends (get_db), seller_user = Depends(require_seller)):
     categories = db.query(models.DBCategory).filter(models.DBCategory.name == category.name).first()
     if categories:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category name already exists")
@@ -30,7 +30,7 @@ def create_Category(category: schemas.Categories ,db: Session = Depends (get_db)
 
 
 @router.get("/Categories/all", response_model=List[schemas.CategoriesDisplay])
-def get_all_Categories(db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_all_Categories(db: Session = Depends (get_db)):
     categories = db.query(models.DBCategory).all() 
     return categories
 
@@ -41,7 +41,7 @@ def get_all_Categories(db: Session = Depends (get_db), admin_user = Depends(requ
 
 
 @router.get("/Categories/name", response_model=schemas.CategoriesDisplay)
-def get_category_by_name(name: str, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def get_category_by_name(name: str, db: Session = Depends (get_db), seller_user = Depends(require_seller)):
     category = db.query(models.DBCategory).filter(models.DBCategory.name == name).first()
     if category == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the category not a found")
@@ -55,7 +55,7 @@ def get_category_by_name(name: str, db: Session = Depends (get_db), admin_user =
 #     return product
 
 @router.get("/Categories/{id}", response_model=schemas.CategoriesDisplay)
-def get_category_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)): 
+def get_category_by_id(id :int, db: Session = Depends (get_db), seller_user = Depends(require_seller)): 
     category = db.query(models.DBCategory).filter(models.DBCategory.id == id).first()
     if category == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the category not a found")
@@ -65,7 +65,7 @@ def get_category_by_id(id :int, db: Session = Depends (get_db), admin_user = Dep
 
 
 @router.put("/Categories/{id}", response_model=schemas.CategoriesDisplay)
-def update_category(product: schemas.Categories, id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def update_category(product: schemas.Categories, id :int, db: Session = Depends (get_db), seller_user = Depends(require_seller)):
     updatecategory = db.query(models.DBCategory).filter(models.DBCategory.id == id)
     update = updatecategory.first()
     if update == None:
@@ -77,7 +77,7 @@ def update_category(product: schemas.Categories, id :int, db: Session = Depends 
 
 
 @router.delete("/Categories/{id}",  status_code=status.HTTP_204_NO_CONTENT)
-def delete_category(id :int, db: Session = Depends (get_db), admin_user = Depends(require_admin)):
+def delete_category(id :int, db: Session = Depends (get_db), seller_user = Depends(require_seller)):
     category = db.query(models.DBCategory).filter(models.DBCategory.id == id)
     deletecat = category.first()
     if  deletecat is None:

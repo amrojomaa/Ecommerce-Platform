@@ -624,6 +624,14 @@ export const AuthProvider = ({ children }) => {
     return r === 'cashier' || r === 'admin';
   };
 
+  const isSeller = () => {
+    return user?.role === 'seller';
+  };
+
+  const isWarehouseStaff = () => {
+    return user?.role === 'warehouse_staff';
+  };
+
   const value = {
     user,
     loading,
@@ -640,6 +648,8 @@ export const AuthProvider = ({ children }) => {
     isSupportAgent,
     isDriver,
     isCashier,
+    isSeller,
+    isWarehouseStaff,
     fetchUserInfo,
     forgotPassword,
     verifyResetCode,

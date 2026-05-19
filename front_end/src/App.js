@@ -80,6 +80,23 @@ import DriverEarnings from './pages/driver/DriverEarnings';
 import CashierLayout from './layouts/CashierLayout';
 import PosTerminal from './pages/cashier/PosTerminal';
 
+// Seller
+import SellerLayout from './layouts/SellerLayout';
+import SellerDashboard from './pages/seller/SellerDashboard';
+import SellerProducts from './pages/seller/SellerProducts';
+import SellerOrders from './pages/seller/SellerOrders';
+
+// Warehouse Staff
+import WarehouseStaffLayout from './layouts/WarehouseStaffLayout';
+import WarehouseStaffDashboard from './pages/warehouse-staff/WarehouseStaffDashboard';
+import WarehouseStaffOrders from './pages/warehouse-staff/WarehouseStaffOrders';
+
+// Warehouse Manager
+import WarehouseManagerDashboard from './pages/warehouse-manager/WarehouseManagerDashboard';
+import WarehouseInventory from './pages/warehouse-manager/WarehouseInventory';
+import WarehouseApprovals from './pages/warehouse-manager/WarehouseApprovals';
+import WarehouseIssues from './pages/warehouse-manager/WarehouseIssues';
+
 // Styles
 import './styles/App.css';
 import { isRtlLanguage, normalizeLanguageCode } from './i18n/constants';
@@ -154,8 +171,10 @@ function App() {
                     <Route path="feedback" element={<SupportManagerFeedback />} />
         </Route>
         <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
-                    <Route index element={<Navigate to="products" replace />} />
-                    <Route path="products" element={<AdminProducts />} />
+                    <Route index element={<WarehouseManagerDashboard />} />
+                    <Route path="inventory" element={<WarehouseInventory />} />
+                    <Route path="approvals" element={<WarehouseApprovals />} />
+                    <Route path="issues" element={<WarehouseIssues />} />
         </Route>
         <Route path="/support-agent" element={<ProtectedRoute requireSupportAgent={true}><SupportAgentLayout /></ProtectedRoute>}>
                     <Route index element={<SupportAgentDashboard />} />
@@ -173,6 +192,20 @@ function App() {
 
         <Route path="/cashier" element={<ProtectedRoute requireCashier={true}><CashierLayout /></ProtectedRoute>}>
           <Route index element={<PosTerminal />} />
+        </Route>
+
+        <Route path="/seller" element={<ProtectedRoute requireSeller={true}><SellerLayout /></ProtectedRoute>}>
+          <Route index element={<SellerDashboard />} />
+          <Route path="products" element={<SellerProducts />} />
+          <Route path="orders" element={<SellerOrders />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="promotions" element={<AdminPromotions />} />
+          <Route path="promotions/create" element={<AdminPromotions />} />
+        </Route>
+
+        <Route path="/warehouse-staff" element={<ProtectedRoute requireWarehouseStaff={true}><WarehouseStaffLayout /></ProtectedRoute>}>
+          <Route index element={<WarehouseStaffDashboard />} />
+          <Route path="orders" element={<WarehouseStaffOrders />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

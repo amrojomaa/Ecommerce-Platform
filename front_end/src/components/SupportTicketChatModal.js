@@ -6,7 +6,7 @@ import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
 import { buildWebSocketUrl } from '../utils/helpers';
 import '../styles/components/ChatWidget.css';
 
-const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, userName }) => {
+const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, userName, ticketStatus }) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -190,23 +190,31 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="chat-input-container" style={{ padding: '15px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: '10px' }}>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Type a message..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isSending}
-              style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid #d1d5db', outline: 'none' }}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isSending}
-              style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
-              ➤
-            </button>
+          <div className="chat-input-container" style={{ padding: '15px', borderTop: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {ticketStatus === 'Resolved' || ticketStatus === 'Closed' ? (
+              <div style={{ padding: '10px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'center' }}>
+                Chat is disabled because this ticket is {ticketStatus}.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Type a message..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isSending}
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid #d1d5db', outline: 'none' }}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!inputMessage.trim() || isSending}
+                  style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
+                  ➤
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       )}

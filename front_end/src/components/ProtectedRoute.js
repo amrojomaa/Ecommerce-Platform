@@ -11,6 +11,8 @@ const ProtectedRoute = ({
   requireCashier = false,
   requireSupportManager = false,
   requireWarehouseManager = false,
+  requireSeller = false,
+  requireWarehouseStaff = false,
 }) => {
   const {
     isAuthenticated,
@@ -21,6 +23,8 @@ const ProtectedRoute = ({
     isCashier,
     isSupportManager,
     isWarehouseManager,
+    isSeller,
+    isWarehouseStaff,
   } = useAuth();
 
   if (loading) {
@@ -56,6 +60,14 @@ const ProtectedRoute = ({
   }
 
   if (requireWarehouseManager && isWarehouseManager && typeof isWarehouseManager === 'function' && !isWarehouseManager()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireSeller && isSeller && typeof isSeller === 'function' && !isSeller()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireWarehouseStaff && isWarehouseStaff && typeof isWarehouseStaff === 'function' && !isWarehouseStaff()) {
     return <Navigate to="/" replace />;
   }
 

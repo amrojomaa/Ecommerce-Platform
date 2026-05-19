@@ -735,3 +735,232 @@ html[dir='rtl'] .upload-file-name {
     max-height: 260px;
   }
 }
+
+.installment-warning-alert {
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #991b1b;
+  padding: 12px 16px;
+  margin: 10px 0 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.dark .installment-warning-alert {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* Installment Option Plan Selection Card Styles */
+.installment-plan-selector {
+  margin: 16px 0;
+}
+
+.plan-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.plan-option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  background: var(--surface);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.plan-option-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.plan-option-card.active {
+  border-color: var(--primary-color);
+  background: rgba(79, 70, 229, 0.03);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+.dark .plan-option-card.active {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.plan-option-card input[type="radio"] {
+  margin-top: 4px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  width: 18px;
+  height: 18px;
+}
+
+.plan-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.plan-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.down-payment-row {
+  color: #f59e0b !important;
+  font-weight: 600;
+}
+
+.down-payment-value {
+  color: #f59e0b;
+}
+
+.installment-total-row {
+  border-top: 1px dashed var(--border-color) !important;
+  color: var(--primary-color) !important;
+  margin-top: 4px;
+}
+
+/* Pay Remaining Box Style */
+.pay-remaining-box {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(147, 51, 234, 0.08) 100%);
+  border: 1.5px solid rgba(79, 70, 229, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.05);
+}
+
+.dark .pay-remaining-box {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.pay-remaining-details {
+  flex: 1;
+}
+
+.pay-remaining-details h4 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.pay-remaining-details p {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.pay-remaining-pricing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pay-remaining-pricing .original-price {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.pay-remaining-pricing .arrow {
+  color: var(--text-secondary);
+}
+
+.pay-remaining-pricing .discounted-price {
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.pay-remaining-pricing .discounted-price strong {
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+
+.pay-remaining-pricing .saved-badge {
+  background: #10b981;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.pay-remaining-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pay-remaining-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.4);
+}
+
+.pay-remaining-btn:active {
+  transform: translateY(0);
+}
+
+.active-order-banner {
+  background: rgba(79, 70, 229, 0.05);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dark .active-order-banner {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+@media (max-width: 768px) {
+  .pay-remaining-box {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .pay-remaining-pricing {
+    justify-content: center;
+  }
+  .pay-remaining-btn {
+    width: 100%;
+  }
+}

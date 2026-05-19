@@ -51,7 +51,7 @@ const SupportManagerTickets = () => {
 
     try {
       const url = buildUrl(TICKET_ENDPOINTS.ASSIGN, { ticket_id: ticketId });
-      await http.patch(url, { agent_id: parseInt(assigningTo) });
+      await http.patch(url, { employee_id: parseInt(assigningTo) });
       toast.success('Ticket assigned successfully');
       setSelectedTicket(null);
       setAssigningTo('');
@@ -141,14 +141,14 @@ const SupportManagerTickets = () => {
               <p className="description">{ticket.description.substring(0, 100)}...</p>
               <div className="agent-info">
                 <FiUserPlus />
-                <span>{ticket.assigned_to_user ? `Assigned to: ${ticket.assigned_to_user.first_name}` : 'Unassigned'}</span>
+                <span>{ticket.employee ? `Assigned to: ${ticket.employee.first_name}` : 'Unassigned'}</span>
               </div>
             </div>
             <div className="card-footer">
               <span className="date">{formatDate(ticket.created_at)}</span>
               {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
                 <button className="assign-btn" onClick={() => setSelectedTicket(ticket)}>
-                  {ticket.assigned_to_user ? 'Reassign' : 'Assign'}
+                  Assign
                 </button>
               )}
               <button className="view-btn" onClick={() => setViewingTicket(ticket)}>

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
@@ -15,6 +16,9 @@ class UserRole(str, Enum):
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
+    WALKIN = "walkin"
+    SELLER = "seller"
+    WAREHOUSE_STAFF = "warehouse_staff"
 
 
 PASSWORD_MIN_LENGTH = 9  # More than 8 characters
@@ -255,8 +259,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     @field_validator('password')
@@ -282,8 +286,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     @field_validator('password')
@@ -314,8 +318,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
     class Config:
@@ -348,11 +352,13 @@ class ShowCartOut(BaseModel):
 
 class ShowCart(BaseModel):
     id: int
+    cart_id: Optional[int] = None
     product: ShowCartOut
     quantity: int
     total: float
     
 class CartResponse(BaseModel):
+    cart_id: Optional[int] = None
     items: List[ShowCart]
     subtotal: float = 0
     promotion_discount: float = 0
@@ -451,6 +457,8 @@ class CheckoutRequest(BaseModel):
     zipCode: Optional[str] = None
     country: Optional[str] = None
     phone: Optional[str] = None
+    shipping_region: Optional[str] = None
+    shipping_fee: Optional[float] = 0.0
 
 
 class OrderUserInfo(BaseModel):
@@ -506,6 +514,7 @@ class AdminOrderResponse(BaseModel):
     payment_method: Optional[str] = None
     cashier: Optional[OrderCashierInfo] = None
     customer_name: Optional[str] = None
+    warehouse_issues: Optional[List[WarehouseIssueResponse]] = None
 
     class Config:
         from_attributes = True
@@ -614,8 +623,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
         return v
 
 
@@ -1313,3 +1322,39 @@ class InstallmentCancelPayload(BaseModel):
 class InstallmentRequestUpdatePayload(BaseModel):
     duration_months: Optional[int] = None
     user_note: Optional[str] = None
+
+
+# Warehouse Schemas
+
+class OrderItemVerificationUpdate(BaseModel):
+    order_item_id: int
+    verified: bool
+
+class WarehouseIssueCreate(BaseModel):
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+
+class WarehouseIssueResolve(BaseModel):
+    resolution_note: str
+
+class WarehouseIssueBase(BaseModel):
+    order_id: int
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+    reported_by: Optional[int] = None
+    status: str
+    resolved_by: Optional[int] = None
+    resolved_at: Optional[datetime] = None
+    resolution_note: Optional[str] = None
+
+class WarehouseIssueResponse(WarehouseIssueBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ProductStockUpdate(BaseModel):
+    quantity: int

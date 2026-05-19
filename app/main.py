@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments, warehouse
 from app.utils.image_storage import IMAGES_ROOT_DIR, ensure_images_root
 
 
@@ -491,11 +491,28 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
+def serialize_error(err):
+    if isinstance(err, dict):
+        return {k: serialize_error(v) for k, v in err.items()}
+    elif isinstance(err, list):
+        return [serialize_error(v) for v in err]
+    elif isinstance(err, Exception):
+        return str(err)
+    elif isinstance(err, (str, int, float, bool, type(None))):
+        return err
+    else:
+        try:
+            import json
+            json.dumps(err)
+            return err
+        except TypeError:
+            return str(err)
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     response = JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors()}
+        content={"detail": serialize_error(exc.errors())}
     )
     origin = request.headers.get("origin")
     if origin in origins:
@@ -542,5 +559,6 @@ app.include_router(recommendations.router)
 app.include_router(pos.router)
 app.include_router(promotions.router)
 app.include_router(installments.router)
+app.include_router(warehouse.router)
 
 app.mount("/images", StaticFiles(directory=str(IMAGES_ROOT_DIR)), name="images")

@@ -203,6 +203,22 @@ def accept_job(
     if job.status == "assigned" and job.driver_id == current_user.id:
         loaded = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
         return _job_to_response(loaded)
+
+    # Check if driver already has an active delivery job
+    active_job = (
+        db.query(models.DBDeliveryJob)
+        .filter(
+            models.DBDeliveryJob.driver_id == current_user.id,
+            models.DBDeliveryJob.status.in_(["assigned", "picked_up", "delivering"])
+        )
+        .first()
+    )
+    if active_job:
+        raise HTTPException(
+            status_code=400,
+            detail="You already have an active delivery job. Complete or decline it first."
+        )
+
     if job.status != "available":
         raise HTTPException(status_code=400, detail=f"Job is no longer available (current status: {job.status})")
 
@@ -888,9 +904,13 @@ def internal_create_delivery_job(
     # Driver payment mirrors the order amount.
     delivery_fee = float(order.total_amount)
 
-    # Determine delivery details from customer
+    # Determine delivery details from order shipping metadata or customer profile
     if not delivery_address:
-        if order.user:
+        if order.metadata and isinstance(order.metadata, dict) and "shipping_address" in order.metadata:
+            ship = order.metadata["shipping_address"]
+            address_parts = [part for part in [ship.get("address"), ship.get("city"), ship.get("country")] if part]
+            delivery_address = ", ".join(address_parts)
+        elif order.user:
             address_parts = [part for part in [order.user.street, order.user.city, order.user.country] if part]
             delivery_address = ", ".join(address_parts)
         else:

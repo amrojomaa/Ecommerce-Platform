@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
 from .. import models, schemas
 from .. import OAuth2
-from .admin import require_admin_or_operations_manager
+from .admin import require_admin_or_operations_manager, require_seller, require_order_status_updater
 from app.services import promotion_engine
 
 
@@ -74,119 +74,59 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
         promotion_engine.get_active_promotion(db),
     )
     
-    # Check if there's an existing order with status "created"
-    existing_order = (
+    # Create new order
+    shipping_fee = checkout_data.shipping_fee if checkout_data and checkout_data.shipping_fee else 0.0
+    new_order = models.DBOrder(
+        user_id=current_user.id,
+        total_amount=float(promotion_summary["grand_total"]) + shipping_fee,
+        promotion_discount=float(promotion_summary["promotion_discount"]),
+        promotion_name=(
+            promotion_summary["applied_promotion"]["name"]
+            if promotion_summary["applied_promotion"]
+            else None
+        ),
+        metadata={
+            "shipping_address": {
+                "address": checkout_data.address if checkout_data else "",
+                "city": checkout_data.city if checkout_data else "",
+                "state": checkout_data.state if checkout_data else "",
+                "zipCode": checkout_data.zipCode if checkout_data else "",
+                "country": checkout_data.country if checkout_data else "",
+                "phone": checkout_data.phone if checkout_data else ""
+            },
+            "shipping_region": checkout_data.shipping_region if checkout_data else None,
+            "shipping_fee": shipping_fee
+        } if checkout_data else None
+    )
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
+
+    for item in cart.items:
+        db.add(models.DBOrderItem(
+            order_id=new_order.id,
+            product_id=item.product_id,
+            quantity=item.quantity,
+            price=float(item.product.final_price),
+            total=item.total
+        ))
+
+    db.commit()
+    
+    # Load order items for response
+    db.refresh(new_order)
+    new_order = (
         db.query(models.DBOrder)
         .options(
             selectinload(models.DBOrder.orderitems)
             .joinedload(models.DBOrderItem.product)
             .selectinload(models.DBProduct.images)
         )
-        .filter(
-            models.DBOrder.user_id == current_user.id,
-            models.DBOrder.status == "created"
-        )
+        .filter(models.DBOrder.id == new_order.id)
         .first()
     )
 
-    if existing_order:
-        # Add items to existing order
-        cart_total = float(promotion_summary["grand_total"])
-        for item in cart.items:
-            # Check if order item with same product_id already exists
-            existing_order_item = (
-                db.query(models.DBOrderItem)
-                .filter(
-                    models.DBOrderItem.order_id == existing_order.id,
-                    models.DBOrderItem.product_id == item.product_id
-                )
-                .first()
-            )
-            
-            if existing_order_item:
-                # Update existing order item: add quantities and recalculate total
-                existing_order_item.quantity += item.quantity
-                existing_order_item.total = float(existing_order_item.price * existing_order_item.quantity)
-            else:
-                # Create new order item
-                db.add(models.DBOrderItem(
-                    order_id=existing_order.id,
-                    product_id=item.product_id,
-                    quantity=item.quantity,
-                    price=float(item.product.final_price),
-                    total=item.total
-                ))
-        
-        # Update order total amount
-        existing_order.total_amount += cart_total
-        existing_order.promotion_discount = round(
-            float(existing_order.promotion_discount or 0) + float(promotion_summary["promotion_discount"]),
-            2,
-        )
-        if promotion_summary["applied_promotion"]:
-            existing_order.promotion_name = promotion_summary["applied_promotion"]["name"]
-        db.commit()
-        
-        # Reload order with orderitems for response
-        existing_order = (
-            db.query(models.DBOrder)
-            .options(
-                selectinload(models.DBOrder.orderitems)
-                .joinedload(models.DBOrderItem.product)
-                .selectinload(models.DBProduct.images)
-            )
-            .filter(models.DBOrder.id == existing_order.id)
-            .first()
-        )
-        
-        return existing_order
-    else:
-        # Create new order
-        new_order = models.DBOrder(
-            user_id=current_user.id,
-            total_amount=float(promotion_summary["grand_total"]),
-            promotion_discount=float(promotion_summary["promotion_discount"]),
-            promotion_name=(
-                promotion_summary["applied_promotion"]["name"]
-                if promotion_summary["applied_promotion"]
-                else None
-            ),
-        )
-        db.add(new_order)
-        db.commit()
-        db.refresh(new_order)
-
-        for item in cart.items:
-            db.add(models.DBOrderItem(
-                order_id=new_order.id,
-                product_id=item.product_id,
-                quantity=item.quantity,
-                price=float(item.product.final_price),
-                total=item.total
-            ))
-
-        # item.product.quantity -= item.quantity
-
-        # db.query(models.DBCartItem).filter(models.DBCartItem.cart_id == cart.id).delete()
-        db.commit()
-        
-        # Load order items for response
-        db.refresh(new_order)
-        new_order = (
-            db.query(models.DBOrder)
-            .options(
-                selectinload(models.DBOrder.orderitems)
-                .joinedload(models.DBOrderItem.product)
-                .selectinload(models.DBProduct.images)
-            )
-            .filter(models.DBOrder.id == new_order.id)
-            .first()
-        )
-
-        # return {
-        # "items": new_order.orderitems,
-        # "total_amount": new_order.total_amount}
-        return new_order
+    return new_order
 
 
 
@@ -222,6 +162,41 @@ def get_my_orders(
         result.append(order_dict)
     
     return result
+
+
+@router.get("/orders/seller", response_model=List[schemas.AdminOrderResponse])
+def get_seller_orders(
+    db: Session = Depends(get_db),
+    current_user = Depends(require_seller)
+):
+    """Get orders relevant to the seller (paid, preparing)."""
+    try:
+        orders = (
+            db.query(models.DBOrder)
+            .options(
+                selectinload(models.DBOrder.orderitems)
+                .joinedload(models.DBOrderItem.product)
+                .selectinload(models.DBProduct.images),
+                joinedload(models.DBOrder.user),
+                joinedload(models.DBOrder.delivery_job)
+                .selectinload(models.DBDeliveryJob.photos)
+            )
+            .filter(
+                models.DBOrder.status != "created",
+                models.DBOrder.sale_channel != "pos"
+            )
+            .order_by(models.DBOrder.created_at.desc())
+            .all()
+        )
+        return orders
+    except Exception as e:
+        import traceback
+        print(f"Error in get_seller_orders: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching seller orders: {str(e)}"
+        )
 
 
 @router.patch("/orders/{order_id}/cancel", response_model=schemas.OrderResponse)
@@ -310,17 +285,21 @@ def update_order_status(
     order_id: int,
     status_update: schemas.OrderStatusUpdate,
     db: Session = Depends(get_db),
-    current_user = Depends(require_admin_or_operations_manager)
+    current_user = Depends(require_order_status_updater)
 ):
-    """Update order status (Admin / Operations Manager)
+    """Update order status (Admin / Operations Manager / Seller)
     
     Allowed transitions:
+    - paid → preparing (Seller)
     - paid → shipped
+    - preparing → packed (Warehouse Staff)
+    - packed → ready_for_pickup (Warehouse Manager)
+    - ready_for_pickup → shipped
     - shipped → delivered
     - any status → cancelled
     """
     # Validate status value
-    valid_statuses = ["created", "paid", "shipped", "delivered", "cancelled", "assigned", "picked_up", "delivering"]
+    valid_statuses = ["created", "paid", "preparing", "packed", "ready_for_pickup", "shipped", "delivered", "cancelled", "assigned", "picked_up", "delivering"]
     if status_update.status not in valid_statuses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -345,6 +324,13 @@ def update_order_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Order not found"
+        )
+    
+    # Prevent preparation of POS orders
+    if order.sale_channel == "pos" and status_update.status == "preparing":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="POS orders are processed on-site and cannot be marked as preparing."
         )
     
     # Validate status transition rules
@@ -379,8 +365,8 @@ def update_order_status(
         db.query(models.DBRecommendationBatchCache).filter(
             models.DBRecommendationBatchCache.user_id == order.user_id
         ).delete()
-    # If changing to cancelled from paid or delivery states, restore stock
-    elif new_status == "cancelled" and current_status in ["paid", "shipped", "delivered", "assigned", "picked_up", "delivering"]:
+    # If changing to cancelled from paid or delivery/warehouse states, restore stock
+    elif new_status == "cancelled" and current_status in ["paid", "shipped", "delivered", "assigned", "picked_up", "delivering", "preparing", "packed", "ready_for_pickup"]:
         for order_item in order.orderitems:
             product = order_item.product
             product.quantity += order_item.quantity
@@ -409,6 +395,18 @@ def update_order_status(
         order.status = new_status
     # Allow picked_up -> delivered directly (some drivers might skip delivering status)
     elif current_status == "picked_up" and new_status == "delivered":
+        order.status = new_status
+    # Warehouse flow: paid → preparing (Seller action)
+    elif current_status == "paid" and new_status == "preparing":
+        order.status = new_status
+    # Warehouse flow: preparing → packed (Warehouse Staff action)
+    elif current_status == "preparing" and new_status == "packed":
+        order.status = new_status
+    # Warehouse flow: packed → ready_for_pickup (Warehouse Manager action)
+    elif current_status == "packed" and new_status == "ready_for_pickup":
+        order.status = new_status
+    # Allow ready_for_pickup → shipped
+    elif current_status == "ready_for_pickup" and new_status == "shipped":
         order.status = new_status
     else:
         raise HTTPException(

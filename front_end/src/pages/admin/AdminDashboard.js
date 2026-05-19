@@ -51,10 +51,18 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       // Fetch products
-      const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-      const products = productsResponse.data;
-
-      const lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+      let totalProductsCount = 0;
+      let lowStock = 0;
+      if (!isOperationsManager) {
+        try {
+          const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+          const products = productsResponse.data || [];
+          totalProductsCount = products.length;
+          lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+        } catch (productError) {
+          console.error('Error fetching products:', productError);
+        }
+      }
 
       // Fetch orders
       let totalOrders = 0;
@@ -94,7 +102,7 @@ const AdminDashboard = () => {
       }
 
       setStats({
-        totalProducts: products.length,
+        totalProducts: totalProductsCount,
         totalOrders: totalOrders,
         totalRevenue: totalRevenue,
         lowStockProducts: lowStock,
@@ -105,7 +113,7 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [lowStockThreshold]);
+  }, [lowStockThreshold, isOperationsManager]);
 
   useEffect(() => {
     const initializeData = async () => {

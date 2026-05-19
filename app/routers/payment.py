@@ -181,7 +181,9 @@ def _resolve_authoritative_amount_usd(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Installment request has no outstanding balance",
             )
-        return remaining_balance, {
+        # Apply 10% discount on remaining balance paying payoff
+        discounted_remaining = round(remaining_balance * 0.9, 2)
+        return discounted_remaining, {
             "order_id": "",
             "installment_request_id": str(installment_request.id),
             "installment_schedule_id": "",

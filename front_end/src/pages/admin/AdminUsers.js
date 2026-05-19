@@ -18,6 +18,8 @@ const ROLE_FILTER_OPTIONS = [
   'support_agent',
   'operations_manager',
   'warehouse_manager',
+  'seller',
+  'warehouse_staff',
   'driver',
   'customer',
   'cashier',
@@ -30,6 +32,8 @@ const ROLE_LABEL_KEYS = {
   support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
   operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
   warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
+  seller: null,
+  warehouse_staff: null,
   driver: 'ui.pages.admin.adminUsers.driver_533424916e',
   customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
   cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
@@ -233,6 +237,10 @@ const AdminUsers = () => {
         return 'role-badge support_manager';
       case 'warehouse_manager':
         return 'role-badge warehouse_manager';
+      case 'seller':
+        return 'role-badge seller';
+      case 'warehouse_staff':
+        return 'role-badge warehouse_staff';
       case 'driver':
         return 'role-badge driver';
       case 'customer':
@@ -458,6 +466,8 @@ const AdminUsers = () => {
                   <option value="support_manager">{tUi("ui.pages.admin.adminUsers.supportManager_2a7bb3b941")}</option>
                   <option value="operations_manager">{tUi("ui.pages.admin.adminUsers.operationsManager_e7f7834cf9")}</option>
                   <option value="warehouse_manager">{tUi("ui.pages.admin.adminUsers.warehouseManager_3e9668a875")}</option>
+                  <option value="seller">Seller</option>
+                  <option value="warehouse_staff">Warehouse Staff</option>
                   <option value="support_agent">{tUi("ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c")}</option>
                   <option value="driver">{tUi("ui.pages.admin.adminUsers.driver_533424916e")}</option>
                   <option value="customer">{tUi("ui.pages.admin.adminUsers.customer_68c8b84985")}</option>

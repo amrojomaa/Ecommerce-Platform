@@ -144,10 +144,10 @@ const SupportAgentTickets = () => {
 
   const handleRequestDelete = async (ticketId) => {
     const confirmed = await confirm({
-      title: tUi("ui.pages.support_agent.supportAgentTickets.requestTicketDeletion_846f6f9e50"),
-      message: tUi("ui.pages.support_agent.supportAgentTickets.areYouSureYouWant_6779ce9fc7"),
-      confirmText: tUi("ui.pages.support_agent.supportAgentTickets.requestDelete_2653b0b8d5"),
-      cancelText: tUi("ui.pages.support_agent.supportAgentTickets.cancel_3786084ae4")
+      title: "Delete Ticket",
+      message: "Are you sure you want to delete this ticket? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel"
     });
     if (!confirmed) {
       return;
@@ -157,11 +157,11 @@ const SupportAgentTickets = () => {
     try {
       const url = buildUrl(TICKET_ENDPOINTS.REQUEST_DELETE, { ticket_id: ticketId });
       await http.post(url);
-      toast.success(tUi("ui.pages.support_agent.supportAgentTickets.deleteRequestSubmittedWaitingFor_a6b63a282c"));
-      fetchTickets();
+      toast.success("Ticket deleted successfully");
+      fetchAllTickets();
     } catch (error) {
-      console.error('Error requesting delete:', error);
-      toast.error(error.response?.data?.detail || 'Failed to request deletion');
+      console.error('Error deleting ticket:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete ticket');
     } finally {
       setRequestingDelete(null);
     }
@@ -378,21 +378,16 @@ const SupportAgentTickets = () => {
                       </div>
                 }
 
-                    <div className="ticket-delete-section">
-                      {ticket.pending_delete ?
-                  <div className="delete-pending">
-                          <p>{tUi("ui.pages.support_agent.supportAgentTickets.deleteRequestPendingAdminApproval_41491b306c")}</p>
-                        </div> :
-
-                  <button
-                    className="delete-ticket-btn"
-                    onClick={() => handleRequestDelete(ticket.id)}
-                    disabled={requestingDelete === ticket.id}>
-                    
-                          {requestingDelete === ticket.id ? tUi("ui.pages.support_agent.supportAgentTickets.requesting_406aca964f") : tUi("ui.pages.support_agent.supportAgentTickets.requestDelete_eb9ed10efc")}
+                    {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
+                      <div className="ticket-delete-section">
+                        <button
+                          className="delete-ticket-btn"
+                          onClick={() => handleRequestDelete(ticket.id)}
+                          disabled={requestingDelete === ticket.id}>
+                          {requestingDelete === ticket.id ? "Deleting..." : "Delete Ticket"}
                         </button>
-                  }
-                    </div>
+                      </div>
+                    )}
                   </div>
               }
               </div>);

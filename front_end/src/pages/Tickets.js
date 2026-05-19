@@ -7,6 +7,7 @@ import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
+import { useConfirm } from '../hooks/useConfirm';
 import SupportTicketChatModal from '../components/SupportTicketChatModal';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/pages/Tickets.css';
@@ -21,7 +22,9 @@ const Tickets = () => {
   const [responseMessage, setResponseMessage] = useState('');
   const [respondingTicketId, setRespondingTicketId] = useState(null);
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
+  const [deletingTicketId, setDeletingTicketId] = useState(null);
   const { markAsViewed } = useUnreadTickets();
+  const confirm = useConfirm();
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -85,6 +88,29 @@ const Tickets = () => {
       toast.error(error.response?.data?.detail || 'Failed to add response');
     } finally {
       setRespondingTicketId(null);
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId) => {
+    const confirmed = await confirm({
+      title: "Delete Ticket",
+      message: "Are you sure you want to delete this ticket? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel"
+    });
+    if (!confirmed) {
+      return;
+    }
+    setDeletingTicketId(ticketId);
+    try {
+      await http.delete(`${TICKET_ENDPOINTS.MY.replace('/my', '')}/${ticketId}`);
+      toast.success("Ticket deleted successfully");
+      fetchTickets();
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete ticket');
+    } finally {
+      setDeletingTicketId(null);
     }
   };
 
@@ -240,7 +266,7 @@ const Tickets = () => {
                             </div>
                           </div>
 
-                          {ticket.status !== "Closed" && (
+                          {ticket.status !== "Closed" && ticket.status !== "Resolved" && (
                             <div className="ticket-actions-section">
                               <div className="chat-integration-card">
                                 <h5>Live Support</h5>
@@ -290,6 +316,16 @@ const Tickets = () => {
                             </div>
                           )}
                         </div>
+
+                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            disabled={deletingTicketId === ticket.id}
+                            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
+                          >
+                            {deletingTicketId === ticket.id ? "Deleting..." : "Delete Ticket"}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -322,6 +358,7 @@ const Tickets = () => {
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        ticketStatus={tickets.find(t => t.id === activeChatTicketId)?.status}
       />
     </div>
   );

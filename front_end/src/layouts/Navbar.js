@@ -34,7 +34,11 @@ const Navbar = () => {
   const isCashierArea = location.pathname.startsWith('/cashier');
   const isSupportAgentArea = location.pathname.startsWith('/support-agent');
   const isSupportManagerArea = location.pathname.startsWith('/support') && !location.pathname.startsWith('/support-agent');
-  const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea;
+  const isSellerArea = location.pathname.startsWith('/seller');
+  const isWarehouseStaffArea = location.pathname.startsWith('/warehouse-staff');
+  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse-manager');
+  const isUserRestrictedByRole = user && (user.role === 'seller' || user.role === 'warehouse_staff' || user.role === 'warehouse_manager' || user.role === 'cashier' || user.role === 'driver' || user.role === 'support_agent' || user.role === 'support_manager');
+  const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
 
   const handleLogout = () => {
     logout();
@@ -48,13 +52,27 @@ const Navbar = () => {
   const isRealAdmin = user?.role === 'admin';
   const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
   const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
-  const supportPanelPath = '/support/tickets';
+  const supportPanelPath = '/support';
   const warehousePanelPath = '/warehouse/products';
   const adminHomePath = '/admin';
   const driverHomePath = '/driver';
   const cashierHomePath = '/cashier';
   const supportAgentHomePath = '/support-agent';
   const supportManagerHomePath = '/support';
+  const sellerHomePath = '/seller';
+
+  const getDashboardHomePath = () => {
+    if (!user) return '/';
+    if (user.role === 'admin' || user.role === 'operations_manager') return adminHomePath;
+    if (user.role === 'driver') return driverHomePath;
+    if (user.role === 'cashier') return cashierHomePath;
+    if (user.role === 'support_agent') return supportAgentHomePath;
+    if (user.role === 'support_manager') return supportManagerHomePath;
+    if (user.role === 'warehouse_manager') return '/warehouse';
+    if (user.role === 'seller') return sellerHomePath;
+    if (user.role === 'warehouse_staff') return '/warehouse-staff';
+    return '/';
+  };
 
   useEffect(() => {
     if (location.pathname === '/products') {
@@ -161,7 +179,7 @@ const Navbar = () => {
   return (
     <nav className={`navbar ${isDarkMode ? 'dark' : ''}`}>
       <div className="navbar-container">
-        <Link to={isRestrictedArea ? (isAdminArea ? adminHomePath : (isDriverArea ? driverHomePath : (isCashierArea ? cashierHomePath : (isSupportAgentArea ? supportAgentHomePath : supportManagerHomePath)))) : '/'} className="navbar-logo">
+        <Link to={isRestrictedArea ? getDashboardHomePath() : '/'} className="navbar-logo">
           <span style={{ display: 'inline-block' }}>
             {t("app.brand")}
           </span>
@@ -265,6 +283,16 @@ const Navbar = () => {
                     <span>{t("navbar.cashier")}</span>
                   </Link>
               }
+                {user?.role === "seller" &&
+              <Link to="/seller" className="navbar-link">
+                    <span>Seller Panel</span>
+                  </Link>
+              }
+                {user?.role === "warehouse_staff" &&
+              <Link to="/warehouse-staff" className="navbar-link">
+                    <span>Warehouse</span>
+                  </Link>
+              }
                 {isRealAdmin &&
               <Link to="/cashier" className="navbar-link">
                     {t("navbar.pos")}
@@ -277,24 +305,34 @@ const Navbar = () => {
                   <span>{t("ui.sidebar.menu.dashboard")}</span>
                 </Link>
               }
-              {isDriverArea &&
+              {(isDriverArea || (user?.role === 'driver' && !isDriverArea)) &&
               <Link to={driverHomePath} className="navbar-link admin-link">
-                  <span>{t("navbar.driver")}</span>
+                  <span>{t("navbar.driver")} Dashboard</span>
                 </Link>
               }
-              {isSupportAgentArea &&
+              {(isSupportAgentArea || (user?.role === 'support_agent' && !isSupportAgentArea)) &&
               <Link to={supportAgentHomePath} className="navbar-link admin-link">
-                  <span>Support Agent</span>
+                  <span>Support Agent Dashboard</span>
                 </Link>
               }
-              {isSupportManagerArea &&
+              {(isSupportManagerArea || (user?.role === 'support_manager' && !isSupportManagerArea)) &&
               <Link to={supportManagerHomePath} className="navbar-link admin-link">
-                  <span>Support Manager</span>
+                  <span>Support Manager Dashboard</span>
                 </Link>
               }
-              {isCashierArea &&
+              {(isCashierArea || (user?.role === 'cashier' && !isCashierArea)) &&
               <Link to={cashierHomePath} className="navbar-link admin-link">
-                  <span>{t("navbar.cashier")}</span>
+                  <span>{t("navbar.cashier")} Dashboard</span>
+                </Link>
+              }
+              {(isSellerArea || (user?.role === 'seller' && !isSellerArea)) &&
+              <Link to={sellerHomePath} className="navbar-link admin-link">
+                  <span>Seller Dashboard</span>
+                </Link>
+              }
+              {(isWarehouseStaffArea || (user?.role === 'warehouse_staff' && !isWarehouseStaffArea)) &&
+              <Link to="/warehouse-staff" className="navbar-link admin-link">
+                  <span>Warehouse Dashboard</span>
                 </Link>
               }
               <div className="navbar-user" ref={profileDropdownRef}>

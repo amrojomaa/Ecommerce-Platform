@@ -37,7 +37,10 @@ const SUPPORT_MANAGER_MENU_ITEMS = [
 
 
 const WAREHOUSE_MANAGER_MENU_ITEMS = [
-{ path: '/warehouse/products', labelKey: 'ui.sidebar.menu.products', icon: '📦' }];
+{ path: '/warehouse', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
+{ path: '/warehouse/inventory', labelKey: 'Inventory', icon: '📦' },
+{ path: '/warehouse/approvals', labelKey: 'Approvals', icon: '✅' },
+{ path: '/warehouse/issues', labelKey: 'Issues', icon: '⚠️' }];
 
 
 const getStorageKey = (userId) => `admin-sidebar-order:${userId || 'default'}`;

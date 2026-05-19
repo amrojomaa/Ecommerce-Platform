@@ -102,7 +102,10 @@ def get_all_tickets(
     current_user = Depends(require_admin_or_support_manager)
 ):
     """Get all tickets - Admin/Support Manager."""
-    query = db.query(models.DBTicket)
+    query = db.query(models.DBTicket).options(
+        joinedload(models.DBTicket.customer),
+        joinedload(models.DBTicket.employee)
+    )
     
     if status_filter:
         if status_filter not in ["In Progress", "Resolved", "Closed"]:
@@ -243,6 +246,7 @@ def assign_ticket(
         )
     
     ticket.employee_id = assignment.employee_id
+    ticket.status = "In Progress"
     ticket.assigned_by = manager_user.id
     ticket.assigned_at = datetime.now(timezone.utc)
     ticket.updated_at = datetime.now(timezone.utc)
@@ -310,11 +314,17 @@ async def add_ticket_response(
     
     # Check permissions: customer can respond to their own, support agent can respond to assigned,
     # admin/support manager can respond to any.
-    if user.role == "customer" and ticket.customer_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only respond to your own tickets"
-        )
+    if user.role == "customer":
+        if ticket.customer_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only respond to your own tickets"
+            )
+        if ticket.status in ["Resolved", "Closed"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot respond because this ticket is {ticket.status}"
+            )
     elif user.role == "support_agent" and ticket.employee_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -410,8 +420,11 @@ def create_chat_ticket(
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     
     # Validate access
-    if user.role == "customer" and ticket.customer_id != user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if user.role == "customer":
+        if ticket.customer_id != user.id:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        if ticket.status in ["Resolved", "Closed"]:
+            raise HTTPException(status_code=400, detail=f"Cannot chat because ticket is {ticket.status}")
     elif user.role == "support_agent" and ticket.employee_id != user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     elif user.role not in ["admin", "support_manager", "support_agent", "customer"]:
@@ -459,9 +472,10 @@ async def websocket_ticket_chat(websocket: WebSocket, ticket_id: int, token: str
             return
             
         # Check access
-        if user.role == "customer" and ticket.customer_id != user.id:
-            await websocket.close(code=1008)
-            return
+        if user.role == "customer":
+            if ticket.customer_id != user.id or ticket.status in ["Resolved", "Closed"]:
+                await websocket.close(code=1008)
+                return
         elif user.role == "support_agent" and ticket.employee_id != user.id:
             await websocket.close(code=1008)
             return
@@ -599,9 +613,10 @@ def get_unread_ticket_count(
 def delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(require_admin_or_support_manager)
+    current_user: int = Depends(OAuth2.get_current_user)
 ):
-    """Delete a ticket - Admin/Support Manager."""
+    """Delete a ticket - Admin/Support Manager, Support Agent (assigned), or Customer (owner)."""
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
     
     if not ticket:
@@ -609,6 +624,16 @@ def delete_ticket(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ticket not found"
         )
+    
+    if user.role == "customer" and ticket.customer_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own tickets")
+    elif user.role == "support_agent" and ticket.employee_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete tickets assigned to you")
+    elif user.role not in ["admin", "support_manager", "support_agent", "customer"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this ticket")
+    
+    if user.role in ["support_agent", "support_manager"] and ticket.status in ["Resolved", "Closed"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Support staff cannot delete {ticket.status} tickets")
     
     db.delete(ticket)
     db.commit()
@@ -622,7 +647,7 @@ def request_delete_ticket(
     db: Session = Depends(get_db),
     current_user: int = Depends(OAuth2.get_current_user)
 ):
-    """Request deletion of a ticket - Support Agent only"""
+    """Request deletion of a ticket - Support Agent only (now deletes directly)"""
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     
     if user.role != "support_agent":
@@ -646,13 +671,16 @@ def request_delete_ticket(
             detail="You can only request deletion of tickets assigned to you"
         )
     
-    ticket.pending_delete = True
-    ticket.delete_requested_by = current_user.id
-    ticket.delete_requested_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(ticket)
+    if ticket.status in ["Resolved", "Closed"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Support staff cannot delete {ticket.status} tickets"
+        )
     
-    return {"message": "Delete request submitted successfully", "ticket": ticket}
+    db.delete(ticket)
+    db.commit()
+    
+    return {"message": "Ticket deleted successfully", "ticket": None}
 
 
 @router.get("/tickets/pending-deletes", response_model=List[schemas.TicketBase])

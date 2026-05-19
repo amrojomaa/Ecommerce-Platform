@@ -24,10 +24,22 @@ const SupportManagerDashboard = () => {
     setLoading(true);
     try {
       const [ticketsRes, commentsRes, feedbackRes, usersRes] = await Promise.all([
-        http.get(TICKET_ENDPOINTS.ALL),
-        http.get(COMMENT_ENDPOINTS.ALL, { params: { is_reported: true } }),
-        http.get(FEEDBACK_ENDPOINTS.ALL, { params: { limit: 100 } }),
-        http.get(USER_ENDPOINTS.ALL)
+        http.get(TICKET_ENDPOINTS.ALL).catch(err => {
+          console.error("Error fetching tickets:", err);
+          return { data: [] };
+        }),
+        http.get(COMMENT_ENDPOINTS.ALL, { params: { is_reported: true } }).catch(err => {
+          console.error("Error fetching comments:", err);
+          return { data: [] };
+        }),
+        http.get(FEEDBACK_ENDPOINTS.ALL, { params: { limit: 100 } }).catch(err => {
+          console.error("Error fetching feedback:", err);
+          return { data: [] };
+        }),
+        http.get(USER_ENDPOINTS.ALL).catch(err => {
+          console.error("Error fetching users:", err);
+          return { data: [] };
+        })
       ]);
 
       const tickets = ticketsRes.data || [];

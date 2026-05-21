@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import cast, Date, func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app import models, schemas, utils
-from app.database import get_db
-from app.routers.admin import require_cashier
+from .. import models, schemas, utils
+from ..database import get_db
+from .admin import require_cashier, require_admin_or_operations_manager
 from app.routers.products import get_product_with_images
 from app.services import promotion_engine
 
@@ -22,10 +22,15 @@ router = APIRouter(prefix="/pos", tags=["POS"])
 def _ensure_walkin_user(db: Session) -> models.DBUser:
     u = db.query(models.DBUser).filter(models.DBUser.email == WALKIN_EMAIL).first()
     if u:
+        if u.role != "walkin":
+            u.role = "walkin"
+            db.commit()
+            db.refresh(u)
         return u
     legacy = db.query(models.DBUser).filter(models.DBUser.email == _LEGACY_WALKIN_EMAIL).first()
     if legacy:
         legacy.email = WALKIN_EMAIL
+        legacy.role = "walkin"
         db.commit()
         db.refresh(legacy)
         return legacy
@@ -34,7 +39,7 @@ def _ensure_walkin_user(db: Session) -> models.DBUser:
         password=utils.hash(secrets.token_urlsafe(32)),
         first_name="Walk-in",
         last_name="Customer",
-        role="customer",
+        role="walkin",
         provider="email",
         is_verified=True,
     )
@@ -155,6 +160,7 @@ def create_pos_sale(
         payment_method=body.payment_method,
         promotion_discount=float(summary["promotion_discount"]),
         promotion_name=(summary["applied_promotion"]["name"] if summary["applied_promotion"] else None),
+        customer_name=body.customer_name,
     )
     db.add(new_order)
     db.flush()
@@ -222,6 +228,42 @@ def pos_my_sales_today(
             promotion_name=o.promotion_name,
             payment_method=o.payment_method,
             status=o.status,
+            customer_name=o.customer_name,
+        )
+        for o in rows
+    ]
+
+@router.get("/sales/all/today", response_model=List[schemas.POSSaleSummaryRow])
+def pos_all_sales_today(
+    db: Session = Depends(get_db),
+    _admin_user: models.DBUser = Depends(require_admin_or_operations_manager),
+):
+    rows = (
+        db.query(models.DBOrder)
+        .options(joinedload(models.DBOrder.cashier))
+        .filter(
+            models.DBOrder.sale_channel == "pos",
+            cast(models.DBOrder.created_at, Date) == func.current_date(),
+        )
+        .order_by(models.DBOrder.created_at.desc())
+        .all()
+    )
+    return [
+        schemas.POSSaleSummaryRow(
+            id=o.id,
+            created_at=o.created_at,
+            total_amount=o.total_amount,
+            promotion_discount=float(o.promotion_discount or 0),
+            promotion_name=o.promotion_name,
+            payment_method=o.payment_method,
+            status=o.status,
+            customer_name=o.customer_name,
+            cashier=schemas.OrderCashierInfo(
+                id=o.cashier.id,
+                email=o.cashier.email,
+                first_name=o.cashier.first_name,
+                last_name=o.cashier.last_name
+            ) if o.cashier else None
         )
         for o in rows
     ]

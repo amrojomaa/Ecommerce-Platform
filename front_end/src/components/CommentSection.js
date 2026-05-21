@@ -1,4 +1,4 @@
-import { tUi } from "../i18n/uiText";
+﻿import { tUi } from "../i18n/uiText";
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import http from '../services/http';

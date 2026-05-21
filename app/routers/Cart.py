@@ -3,8 +3,8 @@ from fastapi import HTTPException, status, Response, Depends, Security
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from ..database import get_db
-from app import models, schemas
-from app import OAuth2
+from .. import models, schemas
+from .. import OAuth2
 from app.services import promotion_engine
 
 
@@ -15,6 +15,7 @@ def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
     has_discount = discounted_price < original_price
     return {
         "id": cart_item.id,
+        "cart_id": cart_item.cart_id,
         "quantity": cart_item.quantity,
         "total": float(cart_item.total),
         "product": {
@@ -143,10 +144,18 @@ def show_me_cart(db: Session = Depends(get_db), current_user: schemas.User = Dep
 
     cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
     if not cart:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart not found")
+        return {
+            "cart_id": None,
+            "items": [],
+            "subtotal": 0.0,
+            "promotion_discount": 0.0,
+            "applied_promotion": None,
+            "grand_total": 0.0
+        }
     
     if not cart.items:
         return {
+            "cart_id": cart.id,
             "items": [],
             "subtotal": 0.0,
             "promotion_discount": 0.0,
@@ -159,6 +168,7 @@ def show_me_cart(db: Session = Depends(get_db), current_user: schemas.User = Dep
     totals = _get_cart_totals(db, cart.items)
 
     return {
+        "cart_id": cart.id,
         "items": cart_items,
         **totals
     }

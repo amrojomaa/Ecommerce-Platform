@@ -3,8 +3,8 @@ from fastapi import HTTPException, status, Depends
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from ..database import get_db
-from app import models, schemas
-from app import OAuth2
+from .. import models, schemas
+from .. import OAuth2
 
 
 def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem) -> dict:

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+﻿from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
@@ -545,6 +545,8 @@ class AdminOrderResponse(BaseModel):
     sale_channel: str = "online"
     payment_method: Optional[str] = None
     cashier: Optional[OrderCashierInfo] = None
+    customer_name: Optional[str] = None
+    warehouse_issues: Optional[List["WarehouseIssueResponse"]] = None
 
     class Config:
         from_attributes = True
@@ -1379,3 +1381,42 @@ class InstallmentCancelPayload(BaseModel):
 class InstallmentRequestUpdatePayload(BaseModel):
     duration_months: Optional[int] = None
     user_note: Optional[str] = None
+
+
+class OrderItemVerificationUpdate(BaseModel):
+    order_item_id: int
+    verified: bool
+
+
+class WarehouseIssueCreate(BaseModel):
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+
+
+class WarehouseIssueResolve(BaseModel):
+    resolution_note: str
+
+
+class WarehouseIssueBase(BaseModel):
+    order_id: int
+    order_item_id: Optional[int] = None
+    issue_type: str
+    description: str
+    reported_by: Optional[int] = None
+    status: str
+    resolved_by: Optional[int] = None
+    resolved_at: Optional[datetime] = None
+    resolution_note: Optional[str] = None
+
+
+class WarehouseIssueResponse(WarehouseIssueBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProductStockUpdate(BaseModel):
+    quantity: int

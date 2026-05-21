@@ -1,4 +1,4 @@
-import { tUi } from "../i18n/uiText";import React from 'react';
+﻿import { tUi } from "../i18n/uiText";import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -240,7 +240,7 @@ const Cart = () => {
               aria-label={tUi("ui.pages.cart.removeItem_0cc61ca1e3")}
               disabled={loading}>
               
-                  ×
+                  ├ù
                 </button>
               </motion.div>
           )}

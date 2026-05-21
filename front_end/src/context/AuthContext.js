@@ -609,8 +609,9 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'warehouse_manager';
   };
 
-  const isEmployee = () => {
-    return user?.role === 'employee' || user?.role === 'admin';
+  const isSupportAgent = () => {
+    const r = user?.role;
+    return r === 'support_agent' || r === 'support_manager' || r === 'admin';
   };
 
   const isDriver = () => {
@@ -621,6 +622,14 @@ export const AuthProvider = ({ children }) => {
   const isCashier = () => {
     const r = user?.role;
     return r === 'cashier' || r === 'admin';
+  };
+
+  const isSeller = () => {
+    return user?.role === 'seller';
+  };
+
+  const isWarehouseStaff = () => {
+    return user?.role === 'warehouse_staff';
   };
 
   const value = {
@@ -636,9 +645,11 @@ export const AuthProvider = ({ children }) => {
     isOperationsManager,
     isSupportManager,
     isWarehouseManager,
-    isEmployee,
+    isSupportAgent,
     isDriver,
     isCashier,
+    isSeller,
+    isWarehouseStaff,
     fetchUserInfo,
     forgotPassword,
     verifyResetCode,

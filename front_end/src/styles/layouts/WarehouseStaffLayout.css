@@ -1,0 +1,27 @@
+.ws-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-layout-body {
+  display: flex;
+  flex: 1;
+  margin-top: 70px;
+}
+
+.ws-layout-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--background, #f5f7fa);
+  margin-left: 250px;
+  min-height: calc(100vh - 70px);
+}
+
+@media (max-width: 768px) {
+  .ws-layout-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}

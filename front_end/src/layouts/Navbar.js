@@ -29,6 +29,16 @@ const Navbar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef(null);
+  const isAdminArea = location.pathname.startsWith('/admin');
+  const isDriverArea = location.pathname.startsWith('/driver');
+  const isCashierArea = location.pathname.startsWith('/cashier');
+  const isSupportAgentArea = location.pathname.startsWith('/support-agent');
+  const isSupportManagerArea = location.pathname.startsWith('/support') && !location.pathname.startsWith('/support-agent');
+  const isSellerArea = location.pathname.startsWith('/seller');
+  const isWarehouseStaffArea = location.pathname.startsWith('/warehouse-staff');
+  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse-manager');
+  const isUserRestrictedByRole = user && (user.role === 'seller' || user.role === 'warehouse_staff' || user.role === 'warehouse_manager' || user.role === 'cashier' || user.role === 'driver' || user.role === 'support_agent' || user.role === 'support_manager');
+  const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
 
   const handleLogout = () => {
     logout();
@@ -42,8 +52,27 @@ const Navbar = () => {
   const isRealAdmin = user?.role === 'admin';
   const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
   const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
-  const supportPanelPath = '/support/tickets';
+  const supportPanelPath = '/support';
   const warehousePanelPath = '/warehouse/products';
+  const adminHomePath = '/admin';
+  const driverHomePath = '/driver';
+  const cashierHomePath = '/cashier';
+  const supportAgentHomePath = '/support-agent';
+  const supportManagerHomePath = '/support';
+  const sellerHomePath = '/seller';
+
+  const getDashboardHomePath = () => {
+    if (!user) return '/';
+    if (user.role === 'admin' || user.role === 'operations_manager') return adminHomePath;
+    if (user.role === 'driver') return driverHomePath;
+    if (user.role === 'cashier') return cashierHomePath;
+    if (user.role === 'support_agent') return supportAgentHomePath;
+    if (user.role === 'support_manager') return supportManagerHomePath;
+    if (user.role === 'warehouse_manager') return '/warehouse';
+    if (user.role === 'seller') return sellerHomePath;
+    if (user.role === 'warehouse_staff') return '/warehouse-staff';
+    return '/';
+  };
 
   useEffect(() => {
     if (location.pathname === '/products') {
@@ -150,12 +179,13 @@ const Navbar = () => {
   return (
     <nav className={`navbar ${isDarkMode ? 'dark' : ''}`}>
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
+        <Link to={isRestrictedArea ? getDashboardHomePath() : '/'} className="navbar-logo">
           <span style={{ display: 'inline-block' }}>
             {t("app.brand")}
           </span>
         </Link>
 
+        {!isRestrictedArea &&
         <form className="navbar-search" onSubmit={handleSearchSubmit}>
           <input
             type="text"
@@ -166,97 +196,145 @@ const Navbar = () => {
           
           <button type="submit">{t("navbar.searchButton")}</button>
         </form>
+        }
 
         <div className="navbar-menu">
+          {!isRestrictedArea &&
           <Link to="/products" className="navbar-link">
             {t("navbar.products")}
           </Link>
+          }
           
           {isAuthenticated ?
           <>
-              <Link to="/cart" className="navbar-link cart-link">
-                {/* Cart
-                {cartItemCount > 0 && (
-                <span className="cart-badge">{cartItemCount}</span>
-                )} */}
-                <div className="cart-icon-wrapper">
-                  <FaShoppingCart className="cart-icon" />
-                  {cartItemCount > 0 &&
-                <span className="cart-badge">{cartItemCount}</span>
+              {!isRestrictedArea &&
+              <>
+                <Link to="/cart" className="navbar-link cart-link">
+                  <div className="cart-icon-wrapper">
+                    <FaShoppingCart className="cart-icon" />
+                    {cartItemCount > 0 &&
+                  <span className="cart-badge">{cartItemCount}</span>
+                  }
+                  </div>
+                </Link>
+                <Link to="/wishlist" className="navbar-link wishlist-link">
+                  <div className="wishlist-icon-wrapper">
+                    <FaHeart className="wishlist-icon" />
+                    {wishlistItemCount > 0 &&
+                  <span className="wishlist-badge">{wishlistItemCount}</span>
+                  }
+                  </div>
+                </Link>
+                <Link to="/recommendations" className="navbar-link">
+                  {t("navbar.forYou")}
+                </Link>
+                <Link to="/orders" className="navbar-link">
+                  {t("navbar.myOrders")}
+                </Link>
+                {user?.role === "customer" &&
+              <Link to="/installments" className="navbar-link">
+                    {t("navbar.installments")}
+                  </Link>
+              }
+                {user?.role === "customer" &&
+              <Link to="/tickets" className="navbar-link">
+                    <span>{t("navbar.tickets")}</span>
+                    {unreadTicketsCount > 0 &&
+                <span className="admin-badge">{unreadTicketsCount}</span>
                 }
-                </div>
-              </Link>
-              <Link to="/wishlist" className="navbar-link wishlist-link">
-                <div className="wishlist-icon-wrapper">
-                  <FaHeart className="wishlist-icon" />
-                  {wishlistItemCount > 0 &&
-                <span className="wishlist-badge">{wishlistItemCount}</span>
+                  </Link>
+              }
+                {checkIsAdmin() &&
+              <Link to={adminPanelPath} className="navbar-link admin-link">
+                    <span>{adminPanelLabel}</span>
+                    {unreadTicketsCount > 0 &&
+                <span className="admin-badge">{unreadTicketsCount}</span>
                 }
-                </div>
-              </Link>
-              <Link to="/recommendations" className="navbar-link">
-                {t("navbar.forYou")}
-              </Link>
-              <Link to="/orders" className="navbar-link">
-                {t("navbar.myOrders")}
-              </Link>
-              {user?.role === "customer" &&
-            <Link to="/installments" className="navbar-link">
-                  {t("navbar.installments")}
-                </Link>
-            }
-              {user?.role === "customer" &&
-            <Link to="/tickets" className="navbar-link">
-                  <span>{t("navbar.tickets")}</span>
-                  {unreadTicketsCount > 0 &&
-              <span className="admin-badge">{unreadTicketsCount}</span>
+                  </Link>
               }
-                </Link>
-            }
-              {checkIsAdmin() &&
-            <Link to={adminPanelPath} className="navbar-link admin-link">
-                  <span>{adminPanelLabel}</span>
-                  {unreadTicketsCount > 0 &&
-              <span className="admin-badge">{unreadTicketsCount}</span>
+                {checkIsSupportManager() &&
+              <Link to={supportPanelPath} className="navbar-link admin-link">
+                    <span>{t("navbar.supportManager")}</span>
+                    {unreadTicketsCount > 0 &&
+                <span className="admin-badge">{unreadTicketsCount}</span>
+                }
+                  </Link>
               }
-                </Link>
-            }
-              {checkIsSupportManager() &&
-            <Link to={supportPanelPath} className="navbar-link admin-link">
-                  <span>{t("navbar.supportManager")}</span>
-                  {unreadTicketsCount > 0 &&
-              <span className="admin-badge">{unreadTicketsCount}</span>
+                {checkIsWarehouseManager() &&
+              <Link to={warehousePanelPath} className="navbar-link admin-link">
+                    <span>{t("navbar.warehouseManager")}</span>
+                  </Link>
               }
-                </Link>
-            }
-              {checkIsWarehouseManager() &&
-            <Link to={warehousePanelPath} className="navbar-link admin-link">
-                  <span>{t("navbar.warehouseManager")}</span>
-                </Link>
-            }
-              {user?.role === "employee" && !checkIsAdmin() &&
-            <Link to="/employee" className="navbar-link">
-                  <span>{t("navbar.employee")}</span>
-                  {unreadTicketsCount > 0 &&
-              <span className="admin-badge">{unreadTicketsCount}</span>
+                {user?.role === "support_agent" && !checkIsAdmin() &&
+              <Link to="/support-agent" className="navbar-link">
+                    <span>{t("navbar.support_agent")}</span>
+                    {unreadTicketsCount > 0 &&
+                <span className="admin-badge">{unreadTicketsCount}</span>
+                }
+                  </Link>
               }
+                {user?.role === "driver" &&
+              <Link to="/driver" className="navbar-link">
+                    <span>{t("navbar.driver")}</span>
+                  </Link>
+              }
+                {user?.role === "cashier" &&
+              <Link to="/cashier" className="navbar-link">
+                    <span>{t("navbar.cashier")}</span>
+                  </Link>
+              }
+                {user?.role === "seller" &&
+              <Link to="/seller" className="navbar-link">
+                    <span>Seller Panel</span>
+                  </Link>
+              }
+                {user?.role === "warehouse_staff" &&
+              <Link to="/warehouse-staff" className="navbar-link">
+                    <span>Warehouse</span>
+                  </Link>
+              }
+                {isRealAdmin &&
+              <Link to="/cashier" className="navbar-link">
+                    {t("navbar.pos")}
+                  </Link>
+              }
+              </>
+              }
+              {isAdminArea &&
+              <Link to={adminHomePath} className="navbar-link admin-link">
+                  <span>{t("ui.sidebar.menu.dashboard")}</span>
                 </Link>
-            }
-              {user?.role === "driver" &&
-            <Link to="/driver" className="navbar-link">
-                  <span>{t("navbar.driver")}</span>
+              }
+              {(isDriverArea || (user?.role === 'driver' && !isDriverArea)) &&
+              <Link to={driverHomePath} className="navbar-link admin-link">
+                  <span>{t("navbar.driver")} Dashboard</span>
                 </Link>
-            }
-              {user?.role === "cashier" &&
-            <Link to="/cashier" className="navbar-link">
-                  <span>{t("navbar.cashier")}</span>
+              }
+              {(isSupportAgentArea || (user?.role === 'support_agent' && !isSupportAgentArea)) &&
+              <Link to={supportAgentHomePath} className="navbar-link admin-link">
+                  <span>Support Agent Dashboard</span>
                 </Link>
-            }
-              {isRealAdmin &&
-            <Link to="/cashier" className="navbar-link">
-                  {t("navbar.pos")}
+              }
+              {(isSupportManagerArea || (user?.role === 'support_manager' && !isSupportManagerArea)) &&
+              <Link to={supportManagerHomePath} className="navbar-link admin-link">
+                  <span>Support Manager Dashboard</span>
                 </Link>
-            }
+              }
+              {(isCashierArea || (user?.role === 'cashier' && !isCashierArea)) &&
+              <Link to={cashierHomePath} className="navbar-link admin-link">
+                  <span>{t("navbar.cashier")} Dashboard</span>
+                </Link>
+              }
+              {(isSellerArea || (user?.role === 'seller' && !isSellerArea)) &&
+              <Link to={sellerHomePath} className="navbar-link admin-link">
+                  <span>Seller Dashboard</span>
+                </Link>
+              }
+              {(isWarehouseStaffArea || (user?.role === 'warehouse_staff' && !isWarehouseStaffArea)) &&
+              <Link to="/warehouse-staff" className="navbar-link admin-link">
+                  <span>Warehouse Dashboard</span>
+                </Link>
+              }
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div
                 className="profile-image-wrapper"
@@ -357,43 +435,76 @@ const Navbar = () => {
 
       {mobileMenuOpen &&
       <div className="mobile-menu">
-          <form className="mobile-search" onSubmit={handleSearchSubmit}>
-            <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("navbar.searchPlaceholder")}
-            aria-label={t("navbar.searchAria")} />
-          
-            <button type="submit">{t("navbar.searchButton")}</button>
-          </form>
-          <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
-            {t("navbar.products")}
-          </Link>
+          {!isRestrictedArea &&
+          <>
+            <form className="mobile-search" onSubmit={handleSearchSubmit}>
+              <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t("navbar.searchPlaceholder")}
+              aria-label={t("navbar.searchAria")} />
+            
+              <button type="submit">{t("navbar.searchButton")}</button>
+            </form>
+            <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
+              {t("navbar.products")}
+            </Link>
+          </>
+          }
           {isAuthenticated ?
         <>
-              <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
-                {t("navbar.cart")} ({cartItemCount})
-              </Link>
-              <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
-                {t("navbar.wishlist")} ({wishlistItemCount})
-              </Link>
-              <Link to="/recommendations" onClick={() => setMobileMenuOpen(false)}>
-                {t("navbar.forYou")}
-              </Link>
-              <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
-                {t("navbar.myOrders")}
-              </Link>
-              {user?.role === "customer" &&
-          <Link to="/installments" onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.installments")}
+              {!isRestrictedArea &&
+              <>
+                <Link to="/cart" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.cart")} ({cartItemCount})
                 </Link>
-          }
-              {user?.role === "customer" &&
-          <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.tickets")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
+                <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.wishlist")} ({wishlistItemCount})
                 </Link>
-          }
+                <Link to="/recommendations" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.forYou")}
+                </Link>
+                <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.myOrders")}
+                </Link>
+                {user?.role === "customer" &&
+            <Link to="/installments" onClick={() => setMobileMenuOpen(false)}>
+                    {t("navbar.installments")}
+                  </Link>
+            }
+                {user?.role === "customer" &&
+            <Link to="/tickets" onClick={() => setMobileMenuOpen(false)}>
+                    {t("navbar.tickets")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
+                  </Link>
+            }
+              </>
+              }
+              {isAdminArea &&
+              <Link to={adminHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("ui.sidebar.menu.dashboard")}
+                </Link>
+              }
+              {isDriverArea &&
+              <Link to={driverHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.driver")}
+                </Link>
+              }
+              {isCashierArea &&
+              <Link to={cashierHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.cashier")}
+                </Link>
+              }
+              {isSupportAgentArea &&
+              <Link to={supportAgentHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  Support Agent
+                </Link>
+              }
+              {isSupportManagerArea &&
+              <Link to={supportManagerHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  Support Manager
+                </Link>
+              }
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                 {t("navbar.profile")}
               </Link>
@@ -429,9 +540,9 @@ const Navbar = () => {
                   {t("navbar.warehouseManager")}
                 </Link>
           }
-              {user?.role === "employee" && !checkIsAdmin() &&
-          <Link to="/employee" onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.employee")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
+              {user?.role === "support_agent" && !checkIsAdmin() &&
+          <Link to="/support-agent" onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.support_agent")} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
                 </Link>
           }
               {user?.role === "driver" &&

@@ -1,0 +1,27 @@
+.seller-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.seller-layout-body {
+  display: flex;
+  flex: 1;
+  margin-top: 70px;
+}
+
+.seller-layout-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--background, #f5f7fa);
+  margin-left: 250px;
+  min-height: calc(100vh - 70px);
+}
+
+@media (max-width: 768px) {
+  .seller-layout-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}

@@ -6,21 +6,25 @@ import LoadingSpinner from './LoadingSpinner';
 const ProtectedRoute = ({
   children,
   requireAdmin = false,
-  requireEmployee = false,
+  requireSupportAgent = false,
   requireDriver = false,
   requireCashier = false,
   requireSupportManager = false,
   requireWarehouseManager = false,
+  requireSeller = false,
+  requireWarehouseStaff = false,
 }) => {
   const {
     isAuthenticated,
     loading,
     isAdmin,
-    isEmployee,
+    isSupportAgent,
     isDriver,
     isCashier,
     isSupportManager,
     isWarehouseManager,
+    isSeller,
+    isWarehouseStaff,
   } = useAuth();
 
   if (loading) {
@@ -39,7 +43,7 @@ const ProtectedRoute = ({
     return <Navigate to="/" replace />;
   }
 
-  if (requireEmployee && isEmployee && typeof isEmployee === 'function' && !isEmployee()) {
+  if (requireSupportAgent && isSupportAgent && typeof isSupportAgent === 'function' && !isSupportAgent()) {
     return <Navigate to="/" replace />;
   }
 
@@ -56,6 +60,14 @@ const ProtectedRoute = ({
   }
 
   if (requireWarehouseManager && isWarehouseManager && typeof isWarehouseManager === 'function' && !isWarehouseManager()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireSeller && isSeller && typeof isSeller === 'function' && !isSeller()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireWarehouseStaff && isWarehouseStaff && typeof isWarehouseStaff === 'function' && !isWarehouseStaff()) {
     return <Navigate to="/" replace />;
   }
 

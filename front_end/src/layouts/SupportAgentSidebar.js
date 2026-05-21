@@ -5,25 +5,25 @@ import { useTheme } from '../hooks/useTheme';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import '../styles/layouts/Sidebar.css';
 
-const EmployeeSidebar = () => {
+const SupportAgentSidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { isDarkMode } = useTheme();
   const { unreadCount } = useUnreadTickets();
 
   const menuItems = [
-  { path: '/employee', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
-  { path: '/employee/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: '🎫' }];
+  { path: '/support-agent', labelKey: 'ui.sidebar.menu.support_agent_dashboard', icon: '📊' },
+  { path: '/support-agent/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: '🎫' }];
 
 
   return (
     <aside className={`sidebar ${isDarkMode ? 'dark' : ''}`}>
       <div className="sidebar-header">
-        <h2>{t('ui.sidebar.panel.employee')}</h2>
+        <h2>{t('ui.sidebar.panel.support_agent')}</h2>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
-          const isTickets = item.path === '/employee/tickets';
+          const isTickets = item.path === '/support-agent/tickets';
           return (
             <Link
               key={item.path}
@@ -43,4 +43,4 @@ const EmployeeSidebar = () => {
 
 };
 
-export default EmployeeSidebar;
+export default SupportAgentSidebar;

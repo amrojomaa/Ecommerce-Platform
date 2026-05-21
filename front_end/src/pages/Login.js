@@ -23,7 +23,23 @@ const Login = () => {
     if (isAuthenticated) {
       try {
         const u = JSON.parse(localStorage.getItem('user') || '{}');
-        navigate(u.role === 'cashier' ? '/cashier' : '/');
+        if (u.role === 'cashier') {
+          navigate('/cashier');
+        } else if (u.role === 'seller') {
+          navigate('/seller');
+        } else if (u.role === 'warehouse_staff') {
+          navigate('/warehouse-staff');
+        } else if (u.role === 'warehouse_manager') {
+          navigate('/warehouse');
+        } else if (u.role === 'support_manager') {
+          navigate('/support');
+        } else if (u.role === 'support_agent') {
+          navigate('/support-agent');
+        } else if (u.role === 'admin' || u.role === 'operations_manager') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } catch {
         navigate('/');
       }

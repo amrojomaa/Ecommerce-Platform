@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import text
-from app.database import get_db
-from app.routers.admin import require_admin
-from app import models, schemas
+from ..database import get_db
+from .admin import require_admin
+from .. import models, schemas, OAuth2
 
 router = APIRouter(
     prefix="/admin/settings",
@@ -14,7 +14,7 @@ router = APIRouter(
 @router.get("/low-stock-threshold", response_model=schemas.LowStockThresholdResponse)
 def get_low_stock_threshold(
     db: Session = Depends(get_db),
-    admin_user = Depends(require_admin)
+    current_user = Depends(OAuth2.get_current_user)
 ):
     """Get the current low stock threshold setting"""
     setting = db.query(models.DBAdminSettings).filter(

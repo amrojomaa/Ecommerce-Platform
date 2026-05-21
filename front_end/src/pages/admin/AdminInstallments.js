@@ -309,7 +309,7 @@ const AdminInstallments = () => {
                   </div>
             }
 
-                {selectedRequest.status !== "completed" && selectedRequest.status !== "cancelled" &&
+                {selectedRequest.status !== "completed" && selectedRequest.status !== "cancelled" && selectedRequest.status !== "approved" &&
             <div className="review-section">
                     <button
                 className="btn-cancel-request"

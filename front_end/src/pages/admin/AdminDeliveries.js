@@ -6,6 +6,7 @@ import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate, formatDateTime, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useCurrency } from '../../hooks/useCurrency';
+import OrderMapTracker from '../../components/OrderMapTracker';
 import '../../styles/pages/admin/AdminDeliveries.css';
 
 const DELIVERY_STATUS_LABEL_KEYS = {
@@ -22,7 +23,7 @@ const ROLE_LABEL_KEYS = {
   support_manager: 'ui.pages.admin.adminUsers.supportManager_2a7bb3b941',
   operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
   warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
-  employee: 'ui.pages.admin.adminUsers.employee_bdab2112d6',
+  support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
   driver: 'ui.pages.admin.adminUsers.driver_533424916e',
   customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
   cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
@@ -441,6 +442,9 @@ const AdminDeliveries = () => {
                   <tr className="expanded-row">
                       <td colSpan="8">
                         <div className="job-expanded-details">
+                          <div className="tracking-map-section" style={{ marginBottom: '20px' }}>
+                            <OrderMapTracker deliveryJob={job} />
+                          </div>
                           <>
                           <div className="expanded-grid">
                             <div className="detail-card">

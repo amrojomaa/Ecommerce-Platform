@@ -1,0 +1,55 @@
+---
+description: Premium e-commerce design system — Home page is the canonical UI reference
+alwaysApply: true
+---
+
+# Home Page Design System (Canonical Reference)
+
+When building or updating UI, match the Home page design language in `front_end/src/pages/Home.js` and `front_end/src/styles/pages/Home.css`. Use tokens from `front_end/src/styles/App.css`.
+
+## Typography
+- **UI/body:** Space Grotesk
+- **Headlines:** Fraunces (hero h1, section h2, card titles)
+- **Kickers:** uppercase, `letter-spacing: 0.18–0.2em`, `0.75–0.95rem`, semibold, primary or accent color
+- **Section titles:** ~`2.2rem`, `-0.02em` letter-spacing
+- **Subtitles:** `var(--text-secondary)`, max-width ~640px
+
+## Color & tokens
+- Use CSS variables (`--primary-color`, `--surface`, `--text-primary`, etc.) — never hardcode where a token exists
+- **Primary blue:** `#2563eb` / hover `#1d4ed8`
+- **Navy base:** `#0f172a` (hero, dark glass overlays)
+- **Discount accent:** `#dc2626` (kicker, sale price); dark mode `#f87171`
+- **Hero:** navy→blue gradient, white text, glass secondary buttons
+
+## Section layout
+- Page sections: vertical stack with `gap: 4rem`
+- **Header pattern:** kicker → Fraunces title → subtitle; optional pill CTA aligned right on desktop (grid areas: kicker / title+cta / subtitle)
+- **Content sections** (Categories, Discounts, Featured): no band backgrounds — sit on page background
+- **Promo band** may keep subtle gradient; hero keeps full gradient treatment
+- **Products page promo:** top row opposite page title — `products-promo-band` with kicker (e.g. “Promotion available”) + message body; match Home `.promo-band` gradient, radius `1.5rem`, border + shadow
+- Section anchors: `scroll-margin-top: 5rem`
+
+## Cards & grids
+- Cards: `var(--surface)` bg, `1px solid var(--border-color)`, `border-radius: 1–1.2rem`, `var(--shadow)`
+- Hover: lift (`translateY(-4px to -6px)`), stronger shadow, tinted border
+- Grids: `repeat(auto-fill, minmax(...))` with capped max widths; `justify-content: start`
+- Use **page-scoped class prefixes** (`home-*`) to avoid CSS collisions with Admin/Products pages
+
+## Image overlays (Featured & Discounts)
+- **Light mode:** white frosted pill (`rgba(255,255,255,0.92)`) + dark text `#0f172a`
+- **Dark mode (`.dark`):** dark glass pill (`rgba(15,23,42,0.82)`) + light text `#f8fafc`
+- Discount badge: red pill top-right; category pill top-left
+
+## Motion & UX
+- Transitions: `0.3s ease` for hover; Framer Motion for section entrance
+- CTAs: pill shape (`border-radius: 999px`), primary fill, arrow icon slides on hover
+- RTL: mirror left/right positioning and arrow directions
+
+## Dark mode
+- Override band gradients, discount reds, and image-overlay pills in page CSS under `.dark`
+- Never use `var(--text-primary)` on white/light overlay backgrounds in dark mode
+
+## When extending
+- Reuse existing patterns before inventing new ones
+- New pages should feel like Home: premium, soft corners, subtle depth, restrained motion
+- Check for global CSS class name conflicts before adding shared-looking class names

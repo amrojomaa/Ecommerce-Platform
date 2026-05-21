@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import http from '../../services/http';
 import { WAREHOUSE_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/warehouse-staff/WarehouseStaffDashboard.css';
 
 const WarehouseStaffDashboard = () => {
@@ -40,9 +41,10 @@ const WarehouseStaffDashboard = () => {
   }, [fetchData]);
 
   if (loading) {
-    return <div className="ws-dashboard-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading ws-dashboard-loading"><LoadingSpinner size="large" /></div>;
   }
 
+  const wsDashTitle = 'Warehouse Dashboard';
   const statCards = [
     { title: 'Orders to Pack', value: stats.preparingCount, icon: '📋', color: '#f59e0b' },
     { title: 'Packed / Done', value: stats.packedCount, icon: '✅', color: '#16a34a' },
@@ -54,8 +56,8 @@ const WarehouseStaffDashboard = () => {
   };
 
   return (
-    <div className="ws-dashboard">
-      <h1>Warehouse Dashboard</h1>
+    <div className="admin-page-shell ws-dashboard">
+      <PageHeader kicker={wsDashTitle} title={wsDashTitle} />
 
       <div className="ws-stats-grid">
         {statCards.map((stat, index) => (

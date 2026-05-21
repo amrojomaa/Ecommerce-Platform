@@ -1,10 +1,12 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const VerifyResetCode = () => {
   const navigate = useNavigate();
@@ -132,43 +134,42 @@ const VerifyResetCode = () => {
   }
 
   return (
-    <div className="auth-page">
+    <div className="page-shell verify-reset-code-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.verifyResetCode.verifyResetCode_4118199b66")}</h1>
+        <PageHeader
+          kicker={tUi("ui.pages.verifyResetCode.verifyResetCode_4118199b66")}
+          title={tUi("ui.pages.verifyResetCode.verifyResetCode_4118199b66")}
+          className="auth-page-header"
+          animate={false}
+        />
         {providedCode ?
         <>
-            <p style={{ color: '#e67e22', marginBottom: '10px', fontWeight: 'bold' }}>{tUi("ui.pages.verifyResetCode.emailServiceNotConfigured_367dd7e92d")}
+            <p className="auth-inline-notice auth-inline-notice--warning">{tUi("ui.pages.verifyResetCode.emailServiceNotConfigured_367dd7e92d")}
 
           </p>
-            <p>{tUi("ui.pages.verifyResetCode.useTheVerificationCodeBelow_5e39b94941")}</p>
-            <p style={{
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            color: '#3498db',
-            marginBottom: '20px',
-            letterSpacing: '0.5rem'
-          }}>
+            <p className="auth-body-text">{tUi("ui.pages.verifyResetCode.useTheVerificationCodeBelow_5e39b94941")}</p>
+            <p className="auth-code-display">
               {providedCode}
             </p>
           </> :
 
         <>
-            <p>{tUi("ui.pages.verifyResetCode.weVeSentA6_2e1b379629")}</p>
-            <p style={{ fontWeight: 'bold', marginBottom: '20px' }}>{email}</p>
+            <p className="auth-body-text">{tUi("ui.pages.verifyResetCode.weVeSentA6_2e1b379629")}</p>
+            <p className="auth-email-highlight">{email}</p>
           </>
         }
 
         {timeLeft > 0 ?
-        <p style={{ color: '#666', marginBottom: '30px' }}>{tUi("ui.pages.verifyResetCode.codeExpiresIn_71d0e59e29")}
+        <p className="auth-timer-msg auth-timer-msg--muted">{tUi("ui.pages.verifyResetCode.codeExpiresIn_71d0e59e29")}
           <strong>{formatTime(timeLeft)}</strong>
           </p> :
 
-        <p style={{ color: '#e74c3c', marginBottom: '30px' }}>{tUi("ui.pages.verifyResetCode.codeHasExpiredPleaseRequest_2d7fc2e562")}
+        <p className="auth-timer-msg auth-timer-msg--danger">{tUi("ui.pages.verifyResetCode.codeHasExpiredPleaseRequest_2d7fc2e562")}
 
         </p>
         }
@@ -193,14 +194,13 @@ const VerifyResetCode = () => {
             )}
           </div>
 
-          {error && <div className="error-message" style={{ marginTop: '15px' }}>{error}</div>}
+          {error && <div className="error-message auth-error-below-fields">{error}</div>}
 
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
-              disabled={loading || timeLeft === 0 || verificationCode.join('').length !== 6}
-              style={{ marginTop: '30px' }}>
+              className="page-btn-primary auth-full-width-btn auth-verify-submit"
+              disabled={loading || timeLeft === 0 || verificationCode.join('').length !== 6}>
               
               {loading ?
               <>
@@ -214,9 +214,9 @@ const VerifyResetCode = () => {
           </motion.div>
         </form>
 
-        <p className="auth-link" style={{ marginTop: '20px' }}>{tUi("ui.pages.verifyResetCode.didnTReceiveTheCode_fe6cf53a4a")}
+        <p className="auth-link auth-link-spaced">{tUi("ui.pages.verifyResetCode.didnTReceiveTheCode_fe6cf53a4a")}
           {' '}
-          <Link to="/forgot-password" style={{ color: '#3498db' }}>{tUi("ui.pages.verifyResetCode.requestAgain_fbf257db51")}
+          <Link to="/forgot-password" className="auth-inline-link">{tUi("ui.pages.verifyResetCode.requestAgain_fbf257db51")}
 
           </Link>
         </p>

@@ -7,6 +7,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { FaHeart, FaTrash } from 'react-icons/fa';
 import API_BASE_URL from '../config/api';
+import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
@@ -70,36 +71,41 @@ const Wishlist = () => {
 
   if (wishlistItems.length === 0) {
     return (
-      <div className="wishlist-page">
-        <div className="wishlist-container">
-          <h1>{tUi("ui.pages.wishlist.myWishlist_8547aa7391")}</h1>
-          <div className="empty-wishlist">
-            <FaHeart className="empty-icon" />
+      <div className="page-shell wishlist-page">
+        <PageHeader
+          kicker={tUi("ui.pages.wishlist.myWishlist_8547aa7391")}
+          title={tUi("ui.pages.wishlist.myWishlist_8547aa7391")}
+          subtitle={tUi("ui.pages.wishlist.startAddingProductsYouLove_1dae7ca234")}
+        />
+        <div className="page-empty empty-wishlist">
+            <FaHeart className="page-empty-icon empty-icon" />
             <h2>{tUi("ui.pages.wishlist.yourWishlistIsEmpty_25ded470c1")}</h2>
             <p>{tUi("ui.pages.wishlist.startAddingProductsYouLove_1dae7ca234")}</p>
-            <Link to="/products" className="browse-products-btn">{tUi("ui.pages.wishlist.browseProducts_69993227ec")}
+            <Link to="/products" className="page-btn-primary browse-products-btn">{tUi("ui.pages.wishlist.browseProducts_69993227ec")}
 
             </Link>
-          </div>
         </div>
       </div>);
 
   }
 
   return (
-    <div className="wishlist-page">
-      <div className="wishlist-container">
-        <div className="wishlist-header">
-          <h1>{tUi("ui.pages.wishlist.myWishlist_b191477b96")}{wishlistItems.length})</h1>
+    <div className="page-shell wishlist-page">
+      <PageHeader
+        kicker={tUi("ui.pages.wishlist.myWishlist_8547aa7391")}
+        title={`${tUi("ui.pages.wishlist.myWishlist_b191477b96")}${wishlistItems.length})`}
+        subtitle={tUi("ui.pages.wishlist.startAddingProductsYouLove_1dae7ca234")}
+        actions={
           <button
             type="button"
-            className="delete-all-btn"
+            className="page-btn-danger delete-all-btn"
             onClick={handleDeleteAll}
             disabled={loading || wishlistItems.length === 0}>{tUi("ui.pages.wishlist.deleteAll_6e9fe227ec")}
 
 
           </button>
-        </div>
+        }
+      />
         <div className="wishlist-grid">
           {wishlistItems.map((product, index) =>
           <motion.div
@@ -165,7 +171,6 @@ const Wishlist = () => {
             </motion.div>
           )}
         </div>
-      </div>
     </div>);
 
 };

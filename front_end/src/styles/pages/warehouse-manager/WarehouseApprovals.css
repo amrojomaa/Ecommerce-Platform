@@ -1,34 +1,191 @@
-.wm-approvals { max-width: 1200px; margin: 0 auto; }
-.wm-approvals h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.wm-approvals {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
 
-.wm-approval-card { background: white; border-radius: 16px; margin-bottom: 1rem; border: 1px solid rgba(0,0,0,0.06); overflow: hidden; transition: all 0.2s; }
-.wm-approval-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+.admin-page-shell.wm-approvals {
+  gap: 2.5rem;
+}
 
-.wm-approval-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem; cursor: pointer; }
-.wm-approval-header:hover { background: #fafafe; }
-.wm-approval-header-left { display: flex; align-items: center; gap: 1.25rem; }
-.wm-approval-id { font-weight: 700; font-size: 1rem; color: #1e293b; }
-.wm-approval-meta { font-size: 0.85rem; color: #64748b; }
-.wm-approval-header-right { display: flex; align-items: center; gap: 1rem; }
+.wm-approvals > h1,
+.wm-approvals .page-header h1 {
+  margin: 0;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+}
 
-.wm-approve-btn { padding: 0.55rem 1.25rem; background: linear-gradient(135deg, #16a34a, #15803d); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
-.wm-approve-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
-.wm-approve-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.wm-approval-card {
+  background: var(--surface);
+  border-radius: 1.2rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: var(--shadow);
+}
 
-.wm-approval-details { padding: 0 1.25rem 1.25rem; border-top: 1px solid #f1f5f9; }
-.wm-approval-items { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
-.wm-approval-item { display: flex; align-items: center; gap: 1rem; padding: 0.65rem 0.75rem; background: #f8fafc; border-radius: 10px; }
-.wm-approval-item img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; }
-.wm-approval-item-name { font-weight: 600; color: #1e293b; font-size: 0.9rem; }
-.wm-approval-item-meta { font-size: 0.8rem; color: #64748b; }
+.wm-approval-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
+}
 
-.wm-approvals-empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
-.wm-approvals-empty .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; }
-.wm-approvals-loading { display: flex; justify-content: center; align-items: center; min-height: 400px; }
+.wm-approval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  cursor: pointer;
+}
 
-.dark .wm-approval-card { background: #1e293b; border-color: rgba(255,255,255,0.08); }
-.dark .wm-approval-header:hover { background: #334155; }
-.dark .wm-approval-id, .dark .wm-approval-item-name { color: #f1f5f9; }
-.dark .wm-approval-meta, .dark .wm-approval-item-meta { color: #94a3b8; }
-.dark .wm-approval-item { background: #0f172a; }
-.dark .wm-approval-details { border-color: rgba(255,255,255,0.06); }
+.wm-approval-header:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.wm-approval-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.wm-approval-id {
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.wm-approval-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.wm-approval-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wm-approve-btn {
+  padding: 0.55rem 1.35rem;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wm-approve-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.wm-approve-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wm-approval-details {
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.wm-approval-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.wm-approval-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--background);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+.wm-approval-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+
+.wm-approval-item-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.wm-approval-item-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.wm-approvals-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+  background: var(--surface);
+}
+
+.wm-approvals-empty .empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.wm-approvals-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.dark .wm-approval-card {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+.dark .wm-approval-header:hover {
+  background: rgba(96, 165, 250, 0.08);
+}
+
+.dark .wm-approval-id,
+.dark .wm-approval-item-name {
+  color: var(--text-primary);
+}
+
+.dark .wm-approval-meta,
+.dark .wm-approval-item-meta {
+  color: var(--text-secondary);
+}
+
+.dark .wm-approval-item {
+  background: var(--background);
+  border-color: var(--border-color);
+}
+
+.dark .wm-approval-details {
+  border-color: var(--border-color);
+}

@@ -6,6 +6,7 @@ import http from '../../services/http';
 import { ORDER_ENDPOINTS } from '../../config/api';
 import { formatDate, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import OrderMapTracker from '../../components/OrderMapTracker';
 import '../../styles/pages/admin/AdminOrders.css';
@@ -179,44 +180,47 @@ const AdminOrders = () => {
 
   if (loading) {
     return (
-      <div className="admin-orders-loading">
+      <div className="page-loading admin-orders-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
-  return (
-    <div className="admin-orders">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>{tUi("ui.pages.admin.adminOrders.allOrders_4b39990b5b")}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <label htmlFor="status-filter" style={{ fontWeight: '500' }}>{tUi("ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa")}</label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={handleStatusFilterChange}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '4px',
-              border: '1px solid #ddd',
-              fontSize: '14px',
-              cursor: 'pointer',
-              minWidth: '150px'
-            }}>
+  const allOrdersTitle = tUi("ui.pages.admin.adminOrders.allOrders_4b39990b5b");
 
-            {orderStatuses.map((status) =>
-              <option key={status} value={status}>
-                {formatFilterLabel(status)}
-              </option>
-            )}
-          </select>
-          {statusFilter !== "all" &&
-            <span style={{ color: '#666', fontSize: '14px' }}>
-              ({orders.length} {orders.length === 1 ? tUi("ui.pages.admin.adminOrders.order_34aea86a72") : tUi("ui.pages.admin.adminOrders.orders_0e0e34ceea")})
-            </span>
-          }
-        </div>
-      </div>
+  return (
+    <div className="admin-page-shell admin-orders">
+      <PageHeader
+        kicker={allOrdersTitle}
+        title={allOrdersTitle}
+        actions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label htmlFor="status-filter" style={{ fontWeight: '500' }}>{tUi("ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa")}</label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                fontSize: '14px',
+                cursor: 'pointer',
+                minWidth: '150px'
+              }}>
+              {orderStatuses.map((status) =>
+                <option key={status} value={status}>
+                  {formatFilterLabel(status)}
+                </option>
+              )}
+            </select>
+            {statusFilter !== "all" &&
+              <span style={{ color: '#666', fontSize: '14px' }}>
+                ({orders.length} {orders.length === 1 ? tUi("ui.pages.admin.adminOrders.order_34aea86a72") : tUi("ui.pages.admin.adminOrders.orders_0e0e34ceea")})
+              </span>}
+          </div>
+        }
+      />
 
       {error ?
         <motion.div

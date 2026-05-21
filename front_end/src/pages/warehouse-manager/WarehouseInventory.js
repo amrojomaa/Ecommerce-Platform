@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/warehouse-manager/WarehouseInventory.css';
 
@@ -66,11 +67,13 @@ const WarehouseInventory = () => {
     }
   };
 
-  if (loading) return <div className="wm-inventory-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading wm-inventory-loading"><LoadingSpinner size="large" /></div>;
+
+  const inventoryTitle = 'Inventory Control';
 
   return (
-    <div className="wm-inventory">
-      <h1>Inventory Control</h1>
+    <div className="admin-page-shell wm-inventory">
+      <PageHeader kicker={inventoryTitle} title={inventoryTitle} />
       <div className="wm-inventory-filters">
         <input type="text" placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         <select value={stockFilter} onChange={e => setStockFilter(e.target.value)}>

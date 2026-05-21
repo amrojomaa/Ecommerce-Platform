@@ -5,6 +5,7 @@ import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate, formatDateTime, getImageUrl } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import OrderMapTracker from '../../components/OrderMapTracker';
 import '../../styles/pages/admin/AdminDeliveries.css';
@@ -245,14 +246,16 @@ const AdminDeliveries = () => {
 
   if (loading) {
     return (
-      <div className="admin-deliveries-loading">
+      <div className="page-loading admin-deliveries-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
+  const deliveryMgmtTitle = tUi("ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811");
+
   return (
-    <div className="admin-deliveries">
+    <div className="admin-page-shell admin-deliveries">
       {issueCount > 0 &&
       <div className="delivery-issue-notice" role="status" aria-live="polite">
           <div className="notice-icon-wrap" aria-hidden="true">
@@ -323,8 +326,10 @@ const AdminDeliveries = () => {
         </div>
       }
 
-      <div className="admin-deliveries-header">
-        <h1>{tUi("ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811")}</h1>
+      <PageHeader
+        kicker={deliveryMgmtTitle}
+        title={deliveryMgmtTitle}
+        actions={
         <div className="deliveries-filter">
           <label htmlFor="delivery-status-filter">{tUi("ui.pages.admin.adminDeliveries.filterByStatus_25f69a210d")}</label>
           <select
@@ -351,7 +356,8 @@ const AdminDeliveries = () => {
           <span className="issue-only-pill photo-only-pill">{tUi("ui.pages.admin.adminDeliveries.proofPhotosOnly_35ed213543")}</span>
           }
         </div>
-      </div>
+        }
+      />
 
       {error ?
       <motion.div

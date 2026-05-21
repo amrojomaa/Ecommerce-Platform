@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, WAREHOUSE_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/warehouse-manager/WarehouseManagerDashboard.css';
 
 const WarehouseManagerDashboard = () => {
@@ -47,8 +48,10 @@ const WarehouseManagerDashboard = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
-    return <div className="wm-dashboard-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading wm-dashboard-loading"><LoadingSpinner size="large" /></div>;
   }
+
+  const wmDashTitle = 'Warehouse Manager Dashboard';
 
   const statCards = [
     { title: 'Total Products', value: stats.totalProducts, icon: '📦', color: '#0ea5e9', path: '/warehouse/inventory' },
@@ -59,8 +62,8 @@ const WarehouseManagerDashboard = () => {
   ];
 
   return (
-    <div className="wm-dashboard">
-      <h1>Warehouse Manager Dashboard</h1>
+    <div className="admin-page-shell wm-dashboard">
+      <PageHeader kicker={wmDashTitle} title={wmDashTitle} />
       <div className="wm-stats-grid">
         {statCards.map((stat, i) => (
           <motion.div key={stat.title} className="wm-stat-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} whileHover={{ scale: 1.03 }} onClick={() => navigate(stat.path)}>

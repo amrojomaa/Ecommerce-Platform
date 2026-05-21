@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import http from '../../services/http';
 import { SELLER_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import API_BASE_URL from '../../config/api';
 import '../../styles/pages/seller/SellerOrders.css';
@@ -69,12 +70,14 @@ const SellerOrders = () => {
   };
 
   if (loading) {
-    return <div className="seller-orders-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading seller-orders-loading"><LoadingSpinner size="large" /></div>;
   }
 
+  const ordersTitle = 'Orders';
+
   return (
-    <div className="seller-orders">
-      <h1>Orders</h1>
+    <div className="admin-page-shell seller-orders">
+      <PageHeader kicker={ordersTitle} title={ordersTitle} />
 
       <div className="seller-orders-tabs">
         <button

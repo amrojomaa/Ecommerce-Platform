@@ -5,7 +5,9 @@
 }
 
 .active-job-page h1 {
-  font-size: 1.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 1.5rem;
 }
@@ -22,6 +24,8 @@
 }
 
 .no-active-job h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
@@ -33,19 +37,19 @@
 
 .btn-find-jobs {
   display: inline-block;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
+  background: var(--primary-color);
+  color: var(--background);
   padding: 0.75rem 2rem;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .btn-find-jobs:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-  color: white;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  color: var(--background);
 }
 
 /* Status Stepper */
@@ -56,8 +60,9 @@
   margin-bottom: 2rem;
   padding: 1.5rem;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .step {
@@ -83,15 +88,15 @@
 }
 
 .step.completed .step-circle {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: var(--success-color);
+  color: var(--background);
   font-size: 1.2rem;
 }
 
 .step.current .step-circle {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  background: var(--primary-color);
+  color: var(--background);
+  box-shadow: 0 0 0 4px var(--control-focus-ring);
 }
 
 .step-label {
@@ -115,7 +120,7 @@
 
 .step.completed + .step .step-connector,
 .step.completed .step-connector {
-  background: #10b981;
+  background: var(--success-color);
 }
 
 /* Layout */
@@ -126,9 +131,10 @@
 }
 
 .active-job-map {
-  border-radius: 12px;
+  border-radius: 1.2rem;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .active-map-view {
@@ -154,13 +160,23 @@
 .info-card {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   padding: 1.25rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .info-card h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.75rem 0;
   font-size: 0.95rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -179,21 +195,50 @@
 
 .status-badge {
   padding: 0.3rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
 }
 
-.status-assigned { background: #dbeafe; color: #1e40af; }
-.status-picked_up { background: #fef3c7; color: #92400e; }
-.status-delivering { background: #e0e7ff; color: #3730a3; }
-.status-delivered { background: #d1fae5; color: #065f46; }
+.status-assigned {
+  background: color-mix(in srgb, var(--primary-color) 18%, var(--surface));
+  color: var(--primary-color);
+}
+.status-picked_up {
+  background: color-mix(in srgb, var(--warning-color) 20%, var(--surface));
+  color: var(--warning-color);
+}
+.status-delivering {
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--surface));
+  color: var(--primary-hover);
+}
+.status-delivered {
+  background: color-mix(in srgb, var(--success-color) 18%, var(--surface));
+  color: var(--success-color);
+}
+
+.dark .status-assigned {
+  background: color-mix(in srgb, var(--primary-color) 22%, var(--surface));
+  color: var(--text-primary);
+}
+.dark .status-picked_up {
+  background: color-mix(in srgb, var(--warning-color) 22%, var(--surface));
+  color: var(--warning-color);
+}
+.dark .status-delivering {
+  background: color-mix(in srgb, var(--primary-color) 20%, var(--surface));
+  color: var(--text-primary);
+}
+.dark .status-delivered {
+  background: color-mix(in srgb, var(--success-color) 22%, var(--surface));
+  color: var(--success-color);
+}
 
 .info-payment {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #10b981;
+  color: var(--success-color);
 }
 
 .customer-name {
@@ -243,15 +288,15 @@
 }
 
 .photo-review-pill.pending {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.35);
-  color: #92400e;
+  background: color-mix(in srgb, var(--warning-color) 16%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning-color) 40%, var(--border-color));
+  color: var(--warning-color);
 }
 
 .photo-review-pill.approved {
-  background: rgba(16, 185, 129, 0.14);
-  border-color: rgba(16, 185, 129, 0.35);
-  color: #065f46;
+  background: color-mix(in srgb, var(--success-color) 16%, var(--surface));
+  border-color: color-mix(in srgb, var(--success-color) 40%, var(--border-color));
+  color: var(--success-color);
 }
 
 .proof-upload-block {
@@ -263,8 +308,10 @@
 }
 
 .proof-upload-block h4 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.45rem;
   font-size: 0.8rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -290,8 +337,10 @@
 }
 
 .uploaded-photos-wrap h4 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -326,7 +375,7 @@
 }
 
 .issue-type-label {
-  color: #ef4444 !important;
+  color: var(--error-color) !important;
   text-transform: capitalize;
   font-weight: 600;
 }
@@ -334,9 +383,9 @@
 .issue-resolved-badge {
   display: inline-block;
   margin-bottom: 0.45rem !important;
-  color: #065f46 !important;
-  background: #d1fae5;
-  border: 1px solid #a7f3d0;
+  color: var(--success-color) !important;
+  background: color-mix(in srgb, var(--success-color) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--success-color) 45%, var(--border-color));
   border-radius: 999px;
   padding: 0.18rem 0.55rem;
   font-size: 0.76rem !important;
@@ -365,9 +414,11 @@
 }
 
 .issue-thread-box h4 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.5rem;
   color: var(--text-primary);
   font-size: 0.85rem;
+  letter-spacing: -0.01em;
 }
 
 .issue-thread-empty,
@@ -479,27 +530,27 @@
 .btn-primary-action {
   width: 100%;
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: 999px;
   border: none;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  transition: all 0.2s;
+  background: var(--warning-color);
+  color: var(--background);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .btn-primary-action:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary-action.btn-deliver {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: var(--success-color);
 }
 
 .btn-primary-action.btn-deliver:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary-action:disabled {
@@ -517,19 +568,19 @@
 .btn-report-issue {
   width: 100%;
   padding: 0.85rem;
-  border-radius: 12px;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
   background: var(--background);
   color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
 
 .btn-report-issue:hover {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--error-color);
+  color: var(--error-color);
 }
 
 /* Issue modal */
@@ -546,18 +597,21 @@
 
 .issue-modal {
   background: var(--surface);
-  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 2rem;
   max-width: 480px;
   width: 100%;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .issue-modal h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 1.5rem 0;
   color: var(--text-primary);
   font-size: 1.25rem;
+  letter-spacing: -0.01em;
 }
 
 .issue-types {
@@ -584,9 +638,9 @@
 }
 
 .issue-type-btn.selected {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  border-color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 12%, var(--background));
+  color: var(--error-color);
 }
 
 .issue-description {
@@ -629,18 +683,21 @@
 .btn-submit-issue {
   width: 100%;
   padding: 0.85rem;
-  border-radius: 10px;
+  border-radius: 999px;
   border: none;
-  background: #ef4444;
-  color: white;
+  background: var(--error-color);
+  color: var(--background);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 .btn-submit-issue:hover:not(:disabled) {
-  background: #dc2626;
+  background: var(--error-color);
+  filter: brightness(0.95);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-submit-issue:disabled {

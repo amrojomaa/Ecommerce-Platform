@@ -11,6 +11,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import SupportTicketChatModal from '../components/SupportTicketChatModal';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/pages/Tickets.css';
+import PageHeader from '../components/PageHeader';
 
 const Tickets = () => {
   const [tickets, setTickets] = useState([]);
@@ -129,35 +130,39 @@ const Tickets = () => {
 
   if (loading) {
     return (
-      <div className="tickets-loading">
-        <LoadingSpinner size="large" />
+      <div className="page-shell tickets-page">
+        <div className="page-loading">
+          <LoadingSpinner size="large" />
+        </div>
       </div>);
 
   }
 
   return (
-    <div className="tickets-page">
+    <div className="page-shell tickets-page">
       <div className="tickets-layout">
         <div className="tickets-main">
-          <div className="tickets-header">
-            <div>
-              <h1>{tUi("ui.pages.tickets.myTickets_7b2e55ccc1")}</h1>
-              <p className="subtitle">View and manage your support requests</p>
-            </div>
-            <button
-              className={`create-ticket-btn ${showCreateForm ? 'cancel' : ''}`}
-              onClick={() => setShowCreateForm(!showCreateForm)}>
-              {showCreateForm ? (
-                <><FiX /> {tUi("ui.pages.tickets.cancel_320b7f4df0")}</>
-              ) : (
-                <><FiPlus /> {tUi("ui.pages.tickets.createNewTicket_b216e424fe")}</>
-              )}
-            </button>
-          </div>
+          <PageHeader
+            kicker={tUi("ui.pages.tickets.myTickets_7b2e55ccc1")}
+            title={tUi("ui.pages.tickets.myTickets_7b2e55ccc1")}
+            subtitle="View and manage your support requests"
+            actions={
+              <button
+                className={`${showCreateForm ? 'page-btn-secondary' : 'page-btn-primary'} tickets-header-cta`}
+                onClick={() => setShowCreateForm(!showCreateForm)}>
+                {showCreateForm ? (
+                  <><FiX /> {tUi("ui.pages.tickets.cancel_320b7f4df0")}</>
+                ) : (
+                  <><FiPlus /> {tUi("ui.pages.tickets.createNewTicket_b216e424fe")}</>
+                )}
+              </button>
+            }
+            animate={false}
+          />
 
           {showCreateForm && (
-            <div className="create-ticket-form">
-              <h2>{tUi("ui.pages.tickets.createNewTicket_0662914296")}</h2>
+            <div className="create-ticket-form page-card page-card--static">
+              <h2 className="page-section-title">{tUi("ui.pages.tickets.createNewTicket_0662914296")}</h2>
               <form onSubmit={handleCreateTicket}>
                 <div className="form-group">
                   <label htmlFor="title">{tUi("ui.pages.tickets.title_1ae4d1369f")}</label>
@@ -182,7 +187,7 @@ const Tickets = () => {
                   />
                 </div>
                 <div className="form-actions">
-                  <button type="submit" disabled={creating} className="submit-btn">
+                  <button type="submit" disabled={creating} className="submit-btn page-btn-primary tickets-submit-create">
                     {creating ? (
                       tUi("ui.pages.tickets.creating_5f1a5f7f04")
                     ) : (
@@ -195,12 +200,12 @@ const Tickets = () => {
           )}
 
           {tickets.length === 0 ? (
-            <div className="empty-tickets">
-              <div className="empty-icon">🎫</div>
+            <div className="empty-tickets page-empty tickets-empty-card">
+              <div className="page-empty-icon empty-icon" aria-hidden>🎫</div>
               <p>{tUi("ui.pages.tickets.youHavenTCreatedAny_d33bce3131")}</p>
               {!showCreateForm && (
                 <button
-                  className="create-ticket-btn"
+                  className="page-btn-primary tickets-empty-cta"
                   onClick={() => setShowCreateForm(true)}>
                   {tUi("ui.pages.tickets.createYourFirstTicket_a2720076a8")}
                 </button>
@@ -211,7 +216,7 @@ const Tickets = () => {
               {tickets.map((ticket) => {
                 const isExpanded = expandedTicketId === ticket.id;
                 return (
-                  <div key={ticket.id} className={`ticket-card ${isExpanded ? 'expanded' : ''}`}>
+                  <div key={ticket.id} className={`ticket-card page-card tickets-ticket-card ${isExpanded ? 'expanded' : ''}`}>
                     <div
                       className="ticket-header clickable"
                       onClick={() => {
@@ -272,7 +277,8 @@ const Tickets = () => {
                                 <h5>Live Support</h5>
                                 <p>Chat directly with an agent for faster resolution.</p>
                                 <button 
-                                  className={`live-chat-launch-btn ${!ticket.employee ? 'disabled' : ''}`}
+                                  type="button"
+                                  className={`live-chat-launch-btn page-btn-primary tickets-live-chat-btn ${!ticket.employee ? 'disabled' : ''}`}
                                   onClick={() => ticket.employee && setActiveChatTicketId(ticket.id)}
                                   disabled={!ticket.employee}
                                   title={!ticket.employee ? "Waiting for an agent to be assigned" : ""}
@@ -306,7 +312,8 @@ const Tickets = () => {
                                   disabled={!ticket.employee}
                                 />
                                 <button
-                                  className="submit-response-btn"
+                                  type="button"
+                                  className="submit-response-btn page-btn-secondary tickets-send-note-btn"
                                   onClick={() => handleAddResponse(ticket.id)}
                                   disabled={!ticket.employee || respondingTicketId === ticket.id || !responseMessage.trim()}
                                 >
@@ -317,11 +324,12 @@ const Tickets = () => {
                           )}
                         </div>
 
-                        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div className="tickets-delete-row">
                           <button
+                            type="button"
+                            className="page-btn-danger tickets-delete-btn"
                             onClick={() => handleDeleteTicket(ticket.id)}
                             disabled={deletingTicketId === ticket.id}
-                            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}
                           >
                             {deletingTicketId === ticket.id ? "Deleting..." : "Delete Ticket"}
                           </button>
@@ -337,7 +345,7 @@ const Tickets = () => {
 
         <div className="tickets-sidebar">
 
-          <div className="sidebar-card support-info">
+          <div className="sidebar-card support-info tickets-sidebar-card page-card page-card--static">
             <h4>Support Hours</h4>
             <p>Mon - Fri: 9:00 AM - 6:00 PM</p>
             <p>Sat - Sun: 10:00 AM - 4:00 PM</p>

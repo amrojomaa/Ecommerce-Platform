@@ -7,6 +7,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { getImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
@@ -105,24 +106,30 @@ const Cart = () => {
 
   if (loading) {
     return (
-      <div className="cart-loading">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
   return (
-    <div className="cart-page">
-      <h1>{tUi("ui.pages.cart.shoppingCart_7367ced874")}</h1>
+    <div className="page-shell cart-page">
+      <PageHeader
+        kicker={tUi("ui.pages.cart.shoppingCart_7367ced874")}
+        title={tUi("ui.pages.cart.shoppingCart_7367ced874")}
+        subtitle={cartItems.length > 0
+          ? `${cartItems.length} ${cartItems.length === 1 ? 'item' : 'items'}`
+          : tUi("ui.pages.cart.yourCartIsEmpty_977a093fcf")}
+      />
       
       {cartItems.length === 0 ?
       <motion.div
-        className="empty-cart"
+        className="page-empty empty-cart"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}>
         
           <p>{tUi("ui.pages.cart.yourCartIsEmpty_977a093fcf")}</p>
-          <Link to="/products" className="continue-shopping-btn">{tUi("ui.pages.cart.continueShopping_5009154016")}
+          <Link to="/products" className="page-btn-primary continue-shopping-btn">{tUi("ui.pages.cart.continueShopping_5009154016")}
 
         </Link>
         </motion.div> :
@@ -132,7 +139,7 @@ const Cart = () => {
             <div className="cart-items-actions">
               <button
               type="button"
-              className="delete-all-btn"
+              className="page-btn-danger delete-all-btn"
               onClick={handleDeleteAll}
               disabled={loading || cartItems.length === 0}>{tUi("ui.pages.cart.deleteAll_077da7e3f2")}
 
@@ -275,7 +282,7 @@ const Cart = () => {
                 <span>{formatCurrency(grandTotal)}</span>
               </div>
               <motion.button
-              className="checkout-btn"
+              className="page-btn-primary checkout-btn"
               onClick={handleCheckout}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}>{tUi("ui.pages.cart.proceedToCheckout_48e6337c2b")}

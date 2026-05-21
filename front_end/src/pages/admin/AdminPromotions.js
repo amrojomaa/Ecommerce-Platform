@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PROMOTION_ENDPOINTS, buildUrl } from '../../config/api';
 import { useConfirm } from '../../hooks/useConfirm';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/admin/AdminPromotions.css';
 
 const FILTER_LABELS = {
@@ -226,15 +227,17 @@ const AdminPromotions = () => {
     }
   };
 
+  const promotionsTitle = tUi("ui.pages.admin.adminPromotions.promotions_8cc39c7561");
+
   return (
-    <div className="admin-promotions">
+    <div className="admin-page-shell admin-promotions">
       <header className="admin-promotions-header">
-        <div className="admin-promotions-header-row">
-          <div>
-            <h1>{tUi("ui.pages.admin.adminPromotions.promotions_8cc39c7561")}</h1>
-            <p>{tUi("ui.pages.admin.adminPromotions.createRuleBasedDiscountsFor_4ea978f98e")}</p>
-          </div>
-          {isCreatePage ?
+        <PageHeader
+          kicker={promotionsTitle}
+          title={promotionsTitle}
+          subtitle={tUi("ui.pages.admin.adminPromotions.createRuleBasedDiscountsFor_4ea978f98e")}
+          actions={
+          isCreatePage ?
           <button
             type="button"
             className="promotion-header-btn btn-secondary"
@@ -254,7 +257,7 @@ const AdminPromotions = () => {
 
           </button>
           }
-        </div>
+        />
       </header>
 
       {(isCreatePage || editingId !== null) &&

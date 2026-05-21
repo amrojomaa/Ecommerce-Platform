@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, CATEGORY_ENDPOINTS, IMAGE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import API_BASE_URL from '../../config/api';
 import '../../styles/pages/seller/SellerProducts.css';
@@ -219,15 +220,22 @@ const SellerProducts = () => {
   };
 
   if (loading) {
-    return <div className="seller-products-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading seller-products-loading"><LoadingSpinner size="large" /></div>;
   }
 
+  const productsTitle = 'Products';
+
   return (
-    <div className="seller-products">
-      <div className="seller-products-header">
-        <h1>Products</h1>
-        <button className="add-product-btn" onClick={openCreateModal}>+ Add Product</button>
-      </div>
+    <div className="admin-page-shell seller-products">
+      <PageHeader
+        kicker={productsTitle}
+        title={productsTitle}
+        actions={
+          <button type="button" className="add-product-btn" onClick={openCreateModal}>
+            + Add Product
+          </button>
+        }
+      />
 
       <div className="seller-products-filters">
         <input

@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import API_BASE_URL, { PRODUCT_ENDPOINTS, IMAGE_ENDPOINTS, CATEGORY_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -376,12 +377,30 @@ const AdminProducts = () => {
   const isAnyQuickFilterActive = isLowStockFilter || quickFilters.lowstock || quickFilters.discounted;
   const isLowStockActive = isLowStockFilter || quickFilters.lowstock;
 
+  const manageProductsTitle = tUi("ui.pages.admin.adminProducts.manageProducts_273cb9a998");
+
   return (
-    <div className="admin-products">
+    <div className="admin-page-shell admin-products">
       <div className="admin-products-header">
+        <PageHeader
+          kicker={manageProductsTitle}
+          title={manageProductsTitle}
+          subtitle={tUi("ui.pages.admin.adminProducts.trackInventoryUpdateDetailsAnd_86a8fb17ed")}
+          actions={
+          <motion.button
+            className="add-product-btn"
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}>{tUi("ui.pages.admin.adminProducts.addProduct_2792a039d2")}
+
+
+          </motion.button>
+          }
+        />
         <div className="header-left">
-          <h1>{tUi("ui.pages.admin.adminProducts.manageProducts_273cb9a998")}</h1>
-          <p className="admin-products-subtitle">{tUi("ui.pages.admin.adminProducts.trackInventoryUpdateDetailsAnd_86a8fb17ed")}</p>
           <div className="products-overview">
             <button
               type="button"
@@ -430,17 +449,6 @@ const AdminProducts = () => {
             </div>
           </div>
         </div>
-        <motion.button
-          className="add-product-btn"
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}>{tUi("ui.pages.admin.adminProducts.addProduct_2792a039d2")}
-
-
-        </motion.button>
       </div>
 
       {loading ?

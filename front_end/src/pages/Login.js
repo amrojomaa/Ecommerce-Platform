@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -6,6 +7,7 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -100,15 +102,20 @@ const Login = () => {
   });
 
   return (
-    <div className="auth-page">
+    <div className="page-shell login-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.login.login_4b4596ebf5")}</h1>
-        <p>{tUi("ui.pages.login.welcomeBackPleaseLoginTo_2f667109f5")}</p>
+        <PageHeader
+          kicker={tUi("ui.pages.login.login_4b4596ebf5")}
+          title={tUi("ui.pages.login.login_4b4596ebf5")}
+          subtitle={tUi("ui.pages.login.welcomeBackPleaseLoginTo_2f667109f5")}
+          className="auth-page-header"
+          animate={false}
+        />
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
@@ -178,7 +185,7 @@ const Login = () => {
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
+              className="page-btn-primary auth-full-width-btn"
               disabled={loading}>
               
               {loading ?
@@ -201,7 +208,7 @@ const Login = () => {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="auth-button google-button"
+            className="page-btn-secondary auth-full-width-btn google-sso-btn"
             disabled={googleLoading || loading}>
             
             {googleLoading ?

@@ -15,9 +15,10 @@
   flex: 1;
   padding: 2rem;
   overflow-y: hidden;
-  background: var(--bg-color);
+  background: var(--background);
   margin-left: 250px;
   min-height: calc(100vh - var(--navbar-height));
+  scroll-margin-top: 5rem;
 }
 
 html[dir='rtl'] .driver-content {

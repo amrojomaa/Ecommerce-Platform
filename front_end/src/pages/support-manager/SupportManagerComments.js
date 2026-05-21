@@ -6,6 +6,7 @@ import http from '../../services/http';
 import { COMMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/support-manager/SupportManagerComments.css';
 
@@ -80,10 +81,15 @@ const SupportManagerComments = () => {
     }
   };
 
+  const commentModerationTitle = 'Comment Moderation';
+
   return (
-    <div className="support-manager-comments">
+    <div className="admin-page-shell support-manager-comments">
       <header className="comments-header">
-        <h1>Comment Moderation</h1>
+        <PageHeader
+          kicker={commentModerationTitle}
+          title={commentModerationTitle}
+          actions={
         <div className="header-tabs">
           <button 
             className={activeTab === 'reported' ? 'active' : ''} 
@@ -98,6 +104,8 @@ const SupportManagerComments = () => {
             All Comments
           </button>
         </div>
+          }
+        />
       </header>
 
       <div className="moderation-controls">
@@ -116,7 +124,7 @@ const SupportManagerComments = () => {
 
       <div className="comments-container">
         {loading ? (
-          <div className="loading-state"><LoadingSpinner size="large" /></div>
+          <div className="page-loading loading-state"><LoadingSpinner size="large" /></div>
         ) : comments.length > 0 ? (
           <div className="comments-grid">
             <AnimatePresence mode="popLayout">

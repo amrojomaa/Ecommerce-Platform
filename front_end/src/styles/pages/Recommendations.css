@@ -1,60 +1,39 @@
-.recommendations-page {
+.recommendations-page.page-shell {
   min-height: calc(100vh - 80px);
   padding: 2rem 1rem 3rem;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .recommendations-inner {
+  width: 100%;
   max-width: 1100px;
   margin: 0 auto;
 }
 
-.recommendations-header h1 {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
+.recommendations-page .reco-reset-btn.page-btn-danger,
+.recommendations-page .reco-reset-btn-ds {
+  padding: 0.65rem 1.05rem;
+  font-size: 0.8125rem;
+  white-space: normal;
 }
 
-.recommendations-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+.recommendations-page .reco-section-title {
+  margin-bottom: 0;
 }
 
-.recommendations-title-row > div:first-child {
-  flex: 1;
-  min-width: 200px;
-}
-
-.recommendations-sub {
-  color: var(--text-secondary, #64748b);
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-}
-
-.reco-reset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
-  border: 1px solid #c2410c;
-  background: transparent;
-  color: #c2410c;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
+.reco-reset-btn-ds svg {
   flex-shrink: 0;
 }
 
-.reco-reset-btn:hover:not(:disabled) {
-  background: rgba(194, 65, 12, 0.08);
+.reco-section-loading.page-loading {
+  min-height: 10rem;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.reco-reset-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.reco-empty-state.page-empty p {
+  margin-bottom: 0;
 }
 
 .reco-cleared-banner {
@@ -81,37 +60,27 @@
   margin-bottom: 1rem;
 }
 
-.reco-section-head h2 {
-  font-size: 1.2rem;
-}
-
 .reco-batch-actions {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.reco-refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--card-bg, #fff);
-  cursor: pointer;
-  font-size: 0.875rem;
+.reco-section-head h2.page-section-title {
+  flex: 1;
+  min-width: 140px;
+  margin-bottom: 0;
 }
 
-.reco-refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.reco-refresh-btn.reco-refresh-btn--sm {
+  padding: 0.5rem 0.95rem !important;
+  font-size: 0.8125rem !important;
+  width: auto !important;
+  min-height: unset !important;
 }
 
-.reco-refresh-btn.primary {
-  border-color: transparent;
-  background: var(--primary-color, #3b82f6);
-  color: #fff;
+.reco-batch-actions .reco-refresh-btn.reco-refresh-btn--sm {
+  white-space: nowrap;
 }
 
 .reco-refresh-btn .spin {
@@ -135,15 +104,18 @@
 }
 
 .reco-card {
-  border-radius: 12px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 1.2rem;
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  background: var(--card-bg, #fff);
-  transition: box-shadow 0.2s;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .reco-card:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .reco-card-link {
@@ -173,7 +145,8 @@
 }
 
 .reco-card-title {
-  font-size: 0.95rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 0.98rem;
   font-weight: 600;
   margin: 0 0 0.25rem;
   line-height: 1.3;

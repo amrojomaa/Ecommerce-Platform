@@ -2,19 +2,19 @@
   background: linear-gradient(
     90deg,
     var(--surface) 0%,
-    rgba(255, 255, 255, 0.1) 50%,
+    var(--background) 50%,
     var(--surface) 100%
   );
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
-  border-radius: 0.5rem;
+  border-radius: 1.2rem;
 }
 
 .dark .skeleton {
   background: linear-gradient(
     90deg,
     var(--surface) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
+    rgba(148, 163, 184, 0.12) 50%,
     var(--surface) 100%
   );
   background-size: 200% 100%;
@@ -32,9 +32,10 @@
 
 .product-card-skeleton {
   background: var(--surface);
-  border-radius: 1rem;
+  border-radius: 1.2rem;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 .product-card-skeleton .skeleton-content {

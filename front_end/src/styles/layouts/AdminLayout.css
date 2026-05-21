@@ -12,11 +12,12 @@
 
 .admin-content {
   flex: 1;
-  padding: 2rem;
+  padding: 2rem 2.25rem 3rem;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   margin-left: 250px;
+  scroll-margin-top: 5rem;
 }
 
 html[dir='rtl'] .admin-content {
@@ -33,13 +34,13 @@ html[dir='rtl'] .admin-content {
     margin-left: 0;
     margin-right: 0;
     max-width: 100%;
-    padding: 1.25rem;
+    padding: 1.35rem 1.25rem 2.25rem;
   }
 }
 
 @media (max-width: 768px) {
   .admin-content {
-    padding: 1rem;
+    padding: 1rem 1rem 2rem;
     margin-left: 0;
     margin-right: 0;
   }

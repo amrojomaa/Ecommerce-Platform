@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, ORDER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS, DELIVERY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDashboard.css';
@@ -161,11 +162,13 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="admin-dashboard-loading">
+      <div className="page-loading admin-dashboard-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
+
+  const dashboardTitle = tUi("ui.pages.admin.adminDashboard.adminDashboard_16654f6473");
 
   const statCards = [
     {
@@ -210,8 +213,8 @@ const AdminDashboard = () => {
 
 
   return (
-    <div className="admin-dashboard">
-      <h1>{tUi("ui.pages.admin.adminDashboard.adminDashboard_16654f6473")}</h1>
+    <div className="admin-page-shell admin-dashboard">
+      <PageHeader kicker={dashboardTitle} title={dashboardTitle} />
       
       <div className="stats-grid">
         {statCards.map((stat, index) =>

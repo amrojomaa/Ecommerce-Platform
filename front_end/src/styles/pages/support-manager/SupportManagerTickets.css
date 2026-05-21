@@ -1,16 +1,37 @@
 .support-manager-tickets {
-  padding: 2rem;
+  width: 100%;
+  padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.support-manager-tickets {
+  gap: 2.5rem;
+}
+
+.support-manager-tickets .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .tickets-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #eaeaea;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tickets-header h1 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .tickets-layout {
@@ -21,10 +42,11 @@
 
 .tickets-sidebar {
   width: 250px;
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  padding: 1.25rem 1rem;
+  box-shadow: var(--shadow);
   flex-shrink: 0;
 }
 
@@ -39,24 +61,24 @@
 
 .status-list li {
   padding: 0.8rem 1rem;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
   transition: all 0.2s ease;
 }
 
 .status-list li:hover {
-  background: #f5f8fa;
-  color: #333;
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--text-primary);
 }
 
 .status-list li.active {
-  background: #eff6ff;
-  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
   font-weight: 600;
 }
 
@@ -101,9 +123,10 @@
 .search-box input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
 }
 
 .header-actions select {
@@ -117,14 +140,21 @@
 }
 
 .ticket-card {
-  background: white;
-  border-radius: 16px;
+  background: var(--surface);
+  border-radius: 1.2rem;
   padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .ticket-badge {
@@ -145,8 +175,11 @@
 
 .card-body h3 {
   margin: 0 0 0.5rem 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
   font-size: 1.1rem;
   padding-right: 4rem;
+  color: var(--text-primary);
 }
 
 .customer {
@@ -185,22 +218,22 @@
 }
 
 .assign-btn {
-  background: #2196f3;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
   transition: background 0.2s;
 }
 
 .view-btn {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #ddd;
+  background: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s;
@@ -223,12 +256,13 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   padding: 2.5rem;
-  border-radius: 20px;
+  border-radius: 1.2rem;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 .modal-content.wide {
@@ -338,11 +372,11 @@
 
 .send-btn {
   align-self: flex-end;
-  background: #2196f3;
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 0.75rem 2rem;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -376,7 +410,7 @@
 .modal-actions button {
   flex: 1;
   padding: 0.8rem;
-  border-radius: 10px;
+  border-radius: 999px;
   border: none;
   font-weight: 700;
   cursor: pointer;
@@ -390,13 +424,18 @@
 .dark .modal-content,
 .dark .search-box input,
 .dark .header-actions select {
-  background: #1e1e2d;
-  border-color: #333;
-  color: white;
+  background: var(--surface);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
-.dark .description { color: #aaa; }
-.dark .card-footer { border-color: #333; }
+.dark .description {
+  color: var(--text-secondary);
+}
+
+.dark .card-footer {
+  border-color: var(--border-color);
+}
 
 @media (max-width: 768px) {
   .tickets-header {

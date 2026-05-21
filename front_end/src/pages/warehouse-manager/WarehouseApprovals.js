@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import http from '../../services/http';
 import { WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import API_BASE_URL from '../../config/api';
 import '../../styles/pages/warehouse-manager/WarehouseApprovals.css';
@@ -46,11 +47,13 @@ const WarehouseApprovals = () => {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) return <div className="wm-approvals-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading wm-approvals-loading"><LoadingSpinner size="large" /></div>;
+
+  const approvalsTitle = 'Order Approvals';
 
   return (
-    <div className="wm-approvals">
-      <h1>Order Approvals</h1>
+    <div className="admin-page-shell wm-approvals">
+      <PageHeader kicker={approvalsTitle} title={approvalsTitle} />
       {orders.length === 0 ? (
         <div className="wm-approvals-empty">
           <div className="empty-icon">✅</div>

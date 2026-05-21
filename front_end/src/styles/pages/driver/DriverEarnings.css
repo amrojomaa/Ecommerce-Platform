@@ -4,7 +4,9 @@
 }
 
 .driver-earnings-page h1 {
-  font-size: 1.75rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.75rem, 3vw, 2.2rem);
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 2rem;
 }
@@ -18,19 +20,27 @@
 
 .earnings-summary-card {
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: 1.2rem;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.earnings-summary-card:not(.primary):hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .earnings-summary-card.primary {
-  background: linear-gradient(135deg, var(--primary-color), #4f46e5);
-  color: white;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: var(--background);
   border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .card-label {
@@ -40,7 +50,7 @@
 }
 
 .primary .card-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: color-mix(in srgb, var(--background) 80%, transparent);
 }
 
 .card-value {
@@ -54,24 +64,24 @@
 }
 
 .primary .card-value {
-  color: white;
+  color: var(--background);
 }
 
 .btn-payout {
   margin-top: 1rem;
-  background: white;
+  background: var(--background);
   color: var(--primary-color);
-  border: none;
+  border: 1px solid transparent;
   padding: 0.6rem 1rem;
-  border-radius: 8px;
+  border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .btn-payout:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-payout:disabled {
@@ -85,8 +95,9 @@
   margin-bottom: 3rem;
   background: var(--surface);
   padding: 1.5rem 2rem;
-  border-radius: 12px;
+  border-radius: 1.2rem;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 .stat-item {
@@ -115,16 +126,19 @@
 }
 
 .earnings-history-section h2 {
-  font-size: 1.4rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin-bottom: 1.25rem;
 }
 
 .earnings-table-container {
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   border: 1px solid var(--border-color);
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .earnings-table {
@@ -140,6 +154,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -152,25 +167,25 @@
 
 .amount-cell {
   font-weight: 600;
-  color: #10b981;
+  color: var(--success-color);
 }
 
 .payout-status {
   padding: 0.25rem 0.6rem;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
   text-transform: capitalize;
 }
 
 .payout-status.pending {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+  background: color-mix(in srgb, var(--warning-color) 16%, var(--surface));
+  color: var(--warning-color);
 }
 
 .payout-status.paid {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background: color-mix(in srgb, var(--success-color) 16%, var(--surface));
+  color: var(--success-color);
 }
 
 .no-history-msg {
@@ -178,8 +193,9 @@
   text-align: center;
   color: var(--text-secondary);
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
 }
 
 @media (max-width: 992px) {
@@ -192,7 +208,7 @@
   .earnings-overview-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .earnings-stats-row {
     flex-direction: column;
     gap: 1rem;

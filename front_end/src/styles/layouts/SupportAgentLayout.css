@@ -15,9 +15,10 @@
   flex: 1;
   padding: 2rem;
   overflow-y: hidden;
-  background: var(--bg-color);
+  background: var(--background);
   margin-left: 250px; /* Account for fixed sidebar width */
   min-height: calc(100vh - var(--navbar-height));
+  scroll-margin-top: 5rem;
 }
 
 @media (max-width: 768px) {

@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -9,6 +10,7 @@ import { useCart } from '../hooks/useCart';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
 import '../styles/pages/Checkout.css';
+import PageHeader from '../components/PageHeader';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -85,17 +87,21 @@ const Checkout = () => {
   };
 
   return (
-    <div className="checkout-page">
-      <h1>{tUi("ui.pages.checkout.checkout_69315371da")}</h1>
+    <div className="page-shell checkout-page">
+      <PageHeader
+        kicker={tUi("ui.pages.checkout.checkout_69315371da")}
+        title={tUi("ui.pages.checkout.checkout_69315371da")}
+        animate={false}
+      />
 
       <div className="checkout-container">
         <motion.form
-          className="checkout-form"
+          className="checkout-form page-form-panel"
           onSubmit={handleSubmit}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}>
           
-          <h2>{tUi("ui.pages.checkout.shippingInformation_d88cac7166")}</h2>
+          <h2 className="page-section-title">{tUi("ui.pages.checkout.shippingInformation_d88cac7166")}</h2>
 
           <div className="form-group">
             <label htmlFor="address">{tUi("ui.pages.checkout.address_c66e170a3e")}</label>
@@ -172,7 +178,7 @@ const Checkout = () => {
 
           <motion.button
             type="submit"
-            className="submit-order-btn"
+            className="submit-order-btn page-btn-primary"
             disabled={loading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}>
@@ -189,11 +195,11 @@ const Checkout = () => {
         </motion.form>
 
         <motion.div
-          className="order-summary"
+          className="order-summary page-summary-card page-card--static"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}>
           
-          <h2>{tUi("ui.pages.checkout.orderSummary_d0a0edc227")}</h2>
+          <h2 className="page-section-title">{tUi("ui.pages.checkout.orderSummary_d0a0edc227")}</h2>
 
           <div className="order-items">
             {cartItems.map((item) =>
@@ -210,23 +216,23 @@ const Checkout = () => {
           </div>
 
           <div className="order-totals">
-            <div className="total-row">
+            <div className="total-row page-summary-row">
               <span>{tUi("ui.pages.checkout.subtotal_86a223f217")}</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
             {promotionDiscount > 0 &&
-            <div className="total-row total-row-discount">
+            <div className="total-row total-row-discount page-summary-row page-summary-row--discount">
                 <span>{tUi("ui.pages.checkout.promotion_8e2a388c14")}
                 {appliedPromotion?.name ? tUi("ui.pages.checkout.value_60d597c6ec", { value0: appliedPromotion.name }) : ''}:
                 </span>
                 <span>-{formatPrice(promotionDiscount)}</span>
               </div>
             }
-            <div className="total-row">
+            <div className="total-row page-summary-row">
               <span>{tUi("ui.pages.checkout.shipping_c4ae97807a")} ({shippingRegion.name}):</span>
               <span>{formatPrice(shippingRegion.fee)}</span>
             </div>
-            <div className="total-row final-total">
+            <div className="total-row final-total page-summary-row page-summary-row--total">
               <span>{tUi("ui.pages.checkout.total_bdf441497c")}</span>
               <span>{formatPrice(grandTotal + shippingRegion.fee)}</span>
             </div>

@@ -1,8 +1,10 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import { formatDate } from '../../utils/helpers';
 import '../../styles/pages/driver/DriverEarnings.css';
@@ -60,15 +62,17 @@ const DriverEarnings = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
 
+  const earningsTitle = tUi('ui.pages.driver.driverEarnings.earningsPayouts_cb8c09547c');
+
   return (
-    <div className="driver-earnings-page">
-      <h1>{tUi("ui.pages.driver.driverEarnings.earningsPayouts_cb8c09547c")}</h1>
+    <div className="page-shell driver-earnings-page">
+      <PageHeader kicker={earningsTitle} title={earningsTitle} />
 
       <div className="earnings-overview-grid">
         <div className="earnings-summary-card primary">

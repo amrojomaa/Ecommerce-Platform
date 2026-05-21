@@ -1,7 +1,9 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import { formatDateTime } from '../../utils/helpers';
 import '../../styles/pages/driver/DriverJobHistory.css';
@@ -30,37 +32,45 @@ const DriverJobHistory = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
 
+  const historyTitle = tUi('ui.pages.driver.driverJobHistory.deliveryHistory_ddfd66f8b3');
+
   return (
-    <div className="job-history-page">
-      <div className="history-header">
-        <h1>{tUi("ui.pages.driver.driverJobHistory.deliveryHistory_ddfd66f8b3")}</h1>
-        <div className="history-filters">
-          <button
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter("all")}>{tUi("ui.pages.driver.driverJobHistory.all_8807f0de5d")}
-
-
-          </button>
-          <button
-            className={`filter-btn ${filter === 'delivered' ? 'active' : ''}`}
-            onClick={() => setFilter("delivered")}>{tUi("ui.pages.driver.driverJobHistory.delivered_08a781473b")}
-
-
-          </button>
-          <button
-            className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`}
-            onClick={() => setFilter("cancelled")}>{tUi("ui.pages.driver.driverJobHistory.cancelled_3252a4cd97")}
-
-
-          </button>
-        </div>
-      </div>
+    <div className="page-shell job-history-page">
+      <PageHeader
+        kicker={historyTitle}
+        title={historyTitle}
+        actions={
+          <div className="history-filters">
+            <button
+              type="button"
+              className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+              onClick={() => setFilter('all')}
+            >
+              {tUi('ui.pages.driver.driverJobHistory.all_8807f0de5d')}
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${filter === 'delivered' ? 'active' : ''}`}
+              onClick={() => setFilter('delivered')}
+            >
+              {tUi('ui.pages.driver.driverJobHistory.delivered_08a781473b')}
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${filter === 'cancelled' ? 'active' : ''}`}
+              onClick={() => setFilter('cancelled')}
+            >
+              {tUi('ui.pages.driver.driverJobHistory.cancelled_3252a4cd97')}
+            </button>
+          </div>
+        }
+      />
 
       {filteredJobs.length === 0 ?
       <div className="no-history">

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import http from '../../services/http';
 import { TICKET_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { formatDate } from '../../utils/helpers';
 import '../../styles/pages/support-agent/SupportAgentDashboard.css';
 
@@ -71,13 +72,18 @@ const SupportAgentDashboard = () => {
     }
   };
 
-  if (loading) return <div className="dashboard-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading dashboard-loading"><LoadingSpinner size="large" /></div>;
+
+  const agentDashTitle = 'Support Agent Dashboard';
 
   return (
-    <div className="support-agent-dashboard">
+    <div className="admin-page-shell support-agent-dashboard">
       <header className="dashboard-header">
-        <h1>Support Agent Dashboard</h1>
-        <p>Track your workload and assist customers effectively.</p>
+        <PageHeader
+          kicker={agentDashTitle}
+          title={agentDashTitle}
+          subtitle="Track your workload and assist customers effectively."
+        />
       </header>
 
       <div className="stats-grid">

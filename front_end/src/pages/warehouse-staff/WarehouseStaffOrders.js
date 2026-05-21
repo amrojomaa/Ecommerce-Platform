@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import http from '../../services/http';
 import { WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import API_BASE_URL from '../../config/api';
 import '../../styles/pages/warehouse-staff/WarehouseStaffOrders.css';
@@ -146,23 +147,29 @@ const WarehouseStaffOrders = () => {
   const displayOrders = activeTab === 'preparing' ? orders : packedOrders;
 
   if (loading) {
-    return <div className="ws-orders-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading ws-orders-loading"><LoadingSpinner size="large" /></div>;
   }
 
-  return (
-    <div className="ws-orders">
-      <h1>Warehouse Orders</h1>
+  const wsOrdersTitle = 'Warehouse Orders';
 
-      <div className="ws-orders-tabs">
-        <button className={activeTab === 'preparing' ? 'active' : ''} onClick={() => setActiveTab('preparing')}>
-          Preparing
-          {orders.length > 0 && <span className="ws-tab-count">{orders.length}</span>}
-        </button>
-        <button className={activeTab === 'packed' ? 'active' : ''} onClick={() => setActiveTab('packed')}>
-          Packed / Done
-          {packedOrders.length > 0 && <span className="ws-tab-count">{packedOrders.length}</span>}
-        </button>
-      </div>
+  return (
+    <div className="admin-page-shell ws-orders">
+      <PageHeader
+        kicker={wsOrdersTitle}
+        title={wsOrdersTitle}
+        actions={
+        <div className="ws-orders-tabs">
+          <button className={activeTab === 'preparing' ? 'active' : ''} onClick={() => setActiveTab('preparing')}>
+            Preparing
+            {orders.length > 0 && <span className="ws-tab-count">{orders.length}</span>}
+          </button>
+          <button className={activeTab === 'packed' ? 'active' : ''} onClick={() => setActiveTab('packed')}>
+            Packed / Done
+            {packedOrders.length > 0 && <span className="ws-tab-count">{packedOrders.length}</span>}
+          </button>
+        </div>
+        }
+      />
 
       {displayOrders.length === 0 ? (
         <div className="ws-orders-empty">

@@ -4,6 +4,7 @@ import http from '../../services/http';
 import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
 import { useConfirm } from '../../hooks/useConfirm';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
@@ -281,14 +282,16 @@ const AdminTickets = () => {
 
   if (loading) {
     return (
-      <div className="admin-tickets-loading">
+      <div className="page-loading admin-tickets-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
+  const allTicketsTitle = tUi("ui.pages.admin.adminTickets.allTickets_10363e2701");
+
   return (
-    <div className="admin-tickets-page">
+    <div className="admin-page-shell admin-tickets-page">
       {pendingDeletes.length > 0 &&
       <div className="pending-deletes-section">
           <h2>{tUi("ui.pages.admin.adminTickets.pendingDeleteRequests_649a08b553")}{pendingDeletes.length})</h2>
@@ -325,8 +328,10 @@ const AdminTickets = () => {
         </div>
       }
 
-      <div className="admin-tickets-header">
-        <h1>{tUi("ui.pages.admin.adminTickets.allTickets_10363e2701")}</h1>
+      <PageHeader
+        kicker={allTicketsTitle}
+        title={allTicketsTitle}
+        actions={
         <div className="filters-container">
           <div className="status-filter">
             <label>{tUi("ui.pages.admin.adminTickets.filterByStatus_9e240a5b82")}</label>
@@ -356,7 +361,8 @@ const AdminTickets = () => {
             </select>
           </div>
         </div>
-      </div>
+        }
+      />
 
       {filteredTickets.length === 0 ?
       <div className="empty-tickets">

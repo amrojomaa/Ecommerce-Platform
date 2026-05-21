@@ -1,27 +1,22 @@
-.payment-page {
+.payment-page.page-shell {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.payment-page h1 {
-  margin-bottom: 2rem;
-  color: var(--text-primary);
+.payment-page .page-header {
+  margin-bottom: 0.25rem;
 }
 
-.payment-loading {
-  display: flex;
+.payment-page-loading-inner {
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 50vh;
   gap: 1rem;
+  min-height: 40vh;
 }
 
-.payment-loading p {
+.payment-page-loading-inner p {
   color: var(--text-secondary);
-  font-size: 1.1rem;
 }
 
 .payment-loading-inline {
@@ -39,22 +34,17 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  margin-top: 2rem;
+  margin-top: 0.75rem;
 }
 
-.payment-summary,
-.payment-form-container {
-  background-color: var(--surface);
+.payment-summary.page-card,
+.payment-form-container.page-form-panel {
   padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: var(--shadow);
 }
 
-.payment-summary h2,
-.payment-form-container h2 {
-  color: var(--text-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
+.payment-summary h2.page-section-title,
+.payment-form-container h2.page-section-title {
+  margin-bottom: 1.35rem;
 }
 
 .summary-details {
@@ -100,7 +90,7 @@
   padding: 1rem;
   background-color: var(--background);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: 1rem;
 }
 
 .card-element-container label {
@@ -111,41 +101,25 @@
 }
 
 .payment-error {
-  color: #dc3545;
-  background-color: rgba(220, 53, 69, 0.1);
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: var(--error-color);
+  background-color: rgba(239, 68, 68, 0.08);
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(239, 68, 68, 0.25);
   font-size: 0.9rem;
 }
 
-.pay-button {
+.pay-button.page-btn-primary {
   width: 100%;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+  font-size: 1.05rem;
 }
 
-.pay-button:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.pay-button.page-btn-primary:disabled {
+  opacity: 0.65;
 }
 
-.pay-button:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-  opacity: 0.6;
+.retry-payment-btn.page-btn-secondary {
+  white-space: normal;
 }
 
 .payment-error-block {
@@ -154,27 +128,12 @@
   gap: 0.75rem;
 }
 
-.retry-payment-btn {
-  align-self: flex-start;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.65rem 1rem;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.retry-payment-btn:hover {
-  background-color: var(--primary-hover);
-}
-
 @media (max-width: 768px) {
   .payment-container {
     grid-template-columns: 1fr;
   }
 
-  .payment-page {
+  .payment-page.page-shell {
     padding: 1rem;
   }
 }

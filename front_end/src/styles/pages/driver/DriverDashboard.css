@@ -5,7 +5,9 @@
 }
 
 .driver-dashboard h1 {
-  font-size: 2rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(2rem, 4vw, 2.4rem);
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 2rem;
 }
@@ -20,19 +22,20 @@
 
 .stat-card {
   background: var(--surface);
-  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .stat-icon {
@@ -57,10 +60,10 @@
   margin-top: 0.25rem;
 }
 
-.earnings-card { border-left: 4px solid #10b981; }
-.active-card { border-left: 4px solid #3b82f6; }
-.available-card { border-left: 4px solid #f59e0b; }
-.total-card { border-left: 4px solid #8b5cf6; }
+.earnings-card { border-left: 4px solid var(--success-color); }
+.active-card { border-left: 4px solid var(--primary-color); }
+.available-card { border-left: 4px solid var(--warning-color); }
+.total-card { border-left: 4px solid var(--secondary-color); }
 
 /* Quick Nav Cards */
 .dashboard-cards {
@@ -73,12 +76,12 @@
 .dashboard-card {
   background: var(--surface);
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 1.2rem;
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
   text-decoration: none;
   color: var(--text-primary);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -86,8 +89,9 @@
 }
 
 .dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .card-icon {
@@ -96,9 +100,11 @@
 }
 
 .dashboard-card h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.5rem 0;
   color: var(--text-primary);
   font-size: 1.15rem;
+  letter-spacing: -0.01em;
 }
 
 .dashboard-card p {
@@ -113,7 +119,9 @@
 }
 
 .active-deliveries-section h2 {
-  font-size: 1.25rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin-bottom: 1rem;
 }
@@ -127,25 +135,27 @@
 .active-job-card {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   padding: 1.25rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   text-decoration: none;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: var(--shadow);
 }
 
 .active-job-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
 }
 
 .job-status-badge {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
+  background: var(--primary-color);
+  color: var(--background);
   padding: 0.35rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -171,7 +181,7 @@
 }
 
 .job-amount {
-  color: #10b981;
+  color: var(--success-color);
   font-weight: 700;
   font-size: 1rem;
 }

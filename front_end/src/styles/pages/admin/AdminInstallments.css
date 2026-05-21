@@ -1,7 +1,17 @@
 .admin-installments-page {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.admin-installments-page {
+  gap: 2.5rem;
+}
+
+.admin-installments-page .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .admin-installments-page h1,
@@ -13,6 +23,20 @@
 .admin-installments-page p,
 .admin-installments-page li {
   color: var(--text-primary);
+}
+
+.admin-installments-page h1 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-installments-page h2,
+.admin-installments-page h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
 }
 
 .admin-installments-header {
@@ -30,7 +54,7 @@
 
 .filter-group select {
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 0.75rem;
   padding: 8px 10px;
   background: var(--background);
   color: var(--text-primary);
@@ -46,9 +70,15 @@
 .request-details-panel {
   background: var(--surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 1.2rem;
+  padding: 1rem;
   box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.request-list-panel:hover,
+.request-details-panel:hover {
+  border-color: rgba(37, 99, 235, 0.15);
 }
 
 .request-list-panel table,
@@ -139,9 +169,16 @@
   flex-direction: column;
   gap: 6px;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 1.2rem;
   padding: 8px;
   background: var(--background);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.documents-grid a:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .documents-grid img {
@@ -154,7 +191,7 @@
 
 .admin-document-missing {
   border: 1px dashed var(--border-color);
-  border-radius: 10px;
+  border-radius: 1.2rem;
   min-height: 120px;
   display: flex;
   flex-direction: column;
@@ -191,7 +228,7 @@
 
 .review-actions button {
   border: 0;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 9px 12px;
   color: #fff;
   cursor: pointer;
@@ -212,7 +249,7 @@
 
 .btn-cancel-request {
   border: 0;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 9px 12px;
   color: #fff;
   background: #dc2626;
@@ -239,8 +276,8 @@
 
 .pay-action button {
   border: 0;
-  border-radius: 6px;
-  background: #1f6feb;
+  border-radius: 999px;
+  background: var(--primary-color);
   color: #fff;
   padding: 6px 10px;
   cursor: pointer;
@@ -254,7 +291,7 @@
 .note-block {
   background: var(--background);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 1rem;
   padding: 10px;
 }
 

@@ -7,6 +7,7 @@ import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { formatDateTime } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminUserDetails.css';
 
@@ -132,7 +133,7 @@ const AdminUserDetails = () => {
 
   if (loading) {
     return (
-      <div className="admin-user-details-loading">
+      <div className="page-loading admin-user-details-loading">
         <LoadingSpinner size="large" />
       </div>);
 
@@ -142,8 +143,10 @@ const AdminUserDetails = () => {
     return null;
   }
 
+  const userDetailsTitle = tUi("ui.pages.admin.adminUserDetails.userAccountInformation_1a87059564");
+
   return (
-    <div className="admin-user-details">
+    <div className="admin-page-shell admin-user-details">
       <motion.button
         className="back-button"
         onClick={() => navigate('/admin/users')}
@@ -162,7 +165,7 @@ const AdminUserDetails = () => {
         transition={{ duration: 0.5 }}>
         
         <div className="user-details-header">
-          <h1>{tUi("ui.pages.admin.adminUserDetails.userAccountInformation_1a87059564")}</h1>
+          <PageHeader kicker={userDetailsTitle} title={userDetailsTitle} />
         </div>
 
         <div className="user-details-content">

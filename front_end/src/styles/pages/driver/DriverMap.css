@@ -13,7 +13,9 @@
 }
 
 .map-header h1 {
-  font-size: 1.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: 0;
 }
@@ -27,22 +29,28 @@
 }
 
 .jobs-count {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: var(--success-color);
+  color: var(--background);
   padding: 0.35rem 1rem;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .closest-order-banner {
-  background: #fff3e0;
-  color: #bf360c;
-  border: 1px solid rgba(191, 54, 12, 0.28);
-  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid color-mix(in srgb, var(--warning-color) 35%, var(--border-color));
+  border-radius: 1.2rem;
   padding: 0.35rem 0.75rem;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.dark .closest-order-banner {
+  background: var(--surface);
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--warning-color) 45%, var(--border-color));
 }
 
 .map-container {
@@ -54,9 +62,10 @@
 
 .map-view {
   flex: 1;
-  border-radius: 12px;
+  border-radius: 1.2rem;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
   min-height: 400px;
   z-index: 1;
 }
@@ -85,18 +94,21 @@
 .jobs-sidebar {
   width: 320px;
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: 1.2rem;
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .jobs-sidebar h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   padding: 1rem 1.25rem;
   margin: 0;
   color: var(--text-primary);
   font-size: 1rem;
+  letter-spacing: -0.01em;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -115,26 +127,28 @@
 .job-item {
   background: var(--background);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 1rem;
   padding: 1rem;
   margin-bottom: 0.5rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: var(--shadow);
 }
 
 .job-item:hover {
   border-color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
 }
 
 .job-item.selected {
   border-color: var(--primary-color);
-  background: rgba(37, 99, 235, 0.05);
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--background));
 }
 
 .job-item.closest-job-item {
-  border-color: rgba(191, 54, 12, 0.5);
-  box-shadow: 0 0 0 1px rgba(191, 54, 12, 0.2);
+  border-color: color-mix(in srgb, var(--warning-color) 45%, var(--border-color));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warning-color) 25%, transparent);
 }
 
 .job-item-header {
@@ -171,9 +185,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(191, 54, 12, 0.28);
-  background: #fff3e0;
-  color: #bf360c;
+  border: 1px solid color-mix(in srgb, var(--warning-color) 35%, var(--border-color));
+  background: var(--surface);
+  color: var(--text-primary);
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.12rem 0.45rem;
@@ -186,7 +200,7 @@
 }
 
 .job-pay {
-  color: #10b981;
+  color: var(--success-color);
   font-weight: 700;
   font-size: 1.05rem;
 }
@@ -239,14 +253,15 @@
 
 .job-detail-content {
   background: var(--surface);
-  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 2rem;
   max-width: 550px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .close-modal {
@@ -272,9 +287,11 @@
 }
 
 .job-detail-content h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 1.5rem 0;
   color: var(--text-primary);
   font-size: 1.25rem;
+  letter-spacing: -0.01em;
   padding-right: 2rem;
 }
 
@@ -288,11 +305,12 @@
 .detail-section {
   background: var(--background);
   padding: 1rem;
-  border-radius: 10px;
+  border-radius: 1rem;
   border: 1px solid var(--border-color);
 }
 
 .detail-section h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.5rem 0;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -307,7 +325,7 @@
 .payment-amount {
   font-size: 1.25rem !important;
   font-weight: 700;
-  color: #10b981 !important;
+  color: var(--success-color) !important;
 }
 
 .items-section {
@@ -315,14 +333,16 @@
 }
 
 .items-section h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   margin: 0 0 0.75rem 0;
   color: var(--text-primary);
   font-size: 1rem;
+  letter-spacing: -0.01em;
 }
 
 .items-list {
   background: var(--background);
-  border-radius: 10px;
+  border-radius: 1rem;
   border: 1px solid var(--border-color);
   overflow: hidden;
 }
@@ -363,20 +383,20 @@
 
 .btn-accept {
   flex: 1;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background: var(--success-color);
+  color: var(--background);
   border: none;
   padding: 0.85rem 1.5rem;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .btn-accept:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-accept:disabled {
@@ -389,16 +409,16 @@
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
   padding: 0.85rem 1.5rem;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
 
 .btn-decline:hover {
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--error-color);
+  color: var(--error-color);
 }
 
 @media (max-width: 1024px) {

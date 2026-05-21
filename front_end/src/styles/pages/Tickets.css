@@ -1,7 +1,8 @@
-.tickets-page {
-  max-width: 1200px;
+.tickets-page.page-shell {
+  width: 100%;
+  max-width: 1220px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 1.25rem 3rem;
 }
 
 .tickets-layout {
@@ -32,10 +33,22 @@
 }
 
 .sidebar-card {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
   padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tickets-sidebar-card.tickets-sidebar-card {
+  padding: 1.75rem;
+}
+
+.sidebar-card.support-info h4 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
 }
 
 .live-chat-highlight {
@@ -122,14 +135,29 @@
 }
 
 /* Enhanced Ticket Card */
-.ticket-card {
-  transition: all 0.3s ease;
-  border: 1px solid #e2e8f0;
+.ticket-card.page-card.tickets-ticket-card {
+  border-radius: 1.2rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.ticket-card.expanded {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  border-color: #4f46e5;
+.ticket-card.page-card.tickets-ticket-card:last-child {
+  margin-bottom: 0;
+}
+
+.tickets-ticket-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.tickets-ticket-card.expanded {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
 }
 
 .ticket-title-group {
@@ -370,6 +398,111 @@
 
 .faq-links a:hover {
   text-decoration: underline;
+}
+
+.tickets-submit-create.page-btn-primary {
+  margin-top: 0.75rem;
+  background-color: var(--primary-color);
+  box-shadow: var(--shadow);
+}
+
+.tickets-submit-create.page-btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.tickets-send-note-btn.page-btn-secondary {
+  margin-top: 0.65rem;
+  width: 100%;
+}
+
+.tickets-live-chat-btn.page-btn-primary {
+  width: 100%;
+}
+
+.tickets-live-chat-btn.page-btn-primary.disabled,
+.tickets-live-chat-btn.disabled {
+  opacity: 0.55;
+}
+
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ticket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.tickets-ticket-card h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.tickets-ticket-card .ticket-date {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ticket-details {
+  padding: 0 1.5rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.create-ticket-form.page-card {
+  margin-bottom: 1.75rem;
+}
+
+.tickets-delete-row {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tickets-page .tickets-empty-card.page-empty .page-empty-icon {
+  margin-bottom: 0.5rem;
+}
+
+.tickets-sidebar .support-info p {
+  color: var(--text-secondary);
+  margin: 0.25rem 0;
+}
+
+.faq-links a {
+  color: var(--primary-color);
+}
+
+.quick-response h5,
+.chat-integration-card h5 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  color: var(--text-primary);
+}
+
+.quick-response textarea {
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--background);
+  color: var(--text-primary);
+  width: 100%;
+  padding: 0.75rem;
+}
+
+.chat-integration-card {
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+}
+
+.live-chat-launch-btn {
+  border-radius: 999px;
 }
 
 @media (max-width: 1024px) {

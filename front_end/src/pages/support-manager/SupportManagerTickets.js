@@ -6,6 +6,7 @@ import http from '../../services/http';
 import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/pages/support-manager/SupportManagerTickets.css';
@@ -84,12 +85,17 @@ const SupportManagerTickets = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return <div className="loading-container"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading loading-container"><LoadingSpinner size="large" /></div>;
+
+  const ticketMgmtTitle = 'Ticket Management';
 
   return (
-    <div className="support-manager-tickets">
+    <div className="admin-page-shell support-manager-tickets">
       <header className="tickets-header">
-        <h1>Ticket Management</h1>
+        <PageHeader
+          kicker={ticketMgmtTitle}
+          title={ticketMgmtTitle}
+          actions={
         <div className="header-actions">
           <div className="search-box">
             <FiSearch />
@@ -101,6 +107,8 @@ const SupportManagerTickets = () => {
             />
           </div>
         </div>
+          }
+        />
       </header>
 
       <div className="tickets-layout">

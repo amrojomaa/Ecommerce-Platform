@@ -3,6 +3,7 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
 .stars-container {
@@ -15,20 +16,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary, #ccc);
-  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  transition:
+    color 0.3s ease,
+    transform 0.3s ease;
 }
 
 .star-filled {
-  color: #ffc107;
+  color: var(--warning-color);
 }
 
 .star-half {
-  color: #ffc107;
+  color: var(--warning-color);
 }
 
 .star-empty {
-  color: var(--text-secondary, #ccc);
+  color: var(--text-secondary);
 }
 
 .star-interactive {
@@ -36,7 +39,7 @@
 }
 
 .star-interactive:hover {
-  color: #ffc107;
+  color: var(--warning-color);
   transform: scale(1.1);
 }
 
@@ -59,18 +62,18 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .rating-value {
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
 .rating-count {
   font-size: 0.85rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 /* Size variants */

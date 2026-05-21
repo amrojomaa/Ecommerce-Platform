@@ -2,6 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
 .spinner {

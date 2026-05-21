@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect, useCallback } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -16,6 +17,7 @@ import { useCart } from '../hooks/useCart';
 import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Payment.css';
+import PageHeader from '../components/PageHeader';
 
 const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
 
@@ -143,7 +145,7 @@ const PaymentForm = ({
 
       <motion.button
         type="submit"
-        className="pay-button"
+        className="pay-button page-btn-primary"
         disabled={!stripe || loading}
         whileHover={{ scale: loading ? 1 : 1.02 }}
         whileTap={{ scale: loading ? 1 : 0.98 }}>
@@ -282,24 +284,30 @@ const Payment = () => {
 
   if (loading) {
     return (
-      <div className="payment-loading">
-        <LoadingSpinner size="large" />
-        <p>{tUi("ui.pages.payment.initializingPayment_fd94c8ac65")}</p>
+      <div className="page-shell payment-page">
+        <div className="page-loading payment-page-loading-inner">
+          <LoadingSpinner size="large" />
+          <p>{tUi("ui.pages.payment.initializingPayment_fd94c8ac65")}</p>
+        </div>
       </div>);
 
   }
 
   return (
-    <div className="payment-page">
-      <h1>{tUi("ui.pages.payment.payment_2fd70791db")}</h1>
+    <div className="page-shell payment-page">
+      <PageHeader
+        kicker={tUi("ui.pages.payment.payment_2fd70791db")}
+        title={tUi("ui.pages.payment.payment_2fd70791db")}
+        animate={false}
+      />
       
       <div className="payment-container">
         <motion.div
-          className="payment-summary"
+          className="payment-summary page-card page-card--static"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}>
           
-          <h2>{tUi("ui.pages.payment.orderSummary_2732d1541f")}</h2>
+          <h2 className="page-section-title">{tUi("ui.pages.payment.orderSummary_2732d1541f")}</h2>
           <div className="summary-details">
             {installmentRequestId ?
             <>
@@ -326,11 +334,11 @@ const Payment = () => {
         </motion.div>
 
         <motion.div
-          className="payment-form-container"
+          className="payment-form-container page-form-panel"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}>
           
-          <h2>{tUi("ui.pages.payment.paymentInformation_080893f7ef")}</h2>
+          <h2 className="page-section-title">{tUi("ui.pages.payment.paymentInformation_080893f7ef")}</h2>
           {stripeLoading &&
           <div className="payment-loading-inline">
               <LoadingSpinner size="small" />
@@ -342,7 +350,7 @@ const Payment = () => {
               <div className="payment-error">{stripeLoadError}</div>
               <button
               type="button"
-              className="retry-payment-btn"
+              className="retry-payment-btn page-btn-secondary"
               onClick={initializeStripe}>{tUi("ui.pages.payment.retryLoadingStripe_1afbfaf06c")}
 
 

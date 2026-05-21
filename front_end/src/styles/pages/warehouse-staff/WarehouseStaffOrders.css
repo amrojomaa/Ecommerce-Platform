@@ -1,41 +1,60 @@
 .ws-orders {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
-.ws-orders h1 {
-  font-size: 1.75rem;
+.admin-page-shell.ws-orders {
+  gap: 2.5rem;
+}
+
+.ws-orders .page-header {
+  scroll-margin-top: 5rem;
+}
+
+.ws-orders > h1,
+.ws-orders .page-header h1 {
+  margin: 0;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
   font-weight: 700;
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
 }
 
 /* Tabs */
 .ws-orders-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--border-color);
+  flex-wrap: wrap;
 }
 
 .ws-orders-tabs button {
   padding: 0.75rem 1.25rem;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .ws-orders-tabs button:hover {
-  color: #f59e0b;
+  color: var(--primary-color);
 }
 
 .ws-orders-tabs button.active {
@@ -44,10 +63,10 @@
 }
 
 .ws-tab-count {
-  background: #fef3c7;
+  background: rgba(245, 158, 11, 0.15);
   color: #d97706;
-  padding: 0.15rem 0.5rem;
-  border-radius: 10px;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
   font-size: 0.75rem;
   margin-left: 0.5rem;
   font-weight: 700;
@@ -55,16 +74,19 @@
 
 /* Order cards */
 .ws-order-card {
-  background: white;
-  border-radius: 16px;
-  margin-bottom: 1rem;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--surface);
+  border-radius: 1.2rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: all 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: var(--shadow);
 }
 
 .ws-order-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.18);
 }
 
 .ws-order-card-header {
@@ -77,7 +99,7 @@
 }
 
 .ws-order-card-header:hover {
-  background: #fafafe;
+  background: rgba(37, 99, 235, 0.04);
 }
 
 .ws-order-card-header-left {
@@ -87,14 +109,16 @@
 }
 
 .ws-order-id {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   font-weight: 700;
   font-size: 1rem;
-  color: #1e293b;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 
 .ws-order-meta {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .ws-order-card-header-right {
@@ -105,7 +129,7 @@
 
 .ws-status-badge {
   padding: 0.3rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -143,10 +167,12 @@
 }
 
 .ws-verification-section h3 {
-  font-size: 1rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
   font-weight: 600;
   margin: 1rem 0 0.75rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 /* Verification checklist */
@@ -155,10 +181,10 @@
   align-items: center;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
+  background: var(--background);
+  border-radius: 1.2rem;
   margin-bottom: 0.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
 
@@ -207,11 +233,11 @@
 }
 
 .ws-report-btn {
-  padding: 0.35rem 0.75rem;
-  background: #fee2e2;
+  padding: 0.35rem 0.85rem;
+  background: rgba(239, 68, 68, 0.12);
   color: #dc2626;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -247,7 +273,7 @@
   background: linear-gradient(135deg, #16a34a, #15803d);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
@@ -278,8 +304,9 @@
 }
 
 .ws-issue-modal {
-  background: white;
-  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 2rem;
   max-width: 480px;
   width: 100%;
@@ -287,10 +314,12 @@
 }
 
 .ws-issue-modal h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   font-size: 1.2rem;
+  letter-spacing: -0.01em;
   font-weight: 700;
   margin-bottom: 1.25rem;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .ws-issue-modal .form-group {
@@ -329,7 +358,7 @@
 
 .ws-issue-modal .modal-actions button {
   padding: 0.65rem 1.25rem;
-  border-radius: 10px;
+  border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
   font-size: 0.875rem;
@@ -373,25 +402,25 @@
 
 /* Dark mode */
 .dark .ws-order-card {
-  background: #1e293b;
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border-color: var(--border-color);
 }
 
 .dark .ws-order-card-header:hover {
-  background: #334155;
+  background: rgba(96, 165, 250, 0.08);
 }
 
 .dark .ws-order-id, .dark .ws-verify-item-name, .dark .ws-verification-section h3 {
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .dark .ws-order-meta, .dark .ws-verify-item-meta {
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .dark .ws-verify-item {
-  background: #0f172a;
-  border-color: rgba(255, 255, 255, 0.06);
+  background: var(--background);
+  border-color: var(--border-color);
 }
 
 .dark .ws-verify-item.verified {
@@ -417,7 +446,8 @@
 }
 
 .dark .ws-issue-modal {
-  background: #1e293b;
+  background: var(--surface);
+  border-color: var(--border-color);
 }
 
 .dark .ws-issue-modal h3,

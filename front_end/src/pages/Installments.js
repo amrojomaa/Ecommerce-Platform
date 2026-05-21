@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Installments.css';
+import PageHeader from '../components/PageHeader';
 
 const DURATION_OPTIONS = [3, 6, 9, 12, 18, 24];
 const REQUIRED_DOCUMENT_TYPES = ['id_front', 'id_back', 'selfie_with_id'];
@@ -538,23 +539,27 @@ const Installments = () => {
 
   if (loadingOrders || loadingRequests || loadingProfile) {
     return (
-      <div className="installments-loading">
-        <LoadingSpinner size="large" />
+      <div className="page-shell installments-page">
+        <div className="page-loading">
+          <LoadingSpinner size="large" />
+        </div>
       </div>);
 
   }
 
   return (
-    <div className="installments-page">
-      <h1>{tUi("ui.pages.installments.installmentPayments_2b8fec206d")}</h1>
-      <p className="installments-subtitle">{tUi("ui.pages.installments.requestAPlanUploadYour_362dac0d89")}
-
-      </p>
+    <div className="page-shell installments-page">
+      <PageHeader
+        kicker={tUi("ui.pages.installments.installmentPayments_2b8fec206d")}
+        title={tUi("ui.pages.installments.installmentPayments_2b8fec206d")}
+        subtitle={tUi("ui.pages.installments.requestAPlanUploadYour_362dac0d89")}
+        animate={false}
+      />
 
       <div className="installment-create-toggle">
         <button
           type="button"
-          className="primary-btn"
+          className="primary-btn page-btn-primary installments-main-toggle-btn"
           disabled={hasPendingOrApprovedRequest && !editingRequestId}
           onClick={() => setIsCreateFormOpen((prev) => !prev)}>
           
@@ -569,10 +574,10 @@ const Installments = () => {
       </div>
 
       {isCreateFormOpen && (!hasPendingOrApprovedRequest || Boolean(editingRequestId)) &&
-      <section className="installment-request-card">
-          <h2>{editingRequestId ? tUi("ui.pages.installments.editRequestValue_5d45eca176", { value0: editingRequestId }) : tUi("ui.pages.installments.newInstallmentRequest_d768e2332d")}</h2>
+      <section className="installment-request-card page-card page-card--static">
+          <h2 className="page-section-title">{editingRequestId ? tUi("ui.pages.installments.editRequestValue_5d45eca176", { value0: editingRequestId }) : tUi("ui.pages.installments.newInstallmentRequest_d768e2332d")}</h2>
           {orders.length === 0 ?
-        <p className="empty-state">{tUi("ui.pages.installments.youNeedAnOrderBefore_a494dca334")}</p> :
+        <div className="page-empty installments-empty-msg"><p className="empty-state">{tUi("ui.pages.installments.youNeedAnOrderBefore_a494dca334")}</p></div> :
 
         <form onSubmit={handleSubmit}>
               {orderIdFromUrl && selectedOrder && (
@@ -869,7 +874,7 @@ const Installments = () => {
               </div>
 
               <div className="request-actions-row">
-                <button type="submit" className="primary-btn" disabled={submitting}>
+                <button type="submit" className="primary-btn page-btn-primary installments-submit-btn" disabled={submitting}>
                   {submitting ?
               editingRequestId ? tUi("ui.pages.installments.saving_c071a70304") : tUi("ui.pages.installments.submitting_3eccdd056d") :
               editingRequestId ? tUi("ui.pages.installments.saveRequest_b99556ff31") : tUi("ui.pages.installments.submitRequest_60d31e50ea")}
@@ -877,7 +882,7 @@ const Installments = () => {
                 {editingRequestId &&
             <button
               type="button"
-              className="request-cancel-btn"
+              className="request-cancel-btn page-btn-secondary installments-cancel-edit-btn"
               onClick={cancelEditRequest}
               disabled={submitting}>{tUi("ui.pages.installments.cancelEdit_030775d3ab")}
 
@@ -890,12 +895,12 @@ const Installments = () => {
         </section>
       }
 
-      <section className="installment-history-card">
+      <section className="installment-history-card page-card page-card--static installments-history-panel">
         <div className="installment-history-header">
-          <h2>{tUi("ui.pages.installments.myInstallmentRequests_64898be0d0")}</h2>
+          <h2 className="page-section-title">{tUi("ui.pages.installments.myInstallmentRequests_64898be0d0")}</h2>
           <button
             type="button"
-            className="request-sort-btn"
+            className="request-sort-btn page-btn-secondary installments-sort-btn"
             onClick={() =>
             setRequestSortDirection((prev) => prev === "desc" ? "asc" : "desc")
             }>{tUi("ui.pages.installments.sort_54ae76991c")}
@@ -904,7 +909,7 @@ const Installments = () => {
           </button>
         </div>
         {!requests.length ?
-        <p className="empty-state">{tUi("ui.pages.installments.noInstallmentRequestsYet_45b14f592d")}</p> :
+        <div className="page-empty installments-requests-empty"><p className="empty-state">{tUi("ui.pages.installments.noInstallmentRequestsYet_45b14f592d")}</p></div> :
 
         <div className="requests-master-detail">
             <aside className="request-lines-panel">
@@ -929,9 +934,9 @@ const Installments = () => {
 
             <div className="request-details-panel">
               {!selectedRequest ?
-            <p className="empty-state">{tUi("ui.pages.installments.selectARequestToView_8857e15043")}</p> :
+            <div className="page-empty installments-detail-empty"><p className="empty-state">{tUi("ui.pages.installments.selectARequestToView_8857e15043")}</p></div> :
 
-            <article className="request-card">
+            <article className="request-card installments-request-detail-card">
                   <header className="request-header">
                     <div>
                       <h3>{tUi("ui.pages.installments.request_02f116d6ec")}{selectedRequest.id}</h3>
@@ -976,7 +981,7 @@ const Installments = () => {
               <div className="request-actions-row">
                       <button
                   type="button"
-                  className="request-edit-btn"
+                  className="request-edit-btn page-btn-secondary installments-request-edit-btn"
                   onClick={() => startEditRequest(selectedRequest)}
                   disabled={cancellingRequestId === selectedRequest.id}>{tUi("ui.pages.installments.editRequest_d5ef80e7be")}
 
@@ -984,7 +989,7 @@ const Installments = () => {
                 </button>
                       <button
                   type="button"
-                  className="request-cancel-btn"
+                  className="request-cancel-btn page-btn-danger installments-request-cancel-inner"
                   onClick={() => handleCancelRequest(selectedRequest.id)}
                   disabled={cancellingRequestId === selectedRequest.id}>
                   
@@ -1044,7 +1049,7 @@ const Installments = () => {
                       </div>
                       <button
                         type="button"
-                        className="pay-remaining-btn"
+                        className="pay-remaining-btn page-btn-primary installments-pay-remaining-btn"
                         onClick={() => handlePayRemainingWithStripe(selectedRequest.id, selectedRequest.remaining_balance)}
                       >
                         {i18n.language && i18n.language.startsWith('ar') ? 'ادفع المبلغ المتبقي الآن' : i18n.language && i18n.language.startsWith('fr') ? 'Payer le solde restant maintenant' : 'Pay Remaining Balance Now'}
@@ -1079,6 +1084,7 @@ const Installments = () => {
                         <div className="schedule-pay-action">
                                     <button
                             type="button"
+                            className="page-btn-primary installments-schedule-pay-btn"
                             onClick={() => handlePayWithStripe(selectedRequest.id, schedule)}>{tUi("ui.pages.installments.payWithStripe_1e1b16dbd9")}
 
 

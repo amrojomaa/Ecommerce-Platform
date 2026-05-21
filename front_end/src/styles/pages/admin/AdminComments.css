@@ -136,6 +136,57 @@
   font-size: 0.9rem;
 }
 
+.selected-product-rating-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.rating-summary-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rating-summary-value {
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-right: 0.35rem;
+}
+
+.rating-summary-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.rating-summary-stars,
+.review-rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.review-star {
+  color: var(--border-color);
+  font-size: 0.95rem;
+}
+
+.review-star.filled {
+  color: #f59e0b;
+}
+
 .sentiment-filters {
   display: flex;
   gap: 0.5rem;
@@ -275,6 +326,25 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.review-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.review-rating-badge-empty {
+  background: rgba(156, 163, 175, 0.1);
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .sentiment-badge {
@@ -344,6 +414,11 @@
   }
 
   .comment-header {
+    flex-direction: column;
+  }
+
+  .selected-product-rating-summary {
+    align-items: flex-start;
     flex-direction: column;
   }
 

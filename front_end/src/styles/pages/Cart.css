@@ -268,9 +268,19 @@ body.cart-updating {
   max-width: 60%;
 }
 
+.cart-summary .summary-card .summary-row.summary-row-discount,
 .summary-row.summary-row-discount {
   color: #16a34a;
   font-weight: 600;
+}
+
+.cart-summary .summary-card .summary-row.summary-row-discount span {
+  color: #16a34a;
+}
+
+.dark .cart-summary .summary-card .summary-row.summary-row-discount,
+.dark .cart-summary .summary-card .summary-row.summary-row-discount span {
+  color: #22c55e;
 }
 
 .summary-row.total {

@@ -15,9 +15,14 @@ import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
 import { trackRecommendationEvent } from '../services/recommendations';
 import { getImageUrl } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 
 const ProductDetails = () => {
   const { name } = useParams();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
@@ -28,10 +33,13 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [starRatingKey, setStarRatingKey] = useState(0);
   const viewTrackedRef = useRef(null);
 
   useEffect(() => {
     fetchProduct();
+    setIsCommentsOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
@@ -121,6 +129,8 @@ const ProductDetails = () => {
     return null;
   }
 
+  const localizedProduct = localizeProduct(product, languageCode);
+
   // Get product images from API response
   const productImages = product.images && product.images.length > 0 ?
   product.images.map((img) => getImageUrl(img)) :
@@ -160,7 +170,7 @@ const ProductDetails = () => {
               <motion.img
                 key={selectedImageIndex}
                 src={productImages[selectedImageIndex]}
-                alt={product.name}
+                alt={localizedProduct.localized_name}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
@@ -180,7 +190,7 @@ const ProductDetails = () => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}>
                 
-                    <img src={img} alt={tUi("ui.pages.productDetails.valueValue_b44629bf6a", { value0: product.name, value1: index + 1 })} />
+                    <img src={img} alt={tUi("ui.pages.productDetails.valueValue_b44629bf6a", { value0: localizedProduct.localized_name, value1: index + 1 })} />
                   </motion.button>
               )}
               </div>
@@ -189,81 +199,12 @@ const ProductDetails = () => {
 
           {/* Product Info */}
           <div className="product-info">
-            <motion.h1
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}>
-              
-              {product.name}
-            </motion.h1>
-            
-            <motion.p
-              className="product-category"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}>
-              
-              {product.category_name}
-            </motion.p>
-
-            <motion.div
-              className="product-price"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}>
-              
-              {product.discount_enabled ?
-              <div>
-                  <div className="product-price-before">{formatCurrency(product.price)}</div>
-                  <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
-                </div> :
-
-              formatCurrency(product.price)
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-rating"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.45 }}>
-              
-              {product && product.id &&
-              <StarRating productId={product.id} showLabel={true} interactive={true} size="large" />
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-stock"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}>
-              
-              {isOutOfStock ?
-              <span className="out-of-stock">{tUi("ui.pages.productDetails.outOfStock_2f92caa56c")}</span> :
-
-              <span className="in-stock">{tUi("ui.pages.productDetails.available_d8d9652e8f")}
-
-              </span>
-              }
-            </motion.div>
-
-            <motion.div
-              className="product-description"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}>
-              
-              <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
-              <p>{product.description}</p>
-            </motion.div>
-
             {/* Quantity and Add to Cart */}
             <motion.div
               className="product-actions"
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}>
+              transition={{ delay: 0.2 }}>
               
               {isAuthenticated &&
               <div className="wishlist-button-container">
@@ -335,18 +276,109 @@ const ProductDetails = () => {
                 </motion.button>
               </div>
             </motion.div>
+
+            <motion.h1
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}>
+              
+              {localizedProduct.localized_name}
+            </motion.h1>
+
+            <motion.p
+              className="product-category"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}>
+              
+              {localizedProduct.localized_category_name}
+            </motion.p>
+
+            <motion.div
+              className="product-price"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.45 }}>
+              
+              {product.discount_enabled ?
+              <div>
+                  <div className="product-price-before">{formatCurrency(product.price)}</div>
+                  <div className="product-price-discount">{formatCurrency(product.discounted_price ?? product.price)}</div>
+                </div> :
+
+              formatCurrency(product.price)
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-rating"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}>
+              
+              {product && product.id &&
+              <StarRating
+                key={starRatingKey}
+                productId={product.id}
+                showLabel={true}
+                interactive={false}
+                size="large"
+                initialAverageRating={product.average_rating}
+                initialTotalRatings={product.total_ratings} />
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-stock"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}>
+              
+              {isOutOfStock ?
+              <span className="out-of-stock">{tUi("ui.pages.productDetails.outOfStock_2f92caa56c")}</span> :
+
+              <span className="in-stock">{tUi("ui.pages.productDetails.available_d8d9652e8f")}
+
+              </span>
+              }
+            </motion.div>
+
+            <motion.div
+              className="product-description"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}>
+              
+              <h3>{tUi("ui.pages.productDetails.description_173378af63")}</h3>
+              <p>{localizedProduct.localized_description}</p>
+            </motion.div>
           </div>
         </div>
 
         {/* Comments Section */}
         {product && product.id &&
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}>
-          
-            <CommentSection productId={product.id} />
-          </motion.div>
+        <div className="product-comments-section">
+            <button
+            type="button"
+            className="product-comments-toggle-btn"
+            onClick={() => setIsCommentsOpen((prev) => !prev)}>
+              {isCommentsOpen ?
+              tUi("ui.pages.productDetails.hideCommentsReviews_695cb75f4d") :
+              tUi("ui.pages.productDetails.openCommentsReviews_2a13485a67")}
+            </button>
+
+            {isCommentsOpen &&
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}>
+                <CommentSection
+                  productId={product.id}
+                  variant="productDetails"
+                  onReviewsChanged={() => setStarRatingKey((key) => key + 1)} />
+              </motion.div>
+          }
+          </div>
         }
       </motion.div>
     </div>);

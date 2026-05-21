@@ -21,7 +21,11 @@ const AdminProducts = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    name_ar: '',
+    name_fr: '',
     description: '',
+    description_ar: '',
+    description_fr: '',
     price: '',
     quantity: '',
     category_name: '',
@@ -274,10 +278,20 @@ const AdminProducts = () => {
   };
 
   const handleEdit = (product) => {
+    if (product.category_name && !categories.some((category) => category.name === product.category_name)) {
+      setCategories((prev) => [
+        ...prev,
+        { id: `current-${product.category_name}`, name: product.category_name, description: '' }
+      ]);
+    }
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      name_ar: product.name_ar || '',
+      name_fr: product.name_fr || '',
       description: product.description,
+      description_ar: product.description_ar || '',
+      description_fr: product.description_fr || '',
       price: product.price,
       quantity: product.quantity,
       category_name: product.category_name,
@@ -313,7 +327,11 @@ const AdminProducts = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      name_ar: '',
+      name_fr: '',
       description: '',
+      description_ar: '',
+      description_fr: '',
       price: '',
       quantity: '',
       category_name: '',
@@ -581,6 +599,22 @@ const AdminProducts = () => {
                   required />
                 
                 </div>
+                <div className="form-group">
+                  <label>Product Name (Arabic)</label>
+                  <input
+                  type="text"
+                  name="name_ar"
+                  value={formData.name_ar}
+                  onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                  <label>Product Name (French)</label>
+                  <input
+                  type="text"
+                  name="name_fr"
+                  value={formData.name_fr}
+                  onChange={handleInputChange} />
+                </div>
 
                 <div className="form-group">
                   <label>{tUi("ui.pages.admin.adminProducts.description_92d5f9f27a")}</label>
@@ -591,6 +625,22 @@ const AdminProducts = () => {
                   required
                   rows="4" />
                 
+                </div>
+                <div className="form-group">
+                  <label>Description (Arabic)</label>
+                  <textarea
+                  name="description_ar"
+                  value={formData.description_ar}
+                  onChange={handleInputChange}
+                  rows="3" />
+                </div>
+                <div className="form-group">
+                  <label>Description (French)</label>
+                  <textarea
+                  name="description_fr"
+                  value={formData.description_fr}
+                  onChange={handleInputChange}
+                  rows="3" />
                 </div>
 
                 <div className="form-row">

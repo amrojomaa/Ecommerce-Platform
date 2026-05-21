@@ -5,10 +5,13 @@ import { useTranslation } from 'react-i18next';
 import http from '../services/http';
 import { AI_ASSISTANT_ENDPOINTS } from '../config/api';
 import { formatPrice, getImageUrl } from '../utils/helpers';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 import '../styles/components/ChatWidget.css';
 
 const ChatWidget = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
   {
@@ -165,6 +168,9 @@ const ChatWidget = () => {
                       <h4>{t("chat.recommendedProducts")}</h4>
                       <div className="product-cards-grid">
                         {msg.products.map((product) =>
+                  (() => {
+                    const localizedProduct = localizeProduct(product, languageCode);
+                    return (
                   <motion.div
                     key={product.id}
                     className="product-card-mini"
@@ -179,7 +185,7 @@ const ChatWidget = () => {
                       <div className="product-image-mini">
                                 <img
                           src={getImageUrl(product.images[0])}
-                          alt={product.name}
+                          alt={localizedProduct.localized_name}
                           onError={(e) => {
                             e.target.src = getImageUrl('/images/placeholder.jpg');
                           }} />
@@ -187,12 +193,14 @@ const ChatWidget = () => {
                               </div>
                       }
                             <div className="product-info-mini">
-                              <h5>{product.name}</h5>
+                              <h5>{localizedProduct.localized_name}</h5>
                               <p className="product-price-mini">{formatPrice(product.price)}</p>
-                              <p className="product-category-mini">{product.category_name}</p>
+                              <p className="product-category-mini">{localizedProduct.localized_category_name}</p>
                             </div>
                             </Link>
                           </motion.div>
+                    );
+                  })()
                   )}
                       </div>
                     </div>

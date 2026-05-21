@@ -188,6 +188,28 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS products
+                ADD COLUMN IF NOT EXISTS name_ar VARCHAR,
+                ADD COLUMN IF NOT EXISTS name_fr VARCHAR,
+                ADD COLUMN IF NOT EXISTS description_ar VARCHAR,
+                ADD COLUMN IF NOT EXISTS description_fr VARCHAR
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS categories
+                ADD COLUMN IF NOT EXISTS name_ar VARCHAR,
+                ADD COLUMN IF NOT EXISTS name_fr VARCHAR,
+                ADD COLUMN IF NOT EXISTS description_ar VARCHAR,
+                ADD COLUMN IF NOT EXISTS description_fr VARCHAR
+                """
+            )
+        )
 
         connection.execute(
             text(

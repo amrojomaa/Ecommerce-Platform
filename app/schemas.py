@@ -1,5 +1,4 @@
-from __future__ import annotations
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+﻿from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
@@ -12,13 +11,10 @@ class UserRole(str, Enum):
     SUPPORT_MANAGER = "support_manager"
     OPERATIONS_MANAGER = "operations_manager"
     WAREHOUSE_MANAGER = "warehouse_manager"
-    SUPPORT_AGENT = "support_agent"
+    EMPLOYEE = "employee"
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
-    WALKIN = "walkin"
-    SELLER = "seller"
-    WAREHOUSE_STAFF = "warehouse_staff"
 
 
 PASSWORD_MIN_LENGTH = 9  # More than 8 characters
@@ -182,19 +178,31 @@ class FilterProducts(BaseModel):
 
 class Categories(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
 
 
 class CategoriesDisplay(BaseModel):
     id: int
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     created_at: datetime
 
 class ProductBase(BaseModel):
     id: Optional[int] = None
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -202,6 +210,8 @@ class ProductBase(BaseModel):
     discounted_price: Optional[float] = None
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
     class Config:
@@ -210,7 +220,11 @@ class ProductBase(BaseModel):
 class Product(BaseModel):
     id: Optional[int] = None
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -218,6 +232,8 @@ class Product(BaseModel):
     discounted_price: Optional[float] = None
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
     average_rating: float = 0.0
     total_ratings: int = 0
@@ -259,8 +275,8 @@ class UserBase(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
     @field_validator('password')
@@ -286,8 +302,8 @@ class UserUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
+        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
     @field_validator('password')
@@ -310,7 +326,7 @@ class User(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
-    role: str  # admin, support_agent, or customer
+    role: str  # admin, employee, or customer
     is_verified: bool
     is_blocked: bool = False
     created_at: datetime
@@ -318,8 +334,8 @@ class User(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
     class Config:
@@ -338,11 +354,19 @@ class AddCart(BaseModel):
 
 class ShowCartOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
+    category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
     # quantity: int
     # total: float
@@ -352,13 +376,11 @@ class ShowCartOut(BaseModel):
 
 class ShowCart(BaseModel):
     id: int
-    cart_id: Optional[int] = None
     product: ShowCartOut
     quantity: int
     total: float
     
 class CartResponse(BaseModel):
-    cart_id: Optional[int] = None
     items: List[ShowCart]
     subtotal: float = 0
     promotion_discount: float = 0
@@ -373,11 +395,19 @@ class Updateinputcart(BaseModel):
 
 class UpdateCartOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
+    category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
+    description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
     class Config:
@@ -387,6 +417,10 @@ class Updateoutputcart(BaseModel):
     product: UpdateCartOut
     quantity: int
     total: float
+    subtotal: Optional[float] = None
+    promotion_discount: Optional[float] = None
+    grand_total: Optional[float] = None
+    applied_promotion: Optional[AppliedPromotion] = None
 
 
 class Orderitemname(BaseModel):
@@ -457,8 +491,6 @@ class CheckoutRequest(BaseModel):
     zipCode: Optional[str] = None
     country: Optional[str] = None
     phone: Optional[str] = None
-    shipping_region: Optional[str] = None
-    shipping_fee: Optional[float] = 0.0
 
 
 class OrderUserInfo(BaseModel):
@@ -514,7 +546,7 @@ class AdminOrderResponse(BaseModel):
     payment_method: Optional[str] = None
     cashier: Optional[OrderCashierInfo] = None
     customer_name: Optional[str] = None
-    warehouse_issues: Optional[List[WarehouseIssueResponse]] = None
+    warehouse_issues: Optional[List["WarehouseIssueResponse"]] = None
 
     class Config:
         from_attributes = True
@@ -623,8 +655,8 @@ class UserRoleUpdate(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin", "seller", "warehouse_staff"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin, seller, warehouse_staff')
+        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
+            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
         return v
 
 
@@ -640,7 +672,6 @@ class POSLineItem(BaseModel):
 class POSCheckoutRequest(BaseModel):
     items: List[POSLineItem]
     payment_method: Literal["cash", "card"]
-    customer_name: Optional[str] = None
 
 
 class POSPromotionPreviewRequest(BaseModel):
@@ -650,7 +681,11 @@ class POSPromotionPreviewRequest(BaseModel):
 class POSProductRow(BaseModel):
     id: int
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     description: str
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     price: float
     discount_enabled: bool = False
     discount_type: Optional[str] = None
@@ -658,6 +693,8 @@ class POSProductRow(BaseModel):
     discounted_price: float
     quantity: int
     category_name: str
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     images: List[str] = []
 
     class Config:
@@ -672,8 +709,6 @@ class POSSaleSummaryRow(BaseModel):
     promotion_name: Optional[str] = None
     payment_method: Optional[str] = None
     status: str
-    customer_name: Optional[str] = None
-    cashier: Optional[OrderCashierInfo] = None
 
     class Config:
         from_attributes = True
@@ -701,13 +736,19 @@ class AddWishlist(BaseModel):
 
 class WishlistProductOut(BaseModel):
     name: str
+    name_ar: Optional[str] = None
+    name_fr: Optional[str] = None
     price: float
     original_price: Optional[float] = None
     discounted_price: Optional[float] = None
     discount_enabled: bool = False
     has_discount: bool = False
     category_name: Optional[str] = None
+    category_name_ar: Optional[str] = None
+    category_name_fr: Optional[str] = None
     description: Optional[str] = None
+    description_ar: Optional[str] = None
+    description_fr: Optional[str] = None
     images: Optional[List[str]] = []
 
 
@@ -743,7 +784,6 @@ class TicketResponseUser(BaseModel):
     first_name: str
     last_name: str
     email: str
-    role: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -754,7 +794,6 @@ class TicketResponseMessage(BaseModel):
     message: str
     created_at: datetime
     user: TicketResponseUser
-    is_chat: bool = False
     
     class Config:
         from_attributes = True
@@ -774,7 +813,6 @@ class TicketBase(BaseModel):
     responses: List[TicketResponseMessage] = []
     assigned_by: Optional[int] = None
     assigned_at: Optional[datetime] = None
-    assigned_by_user: Optional[TicketResponseUser] = None
     pending_delete: Optional[bool] = False
     delete_requested_by: Optional[int] = None
     delete_requested_at: Optional[datetime] = None
@@ -800,13 +838,34 @@ class TicketStatusUpdate(BaseModel):
 
 class TicketResponseCreate(BaseModel):
     message: str
-    is_chat: bool = False
 
 
 # Comment Schemas
 class CommentCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=500)
+    rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating must be between 1 and 5")
     product_id: Optional[int] = None  # Optional since it comes from URL path
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = (value or "").strip()
+        if not normalized:
+            raise ValueError("Comment content is required")
+        return normalized
+
+
+class CommentUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)
+    rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating must be between 1 and 5")
+
+    @field_validator("content")
+    @classmethod
+    def normalize_content(cls, value: str) -> str:
+        normalized = (value or "").strip()
+        if not normalized:
+            raise ValueError("Comment content is required")
+        return normalized
 
 
 class CommentUser(BaseModel):
@@ -822,8 +881,8 @@ class CommentUser(BaseModel):
 class CommentDisplay(BaseModel):
     id: int
     content: str
+    rating: Optional[int] = None
     sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
-    is_reported: bool = False
     created_at: datetime
     user: CommentUser
     
@@ -1324,19 +1383,20 @@ class InstallmentRequestUpdatePayload(BaseModel):
     user_note: Optional[str] = None
 
 
-# Warehouse Schemas
-
 class OrderItemVerificationUpdate(BaseModel):
     order_item_id: int
     verified: bool
+
 
 class WarehouseIssueCreate(BaseModel):
     order_item_id: Optional[int] = None
     issue_type: str
     description: str
 
+
 class WarehouseIssueResolve(BaseModel):
     resolution_note: str
+
 
 class WarehouseIssueBase(BaseModel):
     order_id: int
@@ -1349,6 +1409,7 @@ class WarehouseIssueBase(BaseModel):
     resolved_at: Optional[datetime] = None
     resolution_note: Optional[str] = None
 
+
 class WarehouseIssueResponse(WarehouseIssueBase):
     id: int
     created_at: datetime
@@ -1356,5 +1417,6 @@ class WarehouseIssueResponse(WarehouseIssueBase):
     class Config:
         from_attributes = True
 
+
 class ProductStockUpdate(BaseModel):
-    quantity: int
+    quantity: int

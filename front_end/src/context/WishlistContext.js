@@ -102,14 +102,20 @@ export const WishlistProvider = ({ children }) => {
         const transformedItems = wishlistData.items.map(item => ({
           id: item.id,
           name: item.product.name,
+          name_ar: item.product.name_ar || '',
+          name_fr: item.product.name_fr || '',
           price: item.product.price,
           original_price: item.product.original_price ?? item.product.price,
           discounted_price: item.product.discounted_price ?? item.product.price,
           discount_enabled: Boolean(item.product.discount_enabled),
           has_discount: Boolean(item.product.has_discount) || (item.product.discounted_price ?? item.product.price) < (item.product.original_price ?? item.product.price),
           category_name: item.product.category_name || '',
+          category_name_ar: item.product.category_name_ar || '',
+          category_name_fr: item.product.category_name_fr || '',
           images: item.product.images || [],
           description: item.product.description || '',
+          description_ar: item.product.description_ar || '',
+          description_fr: item.product.description_fr || '',
           product: item.product
         }));
         setWishlistItems(transformedItems);
@@ -137,21 +143,35 @@ export const WishlistProvider = ({ children }) => {
     const productData = {
       id: Date.now(), // Temporary ID
       name: product.name,
+      name_ar: product.name_ar || '',
+      name_fr: product.name_fr || '',
       price: product.price,
       original_price: product.price,
       discounted_price: product.discounted_price ?? product.price,
       discount_enabled: Boolean(product.discount_enabled),
       has_discount: Boolean(product.discount_enabled) && (product.discounted_price ?? product.price) < product.price,
       category_name: product.category_name,
+      category_name_ar: product.category_name_ar || '',
+      category_name_fr: product.category_name_fr || '',
       images: product.images || [],
       description: product.description,
+      description_ar: product.description_ar || '',
+      description_fr: product.description_fr || '',
       product: {
         name: product.name,
+        name_ar: product.name_ar || '',
+        name_fr: product.name_fr || '',
         price: product.discounted_price ?? product.price,
         original_price: product.price,
         discounted_price: product.discounted_price ?? product.price,
         discount_enabled: Boolean(product.discount_enabled),
         has_discount: Boolean(product.discount_enabled) && (product.discounted_price ?? product.price) < product.price,
+        category_name: product.category_name || '',
+        category_name_ar: product.category_name_ar || '',
+        category_name_fr: product.category_name_fr || '',
+        description: product.description || '',
+        description_ar: product.description_ar || '',
+        description_fr: product.description_fr || '',
         images: product.images || []
       }
     };
@@ -174,11 +194,19 @@ export const WishlistProvider = ({ children }) => {
       const newItem = {
         id: response.data.id,
         name: response.data.product.name,
+        name_ar: response.data.product.name_ar || '',
+        name_fr: response.data.product.name_fr || '',
         price: response.data.product.price,
         original_price: response.data.product.original_price ?? response.data.product.price,
         discounted_price: response.data.product.discounted_price ?? response.data.product.price,
         discount_enabled: Boolean(response.data.product.discount_enabled),
         has_discount: Boolean(response.data.product.has_discount) || (response.data.product.discounted_price ?? response.data.product.price) < (response.data.product.original_price ?? response.data.product.price),
+        category_name: response.data.product.category_name || '',
+        category_name_ar: response.data.product.category_name_ar || '',
+        category_name_fr: response.data.product.category_name_fr || '',
+        description: response.data.product.description || '',
+        description_ar: response.data.product.description_ar || '',
+        description_fr: response.data.product.description_fr || '',
         images: response.data.product.images || [],
         product: response.data.product
       };

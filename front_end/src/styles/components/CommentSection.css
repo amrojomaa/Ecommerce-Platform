@@ -8,14 +8,202 @@
 
 .comment-section-title {
   font-size: 1.75rem;
-  margin-bottom: 2rem;
+  margin: 0;
   color: var(--text-primary);
   font-weight: 600;
 }
 
+.comment-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.comment-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.comment-review-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+  border: 1px solid rgba(37, 99, 235, 0.28);
+}
+
+.comment-section-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.comment-sort-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.comment-sort-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.comment-sort-select {
+  padding: 0.55rem 2rem 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  min-height: 44px;
+}
+
+.comment-sort-select:focus-visible {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.comment-open-composer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-pill, 999px);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.comment-open-composer-btn__icon {
+  flex-shrink: 0;
+  font-size: 0.85em;
+  opacity: 0.95;
+}
+
+/* Primary CTA — Write a comment */
+.comment-open-composer-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%);
+  box-shadow:
+    0 2px 8px rgba(37, 99, 235, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.comment-open-composer-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(37, 99, 235, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  filter: brightness(1.05);
+}
+
+.comment-open-composer-btn--primary:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+.comment-open-composer-btn--primary:focus-visible {
+  outline: none;
+  box-shadow:
+    0 6px 20px rgba(37, 99, 235, 0.45),
+    0 0 0 3px rgba(37, 99, 235, 0.45);
+}
+
+/* Edit — same family, slightly softer ring */
+.comment-open-composer-btn--edit {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-hover, #1d4ed8) 0%, var(--primary-color) 100%);
+  box-shadow:
+    0 2px 8px rgba(37, 99, 235, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.comment-open-composer-btn--edit:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 18px rgba(37, 99, 235, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  filter: brightness(1.04);
+}
+
+.comment-open-composer-btn--edit:active {
+  transform: translateY(0);
+}
+
+.comment-open-composer-btn--edit:focus-visible {
+  outline: none;
+  box-shadow:
+    0 6px 18px rgba(37, 99, 235, 0.38),
+    0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+/* Close — quiet secondary */
+.comment-open-composer-btn--ghost {
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.comment-open-composer-btn--ghost:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.1);
+  transform: translateY(-1px);
+}
+
+.comment-open-composer-btn--ghost:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.comment-single-note {
+  margin: 0 0 1.25rem 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
 /* Comment Form */
 .comment-form {
-  margin-bottom: 2rem;
+  margin-top: 1.5rem;
   padding: 1.5rem;
   background-color: var(--background);
   border-radius: 0.75rem;
@@ -24,6 +212,9 @@
 
 .comment-form-header {
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .comment-form-user {
@@ -53,6 +244,12 @@
   color: var(--text-primary);
 }
 
+.comment-editing-label {
+  font-size: 0.82rem;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 .comment-input {
   width: 100%;
   padding: 1rem;
@@ -70,7 +267,107 @@
 .comment-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.comment-rating-field {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.comment-rating-label {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-inline-end: auto;
+}
+
+.comment-rating-picker,
+.comment-rating-display,
+.comment-user-rating {
+  display: inline-flex;
+  align-items: center;
+}
+
+.comment-rating-picker,
+.comment-rating-display {
+  gap: 0.2rem;
+}
+
+.comment-rating-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--border-color);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    color 0.18s ease;
+}
+
+.comment-rating-star svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.comment-rating-star.is-filled {
+  color: #f59e0b;
+}
+
+.comment-rating-picker .comment-rating-star:hover {
+  transform: translateY(-1px) scale(1.08);
+  color: #fbbf24;
+}
+
+.comment-rating-display .comment-rating-star {
+  width: 18px;
+  height: 18px;
+  cursor: default;
+}
+
+.comment-rating-display .comment-rating-star svg {
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.comment-rating-display .comment-rating-star:disabled {
+  opacity: 1;
+}
+
+.comment-clear-rating-btn {
+  min-height: 36px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.comment-clear-rating-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.comment-clear-rating-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .comment-form-footer {
@@ -115,8 +412,85 @@
 .comments-loading,
 .comments-empty {
   text-align: center;
-  padding: 2rem;
+  padding: 2.25rem 1.5rem;
   color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-color);
+  background: var(--surface);
+}
+
+.comments-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.comment-loading-skeleton {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.comment-loading-skeleton__line {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--border-color);
+  animation: commentSkeletonPulse 1.1s ease-in-out infinite;
+}
+
+.comment-loading-skeleton__line:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.comment-loading-skeleton__line:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.comment-loading-skeleton__line--wide {
+  width: 100%;
+}
+
+.comment-loading-skeleton__line--mid {
+  width: 82%;
+  align-self: flex-start;
+}
+
+.comment-loading-skeleton__line--short {
+  width: 55%;
+  align-self: flex-start;
+}
+
+@keyframes commentSkeletonPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.comments-loading-text {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.comments-empty-icon {
+  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.45;
+  color: var(--text-secondary);
+}
+
+.comments-empty p {
+  margin: 0;
+  max-width: 28rem;
+  margin-inline: auto;
+  line-height: 1.55;
 }
 
 .comment-item {
@@ -162,7 +536,15 @@
   color: var(--text-secondary);
 }
 
-.comment-delete-btn {
+.comment-user-rating {
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.comment-delete-btn,
+.comment-edit-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -175,9 +557,32 @@
   justify-content: center;
 }
 
+.comment-edit-btn:hover {
+  color: var(--primary-color);
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
 .comment-delete-btn:hover {
   color: #dc3545;
   background-color: rgba(220, 53, 69, 0.1);
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.comment-owner-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-inline-start: 0.5rem;
 }
 
 .comment-content {
@@ -210,14 +615,249 @@
   transform: translateY(-1px);
 }
 
+/* Product details — Comments & Reviews panel (dark glass, matches product page) */
+.comment-section.comment-section--product-details {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.35rem 1.5rem 1.6rem;
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.comment-section--product-details .comment-section-title {
+  color: var(--text-primary);
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.comment-section--product-details .comment-review-count {
+  background: rgba(37, 99, 235, 0.35);
+  color: #e0e7ff;
+  border-color: rgba(165, 180, 252, 0.45);
+}
+
+.comment-section--product-details .comment-sort-label {
+  color: var(--text-secondary);
+}
+
+.comment-section--product-details .comment-sort-select {
+  background-color: var(--control-bg);
+  border-color: var(--control-border);
+  color: var(--control-text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+}
+
+.comment-section--product-details .comments-loading,
+.comment-section--product-details .comments-empty {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.4);
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.comment-section--product-details .comments-empty-icon {
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.comment-section--product-details .comment-loading-skeleton__line {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.comment-section--product-details .comment-item {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.comment-section--product-details .comment-item:hover {
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.12);
+}
+
+.comment-section--product-details .comment-username {
+  color: #f8fafc;
+}
+
+.comment-section--product-details .comment-date {
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.comment-section--product-details .comment-content {
+  color: rgba(226, 232, 240, 0.92);
+  font-size: 0.95rem;
+}
+
+.comment-section--product-details .comment-single-note {
+  color: rgba(148, 163, 184, 0.95);
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.22);
+}
+
+.comment-section--product-details .comment-form {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+.comment-section--product-details .comment-form-username {
+  color: #f8fafc;
+}
+
+.comment-section--product-details .comment-rating-label {
+  color: #f8fafc;
+}
+
+.comment-section--product-details .comment-input {
+  background: var(--control-bg);
+  border-color: var(--control-border);
+  color: var(--control-text);
+}
+
+.comment-section--product-details .comment-rating-star {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.comment-section--product-details .comment-rating-star.is-filled {
+  color: #fbbf24;
+}
+
+.comment-section--product-details .comment-user-rating {
+  color: rgba(203, 213, 225, 0.9);
+}
+
+.comment-section--product-details .comment-clear-rating-btn {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(203, 213, 225, 0.9);
+}
+
+.comment-section--product-details .comment-clear-rating-btn:hover:not(:disabled) {
+  border-color: rgba(147, 197, 253, 0.45);
+  color: #bfdbfe;
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.comment-section--product-details .comment-char-count {
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.comment-section--product-details .comment-submit-btn {
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #4f46e5 100%);
+  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.35);
+}
+
+.comment-section--product-details .comment-delete-btn,
+.comment-section--product-details .comment-edit-btn {
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(203, 213, 225, 0.9);
+}
+
+.comment-section--product-details .comment-edit-btn:hover {
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.2);
+}
+
+.comment-section--product-details .comment-delete-btn:hover {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.comment-section--product-details .comment-owner-badge {
+  background: rgba(37, 99, 235, 0.28);
+  color: #bfdbfe;
+  border: 1px solid rgba(147, 197, 253, 0.25);
+}
+
+.comment-section--product-details .comment-editing-label {
+  color: #93c5fd;
+}
+
+.comment-section--product-details .comment-avatar,
+.comment-section--product-details .comment-user-avatar {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.comment-section--product-details .comments-list {
+  gap: 1rem;
+}
+
+html[dir='rtl'] .comment-sort-select {
+  background-position: left 0.65rem center;
+  padding-left: 0.75rem;
+  padding-right: 2rem;
+}
+
+html[dir='rtl'] .comment-section {
+  direction: rtl;
+}
+
+html[dir='rtl'] .comment-form-footer,
+html[dir='rtl'] .comment-header,
+html[dir='rtl'] .comment-section-controls,
+html[dir='rtl'] .comment-section-heading,
+html[dir='rtl'] .comment-user-info,
+html[dir='rtl'] .comment-form-header,
+html[dir='rtl'] .comment-form-user,
+html[dir='rtl'] .comment-rating-field {
+  direction: rtl;
+}
+
+html[dir='rtl'] .comment-input {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir='rtl'] .comment-rating-label {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .comment-section {
     padding: 1.5rem;
   }
 
+  .comment-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .comment-section-controls {
+    width: 100%;
+  }
+
+  .comment-sort-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .comment-sort-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .comment-open-composer-btn {
+    flex: 1;
+  }
+
   .comment-form {
     padding: 1rem;
+  }
+
+  .comment-rating-field {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .comment-item {
@@ -226,5 +866,9 @@
 
   .comment-section-title {
     font-size: 1.5rem;
+  }
+
+  .comment-section.comment-section--product-details {
+    padding: 1.1rem 1.15rem 1.3rem;
   }
 }

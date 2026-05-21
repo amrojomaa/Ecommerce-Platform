@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
-import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, buildUrl } from '../../config/api';
+import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, RATING_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
+import { FaStar } from 'react-icons/fa';
 import '../../styles/pages/admin/AdminComments.css';
 
 const SENTIMENT_LABEL_KEYS = {
@@ -27,6 +28,7 @@ const AdminComments = () => {
   const [selectedProductId, setSelectedProductId] = useState(productId ? parseInt(productId) : null);
   const [productSearch, setProductSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [ratingSummary, setRatingSummary] = useState(null);
   const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
   const [deleting, setDeleting] = useState(null);
   const confirm = useConfirm();
@@ -43,10 +45,12 @@ const AdminComments = () => {
   useEffect(() => {
     if (selectedProductId) {
       fetchComments();
+      fetchRatingSummary(selectedProductId);
     } else {
       setLoading(false);
       setComments([]);
       setFilteredComments([]);
+      setRatingSummary(null);
     }
   }, [selectedProductId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -90,6 +94,18 @@ const AdminComments = () => {
     }
   };
 
+  const fetchRatingSummary = async (nextProductId) => {
+    try {
+      const response = await http.get(
+        buildUrl(RATING_ENDPOINTS.GET_PRODUCT, { product_id: nextProductId })
+      );
+      setRatingSummary(response.data || null);
+    } catch (error) {
+      console.error('Error fetching rating summary:', error);
+      setRatingSummary(null);
+    }
+  };
+
   const handleProductSelect = (productId) => {
     setSelectedProductId(productId);
     navigate(`${commentsBasePath}/product/${productId}`, { replace: true });
@@ -122,6 +138,7 @@ const AdminComments = () => {
       toast.success(tUi("ui.pages.admin.adminComments.commentDeletedSuccessfully_a8f689dd50"));
       if (selectedProductId) {
         await fetchComments();
+        await fetchRatingSummary(selectedProductId);
       }
     } catch (error) {
       toast.error(tUi("ui.pages.admin.adminComments.failedToDeleteComment_1a364f7e19"));
@@ -166,6 +183,15 @@ const AdminComments = () => {
     return counts;
   };
 
+  const renderStars = (rating) => {
+    const safeRating = Number(rating) || 0;
+    return [1, 2, 3, 4, 5].map((value) =>
+    <FaStar
+      key={value}
+      className={value <= safeRating ? 'review-star filled' : 'review-star'} />
+    );
+  };
+
   // Default profile image
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
 
@@ -206,6 +232,12 @@ const AdminComments = () => {
   };
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedAverageRating = Number(
+    ratingSummary?.average_rating ?? selectedProduct?.average_rating ?? 0
+  );
+  const selectedTotalRatings = Number(
+    ratingSummary?.total_ratings ?? selectedProduct?.total_ratings ?? 0
+  );
   const filteredProducts = products.filter((product) =>
   product.name.toLowerCase().includes(productSearch.toLowerCase())
   );
@@ -297,6 +329,21 @@ const AdminComments = () => {
         )}
       </div>
 
+      {selectedProduct &&
+      <section className="selected-product-rating-summary">
+          <div>
+            <span className="rating-summary-label">{tUi("ui.pages.admin.adminComments.productAverageRating_85b4f2b45a")}</span>
+            <strong className="rating-summary-value">{selectedAverageRating.toFixed(1)}</strong>
+            <span className="rating-summary-count">
+              ({selectedTotalRatings} {selectedTotalRatings === 1 ? tUi("ui.components.starRating.rating_5bd901ae20") : tUi("ui.components.starRating.ratings_8aa35770e7")})
+            </span>
+          </div>
+          <div className="rating-summary-stars" aria-label={tUi("ui.components.commentSection.ratingOutOfFive_302e4cfd67", { value0: selectedAverageRating.toFixed(1) })}>
+            {renderStars(Math.round(selectedAverageRating))}
+          </div>
+        </section>
+      }
+
       {loading ?
       <div className="loading-container">
           <LoadingSpinner />
@@ -348,6 +395,15 @@ const AdminComments = () => {
                   </div>
                 </div>
                 <div className="comment-actions">
+                  {comment.rating ?
+                  <span className="review-rating-badge" aria-label={tUi("ui.components.commentSection.ratingOutOfFive_302e4cfd67", { value0: comment.rating })}>
+                    <span className="review-rating-stars">{renderStars(comment.rating)}</span>
+                    <strong>{comment.rating}/5</strong>
+                  </span> :
+                  <span className="review-rating-badge review-rating-badge-empty">
+                    {tUi("ui.pages.admin.adminComments.noRating_2de474f2ce")}
+                  </span>
+                  }
                   {getSentimentBadge(comment.sentiment)}
                   <button
                 className="delete-comment-btn"

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc, func
-from typing import List, Optional
-from .. import OAuth2, models, schemas
-from ..database import get_db
-from .admin import require_admin_or_support_manager
+from sqlalchemy import desc, asc, func
+from sqlalchemy.exc import IntegrityError
+from typing import List, Optional, Literal
+from datetime import datetime
+from app import OAuth2, models, schemas
+from app.database import get_db
+from app.routers.admin import require_admin_or_support_manager
 from app.utils.sentiment_analysis import analyze_sentiment
 
 router = APIRouter(
@@ -12,16 +14,65 @@ router = APIRouter(
 )
 
 
+def _ratings_map_for_comments(db: Session, comments: List[models.DBComment]) -> dict[tuple[int, int], int]:
+    if not comments:
+        return {}
+
+    product_ids = {comment.product_id for comment in comments}
+    user_ids = {comment.user_id for comment in comments}
+    ratings = db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id.in_(product_ids),
+        models.DBProductRating.user_id.in_(user_ids)
+    ).all()
+    return {
+        (rating.product_id, rating.user_id): rating.rating
+        for rating in ratings
+    }
+
+
+def _comment_to_display(comment: models.DBComment, ratings_map: dict[tuple[int, int], int]) -> dict:
+    return {
+        "id": comment.id,
+        "content": comment.content,
+        "rating": ratings_map.get((comment.product_id, comment.user_id)),
+        "sentiment": comment.sentiment,
+        "created_at": comment.created_at,
+        "user": comment.user,
+    }
+
+
+def _upsert_product_rating(db: Session, product_id: int, user_id: int, rating_value: Optional[int]) -> None:
+    if rating_value is None:
+        return
+
+    existing_rating = db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id == product_id,
+        models.DBProductRating.user_id == user_id
+    ).first()
+
+    if existing_rating:
+        existing_rating.rating = rating_value
+        existing_rating.updated_at = datetime.utcnow()
+        return
+
+    db.add(models.DBProductRating(
+        rating=rating_value,
+        product_id=product_id,
+        user_id=user_id
+    ))
+
+
 @router.get("/products/{product_id}/comments", response_model=List[schemas.CommentDisplay])
 def get_product_comments(
     product_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=1000),
+    sort_order: Literal["newest", "oldest"] = Query("newest"),
     db: Session = Depends(get_db)
 ):
     """
     Get comments for a product. Public endpoint - no authentication required.
-    Returns comments ordered by newest first.
+    Returns one comment per user and supports oldest/newest sorting.
     """
     # Verify product exists
     product = db.query(models.DBProduct).filter(models.DBProduct.id == product_id).first()
@@ -31,16 +82,26 @@ def get_product_comments(
             detail="Product not found"
         )
     
-    # Get comments ordered by newest first, with user relationship eagerly loaded
+    # Return only one comment per user for this product.
+    latest_comment_ids = (
+        db.query(func.max(models.DBComment.id).label("comment_id"))
+        .filter(models.DBComment.product_id == product_id)
+        .group_by(models.DBComment.user_id)
+        .subquery()
+    )
+
+    order_direction = asc if sort_order == "oldest" else desc
+
     comments = db.query(models.DBComment)\
         .options(joinedload(models.DBComment.user))\
-        .filter(models.DBComment.product_id == product_id)\
-        .order_by(desc(models.DBComment.created_at))\
+        .join(latest_comment_ids, models.DBComment.id == latest_comment_ids.c.comment_id)\
+        .order_by(order_direction(models.DBComment.created_at), order_direction(models.DBComment.id))\
         .offset(skip)\
         .limit(limit)\
         .all()
     
-    return comments
+    ratings_map = _ratings_map_for_comments(db, comments)
+    return [_comment_to_display(comment, ratings_map) for comment in comments]
 
 
 @router.post("/products/{product_id}/comments", response_model=schemas.CommentDisplay, status_code=status.HTTP_201_CREATED)
@@ -61,8 +122,18 @@ def create_comment(
             detail="Product not found"
         )
     
+    # Enforce one comment per user per product.
+    existing_comment = db.query(models.DBComment).filter(
+        models.DBComment.product_id == product_id,
+        models.DBComment.user_id == current_user.id
+    ).first()
+    if existing_comment:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You already posted a comment for this product. Please edit your existing comment."
+        )
+
     # Use product_id from URL path (ignore product_id in body if provided)
-    # Analyze sentiment of the comment
     sentiment = analyze_sentiment(comment.content)
     
     # Create comment with sentiment
@@ -74,10 +145,52 @@ def create_comment(
     )
     
     db.add(new_comment)
-    db.commit()
+    _upsert_product_rating(db, product_id, current_user.id, comment.rating)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You already posted a comment for this product. Please edit your existing comment."
+        )
     db.refresh(new_comment)
     
-    return new_comment
+    ratings_map = _ratings_map_for_comments(db, [new_comment])
+    return _comment_to_display(new_comment, ratings_map)
+
+
+@router.put("/comments/{comment_id}", response_model=schemas.CommentDisplay)
+def update_comment(
+    comment_id: int,
+    comment_data: schemas.CommentUpdate,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user)
+):
+    """
+    Update a comment. Users can update their own comments, admins/support managers can update any comment.
+    """
+    comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if comment.user_id != current_user.id and user.role not in ["admin", "support_manager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to edit this comment"
+        )
+
+    comment.content = comment_data.content
+    comment.sentiment = analyze_sentiment(comment_data.content)
+    _upsert_product_rating(db, comment.product_id, comment.user_id, comment_data.rating)
+    db.commit()
+    db.refresh(comment)
+    ratings_map = _ratings_map_for_comments(db, [comment])
+    return _comment_to_display(comment, ratings_map)
 
 
 @router.delete("/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -106,6 +219,10 @@ def delete_comment(
             detail="You don't have permission to delete this comment"
         )
     
+    db.query(models.DBProductRating).filter(
+        models.DBProductRating.product_id == comment.product_id,
+        models.DBProductRating.user_id == comment.user_id
+    ).delete(synchronize_session=False)
     db.delete(comment)
     db.commit()
     
@@ -134,7 +251,8 @@ def get_all_comments(
         .limit(limit)\
         .all()
     
-    return comments
+    ratings_map = _ratings_map_for_comments(db, comments)
+    return [_comment_to_display(comment, ratings_map) for comment in comments]
 
 
 @router.patch("/comments/{comment_id}/report", response_model=schemas.CommentDisplay)

@@ -15,6 +15,18 @@ import { useConfirm } from '../hooks/useConfirm';
 import { FaStar } from 'react-icons/fa';
 import '../styles/pages/Profile.css';
 
+const getCurrentMonthKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getMonthKeyFromDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+};
+
 const Profile = () => {
   const { user, fetchUserInfo } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -97,6 +109,14 @@ const Profile = () => {
   const passwordStrengthProgress = useMemo(
     () => getPasswordStrengthProgress(formData.password),
     [formData.password]
+  );
+  const feedbackLastSubmittedMonth = useMemo(
+    () => getMonthKeyFromDate(feedbackUpdatedAt),
+    [feedbackUpdatedAt]
+  );
+  const hasSubmittedFeedbackThisMonth = useMemo(
+    () => feedbackLastSubmittedMonth === getCurrentMonthKey(),
+    [feedbackLastSubmittedMonth]
   );
 
   const fetchMyFeedback = async () => {
@@ -322,6 +342,11 @@ const Profile = () => {
 
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
+
+    if (hasSubmittedFeedbackThisMonth) {
+      toast.info(tUi("ui.pages.profile.feedbackAlreadySubmittedThisMonth_b1a12a9a77"));
+      return;
+    }
 
     if (feedbackRating < 1 || feedbackRating > 5) {
       toast.error(tUi("ui.pages.profile.pleaseChooseARatingBetween_36f06942a7"));
@@ -674,11 +699,14 @@ const Profile = () => {
               <button
               type="submit"
               className="feedback-submit-btn"
-              disabled={feedbackSubmitting || feedbackRating < 1}>
+              disabled={feedbackSubmitting || feedbackRating < 1 || hasSubmittedFeedbackThisMonth}>
               
                 {feedbackSubmitting ? tUi("ui.pages.profile.saving_944600e80a") : tUi("ui.pages.profile.submitFeedback_86e110a0e0")}
               </button>
             </div>
+            {hasSubmittedFeedbackThisMonth &&
+          <p className="feedback-monthly-note">{tUi("ui.pages.profile.feedbackAlreadySubmittedThisMonth_b1a12a9a77")}</p>
+          }
 
             {feedbackUpdatedAt &&
           <p className="feedback-updated-at">{tUi("ui.pages.profile.lastUpdated_9589c4356b")}

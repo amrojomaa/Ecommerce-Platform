@@ -66,6 +66,27 @@ router = APIRouter(
     tags=['Products']
 )
 
+def _to_nullable_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def _build_product_persist_payload(product: schemas.ProductBase) -> dict:
+    # Explicit whitelist avoids leaking response-only/non-DB fields into DBProduct.
+    return {
+        "name": product.name.strip(),
+        "name_ar": _to_nullable_text(product.name_ar),
+        "name_fr": _to_nullable_text(product.name_fr),
+        "description": product.description.strip(),
+        "description_ar": _to_nullable_text(product.description_ar),
+        "description_fr": _to_nullable_text(product.description_fr),
+        "price": float(product.price),
+        "quantity": int(product.quantity),
+        "category_name": product.category_name,
+    }
+
 
 def get_ratings_summary_by_product_ids(db: Session, product_ids: List[int]) -> Dict[int, dict]:
     if not product_ids:
@@ -97,7 +118,11 @@ def get_product_with_images(product: models.DBProduct, ratings_map: Dict[int, di
     product_dict = {
         "id": product.id,
         "name": product.name,
+        "name_ar": product.name_ar,
+        "name_fr": product.name_fr,
         "description": product.description,
+        "description_ar": product.description_ar,
+        "description_fr": product.description_fr,
         "price": float(product.price),
         "discount_enabled": bool(product.discount_enabled),
         "discount_type": product.discount_type,
@@ -105,6 +130,8 @@ def get_product_with_images(product: models.DBProduct, ratings_map: Dict[int, di
         "discounted_price": float(product.discounted_price),
         "quantity": product.quantity,
         "category_name": product.category_name,
+        "category_name_ar": product.category.name_ar if product.category else None,
+        "category_name_fr": product.category.name_fr if product.category else None,
         "images": [img.image_path for img in product.images],
         "average_rating": float(rating_summary.get("average_rating", 0.0)),
         "total_ratings": int(rating_summary.get("total_ratings", 0)),
@@ -207,14 +234,12 @@ def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db),
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
     
     # Create product without images/derived fields
-    product_dict = product.dict()
-    product_dict.pop('images', None)
-    product_dict.pop('discounted_price', None)
+    product_dict = _build_product_persist_payload(product)
     discount_enabled, discount_type, discount_value = validate_discount(
         float(product_dict.get("price", 0)),
-        bool(product_dict.get("discount_enabled", False)),
-        product_dict.get("discount_type"),
-        product_dict.get("discount_value"),
+        bool(product.discount_enabled),
+        product.discount_type,
+        product.discount_value,
     )
     product_dict["discount_enabled"] = discount_enabled
     product_dict["discount_type"] = discount_type
@@ -302,15 +327,12 @@ def update_product(product: schemas.ProductBase, id :int, db: Session = Depends 
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Maximum 3 images allowed")
         
         # Update product without images, id, and derived fields
-        product_dict = product.dict()
-        product_dict.pop('images', None)
-        product_dict.pop('id', None)  # Remove id to prevent updating primary key
-        product_dict.pop('discounted_price', None)
+        product_dict = _build_product_persist_payload(product)
         discount_enabled, discount_type, discount_value = validate_discount(
             float(product_dict.get("price", 0)),
-            bool(product_dict.get("discount_enabled", False)),
-            product_dict.get("discount_type"),
-            product_dict.get("discount_value"),
+            bool(product.discount_enabled),
+            product.discount_type,
+            product.discount_value,
         )
         product_dict["discount_enabled"] = discount_enabled
         product_dict["discount_type"] = discount_type

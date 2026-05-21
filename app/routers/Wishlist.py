@@ -16,13 +16,19 @@ def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem) -> dict:
         "id": wishlist_item.id,
         "product": {
             "name": wishlist_item.product.name,
+            "name_ar": wishlist_item.product.name_ar,
+            "name_fr": wishlist_item.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(wishlist_item.product.discount_enabled),
             "has_discount": has_discount,
             "category_name": wishlist_item.product.category_name,
+            "category_name_ar": wishlist_item.product.category.name_ar if wishlist_item.product.category else None,
+            "category_name_fr": wishlist_item.product.category.name_fr if wishlist_item.product.category else None,
             "description": wishlist_item.product.description,
+            "description_ar": wishlist_item.product.description_ar,
+            "description_fr": wishlist_item.product.description_fr,
             "images": [img.image_path for img in wishlist_item.product.images]
         }
     }

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import http from '../services/http';
 import { CART_ENDPOINTS } from '../config/api';
 
@@ -16,6 +16,7 @@ export const CartProvider = ({ children }) => {
   const [grandTotal, setGrandTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const quantityRequestSeq = useRef({});
 
   // Get current user ID from localStorage
   const getCurrentUserId = () => {
@@ -152,6 +153,33 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const getItemUnitPrice = (item) => {
+    return Number(
+      item.product?.discounted_price ??
+      item.product?.price ??
+      0
+    );
+  };
+
+  const updateTotalsFromItems = (items, totals = {}) => {
+    const nextSubtotal = Number.isFinite(Number(totals.subtotal)) ?
+      Number(totals.subtotal) :
+      items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+    const nextPromotionDiscount = Number.isFinite(Number(totals.promotion_discount)) ?
+      Number(totals.promotion_discount) :
+      promotionDiscount;
+    const nextGrandTotal = Number.isFinite(Number(totals.grand_total)) ?
+      Number(totals.grand_total) :
+      Math.max(nextSubtotal - nextPromotionDiscount, 0);
+
+    setSubtotal(nextSubtotal);
+    setPromotionDiscount(nextPromotionDiscount);
+    if (Object.prototype.hasOwnProperty.call(totals, 'applied_promotion')) {
+      setAppliedPromotion(totals.applied_promotion);
+    }
+    setGrandTotal(nextGrandTotal);
+  };
+
   const addToCart = async (productName, quantity = 1) => {
     if (!isAuthenticated()) {
       // Handle guest cart (localStorage)
@@ -181,21 +209,21 @@ export const CartProvider = ({ children }) => {
   const updateCartItem = async (itemId, quantity) => {
     if (!isAuthenticated()) return { success: false, error: 'Please login' };
 
+    const requestSeq = (quantityRequestSeq.current[itemId] || 0) + 1;
+    quantityRequestSeq.current[itemId] = requestSeq;
+
     // Optimistically update local state first for instant feedback
     const previousItems = [...cartItems];
     setCartItems(prevItems => {
       const updated = prevItems.map(item => {
         if (item.id === itemId) {
-          const newTotal = (item.product?.price || 0) * quantity;
+          const newTotal = getItemUnitPrice(item) * quantity;
           return { ...item, quantity: quantity, total: newTotal };
         }
         return item;
       });
-      
-      // Recalculate grand total
-      const newGrandTotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
-      setGrandTotal(newGrandTotal);
-      
+
+      updateTotalsFromItems(updated);
       return updated;
     });
 
@@ -207,6 +235,10 @@ export const CartProvider = ({ children }) => {
       
       // Update with server response to ensure accuracy
       const updatedData = response.data;
+      if (quantityRequestSeq.current[itemId] !== requestSeq) {
+        return { success: true };
+      }
+
       setCartItems(prevItems => {
         const updated = prevItems.map(item => {
           if (item.id === itemId) {
@@ -222,20 +254,22 @@ export const CartProvider = ({ children }) => {
           }
           return item;
         });
-        
-        // Recalculate grand total from server data
-        const newGrandTotal = updated.reduce((sum, item) => sum + (item.total || 0), 0);
-        setGrandTotal(newGrandTotal);
-        
+
+        updateTotalsFromItems(updated, {
+          subtotal: updatedData.subtotal,
+          promotion_discount: updatedData.promotion_discount,
+          applied_promotion: updatedData.applied_promotion,
+          grand_total: updatedData.grand_total
+        });
         return updated;
       });
-      
-      await fetchCart();
       return { success: true };
     } catch (error) {
-      // On error, revert to previous state and refetch to sync with server
-      setCartItems(previousItems);
-      await fetchCart();
+      // On error, revert only if this is still the latest request for the item.
+      if (quantityRequestSeq.current[itemId] === requestSeq) {
+        setCartItems(previousItems);
+        updateTotalsFromItems(previousItems);
+      }
       return {
         success: false,
         error: error.message || 'Failed to update cart item',

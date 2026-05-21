@@ -13,10 +13,15 @@ import { useCart } from '../hooks/useCart';
 import { useCurrency } from '../hooks/useCurrency';
 import StarRating from '../components/StarRating';
 import { getImageUrl } from '../utils/helpers';
+import { useTranslation } from 'react-i18next';
+import { normalizeLanguageCode } from '../i18n/constants';
+import { localizeProduct } from '../utils/localizedContent';
 import '../styles/pages/Home.css';
 
 const Home = () => {
   const location = useLocation();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const { isAuthenticated } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
@@ -31,7 +36,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchFeaturedProducts();
-  }, [location.pathname]); // Refresh when navigating to home page
+  }, [location.pathname, languageCode]); // Refresh when navigating to home page
 
   const fetchFeaturedProducts = async () => {
     try {
@@ -43,7 +48,12 @@ const Home = () => {
       // Get first 6 products as featured
       setFeaturedProducts(products.slice(0, 6));
       setDiscountedProducts(discounts.slice(0, 6));
-      setCategories(uniqueCategories.slice(0, 4));
+      const localizedCategories = uniqueCategories.map((categoryValue) => {
+        const matched = products.find((p) => p.category_name === categoryValue);
+        const localized = matched ? localizeProduct(matched, languageCode).localized_category_name : categoryValue;
+        return { value: categoryValue, label: localized };
+      });
+      setCategories(localizedCategories.slice(0, 4));
       setProductCount(products.length);
       setDiscountCount(discounts.length);
       setCategoryCount(uniqueCategories.length);
@@ -244,16 +254,16 @@ const Home = () => {
           <div className="categories-grid">
             {categories.map((category, index) =>
           <motion.div
-            key={category}
+            key={category.value}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
             whileHover={{ scale: 1.05 }}>
             
-                <Link to={`/products?category=${encodeURIComponent(category)}`} className="category-card">
+                <Link to={`/products?category=${encodeURIComponent(category.value)}`} className="category-card">
                   <div className="category-icon">🏷️</div>
-                  <h3>{category}</h3>
+                  <h3>{category.label}</h3>
                 </Link>
               </motion.div>
           )}
@@ -302,13 +312,13 @@ const Home = () => {
                   src={product.images && product.images.length > 0 ?
                   getImageUrl(product.images[0]) :
                   getImageUrl('/images/placeholder.jpg')}
-                  alt={product.name}
+                  alt={localizeProduct(product, languageCode).localized_name}
                   style={{ objectFit: 'cover' }} />
                 
                     </div>
                     <div className="product-info">
-                      <h3>{product.name}</h3>
-                      <p className="product-category">{product.category_name}</p>
+                      <h3>{localizeProduct(product, languageCode).localized_name}</h3>
+                      <p className="product-category">{localizeProduct(product, languageCode).localized_category_name}</p>
                       <div className="product-price-container">
                         <div className="product-price-stack">
                           <p className="product-price-before">{formatCurrency(product.price)}</p>
@@ -384,7 +394,7 @@ const Home = () => {
                   src={product.images && product.images.length > 0 ?
                   getImageUrl(product.images[0]) :
                   getImageUrl('/images/placeholder.jpg')}
-                  alt={product.name}
+                  alt={localizeProduct(product, languageCode).localized_name}
                   style={{ objectFit: 'cover' }}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
@@ -414,8 +424,8 @@ const Home = () => {
                 }
                   </div>
                   <div className="product-info">
-                    <h3>{product.name}</h3>
-                    <p className="product-category">{product.category_name}</p>
+                    <h3>{localizeProduct(product, languageCode).localized_name}</h3>
+                    <p className="product-category">{localizeProduct(product, languageCode).localized_category_name}</p>
                     {product.id &&
                 <div className="product-rating-container">
                         <StarRating
@@ -483,3 +493,4 @@ const Home = () => {
 };
 
 export default Home;
+

@@ -20,11 +20,19 @@ def get_cart_item_with_images(cart_item: models.DBCartItem) -> dict:
         "total": float(cart_item.total),
         "product": {
             "name": cart_item.product.name,
+            "name_ar": cart_item.product.name_ar,
+            "name_fr": cart_item.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cart_item.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cart_item.product.category_name,
+            "category_name_ar": cart_item.product.category.name_ar if cart_item.product.category else None,
+            "category_name_fr": cart_item.product.category.name_fr if cart_item.product.category else None,
+            "description": cart_item.product.description,
+            "description_ar": cart_item.product.description_ar,
+            "description_fr": cart_item.product.description_fr,
             "images": [img.image_path for img in cart_item.product.images]
         }
     }
@@ -46,6 +54,20 @@ def _build_promotion_line_items(cart_items: List[models.DBCartItem]) -> list[pro
             )
         )
     return lines
+
+
+def _get_cart_totals(db: Session, cart_items: List[models.DBCartItem]) -> dict:
+    active_promotion = promotion_engine.get_active_promotion(db)
+    promotion_summary = promotion_engine.calculate_promotion_totals(
+        _build_promotion_line_items(cart_items),
+        active_promotion,
+    )
+    return {
+        "subtotal": float(promotion_summary["subtotal"]),
+        "promotion_discount": float(promotion_summary["promotion_discount"]),
+        "applied_promotion": promotion_summary["applied_promotion"],
+        "grand_total": float(promotion_summary["grand_total"])
+    }
 
 
 router = APIRouter(
@@ -97,11 +119,19 @@ def add_to_cart(request :schemas.AddCart, db: Session = Depends (get_db), curren
     return {
         "product": {
             "name": cart_item.product.name,
+            "name_ar": cart_item.product.name_ar,
+            "name_fr": cart_item.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cart_item.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cart_item.product.category_name,
+            "category_name_ar": cart_item.product.category.name_ar if cart_item.product.category else None,
+            "category_name_fr": cart_item.product.category.name_fr if cart_item.product.category else None,
+            "description": cart_item.product.description,
+            "description_ar": cart_item.product.description_ar,
+            "description_fr": cart_item.product.description_fr,
             "images": [img.image_path for img in cart_item.product.images]
         },
         "quantity": cart_item.quantity,
@@ -135,19 +165,12 @@ def show_me_cart(db: Session = Depends(get_db), current_user: schemas.User = Dep
 
     # Convert cart items to include product images
     cart_items = [get_cart_item_with_images(item) for item in cart.items]
-    active_promotion = promotion_engine.get_active_promotion(db)
-    promotion_summary = promotion_engine.calculate_promotion_totals(
-        _build_promotion_line_items(cart.items),
-        active_promotion,
-    )
+    totals = _get_cart_totals(db, cart.items)
 
     return {
         "cart_id": cart.id,
         "items": cart_items,
-        "subtotal": float(promotion_summary["subtotal"]),
-        "promotion_discount": float(promotion_summary["promotion_discount"]),
-        "applied_promotion": promotion_summary["applied_promotion"],
-        "grand_total": float(promotion_summary["grand_total"])
+        **totals
     }
 
 
@@ -164,6 +187,8 @@ def update_cart(item_id: int, request :schemas.Updateinputcart, db: Session = De
     cartitem.quantity = request.quantity
     db.commit()
     db.refresh(cartitem)
+    db.refresh(cartitem.cart)
+    totals = _get_cart_totals(db, cartitem.cart.items)
     
     # Return cart item with product images
     original_price = float(cartitem.product.price)
@@ -172,15 +197,24 @@ def update_cart(item_id: int, request :schemas.Updateinputcart, db: Session = De
     return {
         "product": {
             "name": cartitem.product.name,
+            "name_ar": cartitem.product.name_ar,
+            "name_fr": cartitem.product.name_fr,
             "price": discounted_price,
             "original_price": original_price,
             "discounted_price": discounted_price,
             "discount_enabled": bool(cartitem.product.discount_enabled),
             "has_discount": has_discount,
+            "category_name": cartitem.product.category_name,
+            "category_name_ar": cartitem.product.category.name_ar if cartitem.product.category else None,
+            "category_name_fr": cartitem.product.category.name_fr if cartitem.product.category else None,
+            "description": cartitem.product.description,
+            "description_ar": cartitem.product.description_ar,
+            "description_fr": cartitem.product.description_fr,
             "images": [img.image_path for img in cartitem.product.images]
         },
         "quantity": cartitem.quantity,
-        "total": float(cartitem.total)
+        "total": float(cartitem.total),
+        **totals
     }
 
 @router.delete("/deletecart/{item_id}", status_code=status.HTTP_204_NO_CONTENT)

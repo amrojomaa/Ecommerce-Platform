@@ -418,6 +418,16 @@
   cursor: not-allowed;
 }
 
+.feedback-monthly-note {
+  margin: 0.75rem 0 0;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.84rem;
+}
+
 .feedback-updated-at {
   margin: 0.85rem 0 0;
   color: var(--text-secondary);

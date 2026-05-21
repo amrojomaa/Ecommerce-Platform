@@ -418,10 +418,16 @@ def get_product_with_images(product: models.DBProduct) -> dict:
     product_dict = {
         "id": product.id,
         "name": product.name,
+        "name_ar": product.name_ar,
+        "name_fr": product.name_fr,
         "description": product.description,
+        "description_ar": product.description_ar,
+        "description_fr": product.description_fr,
         "price": float(product.price),
         "quantity": product.quantity,
         "category_name": product.category_name,
+        "category_name_ar": product.category.name_ar if product.category else None,
+        "category_name_fr": product.category.name_fr if product.category else None,
         "images": [img.image_path for img in product.images] if hasattr(product, 'images') and product.images else []
     }
     return product_dict

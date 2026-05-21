@@ -2,13 +2,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding-top: var(--navbar-height);
 }
 
 .cashier-container {
   display: flex;
   flex: 1;
-  margin-top: 80px;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - var(--navbar-height));
 }
 
 .cashier-content {
@@ -17,7 +17,7 @@
   overflow-y: auto;
   background: var(--background);
   margin-left: 250px;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - var(--navbar-height));
 }
 
 html[dir='rtl'] .cashier-content {
@@ -38,7 +38,6 @@ html[dir='rtl'] .cashier-content {
 @media (max-width: 768px) {
   .cashier-container {
     flex-direction: column;
-    margin-top: 0;
   }
 
   .cashier-content {

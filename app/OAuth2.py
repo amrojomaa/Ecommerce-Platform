@@ -3,9 +3,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import jwt
-from app import schemas, models
+from . import schemas, models
 from sqlalchemy.orm import Session
-from app.database import get_db
+from .database import get_db
 from typing import Optional
 import os
 
@@ -56,6 +56,18 @@ def create_ws_chat_token(data: dict, job_id: int, token_version: int = 0):
     return encoded_jwt
 
 
+def create_ticket_ws_token(data: dict, ticket_id: int, token_version: int = 0):
+    to_encode = data.copy()
+    to_encode.update({"token_version": token_version})
+    to_encode.update({"token_type": "ticket_ws_chat"})
+    to_encode.update({"ticket_id": int(ticket_id)})
+    expire = datetime.utcnow() + timedelta(minutes=WS_CHAT_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
 def verify_access_token(token: str, credentials_exception):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -98,6 +110,31 @@ def verify_ws_chat_token(token: str, credentials_exception, expected_job_id: Opt
     if token_data is None:
         raise credentials_exception
     return token_data, job_id
+
+
+def verify_ticket_ws_token(token: str, credentials_exception, expected_ticket_id: Optional[int] = None):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_type: str = payload.get("token_type")
+        if token_type != "ticket_ws_chat":
+            raise credentials_exception
+
+        id: str = payload.get("user_id")
+        token_version: int = payload.get("token_version", 0)
+        ticket_id = payload.get("ticket_id")
+        if id is None or ticket_id is None:
+            raise credentials_exception
+
+        ticket_id = int(ticket_id)
+        if expected_ticket_id is not None and int(expected_ticket_id) != ticket_id:
+            raise credentials_exception
+    except (jwt.JWTError, ValueError, TypeError):
+        raise credentials_exception
+
+    token_data = schemas.TokenData(id=id, token_version=token_version)
+    if token_data is None:
+        raise credentials_exception
+    return token_data, ticket_id
 
 
 def verify_refresh_token(token: str, credentials_exception):

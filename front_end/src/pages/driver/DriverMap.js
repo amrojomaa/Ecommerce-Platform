@@ -63,13 +63,13 @@ const DriverMap = () => {
         (err) => {
           console.warn('Geolocation error:', err);
           // Default position
-          setDriverPosition({ lat: 31.9, lng: 35.9 });
+          setDriverPosition({ lat: 32.2211, lng: 35.2544 });
         },
         { enableHighAccuracy: true, maximumAge: 5000 }
       );
       return () => navigator.geolocation.clearWatch(watchId);
     } else {
-      setDriverPosition({ lat: 31.9, lng: 35.9 });
+      setDriverPosition({ lat: 32.2211, lng: 35.2544 });
     }
   }, []);
 
@@ -166,14 +166,23 @@ const DriverMap = () => {
         markersRef.current.push(marker);
       }
       if (job.delivery_latitude && job.delivery_longitude) {
+        let lat = job.delivery_latitude;
+        let lng = job.delivery_longitude;
+        if (job.pickup_latitude === job.delivery_latitude && job.pickup_longitude === job.delivery_longitude) {
+          lat += 0.0003;
+          lng += 0.0003;
+        }
         const deliveryIcon = L.divIcon({
           className: 'job-marker delivery-marker',
           html: '<div class="job-marker-inner">📍</div>',
           iconSize: [36, 36],
           iconAnchor: [18, 18]
         });
-        const marker = L.marker([job.delivery_latitude, job.delivery_longitude], { icon: deliveryIcon })
+        const marker = L.marker([lat, lng], { icon: deliveryIcon })
         .addTo(mapInstanceRef.current)
+        .bindPopup(
+          `${tUi("ui.pages.driver.driverMap.delivery_08ebebf690") || 'Delivery'} #${job.order_id}`
+        )
         .on('click', () => setSelectedJob(job));
         markersRef.current.push(marker);
       }

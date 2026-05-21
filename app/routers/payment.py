@@ -1,10 +1,11 @@
 import os
 import stripe
+import logging
 from fastapi import HTTPException, status, Depends, APIRouter
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, joinedload
 from ..database import get_db
-from app import models, schemas
-from app import OAuth2
+from .. import models, schemas
+from .. import OAuth2
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -180,7 +181,9 @@ def _resolve_authoritative_amount_usd(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Installment request has no outstanding balance",
             )
-        return remaining_balance, {
+        # Apply 10% discount on remaining balance paying payoff
+        discounted_remaining = round(remaining_balance * 0.9, 2)
+        return discounted_remaining, {
             "order_id": "",
             "installment_request_id": str(installment_request.id),
             "installment_schedule_id": "",
@@ -190,6 +193,21 @@ def _resolve_authoritative_amount_usd(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Unable to resolve payment target",
     )
+
+
+def _normalize_stripe_metadata(raw_metadata) -> dict:
+    if raw_metadata is None:
+        return {}
+    if isinstance(raw_metadata, dict):
+        return raw_metadata
+    if hasattr(raw_metadata, "to_dict_recursive"):
+        return raw_metadata.to_dict_recursive()
+    if hasattr(raw_metadata, "to_dict"):
+        return raw_metadata.to_dict()
+    try:
+        return dict(raw_metadata)
+    except Exception:
+        return {}
 
 
 @router.post("/payment/create-intent", response_model=schemas.PaymentIntentResponse)
@@ -280,7 +298,7 @@ def confirm_payment(
                 detail=f"Payment not succeeded. Status: {intent.status}"
             )
 
-        metadata = intent.metadata or {}
+        metadata = _normalize_stripe_metadata(intent.metadata)
         metadata_user_id = str(metadata.get("user_id", "")).strip()
         metadata_order_id = str(metadata.get("order_id", "")).strip()
         expected_currency = str(metadata.get("expected_currency", "")).strip().lower()
@@ -363,13 +381,23 @@ def confirm_payment(
                 db.query(models.DBRecommendationBatchCache).filter(
                     models.DBRecommendationBatchCache.user_id == order.user_id
                 ).delete()
-                
-                # Automatically create a delivery job for online paid orders only
-                if getattr(order, "sale_channel", None) != "pos":
+
+            db.commit()
+
+            cart = db.query(models.DBCart).filter(models.DBCart.user_id == current_user.id).first()
+            if cart:
+                db.query(models.DBCartItem).filter(
+                    models.DBCartItem.cart_id == cart.id
+                ).delete(synchronize_session=False)
+                db.commit()
+
+            # Create delivery job after committing to avoid failing payment confirmation.
+            if getattr(order, "sale_channel", None) != "pos":
+                try:
                     from .delivery import internal_create_delivery_job
                     internal_create_delivery_job(order.id, db)
-            
-            db.commit()
+                except Exception as delivery_error:
+                    logging.warning("Failed to create delivery job for order %s: %s", order.id, delivery_error)
         
         return {
             "status": "success",
@@ -383,8 +411,10 @@ def confirm_payment(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment provider rejected the confirmation request"
         )
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error confirming payment"
+            detail=f"Error confirming payment: {str(e)}"
         )

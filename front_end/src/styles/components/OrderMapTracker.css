@@ -1,0 +1,173 @@
+.order-map-tracker-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
+  border: 1px solid #e0e0e0;
+}
+
+.order-map-tracker {
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Keep map under the live badge */
+}
+
+.tracker-unavailable {
+  padding: 20px;
+  text-align: center;
+  background-color: #f5f5f5;
+  color: #666;
+  border-radius: 8px;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+.live-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2e7d32;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(46, 125, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+}
+
+/* Marker customization reused from driver map */
+.job-marker {
+  background: transparent;
+  border: none;
+}
+
+.job-marker-inner {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  border: 2px solid white;
+}
+
+.pickup-marker .job-marker-inner {
+  border-color: #f59e0b;
+}
+
+.delivery-marker .job-marker-inner {
+  border-color: #2563eb;
+}
+
+.driver-marker {
+  background: transparent;
+  border: none;
+  transition: all 1s ease-out; /* Smooth transition for location updates */
+}
+
+.driver-marker-inner {
+  width: 40px;
+  height: 40px;
+  background: #10b981;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  border: 3px solid white;
+  animation: float 3s ease-in-out infinite;
+}
+
+.tracker-driver {
+  background: #2196F3;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.tracker-done-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 30px 15px;
+  background: radial-gradient(circle at center, #fafafa 0%, #f4f4f5 100%);
+  border-radius: 12px;
+  border: 1px dashed #e4e4e7;
+  margin-top: 15px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.tracker-done-card {
+  text-align: center;
+  max-width: 400px;
+  background: white;
+  padding: 24px 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f4f4f5;
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tracker-done-icon {
+  width: 64px;
+  height: 64px;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.tracker-done-icon.delivered {
+  background: #ecfdf5;
+  color: #10b981;
+  border: 2px solid #a7f3d0;
+}
+
+.tracker-done-icon.cancelled {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 2px solid #fecaca;
+}
+
+.tracker-done-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #18181b;
+  margin-bottom: 8px;
+}
+
+.tracker-done-card p {
+  font-size: 0.9rem;
+  color: #71717a;
+  line-height: 1.5;
+}

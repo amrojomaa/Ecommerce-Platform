@@ -8,9 +8,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin_or_operations_manager
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin_or_operations_manager
 from app.utils.image_storage import delete_local_image, save_uploaded_image
 
 
@@ -216,6 +216,7 @@ def create_installment_request(
     id_front: UploadFile = File(...),
     id_back: UploadFile = File(...),
     selfie_with_id: UploadFile = File(...),
+    use_down_payment: bool = Form(False),
     db: Session = Depends(get_db),
     current_user=Depends(OAuth2.get_current_user),
 ):
@@ -305,12 +306,24 @@ def create_installment_request(
         selected_discount = round(order_promotion_discount * selected_ratio, 2)
         selected_discount = min(selected_discount, selected_subtotal)
 
-    total_amount = round(selected_subtotal - selected_discount, 2)
-    if total_amount <= 0:
+    original_total = round(selected_subtotal - selected_discount, 2)
+    if original_total <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Installment total amount must be greater than zero",
         )
+
+    if use_down_payment:
+        down_payment_amount = round(original_total * 0.3, 2)
+        total_amount = round(original_total * 0.7, 2)
+        note_prefix = f"[Down Payment Plan - 30% Down Payment: {down_payment_amount:.2f} (paid upfront) and 70% in installments]"
+        if user_note and user_note.strip():
+            final_user_note = f"{note_prefix}\n{user_note.strip()}"
+        else:
+            final_user_note = note_prefix
+    else:
+        total_amount = original_total
+        final_user_note = (user_note or "").strip() or None
 
     monthly_payment = round(total_amount / duration_months, 2)
     installment_request = models.DBInstallmentRequest(
@@ -320,7 +333,7 @@ def create_installment_request(
         total_amount=total_amount,
         remaining_balance=total_amount,
         monthly_payment=monthly_payment,
-        user_note=(user_note or "").strip() or None,
+        user_note=final_user_note,
     )
     db.add(installment_request)
     db.flush()
@@ -787,6 +800,11 @@ def cancel_installment_request(
     reviewer: models.DBUser = Depends(require_admin_or_operations_manager),
 ):
     installment_request = _get_installment_request_or_404(db, request_id)
+    if installment_request.status == "approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Approved installment requests cannot be cancelled",
+        )
     if installment_request.status == "cancelled":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -820,6 +838,107 @@ def cancel_installment_request(
         2,
     )
     installment_request.remaining_balance = remaining_balance
+
+    db.commit()
+    return _get_installment_request_or_404(db, request_id)
+
+
+@router.patch(
+    "/installments/my/{request_id}/pay-remaining",
+    response_model=schemas.InstallmentRequestResponse,
+)
+def pay_remaining_installment(
+    request_id: int,
+    payload: schemas.InstallmentStripePayPayload,
+    db: Session = Depends(get_db),
+    current_user=Depends(OAuth2.get_current_user),
+):
+    payment_intent_id = (payload.payment_intent_id or "").strip()
+    if not payment_intent_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="payment_intent_id is required",
+        )
+
+    try:
+        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+    except stripe.error.StripeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Stripe error: {str(exc)}",
+        ) from exc
+
+    if intent.status != "succeeded":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Payment not completed. Stripe status: {intent.status}",
+        )
+
+    metadata = intent.metadata or {}
+    metadata_user_id = str(metadata.get("user_id", "")).strip()
+    metadata_request_id = str(metadata.get("installment_request_id", "")).strip()
+
+    if metadata_user_id != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This payment intent does not belong to the current user",
+        )
+    if metadata_request_id != str(request_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Payment intent does not match this installment request",
+        )
+
+    installment_request = _ensure_owner_request_or_403(db, request_id, current_user.id)
+    if installment_request.status not in {"approved"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only approved installment requests can be fully paid",
+        )
+
+    remaining_balance = float(installment_request.remaining_balance or 0.0)
+    if remaining_balance <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This installment request has no remaining balance to pay",
+        )
+
+    # 10% discount on remaining balance
+    discounted_amount = round(remaining_balance * 0.9, 2)
+
+    # Mark all schedules as paid
+    schedules = (
+        db.query(models.DBInstallmentSchedule)
+        .filter(models.DBInstallmentSchedule.request_id == request_id)
+        .all()
+    )
+    
+    paid_at = datetime.now(timezone.utc)
+    
+    for schedule in schedules:
+        if schedule.status != "paid":
+            schedule.amount_paid = float(schedule.amount_due)
+            schedule.status = "paid"
+            schedule.paid_at = paid_at
+
+    # Record the bulk payment in DBInstallmentPayment
+    db.add(
+        models.DBInstallmentPayment(
+            request_id=request_id,
+            schedule_id=None,
+            amount=discounted_amount,
+            note=f"Full remaining payment with 10% discount. (Originally {remaining_balance:.2f})",
+            marked_by=current_user.id,
+            paid_at=paid_at,
+        )
+    )
+
+    installment_request.remaining_balance = 0.0
+    installment_request.next_payment_date = None
+    installment_request.status = "completed"
+
+    if installment_request.order and installment_request.order.status == "created":
+        installment_request.order.status = "paid"
 
     db.commit()
     return _get_installment_request_or_404(db, request_id)

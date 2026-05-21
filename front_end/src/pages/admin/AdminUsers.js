@@ -15,9 +15,11 @@ const ROLE_FILTER_OPTIONS = [
   'all',
   'admin',
   'support_manager',
+  'support_agent',
   'operations_manager',
   'warehouse_manager',
-  'employee',
+  'seller',
+  'warehouse_staff',
   'driver',
   'customer',
   'cashier',
@@ -27,9 +29,11 @@ const ROLE_LABEL_KEYS = {
   all: 'ui.pages.admin.adminUsers.all_934fce7d68',
   admin: 'ui.pages.admin.adminUsers.admin_9b8c8c337f',
   support_manager: 'ui.pages.admin.adminUsers.supportManager_2a7bb3b941',
+  support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
   operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
   warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
-  employee: 'ui.pages.admin.adminUsers.employee_bdab2112d6',
+  seller: null,
+  warehouse_staff: null,
   driver: 'ui.pages.admin.adminUsers.driver_533424916e',
   customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
   cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
@@ -225,14 +229,18 @@ const AdminUsers = () => {
     switch (role) {
       case 'admin':
         return 'role-badge admin';
-      case 'employee':
-        return 'role-badge employee';
+      case 'support_agent':
+        return 'role-badge support_agent';
       case 'operations_manager':
         return 'role-badge operations_manager';
       case 'support_manager':
         return 'role-badge support_manager';
       case 'warehouse_manager':
         return 'role-badge warehouse_manager';
+      case 'seller':
+        return 'role-badge seller';
+      case 'warehouse_staff':
+        return 'role-badge warehouse_staff';
       case 'driver':
         return 'role-badge driver';
       case 'customer':
@@ -458,7 +466,9 @@ const AdminUsers = () => {
                   <option value="support_manager">{tUi("ui.pages.admin.adminUsers.supportManager_2a7bb3b941")}</option>
                   <option value="operations_manager">{tUi("ui.pages.admin.adminUsers.operationsManager_e7f7834cf9")}</option>
                   <option value="warehouse_manager">{tUi("ui.pages.admin.adminUsers.warehouseManager_3e9668a875")}</option>
-                  <option value="employee">{tUi("ui.pages.admin.adminUsers.employee_bdab2112d6")}</option>
+                  <option value="seller">Seller</option>
+                  <option value="warehouse_staff">Warehouse Staff</option>
+                  <option value="support_agent">{tUi("ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c")}</option>
                   <option value="driver">{tUi("ui.pages.admin.adminUsers.driver_533424916e")}</option>
                   <option value="customer">{tUi("ui.pages.admin.adminUsers.customer_68c8b84985")}</option>
                   <option value="cashier">{tUi("ui.pages.admin.adminUsers.cashier_29b35eadb9")}</option>

@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app import OAuth2, models, schemas
-from app.database import get_db
-from app.routers.admin import require_admin
+from .. import OAuth2, models, schemas
+from ..database import get_db
+from .admin import require_admin
 from app.routers.products import get_product_with_images
 from app.services import recommendation_engine as re
 

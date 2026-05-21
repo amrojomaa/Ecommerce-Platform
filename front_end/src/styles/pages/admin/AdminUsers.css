@@ -205,7 +205,7 @@
   color: white;
 }
 
-.role-badge.employee {
+.role-badge.support_agent {
   background-color: var(--primary-color);
   color: white;
 }
@@ -222,6 +222,16 @@
 
 .role-badge.warehouse_manager {
   background-color: #0f766e;
+  color: white;
+}
+
+.role-badge.seller {
+  background-color: #6366f1;
+  color: white;
+}
+
+.role-badge.warehouse_staff {
+  background-color: #d97706;
   color: white;
 }
 

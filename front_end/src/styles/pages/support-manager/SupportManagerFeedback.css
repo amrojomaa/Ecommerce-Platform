@@ -1,0 +1,154 @@
+.support-manager-feedback {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.feedback-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.feedback-summary {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.summary-card {
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.summary-card svg {
+  font-size: 1.5rem;
+}
+
+.summary-card h3 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.summary-card span {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.feedback-controls {
+  margin-bottom: 2rem;
+}
+
+.rating-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rating-filters button {
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.rating-filters button:hover {
+  border-color: #2196F3;
+  color: #2196F3;
+}
+
+.rating-filters button.active {
+  background: #2196F3;
+  color: white;
+  border-color: #2196F3;
+}
+
+.feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.feedback-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-info strong {
+  font-size: 1rem;
+}
+
+.user-info span {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.rating-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.comment {
+  font-size: 1rem;
+  color: #444;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+
+.card-bottom {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 0.75rem;
+}
+
+.card-bottom .date {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+/* Dark Mode */
+.dark .summary-card,
+.dark .feedback-card,
+.dark .rating-filters button {
+  background: #1e1e2d;
+  border-color: #333;
+}
+
+.dark .comment { color: #ccc; }
+.dark .user-info strong { color: white; }
+
+@media (max-width: 768px) {
+  .feedback-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+}

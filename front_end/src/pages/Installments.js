@@ -1,4 +1,6 @@
-import { tUi } from "../i18n/uiText";import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import i18n from 'i18next';
 import { toast } from 'react-toastify';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import http from '../services/http';
@@ -7,6 +9,7 @@ import { formatDate, getImageUrl } from '../utils/helpers';
 import { useCurrency } from '../hooks/useCurrency';
 import { useConfirm } from '../hooks/useConfirm';
 import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../hooks/useCart';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Installments.css';
 
@@ -45,6 +48,7 @@ const Installments = () => {
   const orderIdFromUrl = Number(searchParams.get('orderId') || 0);
   const { formatCurrency } = useCurrency();
   const { fetchUserInfo } = useAuth();
+  const { clearCart, fetchCart } = useCart();
 
   const [orders, setOrders] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -72,6 +76,7 @@ const Installments = () => {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(() => Boolean(orderIdFromUrl));
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [editingRequestId, setEditingRequestId] = useState(null);
+  const [useDownPayment, setUseDownPayment] = useState(false);
   const [requestSortDirection, setRequestSortDirection] = useState('desc');
   const idFrontInputRef = useRef(null);
   const idBackInputRef = useRef(null);
@@ -105,10 +110,14 @@ const Installments = () => {
     () => Math.max(selectedItemsSubtotal - selectedItemsDiscount, 0),
     [selectedItemsSubtotal, selectedItemsDiscount]
   );
+  const installmentTotalAmount = useMemo(
+    () => useDownPayment ? selectedItemsTotal * 0.7 : selectedItemsTotal,
+    [useDownPayment, selectedItemsTotal]
+  );
   const estimatedMonthlyPayment = useMemo(() => {
     if (!durationMonths) return 0;
-    return selectedItemsTotal / durationMonths;
-  }, [durationMonths, selectedItemsTotal]);
+    return installmentTotalAmount / durationMonths;
+  }, [durationMonths, installmentTotalAmount]);
   const selectedRequest = useMemo(
     () => requests.find((request) => request.id === selectedRequestId) || null,
     [requests, selectedRequestId]
@@ -138,9 +147,16 @@ const Installments = () => {
     return list;
   }, [requests, requestSortDirection]);
   const hasPendingOrApprovedRequest = useMemo(
-    () => requests.some((request) => ['pending', 'approved'].includes(request.status)),
-    [requests]
+    () => requests.some((request) => Number(request.order_id) === Number(selectedOrderId) && ['pending', 'approved'].includes(request.status)),
+    [requests, selectedOrderId]
   );
+  const hasLatePayment = useMemo(() => {
+    if (!selectedRequest?.schedules) return false;
+    const now = new Date();
+    return selectedRequest.schedules.some(
+      (schedule) => schedule.status !== 'paid' && new Date(schedule.due_date) < now
+    );
+  }, [selectedRequest]);
   const fetchOrders = async () => {
     setLoadingOrders(true);
     try {
@@ -246,6 +262,12 @@ const Installments = () => {
       setIsCreateFormOpen(false);
     }
   }, [hasPendingOrApprovedRequest, isCreateFormOpen, editingRequestId]);
+
+  useEffect(() => {
+    if (orderIdFromUrl) {
+      setIsCreateFormOpen(true);
+    }
+  }, [orderIdFromUrl]);
 
   const handleOrderChange = (event) => {
     setSelectedOrderId(event.target.value);
@@ -385,6 +407,7 @@ const Installments = () => {
         const payload = new FormData();
         payload.append('order_id', String(selectedOrderId));
         payload.append('duration_months', String(durationMonths));
+        payload.append('use_down_payment', String(useDownPayment));
         if (userNote.trim()) {
           payload.append('user_note', userNote.trim());
         }
@@ -408,9 +431,24 @@ const Installments = () => {
         toast.success(tUi("ui.pages.installments.installmentRequestSubmittedSuccessfully_8b973f374e"));
         setIsCreateFormOpen(false);
         resetUploadFields();
+
+        try {
+          const cartResponse = await http.get('/showmecart');
+          if (cartResponse.data?.items?.length > 0) {
+            const cartId = cartResponse.data.items[0]?.cart_id || cartResponse.data.cart_id;
+            if (cartId) {
+              await clearCart(cartId);
+            }
+          }
+        } catch (error) {
+          console.error('Error clearing cart:', error);
+        } finally {
+          await fetchCart();
+        }
       }
 
       setUserNote('');
+      setUseDownPayment(false);
       setIsInformationConfirmed(false);
       if (!createdRequestId) {
         setPhoneForRequest(profilePhone || '');
@@ -488,6 +526,16 @@ const Installments = () => {
     });
   };
 
+  const handlePayRemainingWithStripe = (requestId, remainingBalance) => {
+    navigate('/payment', {
+      state: {
+        amount: Number(remainingBalance || 0),
+        installmentRequestId: requestId,
+        installmentScheduleId: null
+      }
+    });
+  };
+
   if (loadingOrders || loadingRequests || loadingProfile) {
     return (
       <div className="installments-loading">
@@ -527,41 +575,99 @@ const Installments = () => {
         <p className="empty-state">{tUi("ui.pages.installments.youNeedAnOrderBefore_a494dca334")}</p> :
 
         <form onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="order-select">{tUi("ui.pages.installments.order_362b958f76")}</label>
-                  <select
-                id="order-select"
-                value={selectedOrderId}
-                onChange={handleOrderChange}
-                disabled={Boolean(editingRequestId)}>
-                
-                    {orders.map((order) =>
-                <option key={order.id} value={order.id}>
-                        #{order.id} - {formatCurrency(order.total_amount)} ({statusLabel(order.status)})
-                      </option>
-                )}
-                  </select>
+              {orderIdFromUrl && selectedOrder && (
+                <div className="active-order-banner">
+                  <span>ℹ️ {i18n.language && i18n.language.startsWith('ar') ? 'تقوم حالياً بتقديم طلب تقسيط للطلب رقم:' : i18n.language && i18n.language.startsWith('fr') ? 'Vous demandez des versements pour la commande :' : 'You are requesting installments for Order:'} <strong>#{selectedOrder.id}</strong> ({formatCurrency(selectedOrder.total_amount)})</span>
                 </div>
+              )}
+
+              <div className="form-grid">
+                {!orderIdFromUrl && (
+                  <div className="form-group">
+                    <label htmlFor="order-select">{tUi("ui.pages.installments.order_362b958f76")}</label>
+                    <select
+                      id="order-select"
+                      value={selectedOrderId}
+                      onChange={handleOrderChange}
+                      disabled={Boolean(editingRequestId)}>
+                      {orders.map((order) =>
+                        <option key={order.id} value={order.id}>
+                          #{order.id} - {formatCurrency(order.total_amount)} ({statusLabel(order.status)})
+                        </option>
+                      )}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label htmlFor="duration">{tUi("ui.pages.installments.durationMonths_4816202198")}</label>
                   <select
-                id="duration"
-                value={durationMonths}
-                onChange={(event) => setDurationMonths(Number(event.target.value))}>
-                
+                    id="duration"
+                    value={durationMonths}
+                    onChange={(event) => setDurationMonths(Number(event.target.value))}>
                     {DURATION_OPTIONS.map((months) =>
-                <option key={months} value={months}>
+                      <option key={months} value={months}>
                         {months}{tUi("ui.pages.installments.months_5fe93aa9a9")}
-                </option>
-                )}
+                      </option>
+                    )}
                   </select>
                 </div>
               </div>
 
+              <div className="form-group installment-plan-selector">
+                <label style={{ fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: '8px' }}>
+                  {i18n.language && i18n.language.startsWith('ar') ? 'اختر خيار خطة التقسيط:' : i18n.language && i18n.language.startsWith('fr') ? 'Choisissez l\'option du plan de paiement :' : 'Select Installment Plan Option:'}
+                </label>
+                <div className="plan-options-grid">
+                  <label className={`plan-option-card ${!useDownPayment ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="useDownPayment"
+                      checked={!useDownPayment}
+                      onChange={() => setUseDownPayment(false)}
+                      disabled={Boolean(editingRequestId)}
+                    />
+                    <div className="plan-option-info">
+                      <span className="plan-title">
+                        {i18n.language && i18n.language.startsWith('ar') ? 'الخيار أ: خطة تقسيط عادية' : i18n.language && i18n.language.startsWith('fr') ? 'Option A : Plan de versement standard' : 'Option A: Standard Installment Plan'}
+                      </span>
+                      <span className="plan-desc">
+                        {i18n.language && i18n.language.startsWith('ar') 
+                          ? 'ادفع 100٪ من المبلغ الإجمالي على أقساط شهرية متساوية. لا يلزم دفع دفعة أولى مقدمة.'
+                          : i18n.language && i18n.language.startsWith('fr')
+                          ? 'Payez 100% du montant total en mensualités. Aucun acompte requis.'
+                          : 'Pay 100% of the total amount in monthly installments. No upfront down payment required.'
+                        }
+                      </span>
+                    </div>
+                  </label>
+                  <label className={`plan-option-card ${useDownPayment ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="useDownPayment"
+                      checked={useDownPayment}
+                      onChange={() => setUseDownPayment(true)}
+                      disabled={Boolean(editingRequestId)}
+                    />
+                    <div className="plan-option-info">
+                      <span className="plan-title">
+                        {i18n.language && i18n.language.startsWith('ar') ? 'الخيار ب: خطة الدفعة الأولى (30٪ مقدماً)' : i18n.language && i18n.language.startsWith('fr') ? 'Option B : Plan avec acompte (30% d\'acompte)' : 'Option B: Down Payment Plan (30% Upfront)'}
+                      </span>
+                      <span className="plan-desc">
+                        {i18n.language && i18n.language.startsWith('ar')
+                          ? `ادفع دفعة أولى بنسبة 30٪ (${formatCurrency(selectedItemsTotal * 0.3)}) مقدماً، وادفع فقط نسبة 70٪ المتبقية على أقساط شهرية متساوية.`
+                          : i18n.language && i18n.language.startsWith('fr')
+                          ? `Payez un acompte de 30% (${formatCurrency(selectedItemsTotal * 0.3)}) au départ, et payez le reste de 70% en mensualités.`
+                          : `Pay a 30% down payment (${formatCurrency(selectedItemsTotal * 0.3)}) upfront, and pay only the remaining 70% in monthly installments.`
+                        }
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="estimated-payment-box">
-                <span>{tUi("ui.pages.installments.estimatedMonthlyPayment_b73a6228aa")}</span>
+                <span>{useDownPayment ? (i18n.language && i18n.language.startsWith('ar') ? 'القسط الشهري المقدر (على الـ 70٪ المتبقية):' : i18n.language && i18n.language.startsWith('fr') ? 'Mensualité estimée (sur le reste de 70%) :' : 'Estimated Monthly Payment (on 70% remainder):') : tUi("ui.pages.installments.estimatedMonthlyPayment_b73a6228aa")}</span>
                 <strong>{formatCurrency(estimatedMonthlyPayment)}</strong>
               </div>
 
@@ -583,6 +689,18 @@ const Installments = () => {
                       <span>{tUi("ui.pages.installments.total_d43747f6b3")}</span>
                       <strong>{formatCurrency(selectedItemsTotal)}</strong>
                     </div>
+                    {useDownPayment && (
+                      <>
+                        <div className="selected-order-summary-row down-payment-row">
+                          <span>{i18n.language && i18n.language.startsWith('ar') ? 'الدفعة الأولى (30٪ مقدماً):' : i18n.language && i18n.language.startsWith('fr') ? 'Acompte (30% au départ) :' : 'Down Payment (30% Upfront):'}</span>
+                          <strong className="down-payment-value">{formatCurrency(selectedItemsTotal * 0.3)}</strong>
+                        </div>
+                        <div className="selected-order-summary-total installment-total-row">
+                          <span>{i18n.language && i18n.language.startsWith('ar') ? 'قيمة الأقساط المتبقية (70٪):' : i18n.language && i18n.language.startsWith('fr') ? 'Montant restant du versement (70%) :' : 'Remaining Installment Amount (70%):'}</span>
+                          <strong>{formatCurrency(selectedItemsTotal * 0.7)}</strong>
+                        </div>
+                      </>
+                    )}
                   </>
             }
               </div>
@@ -824,6 +942,16 @@ const Installments = () => {
                     </span>
                   </header>
 
+                  {selectedRequest.status === 'approved' && hasLatePayment && (
+                    <div className="installment-warning-alert">
+                      {i18n.language && i18n.language.startsWith('ar')
+                        ? '⚠️ لديك دفعة أقساط متأخرة أو أكثر. يرجى سداد الدفعة في أقرب وقت لتجنب أي رسوم إضافية.'
+                        : i18n.language && i18n.language.startsWith('fr')
+                        ? '⚠️ Vous avez un ou plusieurs paiements de versement en retard. Veuillez régler votre paiement dès que possible pour éviter des pénalités.'
+                        : '⚠️ You have one or more late installment payments. Please complete your payment as soon as possible to avoid penalties.'}
+                    </div>
+                  )}
+
                   <div className="request-summary">
                     <p>{tUi("ui.pages.installments.totalAmount_d385a44df2")}{formatCurrency(selectedRequest.total_amount)}</p>
                     <p>{tUi("ui.pages.installments.remainingBalance_d3650ec158")}{formatCurrency(selectedRequest.remaining_balance)}</p>
@@ -894,6 +1022,35 @@ const Installments = () => {
 
                 })}
                   </div>
+
+                  {selectedRequest.status === "approved" && Number(selectedRequest.remaining_balance) > 0 && (
+                    <div className="pay-remaining-box">
+                      <div className="pay-remaining-details">
+                        <h4>{i18n.language && i18n.language.startsWith('ar') ? '💡 ادفع باقي الأقساط دفعة واحدة واحصل على خصم 10%!' : i18n.language && i18n.language.startsWith('fr') ? '💡 Payez le solde restant immédiatement et profitez de 10% de réduction !' : '💡 Pay Remaining Balance at Once & Get a 10% Discount!'}</h4>
+                        <p>
+                          {i18n.language && i18n.language.startsWith('ar') 
+                            ? `إذا قمت بدفع المبلغ المتبقي المستحق وقدره ${formatCurrency(selectedRequest.remaining_balance)} الآن، فستحصل على خصم فوري بنسبة 10٪.`
+                            : i18n.language && i18n.language.startsWith('fr')
+                            ? `Si vous payez votre solde restant de ${formatCurrency(selectedRequest.remaining_balance)} maintenant, vous bénéficierez d'une réduction immédiate de 10%.`
+                            : `If you pay your outstanding balance of ${formatCurrency(selectedRequest.remaining_balance)} now, you will get an immediate 10% discount.`
+                          }
+                        </p>
+                        <div className="pay-remaining-pricing">
+                          <span className="original-price">{i18n.language && i18n.language.startsWith('ar') ? 'الأصلي: ' : i18n.language && i18n.language.startsWith('fr') ? 'Original: ' : 'Original: '}{formatCurrency(selectedRequest.remaining_balance)}</span>
+                          <span className="arrow">→</span>
+                          <span className="discounted-price">{i18n.language && i18n.language.startsWith('ar') ? 'ادفع فقط: ' : i18n.language && i18n.language.startsWith('fr') ? 'Payez seulement: ' : 'Pay Only: '}<strong>{formatCurrency(Number(selectedRequest.remaining_balance) * 0.9)}</strong></span>
+                          <span className="saved-badge">{i18n.language && i18n.language.startsWith('ar') ? 'وفر ' : i18n.language && i18n.language.startsWith('fr') ? 'Économisez ' : 'Save '}{formatCurrency(Number(selectedRequest.remaining_balance) * 0.1)}!</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="pay-remaining-btn"
+                        onClick={() => handlePayRemainingWithStripe(selectedRequest.id, selectedRequest.remaining_balance)}
+                      >
+                        {i18n.language && i18n.language.startsWith('ar') ? 'ادفع المبلغ المتبقي الآن' : i18n.language && i18n.language.startsWith('fr') ? 'Payer le solde restant maintenant' : 'Pay Remaining Balance Now'}
+                      </button>
+                    </div>
+                  )}
 
                   {selectedRequest.schedules?.length > 0 &&
               <div className="schedule-table-wrapper">

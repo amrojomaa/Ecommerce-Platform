@@ -148,8 +148,8 @@ const DriverActiveJob = () => {
           mapInstanceRef.current = null;
         }
 
-        const centerLat = activeJob.pickup_latitude || 31.9;
-        const centerLng = activeJob.pickup_longitude || 35.9;
+        const centerLat = activeJob.pickup_latitude || 32.2211;
+        const centerLng = activeJob.pickup_longitude || 35.2544;
 
         const map = L.map(mapRef.current).setView([centerLat, centerLng], 13);
         // Register map instance immediately so async callbacks can draw routes safely.
@@ -174,13 +174,19 @@ const DriverActiveJob = () => {
 
         // Delivery marker
         if (typeof activeJob.delivery_latitude === 'number' && typeof activeJob.delivery_longitude === 'number') {
+          let deliveryLat = activeJob.delivery_latitude;
+          let deliveryLng = activeJob.delivery_longitude;
+          if (activeJob.pickup_latitude === activeJob.delivery_latitude && activeJob.pickup_longitude === activeJob.delivery_longitude) {
+            deliveryLat += 0.0003;
+            deliveryLng += 0.0003;
+          }
           const deliveryIcon = L.divIcon({
             className: 'active-marker delivery',
             html: '<div class="active-marker-inner">🏠</div>',
             iconSize: [40, 40],
             iconAnchor: [20, 20]
           });
-          L.marker([activeJob.delivery_latitude, activeJob.delivery_longitude], { icon: deliveryIcon })
+          L.marker([deliveryLat, deliveryLng], { icon: deliveryIcon })
           .addTo(map)
           .bindPopup('Delivery Location');
         }
@@ -215,25 +221,13 @@ const DriverActiveJob = () => {
         };
 
         if (navigator.geolocation) {
-          // Show pickup -> customer route immediately after pickup status update.
-          if (isPickedUpState && hasPickup && hasDelivery) {
-            drawRoute(
-              activeJob.pickup_latitude,
-              activeJob.pickup_longitude,
-              activeJob.delivery_latitude,
-              activeJob.delivery_longitude
-            );
-          }
-
           navigator.geolocation.getCurrentPosition((pos) => {
             if (!isMapActive()) return;
 
             let driverLat = pos.coords.latitude;
             let driverLng = pos.coords.longitude;
 
-            // If the driver implies they picked up the order, their starting origin is the pickup location.
-            // This prevents the GPS from placing them somewhere else and drawing an inaccurate route.
-            if (isPickedUpState && hasPickup) {
+            if (activeJob.status === 'picked_up' && hasPickup) {
               driverLat = activeJob.pickup_latitude;
               driverLng = activeJob.pickup_longitude;
             }
@@ -244,19 +238,24 @@ const DriverActiveJob = () => {
               iconSize: [40, 40],
               iconAnchor: [20, 20]
             });
-            L.marker([driverLat, driverLng], { icon: driverIcon }).addTo(map).bindPopup(isPickedUpState ? 'Picked Up From Here' : 'Your Location');
+            L.marker([driverLat, driverLng], { icon: driverIcon }).addTo(map).bindPopup(activeJob.status === 'picked_up' ? 'Driver at Warehouse (Picked Up)' : 'Your Location');
 
-            if (activeJob.status === 'assigned' && hasPickup) {
+            if (isPickedUpState && hasDelivery) {
+              // After pickup, route from driver's current position to customer's delivery location
+              drawRoute(driverLat, driverLng, activeJob.delivery_latitude, activeJob.delivery_longitude);
+            } else if (activeJob.status === 'assigned' && hasPickup) {
+              // If assigned but not picked up yet, route from driver's current position to pickup location
               drawRoute(driverLat, driverLng, activeJob.pickup_latitude, activeJob.pickup_longitude);
-            } else if (isPickedUpState && hasPickup && hasDelivery) {
-              // After pickup, always show the route from pickup point to customer location.
-              drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
             } else if (hasPickup && hasDelivery) {
               drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
             }
           }, (err) => {
             if (!isMapActive()) return;
-            if (hasPickup && hasDelivery) drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
+            if (isPickedUpState && hasDelivery) {
+              drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
+            } else if (hasPickup && hasDelivery) {
+              drawRoute(activeJob.pickup_latitude, activeJob.pickup_longitude, activeJob.delivery_latitude, activeJob.delivery_longitude);
+            }
           }, { enableHighAccuracy: true });
         } else {
           if (!isMapActive()) return;

@@ -36,7 +36,7 @@ const Navbar = () => {
   const isSupportManagerArea = location.pathname.startsWith('/support') && !location.pathname.startsWith('/support-agent');
   const isSellerArea = location.pathname.startsWith('/seller');
   const isWarehouseStaffArea = location.pathname.startsWith('/warehouse-staff');
-  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse-manager');
+  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse') && !location.pathname.startsWith('/warehouse-staff');
   const isUserRestrictedByRole = user && (user.role === 'seller' || user.role === 'warehouse_staff' || user.role === 'warehouse_manager' || user.role === 'cashier' || user.role === 'driver' || user.role === 'support_agent' || user.role === 'support_manager');
   const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
 

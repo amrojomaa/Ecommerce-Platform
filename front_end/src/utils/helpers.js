@@ -350,3 +350,54 @@ export const buildWebSocketUrl = (path, queryParams = {}) => {
 
   return httpUrl.toString();
 };
+
+export const PROFILE_AVATAR_DISPLAY_SIZE = 160;
+
+export const DEFAULT_PROFILE_IMAGE =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iMjQwIiB2aWV3Qm94PSIwIDAgMjQwIDI0MCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIwIiBjeT0iMTIwIiByPSIxMjAiIGZpbGw9IiNlMmU4ZjAiLz48Y2lyY2xlIGN4PSIxMjAiIGN5PSI5MiIgcj0iMzYiIGZpbGw9IiM5NGE3YjgiLz48cGF0aCBkPSJNNDggMTg4YzgtMzYgNDAtNTYgNzItNTZzNjQgMjAgNzIgNTZIMzZDMzYgMTg4IDQ0IDE4OCA0OCAxODhaIiBmaWxsPSIjOTRhN2I4Ii8+PC9zdmc+';
+
+export const enhanceRemoteProfileImageUrl = (url, displaySize = PROFILE_AVATAR_DISPLAY_SIZE) => {
+  if (!url || typeof url !== 'string' || !url.includes('googleusercontent.com')) {
+    return url;
+  }
+
+  const targetSize = Math.min(512, Math.max(160, Math.round(displaySize * 2)));
+
+  if (/=s\d+(-c)?/.test(url)) {
+    return url.replace(/=s\d+(-c)?/, `=s${targetSize}-c`);
+  }
+
+  if (/([?&])sz=\d+/.test(url)) {
+    return url.replace(/([?&]sz=)\d+/, `$1${targetSize}`);
+  }
+
+  return url.includes('?') ? `${url}&sz=${targetSize}` : `${url}?sz=${targetSize}`;
+};
+
+export const resolveProfileImageUrl = (profileImage, options = {}) => {
+  const {
+    apiBaseUrl = getApiBaseUrl(),
+    defaultImage = DEFAULT_PROFILE_IMAGE,
+    displaySize = PROFILE_AVATAR_DISPLAY_SIZE,
+    previewUrl = null,
+  } = options;
+
+  if (previewUrl) {
+    return previewUrl;
+  }
+
+  if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
+    return defaultImage;
+  }
+
+  if (profileImage.startsWith('data:')) {
+    return profileImage;
+  }
+
+  if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+    return enhanceRemoteProfileImageUrl(profileImage, displaySize);
+  }
+
+  const normalizedPath = profileImage.startsWith('/') ? profileImage : `/${profileImage}`;
+  return `${apiBaseUrl}${normalizedPath}`;
+};

@@ -161,6 +161,7 @@ function App() {
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="discounts" element={<AdminDiscounts />} />
+                    <Route path="discounts/create" element={<AdminDiscounts />} />
                     <Route path="promotions" element={<AdminPromotions />} />
                     <Route path="promotions/create" element={<AdminPromotions />} />
                     <Route path="categories" element={<AdminCategories />} />

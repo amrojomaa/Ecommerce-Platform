@@ -1,0 +1,347 @@
+/* Admin Promotions — panel layout (adm-promo-* prefix) */
+
+.adm-promotions-page {
+  gap: 1.5rem;
+}
+
+.adm-promotions-page.adm-page,
+.admin-page-shell.adm-promotions-page {
+  gap: 1.5rem;
+}
+
+.adm-promotions-page .page-header {
+  padding-bottom: 0;
+  scroll-margin-top: 5rem;
+}
+
+.adm-promotions-page .page-header-actions .adm-btn-secondary,
+.adm-promotions-page .page-header-actions .adm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.adm-promo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.adm-promo-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.adm-promo-section-header h2 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.adm-promo-section-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.adm-promo-panel {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 1.5rem 1.75rem;
+}
+
+.adm-promo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.adm-promo-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.adm-promo-form-grid--3 {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.adm-promo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.adm-promo-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.adm-promo-field input,
+.adm-promo-field select {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adm-promo-field input:focus,
+.adm-promo-field select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
+}
+
+.adm-promo-filter-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+  background: var(--background);
+}
+
+.adm-promo-filter-title {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.adm-promo-options-panel {
+  min-height: 64px;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.adm-promo-selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.adm-promo-selected-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.adm-promo-selected-item:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.adm-promo-empty-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.adm-promo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.adm-promo-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary-color);
+}
+
+.adm-promo-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.adm-promo-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.adm-promo-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.adm-promo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.adm-promo-card.is-active {
+  border-color: rgba(22, 163, 74, 0.45);
+}
+
+.adm-promo-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.adm-promo-card-top h3 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.adm-promo-badge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.adm-promo-card-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.adm-promo-card-meta strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.adm-promo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.adm-promo-chip {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.adm-promo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.adm-promo-card-actions .adm-btn-primary,
+.adm-promo-card-actions .adm-btn-secondary {
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+}
+
+.adm-promo-card-actions .adm-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.adm-promo-card-actions .adm-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.adm-promo-loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem;
+}
+
+.adm-promo-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.adm-promo-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .adm-promo-form-grid,
+  .adm-promo-form-grid--3 {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-promo-list {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-promo-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .adm-promo-form-actions .adm-btn-primary,
+  .adm-promo-form-actions .adm-btn-secondary {
+    width: 100%;
+  }
+}

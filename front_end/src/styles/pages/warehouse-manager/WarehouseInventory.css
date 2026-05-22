@@ -1,89 +1,65 @@
-.wm-inventory {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
-}
-
-.admin-page-shell.wm-inventory {
-  gap: 2.5rem;
+.wm-inventory.wm-page {
+  gap: 2rem;
 }
 
 .wm-inventory .page-header {
-  scroll-margin-top: 5rem;
+  padding-bottom: 0;
 }
 
-.wm-inventory > h1,
-.wm-inventory .page-header h1 {
-  margin: 0;
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.1;
-  background: none;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: unset;
-  background-clip: unset;
+.wm-inventory-controls {
+  gap: 0.75rem;
 }
 
-.wm-inventory-filters {
+.wm-inventory-toolbar-top {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: flex-start;
 }
 
-.wm-inventory-filters input,
-.wm-inventory-filters select {
-  height: 42px;
-  padding: 0 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  background: var(--surface);
-  color: var(--text-primary);
-  transition: border-color 0.2s;
-  font-family: inherit;
-  box-sizing: border-box;
+.wm-inventory .wm-toolbar-meta {
+  margin-inline-start: 0;
+  font-size: 0.9rem;
 }
 
-.wm-inventory-filters input {
-  flex: 1;
-  max-width: 450px;
-  min-width: 220px;
+.wm-inventory .wm-toolbar {
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.wm-inventory .wm-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  flex: 0 1 auto;
+}
+
+.wm-inventory .wm-field-input {
+  flex: 1 1 280px;
+  width: 280px;
+  max-width: 360px;
+  min-width: 180px;
+}
+
+.wm-inventory .wm-field-select {
+  flex: 0 0 auto;
   width: auto;
+  min-width: 190px;
 }
 
-.wm-inventory-filters select {
-  min-width: 220px;
-  width: auto;
-}
-
-.wm-inventory-filters input:focus,
-.wm-inventory-filters select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
+.wm-inventory .wm-inventory-toolbar {
+  justify-content: flex-start;
 }
 
 .wm-inventory-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  background: var(--surface);
-  border-radius: 1.2rem;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
 }
 
 .wm-inventory-table thead th {
   background: var(--background);
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 1.25rem;
   text-align: start;
   font-size: 0.72rem;
   font-weight: 600;
@@ -94,7 +70,7 @@
 }
 
 .wm-inventory-table tbody td {
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   font-size: 0.9rem;
   color: var(--text-primary);
@@ -107,6 +83,10 @@
 
 .wm-inventory-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.wm-product-name {
+  font-weight: 600;
 }
 
 .wm-stock-cell {
@@ -124,32 +104,13 @@
   text-align: center;
   background: var(--background);
   color: var(--text-primary);
+  font-family: inherit;
 }
 
 .wm-stock-input:focus {
   outline: none;
   border-color: var(--primary-color);
-}
-
-.wm-stock-save-btn {
-  padding: 0.35rem 0.85rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.wm-stock-save-btn:hover {
-  background: var(--primary-hover);
-}
-
-.wm-stock-save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
 }
 
 .wm-stock-badge {
@@ -174,18 +135,6 @@
   color: #dc2626;
 }
 
-.wm-inventory-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.dark .wm-inventory-table {
-  background: var(--surface);
-  border-color: var(--border-color);
-}
-
 .dark .wm-inventory-table thead th {
   background: var(--background);
   color: var(--text-secondary);
@@ -201,13 +150,6 @@
   background: rgba(96, 165, 250, 0.06);
 }
 
-.dark .wm-inventory-filters input,
-.dark .wm-inventory-filters select {
-  background: var(--surface);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
 .dark .wm-stock-input {
   background: var(--background);
   border-color: var(--border-color);
@@ -215,8 +157,49 @@
 }
 
 @media (max-width: 768px) {
-  .wm-inventory-table {
-    display: block;
+  .wm-inventory .wm-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .wm-inventory .wm-toolbar-filters {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+    flex: 1 1 100%;
+    align-items: center;
+  }
+
+  .wm-inventory .wm-field-input {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .wm-inventory .wm-field-select {
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .wm-inventory .wm-toolbar-meta {
+    width: auto;
+    text-align: start;
+  }
+
+  .wm-inventory .wm-toolbar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .wm-data-panel {
     overflow-x: auto;
+  }
+
+  .wm-inventory-table {
+    min-width: 640px;
   }
 }

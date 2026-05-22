@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
@@ -8,7 +10,9 @@ import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/warehouse-manager/WarehouseInventory.css';
 
 const WarehouseInventory = () => {
-  const { formatCurrency } = useCurrency();
+  const { t } = useTranslation();
+const { formatCurrency } = useCurrency();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,11 +25,11 @@ const WarehouseInventory = () => {
       const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
       setProducts(res.data);
     } catch (error) {
-      toast.error('Failed to load products');
+      toast.error(t('ui.pages.warehouse.warehouseInventory.toast.failedToLoadProducts'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -37,6 +41,13 @@ const WarehouseInventory = () => {
     else if (stockFilter === 'in') matchesStock = p.quantity >= 10;
     return matchesSearch && matchesStock;
   });
+  // Apply stock filter from URL query param
+  useEffect(() => {
+    const stock = searchParams.get('stock');
+    if (stock === 'low' || stock === 'out' || stock === 'in') {
+      setStockFilter(stock);
+    }
+  }, [searchParams]);
 
   const getStockStatus = (qty) => {
     if (qty === 0) return 'out-of-stock';
@@ -51,17 +62,17 @@ const WarehouseInventory = () => {
   const handleSaveStock = async (productId) => {
     const newQty = parseInt(editingStock[productId]);
     if (isNaN(newQty) || newQty < 0) {
-      toast.error('Invalid quantity');
+      toast.error(t('ui.pages.warehouse.warehouseInventory.toast.invalidQuantity'));
       return;
     }
     setSavingStock(productId);
     try {
       await http.patch(buildUrl(WAREHOUSE_ENDPOINTS.UPDATE_STOCK, { product_id: productId }), { quantity: newQty });
-      toast.success('Stock updated');
+      toast.success(t('ui.pages.warehouse.warehouseInventory.toast.stockUpdated'));
       setEditingStock(prev => { const n = { ...prev }; delete n[productId]; return n; });
       fetchProducts();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to update stock');
+      toast.error(error.response?.data?.detail || t('ui.pages.warehouse.warehouseInventory.toast.failedToUpdateStock'));
     } finally {
       setSavingStock(null);
     }
@@ -69,28 +80,33 @@ const WarehouseInventory = () => {
 
   if (loading) return <div className="page-loading wm-inventory-loading"><LoadingSpinner size="large" /></div>;
 
-  const inventoryTitle = 'Inventory Control';
+  const inventoryTitle = t('ui.pages.warehouse.warehouseInventory.title');
 
   return (
     <div className="admin-page-shell wm-inventory">
       <PageHeader kicker={inventoryTitle} title={inventoryTitle} />
       <div className="wm-inventory-filters">
-        <input type="text" placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <input
+          type="text"
+          placeholder={t('ui.pages.warehouse.warehouseInventory.searchPlaceholder')}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
         <select value={stockFilter} onChange={e => setStockFilter(e.target.value)}>
-          <option value="">All Stock Levels</option>
-          <option value="in">In Stock (≥10)</option>
-          <option value="low">Low Stock (&lt;10)</option>
-          <option value="out">Out of Stock</option>
+          <option value="">{t('ui.pages.warehouse.warehouseInventory.filter.all')}</option>
+          <option value="in">{t('ui.pages.warehouse.warehouseInventory.filter.inStock')}</option>
+          <option value="low">{t('ui.pages.warehouse.warehouseInventory.filter.lowStock')}</option>
+          <option value="out">{t('ui.pages.warehouse.warehouseInventory.filter.outOfStock')}</option>
         </select>
       </div>
       <table className="wm-inventory-table">
         <thead>
           <tr>
-            <th>Product</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Status</th>
-            <th>Stock</th>
+            <th>{t('ui.pages.warehouse.warehouseInventory.table.product')}</th>
+            <th>{t('ui.pages.warehouse.warehouseInventory.table.category')}</th>
+            <th>{t('ui.pages.warehouse.warehouseInventory.table.price')}</th>
+            <th>{t('ui.pages.warehouse.warehouseInventory.table.status')}</th>
+            <th>{t('ui.pages.warehouse.warehouseInventory.table.stock')}</th>
           </tr>
         </thead>
         <tbody>
@@ -101,7 +117,11 @@ const WarehouseInventory = () => {
                 <td style={{ fontWeight: 600 }}>{product.name}</td>
                 <td>{product.category_name}</td>
                 <td>{formatCurrency(product.price)}</td>
-                <td><span className={`wm-stock-badge ${getStockStatus(product.quantity)}`}>{getStockStatus(product.quantity).replace('-', ' ')}</span></td>
+                <td>
+                  <span className={`wm-stock-badge ${getStockStatus(product.quantity)}`}>
+                    {t(`ui.pages.warehouse.warehouseInventory.status.${getStockStatus(product.quantity)}`)}
+                  </span>
+                </td>
                 <td>
                   <div className="wm-stock-cell">
                     <input
@@ -114,7 +134,7 @@ const WarehouseInventory = () => {
                     />
                     {isEditing && parseInt(editingStock[product.id]) !== product.quantity && (
                       <button className="wm-stock-save-btn" onClick={() => handleSaveStock(product.id)} disabled={savingStock === product.id}>
-                        {savingStock === product.id ? '...' : 'Save'}
+                        {savingStock === product.id ? '...' : t('ui.pages.warehouse.warehouseInventory.button.save')}
                       </button>
                     )}
                   </div>

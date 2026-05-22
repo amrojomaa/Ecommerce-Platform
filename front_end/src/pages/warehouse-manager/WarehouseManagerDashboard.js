@@ -52,15 +52,13 @@ const WarehouseManagerDashboard = () => {
   }
 
   const wmDashTitle = 'Warehouse Manager Dashboard';
-
   const statCards = [
     { title: 'Total Products', value: stats.totalProducts, icon: '📦', color: '#0ea5e9', path: '/warehouse/inventory' },
-    { title: 'Low Stock', value: stats.lowStock, icon: '⚠️', color: '#f59e0b', path: '/warehouse/inventory' },
-    { title: 'Out of Stock', value: stats.outOfStock, icon: '🚫', color: '#ef4444', path: '/warehouse/inventory' },
+    { title: 'Low Stock', value: stats.lowStock, icon: '⚠️', color: '#f59e0b', path: '/warehouse/inventory?stock=low' },
+    { title: 'Out of Stock', value: stats.outOfStock, icon: '🚫', color: '#ef4444', path: '/warehouse/inventory?stock=out' },
     { title: 'Awaiting Approval', value: stats.packedQueue, icon: '✅', color: '#16a34a', path: '/warehouse/approvals' },
     { title: 'Open Issues', value: stats.openIssues, icon: '🔴', color: '#dc2626', path: '/warehouse/issues' },
   ];
-
   return (
     <div className="admin-page-shell wm-dashboard">
       <PageHeader kicker={wmDashTitle} title={wmDashTitle} />

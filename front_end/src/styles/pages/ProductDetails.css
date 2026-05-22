@@ -630,13 +630,15 @@ html[dir='rtl'] .add-to-cart-btn {
 
 .dark .product-details-page .product-comments-toggle-btn {
   color: #ffffff;
-  border-color: #16a34a;
-  background: #16a34a;
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .dark .product-details-page .product-comments-toggle-btn:hover {
-  border-color: #15803d;
-  background: #15803d;
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
 .dark .product-details-page .product-info h1 {

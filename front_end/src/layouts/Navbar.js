@@ -53,7 +53,7 @@ const Navbar = () => {
   const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
   const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
   const supportPanelPath = '/support';
-  const warehousePanelPath = '/warehouse/products';
+  const warehouseManagerHomePath = '/warehouse';
   const adminHomePath = '/admin';
   const driverHomePath = '/driver';
   const cashierHomePath = '/cashier';
@@ -68,7 +68,7 @@ const Navbar = () => {
     if (user.role === 'cashier') return cashierHomePath;
     if (user.role === 'support_agent') return supportAgentHomePath;
     if (user.role === 'support_manager') return supportManagerHomePath;
-    if (user.role === 'warehouse_manager') return '/warehouse';
+    if (user.role === 'warehouse_manager') return warehouseManagerHomePath;
     if (user.role === 'seller') return sellerHomePath;
     if (user.role === 'warehouse_staff') return '/warehouse-staff';
     return '/';
@@ -279,7 +279,7 @@ const Navbar = () => {
                   </Link>
               }
                 {checkIsWarehouseManager() &&
-              <Link to={warehousePanelPath} className="navbar-link admin-link">
+              <Link to={warehouseManagerHomePath} className="navbar-link admin-link">
                     <span>{t("navbar.warehouseManager")}</span>
                   </Link>
               }
@@ -351,6 +351,11 @@ const Navbar = () => {
               {(isWarehouseStaffArea || (user?.role === 'warehouse_staff' && !isWarehouseStaffArea)) &&
               <Link to="/warehouse-staff" className="navbar-link admin-link">
                   <span>Warehouse Dashboard</span>
+                </Link>
+              }
+              {(isWarehouseManagerArea || (user?.role === 'warehouse_manager' && !isWarehouseManagerArea)) &&
+              <Link to={warehouseManagerHomePath} className="navbar-link admin-link">
+                  <span>{t("navbar.warehouseManager")}</span>
                 </Link>
               }
               <div className="navbar-user" ref={profileDropdownRef}>
@@ -523,6 +528,11 @@ const Navbar = () => {
                   Support Manager
                 </Link>
               }
+              {isWarehouseManagerArea &&
+              <Link to={warehouseManagerHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.warehouseManager")}
+                </Link>
+              }
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                 {t("navbar.profile")}
               </Link>
@@ -554,7 +564,7 @@ const Navbar = () => {
                 </Link>
           }
               {checkIsWarehouseManager() &&
-          <Link to={warehousePanelPath} onClick={() => setMobileMenuOpen(false)}>
+          <Link to={warehouseManagerHomePath} onClick={() => setMobileMenuOpen(false)}>
                   {t("navbar.warehouseManager")}
                 </Link>
           }

@@ -10,7 +10,7 @@ import '../styles/layouts/MainLayout.css';
 
 const MainLayout = () => {
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isDriver, loading, user } = useAuth();
+  const { isAuthenticated, isAdmin, isDriver, isWarehouseManager, loading, user } = useAuth();
   
   // Hide AI assistant on login, signup, and auth-related pages
   const hideChatWidget = [
@@ -40,6 +40,10 @@ const MainLayout = () => {
 
   if (isAuthenticated && isDriver && typeof isDriver === 'function' && isDriver()) {
     return <Navigate to="/driver" replace />;
+  }
+
+  if (isAuthenticated && isWarehouseManager && typeof isWarehouseManager === 'function' && isWarehouseManager()) {
+    return <Navigate to="/warehouse" replace />;
   }
 
   return (

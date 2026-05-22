@@ -6,6 +6,7 @@ import http from '../../services/http';
 import { FEEDBACK_ENDPOINTS } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/support-manager/SupportManagerFeedback.css';
 
 const SupportManagerFeedback = () => {
@@ -42,10 +43,15 @@ const SupportManagerFeedback = () => {
 
   const stats = calculateStats();
 
+  const customerFeedbackTitle = 'Customer Feedback';
+
   return (
-    <div className="support-manager-feedback">
+    <div className="admin-page-shell support-manager-feedback">
       <header className="feedback-header">
-        <h1>Customer Feedback</h1>
+        <PageHeader
+          kicker={customerFeedbackTitle}
+          title={customerFeedbackTitle}
+          actions={
         <div className="feedback-summary">
           <div className="summary-card">
             <FiTrendingUp color="#4CAF50" />
@@ -62,6 +68,8 @@ const SupportManagerFeedback = () => {
             </div>
           </div>
         </div>
+          }
+        />
       </header>
 
       <div className="feedback-controls">
@@ -80,7 +88,7 @@ const SupportManagerFeedback = () => {
 
       <div className="feedback-content">
         {loading ? (
-          <div className="loading-state"><LoadingSpinner size="large" /></div>
+          <div className="page-loading loading-state"><LoadingSpinner size="large" /></div>
         ) : feedback.length > 0 ? (
           <div className="feedback-list">
             {feedback.map((item, index) => (

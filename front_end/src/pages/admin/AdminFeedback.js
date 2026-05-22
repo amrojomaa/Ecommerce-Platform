@@ -5,6 +5,7 @@ import http from '../../services/http';
 import { FEEDBACK_ENDPOINTS } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/admin/AdminFeedback.css';
 
 const RATING_FILTERS = ['all', 5, 4, 3, 2, 1];
@@ -120,12 +121,15 @@ const AdminFeedback = () => {
     }));
   };
 
+  const customerFeedbackTitle = tUi("ui.pages.admin.adminFeedback.customerFeedback_4fd4bfed76");
+
   return (
-    <div className="admin-feedback">
-      <div className="admin-feedback-header">
-        <h1>{tUi("ui.pages.admin.adminFeedback.customerFeedback_4fd4bfed76")}</h1>
-        <p>{tUi("ui.pages.admin.adminFeedback.ratingsAndComments_9672ebdf0c")}</p>
-      </div>
+    <div className="admin-page-shell admin-feedback">
+      <PageHeader
+        kicker={customerFeedbackTitle}
+        title={customerFeedbackTitle}
+        subtitle={tUi("ui.pages.admin.adminFeedback.ratingsAndComments_9672ebdf0c")}
+      />
 
       <div className="admin-feedback-toolbar">
         <input
@@ -150,7 +154,7 @@ const AdminFeedback = () => {
       </div>
 
       {loading ?
-      <div className="admin-feedback-loading">
+      <div className="page-loading admin-feedback-loading">
           <LoadingSpinner />
         </div> :
       groupedFeedback.length === 0 ?

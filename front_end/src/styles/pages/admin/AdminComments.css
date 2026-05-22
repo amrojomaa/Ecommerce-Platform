@@ -1,18 +1,35 @@
 .admin-comments {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.admin-comments {
+  gap: 2.5rem;
+}
+
+.admin-comments .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .admin-comments-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
+  margin-bottom: 0;  flex-wrap: wrap;
   gap: 1rem;
 }
 
-.admin-comments-header h1 {
+.admin-comments-header h1,
+.admin-comments-header .page-header h1 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
   color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .product-selector {
@@ -83,15 +100,16 @@
   text-align: left;
   border: 1px solid var(--border-color);
   background-color: var(--surface);
-  border-radius: 0.75rem;
+  border-radius: 1.2rem;
   padding: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .product-card-btn:hover {
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.25);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .product-card-btn.selected {
@@ -144,7 +162,7 @@
   margin-bottom: 1.25rem;
   padding: 1rem 1.25rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
+  border-radius: 1.2rem;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -195,7 +213,7 @@
 
 .filter-btn {
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
   background-color: var(--surface);
   color: var(--text-primary);
@@ -216,7 +234,7 @@
 
 .backfill-sentiment-btn {
   padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   border: none;
   background-color: #22c55e;
   color: white;
@@ -257,14 +275,17 @@
 
 .comment-card {
   background-color: var(--surface);
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 1.5rem;
   box-shadow: var(--shadow);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .comment-card:hover {
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .comment-card.negative-review {
@@ -371,7 +392,7 @@
 
 .delete-comment-btn {
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   border: none;
   background-color: var(--error-color);
   color: white;

@@ -6,6 +6,7 @@ import { formatDate, getImageUrl } from '../../utils/helpers';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useConfirm } from '../../hooks/useConfirm';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/admin/AdminInstallments.css';
 
 const STATUS_FILTERS = ['all', 'pending', 'approved', 'rejected', 'cancelled', 'completed'];
@@ -138,16 +139,20 @@ const AdminInstallments = () => {
 
   if (loading) {
     return (
-      <div className="admin-installments-loading">
+      <div className="page-loading admin-installments-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
+  const installmentTitle = tUi("ui.pages.admin.adminInstallments.installmentRequests_2fc67af45f");
+
   return (
-    <div className="admin-installments-page">
-      <div className="admin-installments-header">
-        <h1>{tUi("ui.pages.admin.adminInstallments.installmentRequests_2fc67af45f")}</h1>
+    <div className="admin-page-shell admin-installments-page">
+      <PageHeader
+        kicker={installmentTitle}
+        title={installmentTitle}
+        actions={
         <div className="filter-group">
           <label htmlFor="status-filter">{tUi("ui.pages.admin.adminInstallments.status_757a85a464")}</label>
           <select
@@ -162,7 +167,8 @@ const AdminInstallments = () => {
             )}
           </select>
         </div>
-      </div>
+        }
+      />
 
       {requests.length === 0 ?
       <p className="empty-state">{tUi("ui.pages.admin.adminInstallments.noInstallmentRequestsForThis_a2ec84d62f")}</p> :

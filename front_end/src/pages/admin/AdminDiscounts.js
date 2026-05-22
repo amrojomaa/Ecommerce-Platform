@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS } from '../../config/api';
 import { ProductCardSkeleton } from '../../components/Skeleton';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminDiscounts.css';
@@ -117,12 +118,15 @@ const AdminDiscounts = () => {
     });
   }, [products, searchTerm]);
 
+  const discountsTitle = tUi("ui.pages.admin.adminDiscounts.discounts_5acbd929a0");
+
   return (
-    <div className="admin-discounts">
-      <div className="admin-discounts-header">
-        <h1>{tUi("ui.pages.admin.adminDiscounts.discounts_5acbd929a0")}</h1>
-        <p>{tUi("ui.pages.admin.adminDiscounts.manageAllProductDiscountsFrom_052f906975")}</p>
-      </div>
+    <div className="admin-page-shell admin-discounts">
+      <PageHeader
+        kicker={discountsTitle}
+        title={discountsTitle}
+        subtitle={tUi("ui.pages.admin.adminDiscounts.manageAllProductDiscountsFrom_052f906975")}
+      />
 
       <div className="discounts-search">
         <input

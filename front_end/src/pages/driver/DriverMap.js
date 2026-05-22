@@ -1,8 +1,10 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/driver/DriverMap.css';
 
@@ -408,26 +410,37 @@ const DriverMap = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
 
+  const mapJobsTitle = tUi('ui.pages.driver.driverMap.findDeliveryJobs_cfe3d4c660');
+
   return (
-    <div className="driver-map-page">
-      <div className="map-header">
-        <h1>{tUi("ui.pages.driver.driverMap.findDeliveryJobs_cfe3d4c660")}</h1>
-        <div className="jobs-header-meta">
-          <span className="jobs-count">{jobs.length}{tUi("ui.pages.driver.driverMap.available_9488931dee")}</span>
-          {closestJobId &&
-          <span className="closest-order-banner">{tUi("ui.pages.driver.driverMap.shortestWarehouseRoute_2b3db79613")}
-            {jobs.find((job) => job.id === closestJobId)?.order_id || closestJobId}
-              {closestDistanceKm !== null ? tUi("ui.pages.driver.driverMap.valueKm_71f82fee49", { value0: closestDistanceKm.toFixed(2) }) : ''}
+    <div className="page-shell driver-map-page">
+      <PageHeader
+        kicker={mapJobsTitle}
+        title={mapJobsTitle}
+        actions={
+          <div className="jobs-header-meta">
+            <span className="jobs-count">
+              {jobs.length}
+              {tUi('ui.pages.driver.driverMap.available_9488931dee')}
             </span>
-          }
-        </div>
-      </div>
+            {closestJobId && (
+              <span className="closest-order-banner">
+                {tUi('ui.pages.driver.driverMap.shortestWarehouseRoute_2b3db79613')}
+                {jobs.find((job) => job.id === closestJobId)?.order_id || closestJobId}
+                {closestDistanceKm !== null
+                  ? tUi('ui.pages.driver.driverMap.valueKm_71f82fee49', { value0: closestDistanceKm.toFixed(2) })
+                  : ''}
+              </span>
+            )}
+          </div>
+        }
+      />
 
       <div className="map-container">
         <div ref={mapRef} className="map-view" />

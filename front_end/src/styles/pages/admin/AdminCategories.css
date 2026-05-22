@@ -1,24 +1,42 @@
 .admin-categories {
   width: 100%;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.admin-categories {
+  gap: 2.5rem;
+}
+
+.admin-categories .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .admin-categories-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
-.admin-categories-header h1 {
+.admin-categories-header h1,
+.admin-categories-header .page-header h1 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  margin: 0;
   color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .add-category-btn {
   background-color: var(--primary-color);
   color: white;
   padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   font-weight: 600;
 }
 
@@ -45,17 +63,19 @@
 .category-card {
   background-color: var(--surface);
   padding: 2rem;
-  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   box-shadow: var(--shadow);
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
 }
 
 .category-card:hover {
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .category-icon {
@@ -64,6 +84,8 @@
 }
 
 .category-card h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   overflow-wrap: anywhere;
@@ -86,7 +108,7 @@
 .delete-btn {
   flex: 1;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   font-weight: 600;
   transition: all 0.3s ease;
 }
@@ -125,16 +147,22 @@
 
 .modal-content {
   background-color: var(--background);
-  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   padding: 2rem;
   max-width: 500px;
   width: 100%;
 }
 
+
 .modal-content h2 {
   margin-bottom: 1.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
+
 
 .form-group {
   margin-bottom: 1.5rem;
@@ -167,7 +195,7 @@
 .save-btn {
   flex: 1;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   font-weight: 600;
 }
 

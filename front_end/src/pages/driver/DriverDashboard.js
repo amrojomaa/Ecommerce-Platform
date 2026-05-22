@@ -1,8 +1,10 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/driver/DriverDashboard.css';
 
@@ -35,15 +37,17 @@ const DriverDashboard = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
 
+  const dashboardTitle = tUi('ui.pages.driver.driverDashboard.driverDashboard_6764ab49f0');
+
   return (
-    <div className="driver-dashboard">
-      <h1>{tUi("ui.pages.driver.driverDashboard.driverDashboard_6764ab49f0")}</h1>
+    <div className="page-shell driver-dashboard">
+      <PageHeader kicker={dashboardTitle} title={dashboardTitle} />
       
       <div className="dashboard-stats">
         <div className="stat-card earnings-card">

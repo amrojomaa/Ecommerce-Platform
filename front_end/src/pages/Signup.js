@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -12,6 +13,7 @@ import {
 '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -146,15 +148,20 @@ const Signup = () => {
   });
 
   return (
-    <div className="auth-page">
+    <div className="page-shell signup-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel auth-container--wide"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.signup.signUp_31e879f853")}</h1>
-        <p>{tUi("ui.pages.signup.createANewAccountTo_acca247e59")}</p>
+        <PageHeader
+          kicker={tUi("ui.pages.signup.signUp_31e879f853")}
+          title={tUi("ui.pages.signup.signUp_31e879f853")}
+          subtitle={tUi("ui.pages.signup.createANewAccountTo_acca247e59")}
+          className="auth-page-header"
+          animate={false}
+        />
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
@@ -345,7 +352,7 @@ const Signup = () => {
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
+              className="page-btn-primary auth-full-width-btn"
               disabled={loading}>
               
               {loading ?
@@ -368,7 +375,7 @@ const Signup = () => {
           <button
             type="button"
             onClick={handleGoogleSignup}
-            className="auth-button google-button"
+            className="page-btn-secondary auth-full-width-btn google-sso-btn"
             disabled={googleLoading || loading}>
             
             {googleLoading ?

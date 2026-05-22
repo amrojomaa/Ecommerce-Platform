@@ -1,18 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
+import '../../styles/pages/warehouse-manager/WarehousePanel.css';
 import '../../styles/pages/warehouse-manager/WarehouseInventory.css';
 
 const WarehouseInventory = () => {
+  const { t } = useTranslation();
   const { formatCurrency } = useCurrency();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [stockFilter, setStockFilter] = useState('');
-  const [editingStock, setEditingStock] = useState({}); // { productId: newQty }
+  const [editingStock, setEditingStock] = useState({});
   const [savingStock, setSavingStock] = useState(null);
 
   const fetchProducts = useCallback(async () => {
@@ -20,13 +27,20 @@ const WarehouseInventory = () => {
       const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
       setProducts(res.data);
     } catch (error) {
-      toast.error('Failed to load products');
+      toast.error(t('ui.pages.warehouse.warehouseInventory.toast.failedToLoadProducts'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  useEffect(() => {
+    const stock = searchParams.get('stock');
+    if (stock === 'low' || stock === 'out' || stock === 'in') {
+      setStockFilter(stock);
+    }
+  }, [searchParams]);
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -50,77 +64,111 @@ const WarehouseInventory = () => {
   const handleSaveStock = async (productId) => {
     const newQty = parseInt(editingStock[productId]);
     if (isNaN(newQty) || newQty < 0) {
-      toast.error('Invalid quantity');
+      toast.error(t('ui.pages.warehouse.warehouseInventory.toast.invalidQuantity'));
       return;
     }
     setSavingStock(productId);
     try {
       await http.patch(buildUrl(WAREHOUSE_ENDPOINTS.UPDATE_STOCK, { product_id: productId }), { quantity: newQty });
-      toast.success('Stock updated');
+      toast.success(t('ui.pages.warehouse.warehouseInventory.toast.stockUpdated'));
       setEditingStock(prev => { const n = { ...prev }; delete n[productId]; return n; });
       fetchProducts();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to update stock');
+      toast.error(error.response?.data?.detail || t('ui.pages.warehouse.warehouseInventory.toast.failedToUpdateStock'));
     } finally {
       setSavingStock(null);
     }
   };
 
-  if (loading) return <div className="wm-inventory-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading wm-page-loading"><LoadingSpinner size="large" /></div>;
 
   return (
-    <div className="wm-inventory">
-      <h1>Inventory Control</h1>
-      <div className="wm-inventory-filters">
-        <input type="text" placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        <select value={stockFilter} onChange={e => setStockFilter(e.target.value)}>
-          <option value="">All Stock Levels</option>
-          <option value="in">In Stock (≥10)</option>
-          <option value="low">Low Stock (&lt;10)</option>
-          <option value="out">Out of Stock</option>
-        </select>
-      </div>
-      <table className="wm-inventory-table">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Category</th>
-            <th>Price</th>
-            <th>Status</th>
-            <th>Stock</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredProducts.map(product => {
-            const isEditing = editingStock[product.id] !== undefined;
-            return (
-              <tr key={product.id}>
-                <td style={{ fontWeight: 600 }}>{product.name}</td>
-                <td>{product.category_name}</td>
-                <td>{formatCurrency(product.price)}</td>
-                <td><span className={`wm-stock-badge ${getStockStatus(product.quantity)}`}>{getStockStatus(product.quantity).replace('-', ' ')}</span></td>
-                <td>
-                  <div className="wm-stock-cell">
-                    <input
-                      className="wm-stock-input"
-                      type="number"
-                      min="0"
-                      value={isEditing ? editingStock[product.id] : product.quantity}
-                      onChange={e => handleStockChange(product.id, e.target.value)}
-                      onFocus={() => { if (!isEditing) handleStockChange(product.id, String(product.quantity)); }}
-                    />
-                    {isEditing && parseInt(editingStock[product.id]) !== product.quantity && (
-                      <button className="wm-stock-save-btn" onClick={() => handleSaveStock(product.id)} disabled={savingStock === product.id}>
-                        {savingStock === product.id ? '...' : 'Save'}
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="admin-page-shell wm-page wm-inventory">
+      <PageHeader
+        kicker={t('ui.sidebar.panel.warehouse')}
+        title={t('ui.pages.warehouse.warehouseInventory.title')}
+        subtitle={t('ui.pages.warehouse.warehouseInventory.subtitle')}
+      />
+
+      <section className="wm-section wm-inventory-controls">
+        <div className="wm-inventory-toolbar-top">
+          <span className="wm-toolbar-meta">
+            {t('ui.pages.warehouse.warehouseInventory.resultsCount', { count: filteredProducts.length })}
+          </span>
+        </div>
+        <div className="wm-toolbar wm-inventory-toolbar">
+          <div className="wm-toolbar-filters">
+            <input
+              className="wm-field-input"
+              type="text"
+              placeholder={t('ui.pages.warehouse.warehouseInventory.searchPlaceholder')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            <select className="wm-field-select" value={stockFilter} onChange={e => setStockFilter(e.target.value)}>
+              <option value="">{t('ui.pages.warehouse.warehouseInventory.filter.all')}</option>
+              <option value="in">{t('ui.pages.warehouse.warehouseInventory.filter.inStock')}</option>
+              <option value="low">{t('ui.pages.warehouse.warehouseInventory.filter.lowStock')}</option>
+              <option value="out">{t('ui.pages.warehouse.warehouseInventory.filter.outOfStock')}</option>
+            </select>
+          </div>
+        </div>
+
+        {filteredProducts.length === 0 ? (
+          <div className="wm-empty">
+            <div className="wm-empty-icon">📦</div>
+            <p>{t('ui.pages.warehouse.warehouseInventory.empty')}</p>
+          </div>
+        ) : (
+          <motion.div className="wm-data-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <table className="wm-inventory-table">
+              <thead>
+                <tr>
+                  <th>{t('ui.pages.warehouse.warehouseInventory.table.product')}</th>
+                  <th>{t('ui.pages.warehouse.warehouseInventory.table.category')}</th>
+                  <th>{t('ui.pages.warehouse.warehouseInventory.table.price')}</th>
+                  <th>{t('ui.pages.warehouse.warehouseInventory.table.status')}</th>
+                  <th>{t('ui.pages.warehouse.warehouseInventory.table.stock')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map(product => {
+                  const isEditing = editingStock[product.id] !== undefined;
+                  return (
+                    <tr key={product.id}>
+                      <td className="wm-product-name">{product.name}</td>
+                      <td>{product.category_name}</td>
+                      <td>{formatCurrency(product.price)}</td>
+                      <td>
+                        <span className={`wm-stock-badge ${getStockStatus(product.quantity)}`}>
+                          {t(`ui.pages.warehouse.warehouseInventory.status.${getStockStatus(product.quantity)}`)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="wm-stock-cell">
+                          <input
+                            className="wm-stock-input"
+                            type="number"
+                            min="0"
+                            value={isEditing ? editingStock[product.id] : product.quantity}
+                            onChange={e => handleStockChange(product.id, e.target.value)}
+                            onFocus={() => { if (!isEditing) handleStockChange(product.id, String(product.quantity)); }}
+                          />
+                          {isEditing && parseInt(editingStock[product.id]) !== product.quantity && (
+                            <button className="wm-btn-save" onClick={() => handleSaveStock(product.id)} disabled={savingStock === product.id}>
+                              {savingStock === product.id ? '...' : t('ui.pages.warehouse.warehouseInventory.button.save')}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </motion.div>
+        )}
+      </section>
     </div>
   );
 };

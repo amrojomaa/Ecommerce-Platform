@@ -3,6 +3,7 @@ import { FiSearch, FiMessageCircle, FiUser, FiClock } from 'react-icons/fi';
 import http from '../../services/http';
 import { TICKET_ENDPOINTS, USER_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
 import { formatDate } from '../../utils/helpers';
 import '../../styles/pages/support-agent/SupportAgentDashboard.css';
@@ -45,13 +46,18 @@ const SupportAgentChats = () => {
     chat.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="dashboard-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading dashboard-loading"><LoadingSpinner size="large" /></div>;
+
+  const activeChatsTitle = 'Active Customer Chats';
 
   return (
-    <div className="support-agent-dashboard">
+    <div className="admin-page-shell support-agent-dashboard">
       <header className="dashboard-header">
-        <h1>Active Customer Chats</h1>
-        <p>Real-time conversations with customers who have active tickets assigned to you.</p>
+        <PageHeader
+          kicker={activeChatsTitle}
+          title={activeChatsTitle}
+          subtitle="Real-time conversations with customers who have active tickets assigned to you."
+        />
       </header>
 
       <div className="dashboard-content">

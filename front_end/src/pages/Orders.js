@@ -5,6 +5,7 @@ import http from '../services/http';
 import { ORDER_ENDPOINTS, DELIVERY_ENDPOINTS, buildUrl } from '../config/api';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
 import DeliveryChatModal from '../components/DeliveryChatModal';
 import API_BASE_URL from '../config/api';
 import { useConfirm } from '../hooks/useConfirm';
@@ -157,20 +158,26 @@ const Orders = () => {
 
   if (loading) {
     return (
-      <div className="orders-loading">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
   return (
-    <div className="orders-page">
-      <h1>{tUi("ui.pages.orders.myOrders_9215f6342b")}</h1>
+    <div className="page-shell orders-page">
+      <PageHeader
+        kicker={tUi("ui.pages.orders.myOrders_9215f6342b")}
+        title={tUi("ui.pages.orders.myOrders_9215f6342b")}
+        subtitle={orders.length > 0
+          ? `${orders.length} ${orders.length === 1 ? 'order' : 'orders'}`
+          : tUi("ui.pages.orders.youHavenTPlacedAny_7ac4ec05af")}
+      />
       
       {orders.length === 0 ?
-      <div className="empty-orders">
+      <div className="page-empty empty-orders">
           <p>{tUi("ui.pages.orders.youHavenTPlacedAny_7ac4ec05af")}</p>
-          <Link to="/products" className="shop-link">{tUi("ui.pages.orders.startShopping_aea59217fe")}
+          <Link to="/products" className="page-btn-primary shop-link">{tUi("ui.pages.orders.startShopping_aea59217fe")}
 
         </Link>
         </div> :

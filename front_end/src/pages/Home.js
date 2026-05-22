@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaHeadset, FaHeart, FaRegHeart, FaShieldAlt, FaShoppingCart, FaTruck } from 'react-icons/fa';
+import { FaArrowRight, FaHeadset, FaHeart, FaRegHeart, FaShieldAlt, FaShoppingCart, FaTag, FaTruck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { tUi } from '../i18n/uiText';
 import http from '../services/http';
@@ -38,6 +38,26 @@ const Home = () => {
     fetchFeaturedProducts();
   }, [location.pathname, languageCode]); // Refresh when navigating to home page
 
+  useEffect(() => {
+    if (!location.hash) {
+      return;
+    }
+
+    const sectionId = location.hash.replace('#', '');
+    const scrollToHashTarget = () => {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    if (loading) {
+      return;
+    }
+
+    scrollToHashTarget();
+  }, [location.hash, loading]);
+
   const fetchFeaturedProducts = async () => {
     try {
       const response = await http.get(PRODUCT_ENDPOINTS.ALL);
@@ -71,6 +91,25 @@ const Home = () => {
       return '...';
     }
     return value > 0 ? `${value}+` : '0';
+  };
+
+  const getDiscountPercent = (product) => {
+    if (!product?.discount_enabled || !product.price || !product.discounted_price) {
+      return 0;
+    }
+    if (product.discounted_price >= product.price) {
+      return 0;
+    }
+    return Math.round((1 - product.discounted_price / product.price) * 100);
+  };
+
+  const scrollToSection = (sectionId) => (event) => {
+    event.preventDefault();
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.replaceState(null, '', `#${sectionId}`);
+    }
   };
 
   return (
@@ -130,8 +169,10 @@ const Home = () => {
           <div className="hero-visual">
             <div className="hero-orb orb-one"></div>
             <div className="hero-orb orb-two"></div>
-            <motion.div
-              className="hero-card hero-card-primary"
+            <motion.a
+              href="#featured"
+              className="hero-card hero-card-primary hero-card-link"
+              onClick={scrollToSection('featured')}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}>
@@ -141,9 +182,11 @@ const Home = () => {
                 <span className="hero-card-value">{formatStatValue(productCount)}</span>
                 <span className="hero-card-caption">{tUi("navbar.products")}</span>
               </div>
-            </motion.div>
-            <motion.div
-              className="hero-card hero-card-secondary"
+            </motion.a>
+            <motion.a
+              href="#discounts"
+              className="hero-card hero-card-secondary hero-card-link"
+              onClick={scrollToSection('discounts')}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.6 }}>
@@ -153,9 +196,11 @@ const Home = () => {
                 <span className="hero-card-value">{formatStatValue(discountCount)}</span>
                 <span className="hero-card-caption">{tUi("ui.pages.home.discounts_7c50f5ea26")}</span>
               </div>
-            </motion.div>
-            <motion.div
-              className="hero-card hero-card-tertiary"
+            </motion.a>
+            <motion.a
+              href="#categories"
+              className="hero-card hero-card-tertiary hero-card-link"
+              onClick={scrollToSection('categories')}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}>
@@ -165,7 +210,7 @@ const Home = () => {
                 <span className="hero-card-value">{formatStatValue(categoryCount)}</span>
                 <span className="hero-card-caption">{tUi("legacy.Categories")}</span>
               </div>
-            </motion.div>
+            </motion.a>
           </div>
         </div>
       </motion.section>
@@ -240,33 +285,45 @@ const Home = () => {
       {/* Featured Categories */}
       {categories.length > 0 &&
       <section className="categories-section" id="categories">
-          <div className="section-header">
-            <motion.h2
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}>{tUi("ui.pages.home.shopByCategory_dde1ec52b8")}
+          <div className="categories-band">
+            <div className="section-header">
+              <span className="categories-kicker">{tUi("legacy.Categories")}</span>
+              <motion.h2
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}>{tUi("ui.pages.home.shopByCategory_dde1ec52b8")}
 
 
-            </motion.h2>
-            <p className="section-subtitle">{tUi("ui.pages.home.categoriesSubtitle_0a7d16c8f1")}</p>
-          </div>
-          <div className="categories-grid">
-            {categories.map((category, index) =>
+              </motion.h2>
+              <p className="section-subtitle">{tUi("ui.pages.home.categoriesSubtitle_0a7d16c8f1")}</p>
+            </div>
+            <div className="home-categories-grid">
+              {categories.map((category, index) =>
           <motion.div
             key={category.value}
+            className="home-category-card-wrapper"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ scale: 1.05 }}>
+            whileHover={{ y: -5 }}>
             
-                <Link to={`/products?category=${encodeURIComponent(category.value)}`} className="category-card">
-                  <div className="category-icon">🏷️</div>
-                  <h3>{category.label}</h3>
+                <Link to={`/products?category=${encodeURIComponent(category.value)}`} className="home-category-card">
+                  <span className="home-category-card-index">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="home-category-icon" aria-hidden="true">
+                    <FaTag />
+                  </span>
+                  <div className="home-category-card-body">
+                    <h3>{category.label}</h3>
+                  </div>
+                  <span className="home-category-card-arrow" aria-hidden="true">
+                    <FaArrowRight />
+                  </span>
                 </Link>
               </motion.div>
           )}
+            </div>
           </div>
         </section>
       }
@@ -274,128 +331,155 @@ const Home = () => {
       {/* Discounts */}
       {discountedProducts.length > 0 &&
       <section className="discounts-section" id="discounts">
-          <div className="section-header">
-            <motion.h2
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}>{tUi("ui.pages.home.discounts_7c50f5ea26")}
+          <div className="discounts-band">
+            <div className="discounts-band-header">
+              <div className="section-header">
+                <span className="discounts-kicker">{tUi("ui.pages.home.discounts_7c50f5ea26")}</span>
+                <motion.h2
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}>{tUi("ui.pages.home.discounts_7c50f5ea26")}
 
 
-            </motion.h2>
-            <p className="section-subtitle">{tUi("ui.pages.home.discountsSubtitle_9a4b3d5b2f")}</p>
-          </div>
-          {loading ?
-        <div className="products-grid">
+                </motion.h2>
+                <p className="section-subtitle">{tUi("ui.pages.home.discountsSubtitle_9a4b3d5b2f")}</p>
+              </div>
+              <Link to="/products" className="discounts-cta">
+                {tUi("ui.pages.home.promoCta_32bb6c9d5d")}
+                <FaArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+            {loading ?
+        <div className="home-discounts-grid">
               {[...Array(6)].map((_, i) =>
           <ProductCardSkeleton key={i} />
           )}
             </div> :
 
-        <div className="products-grid">
-              {discountedProducts.map((product, index) =>
+        <div className="home-discounts-grid">
+              {discountedProducts.map((product, index) => {
+                const localizedProduct = localizeProduct(product, languageCode);
+                const discountPercent = getDiscountPercent(product);
+
+                return (
           <motion.div
             key={`discount-${product.name}`}
+            className="discount-card-wrapper"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5 }}
-            className="product-card-wrapper">
+            whileHover={{ y: -5 }}>
             
                   <Link
               to={`/products/${encodeURIComponent(product.name)}`}
-              className="product-card">
+              className="discount-card">
               
-                    <div className="product-image">
+                    <div className="discount-card-media">
+                      <span className="discount-card-media-category">{localizedProduct.localized_category_name}</span>
+                      {discountPercent > 0 &&
+                <span className="discount-card-badge">-{discountPercent}%</span>
+                }
                       <img
                   src={product.images && product.images.length > 0 ?
                   getImageUrl(product.images[0]) :
                   getImageUrl('/images/placeholder.jpg')}
-                  alt={localizeProduct(product, languageCode).localized_name}
-                  style={{ objectFit: 'cover' }} />
+                  alt={localizedProduct.localized_name} />
                 
                     </div>
-                    <div className="product-info">
-                      <h3>{localizeProduct(product, languageCode).localized_name}</h3>
-                      <p className="product-category">{localizeProduct(product, languageCode).localized_category_name}</p>
-                      <div className="product-price-container">
-                        <div className="product-price-stack">
-                          <p className="product-price-before">{formatCurrency(product.price)}</p>
-                          <p className="product-price-discount">
-                            {formatCurrency(product.discounted_price ?? product.price)}
-                          </p>
-                        </div>
-                        {isAuthenticated &&
-                  <button
-                    className="product-add-to-cart-btn"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      try {
-                        await addToCart(product.name, 1);
-                        toast.success(tUi("ui.pages.home.productAddedToCart_d4e0ddfeac"));
-                      } catch (error) {
-                        toast.error(error.response?.data?.detail || "Failed to add to cart");
-                      }
-                    }}
-                    title={tUi("ui.pages.home.addToCart_db672a40f8")}>
-                    
-                            <FaShoppingCart />
-                          </button>
+                    <div className="discount-card-body">
+                      <h3 className="discount-card-title">{localizedProduct.localized_name}</h3>
+                      <div className="discount-card-pricing">
+                        <span className="discount-card-price">
+                          {formatCurrency(product.discounted_price ?? product.price)}
+                        </span>
+                        {product.discounted_price &&
+                  <span className="discount-card-price-before">{formatCurrency(product.price)}</span>
                   }
                       </div>
                     </div>
+                    {isAuthenticated &&
+              <button
+                className="discount-card-cart-btn"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    await addToCart(product.name, 1);
+                    toast.success(tUi("ui.pages.home.productAddedToCart_d4e0ddfeac"));
+                  } catch (error) {
+                    toast.error(error.response?.data?.detail || "Failed to add to cart");
+                  }
+                }}
+                title={tUi("ui.pages.home.addToCart_db672a40f8")}>
+                
+                        <FaShoppingCart />
+                      </button>
+              }
                   </Link>
                 </motion.div>
-          )}
+                );
+              })}
             </div>
         }
+          </div>
         </section>
       }
 
       {/* Featured Products */}
       <section className="featured-products-section" id="featured">
-        <div className="section-header">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}>{tUi("ui.pages.home.featuredProducts_666a6cab05")}
+        <div className="featured-band">
+          <div className="featured-band-header">
+            <div className="section-header">
+              <span className="featured-kicker">{tUi("ui.pages.home.featuredProducts_666a6cab05")}</span>
+              <motion.h2
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}>{tUi("ui.pages.home.featuredProducts_666a6cab05")}
 
 
-          </motion.h2>
-          <p className="section-subtitle">{tUi("ui.pages.home.featuredSubtitle_6d8a2e0a4e")}</p>
-        </div>
-        {loading ?
-        <div className="products-grid">
+              </motion.h2>
+              <p className="section-subtitle">{tUi("ui.pages.home.featuredSubtitle_6d8a2e0a4e")}</p>
+            </div>
+            <Link to="/products" className="featured-cta">
+              {tUi("ui.pages.home.viewAllProducts_e59509eaba")}
+              <FaArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+          {loading ?
+        <div className="featured-grid">
             {[...Array(6)].map((_, i) =>
           <ProductCardSkeleton key={i} />
           )}
           </div> :
 
-        <div className="products-grid">
-            {featuredProducts.map((product, index) =>
+        <div className="featured-grid">
+            {featuredProducts.map((product, index) => {
+              const localizedProduct = localizeProduct(product, languageCode);
+
+              return (
           <motion.div
             key={product.name}
+            className="featured-card-wrapper"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5 }}
-            className="product-card-wrapper">
+            whileHover={{ y: -5 }}>
             
                 <Link
               to={`/products/${encodeURIComponent(product.name)}`}
-              className="product-card">
+              className="featured-card">
               
-                  <div className="product-image">
+                  <div className="featured-card-media">
+                    <span className="featured-card-media-category">{localizedProduct.localized_category_name}</span>
                     <img
                   src={product.images && product.images.length > 0 ?
                   getImageUrl(product.images[0]) :
                   getImageUrl('/images/placeholder.jpg')}
-                  alt={localizeProduct(product, languageCode).localized_name}
-                  style={{ objectFit: 'cover' }}
+                  alt={localizedProduct.localized_name}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
                     e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
@@ -403,7 +487,7 @@ const Home = () => {
                 
                     {isAuthenticated &&
                 <button
-                  className={`product-wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                  className={`featured-card-wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -423,11 +507,10 @@ const Home = () => {
                       </button>
                 }
                   </div>
-                  <div className="product-info">
-                    <h3>{localizeProduct(product, languageCode).localized_name}</h3>
-                    <p className="product-category">{localizeProduct(product, languageCode).localized_category_name}</p>
+                  <div className="featured-card-body">
+                    <h3 className="featured-card-title">{localizedProduct.localized_name}</h3>
                     {product.id &&
-                <div className="product-rating-container">
+                <div className="featured-card-rating">
                         <StarRating
                     productId={product.id}
                     showLabel={false}
@@ -439,22 +522,20 @@ const Home = () => {
                   
                       </div>
                 }
-                    <div className="product-price-container">
-                      <div className="product-price-stack">
+                    <div className="featured-card-footer">
+                      <div className="featured-card-pricing">
                         {product.discount_enabled ?
                     <>
-                            <p className="product-price-before">{formatCurrency(product.price)}</p>
-                            <p className="product-price-discount">
-                              {formatCurrency(product.discounted_price ?? product.price)}
-                            </p>
+                            <span className="featured-card-price">{formatCurrency(product.discounted_price ?? product.price)}</span>
+                            <span className="featured-card-price-before">{formatCurrency(product.price)}</span>
                           </> :
 
-                    <p className="product-price">{formatCurrency(product.price)}</p>
+                    <span className="featured-card-price">{formatCurrency(product.price)}</span>
                     }
                       </div>
                       {isAuthenticated &&
                   <button
-                    className="product-add-to-cart-btn"
+                    className="featured-card-cart-btn"
                     onClick={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -474,19 +555,11 @@ const Home = () => {
                   </div>
                 </Link>
               </motion.div>
-          )}
+              );
+            })}
           </div>
         }
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.8, duration: 0.6 }}>
-          
-          <Link to="/products" className="view-all-button">{tUi("ui.pages.home.viewAllProducts_e59509eaba")}
-
-          </Link>
-        </motion.div>
+        </div>
       </section>
     </div>);
 

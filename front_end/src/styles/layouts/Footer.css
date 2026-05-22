@@ -16,6 +16,8 @@
 
 .footer-section h3,
 .footer-section h4 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
   margin-bottom: 1rem;
   color: var(--text-primary);
 }

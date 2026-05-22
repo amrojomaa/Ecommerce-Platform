@@ -11,6 +11,7 @@ import {
   getPasswordStrengthProgress } from
 '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
+import PageHeader from '../components/PageHeader';
 import { useConfirm } from '../hooks/useConfirm';
 import { FaStar } from 'react-icons/fa';
 import '../styles/pages/Profile.css';
@@ -371,15 +372,19 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="profile-loading">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
   return (
-    <div className="profile-page">
-      <h1>{tUi("ui.pages.profile.myProfile_bfb22c6292")}</h1>
+    <div className="page-shell profile-page">
+      <PageHeader
+        kicker={tUi("ui.pages.profile.myProfile_bfb22c6292")}
+        title={tUi("ui.pages.profile.myProfile_bfb22c6292")}
+        subtitle={tUi("ui.pages.profile.accountInformation_d02e627c43")}
+      />
       
       <motion.div
         className={`profile-container ${isUpdateProfileOpen ? 'with-update-form' : 'without-update-form'}`}

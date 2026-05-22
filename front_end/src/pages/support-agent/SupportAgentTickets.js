@@ -4,6 +4,7 @@ import http from '../../services/http';
 import { TICKET_ENDPOINTS, buildUrl } from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
 import { useConfirm } from '../../hooks/useConfirm';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
@@ -182,7 +183,7 @@ const SupportAgentTickets = () => {
 
   if (loading) {
     return (
-      <div className="SupportAgent-tickets-loading">
+      <div className="page-loading SupportAgent-tickets-loading">
         <LoadingSpinner size="large" />
       </div>);
 
@@ -194,10 +195,14 @@ const SupportAgentTickets = () => {
       ? completedTickets 
       : unassignedTickets;
 
+  const supportTicketsTitle = 'Support Tickets';
+
   return (
-    <div className="SupportAgent-tickets-page">
-      <div className="page-header">
-        <h1>Support Tickets</h1>
+    <div className="admin-page-shell SupportAgent-tickets-page">
+      <PageHeader
+        kicker={supportTicketsTitle}
+        title={supportTicketsTitle}
+        actions={
         <div className="tabs">
           <button 
             className={`tab-btn ${activeTab === 'assigned' ? 'active' : ''}`}
@@ -218,7 +223,8 @@ const SupportAgentTickets = () => {
             Completed History ({completedTickets.length})
           </button>
         </div>
-      </div>
+        }
+      />
 
       {currentTickets.length === 0 ?
       <div className="empty-tickets">

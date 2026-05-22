@@ -1,10 +1,12 @@
-import { tUi } from "../i18n/uiText";import React, { useState } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -44,15 +46,20 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="auth-page">
+    <div className="page-shell forgot-password-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.forgotPassword.forgotPassword_44e42269c0")}</h1>
-        <p>{tUi("ui.pages.forgotPassword.enterYourEmailAddressAnd_a30a91a5df")}</p>
+        <PageHeader
+          kicker={tUi("ui.pages.forgotPassword.forgotPassword_44e42269c0")}
+          title={tUi("ui.pages.forgotPassword.forgotPassword_44e42269c0")}
+          subtitle={tUi("ui.pages.forgotPassword.enterYourEmailAddressAnd_a30a91a5df")}
+          className="auth-page-header"
+          animate={false}
+        />
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
@@ -77,7 +84,7 @@ const ForgotPassword = () => {
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
+              className="page-btn-primary auth-full-width-btn"
               disabled={loading}>
               
               {loading ?

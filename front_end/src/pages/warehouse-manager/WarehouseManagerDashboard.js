@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { FaArrowRight } from 'react-icons/fa';
+import { FiAlertTriangle, FiCheckCircle, FiPackage, FiSlash, FiTrendingDown } from 'react-icons/fi';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, WAREHOUSE_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import '../../styles/pages/warehouse-manager/WarehouseManagerDashboard.css';
+import PageHeader from '../../components/PageHeader';
+import '../../styles/pages/warehouse-manager/WarehousePanel.css';
 
 const WarehouseManagerDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalProducts: 0, lowStock: 0, outOfStock: 0, packedQueue: 0, openIssues: 0 });
   const [loading, setLoading] = useState(true);
@@ -47,40 +52,84 @@ const WarehouseManagerDashboard = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
-    return <div className="wm-dashboard-loading"><LoadingSpinner size="large" /></div>;
+    return <div className="page-loading wm-page-loading"><LoadingSpinner size="large" /></div>;
   }
 
   const statCards = [
-    { title: 'Total Products', value: stats.totalProducts, icon: '📦', color: '#0ea5e9', path: '/warehouse/inventory' },
-    { title: 'Low Stock', value: stats.lowStock, icon: '⚠️', color: '#f59e0b', path: '/warehouse/inventory' },
-    { title: 'Out of Stock', value: stats.outOfStock, icon: '🚫', color: '#ef4444', path: '/warehouse/inventory' },
-    { title: 'Awaiting Approval', value: stats.packedQueue, icon: '✅', color: '#16a34a', path: '/warehouse/approvals' },
-    { title: 'Open Issues', value: stats.openIssues, icon: '🔴', color: '#dc2626', path: '/warehouse/issues' },
+    { key: 'totalProducts', title: t('ui.pages.warehouse.warehouseDashboard.stat.totalProducts'), value: stats.totalProducts, icon: FiPackage, iconClass: 'wm-stat-icon--products', path: '/warehouse/inventory' },
+    { key: 'lowStock', title: t('ui.pages.warehouse.warehouseDashboard.stat.lowStock'), value: stats.lowStock, icon: FiTrendingDown, iconClass: 'wm-stat-icon--low', path: '/warehouse/inventory?stock=low' },
+    { key: 'outOfStock', title: t('ui.pages.warehouse.warehouseDashboard.stat.outOfStock'), value: stats.outOfStock, icon: FiSlash, iconClass: 'wm-stat-icon--out', path: '/warehouse/inventory?stock=out' },
+    { key: 'awaitingApproval', title: t('ui.pages.warehouse.warehouseDashboard.stat.awaitingApproval'), value: stats.packedQueue, icon: FiCheckCircle, iconClass: 'wm-stat-icon--approval', path: '/warehouse/approvals' },
+    { key: 'openIssues', title: t('ui.pages.warehouse.warehouseDashboard.stat.openIssues'), value: stats.openIssues, icon: FiAlertTriangle, iconClass: 'wm-stat-icon--issues', path: '/warehouse/issues' },
+  ];
+
+  const actionCards = [
+    { path: '/warehouse/inventory', icon: FiPackage, iconClass: '', title: t('ui.pages.warehouse.warehouseDashboard.action.inventory.title'), desc: t('ui.pages.warehouse.warehouseDashboard.action.inventory.desc') },
+    { path: '/warehouse/approvals', icon: FiCheckCircle, iconClass: 'wm-action-card-icon--approval', title: t('ui.pages.warehouse.warehouseDashboard.action.approvals.title'), desc: t('ui.pages.warehouse.warehouseDashboard.action.approvals.desc') },
+    { path: '/warehouse/issues', icon: FiAlertTriangle, iconClass: 'wm-action-card-icon--issues', title: t('ui.pages.warehouse.warehouseDashboard.action.issues.title'), desc: t('ui.pages.warehouse.warehouseDashboard.action.issues.desc') },
   ];
 
   return (
-    <div className="wm-dashboard">
-      <h1>Warehouse Manager Dashboard</h1>
-      <div className="wm-stats-grid">
-        {statCards.map((stat, i) => (
-          <motion.div key={stat.title} className="wm-stat-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} whileHover={{ scale: 1.03 }} onClick={() => navigate(stat.path)}>
-            <div className="stat-icon" style={{ backgroundColor: `${stat.color}18` }}><span>{stat.icon}</span></div>
-            <div className="stat-value">{stat.value}</div>
-            <div className="stat-label">{stat.title}</div>
-          </motion.div>
-        ))}
-      </div>
-      <div className="wm-actions-grid">
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link to="/warehouse/inventory" className="wm-action-card"><h3>📦 Inventory Control</h3><p>Monitor stock levels and adjust quantities</p></Link>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link to="/warehouse/approvals" className="wm-action-card"><h3>✅ Order Approvals</h3><p>Review packed orders and release for pickup</p></Link>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link to="/warehouse/issues" className="wm-action-card"><h3>⚠️ Issues</h3><p>Resolve missing or damaged item reports</p></Link>
-        </motion.div>
-      </div>
+    <div className="admin-page-shell wm-page wm-dashboard">
+      <PageHeader
+        kicker={t('ui.sidebar.panel.warehouse')}
+        title={t('ui.pages.warehouse.warehouseDashboard.title')}
+        subtitle={t('ui.pages.warehouse.warehouseDashboard.subtitle')}
+      />
+
+      <section className="wm-section">
+        <div className="wm-section-header">
+          <h2>{t('ui.pages.warehouse.warehouseDashboard.section.overview')}</h2>
+        </div>
+        <div className="wm-stats-grid">
+          {statCards.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.key}
+                className="wm-stat-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => navigate(stat.path)}
+              >
+                <div className="stat-top">
+                  <div className="stat-main">
+                    <div className="stat-value">{stat.value}</div>
+                    <div className="stat-label">{stat.title}</div>
+                  </div>
+                  <div className={`stat-icon ${stat.iconClass}`}><Icon aria-hidden /></div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="wm-section">
+        <div className="wm-section-header">
+          <h2>{t('ui.pages.warehouse.warehouseDashboard.section.quickActions')}</h2>
+          <p>{t('ui.pages.warehouse.warehouseDashboard.section.quickActionsDesc')}</p>
+        </div>
+        <div className="wm-actions-grid">
+          {actionCards.map((action, i) => {
+            const Icon = action.icon;
+            return (
+              <motion.div key={action.path} className="wm-action-card-wrap" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.08 }} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
+                <Link to={action.path} className="wm-action-card">
+                  <div className={`wm-action-card-icon ${action.iconClass}`.trim()}><Icon aria-hidden /></div>
+                  <div className="wm-action-card-body">
+                    <h3>{action.title}</h3>
+                    <p>{action.desc}</p>
+                  </div>
+                  <FaArrowRight className="wm-action-card-arrow" aria-hidden />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 };

@@ -74,6 +74,21 @@ const Navbar = () => {
     return '/';
   };
 
+  const handleLogoClick = (event) => {
+    const logoPath = isRestrictedArea ? getDashboardHomePath() : '/';
+
+    if (location.pathname !== logoPath) {
+      return;
+    }
+
+    event.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (location.hash) {
+      window.history.replaceState(null, '', logoPath);
+    }
+  };
+
   useEffect(() => {
     if (location.pathname === '/products') {
       const params = new URLSearchParams(location.search);
@@ -179,7 +194,10 @@ const Navbar = () => {
   return (
     <nav className={`navbar ${isDarkMode ? 'dark' : ''}`}>
       <div className="navbar-container">
-        <Link to={isRestrictedArea ? getDashboardHomePath() : '/'} className="navbar-logo">
+        <Link
+          to={isRestrictedArea ? getDashboardHomePath() : '/'}
+          className="navbar-logo"
+          onClick={handleLogoClick}>
           <span style={{ display: 'inline-block' }}>
             {t("app.brand")}
           </span>

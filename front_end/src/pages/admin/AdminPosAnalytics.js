@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { POS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminDashboard.css';
 
@@ -56,18 +57,21 @@ const AdminPosAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="admin-dashboard-loading">
+      <div className="page-loading admin-dashboard-loading">
         <LoadingSpinner size="large" />
       </div>
     );
   }
 
+  const posTitle = 'POS Analytics';
+
   return (
-    <div className="admin-dashboard">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1>POS Analytics</h1>
-        <p style={{ color: '#666' }}>Supervise POS terminal operations and cashier performance for today.</p>
-      </div>
+    <div className="admin-page-shell admin-dashboard">
+      <PageHeader
+        kicker={posTitle}
+        title={posTitle}
+        subtitle="Supervise POS terminal operations and cashier performance for today."
+      />
 
       <div className="stats-grid">
         <motion.div className="stat-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

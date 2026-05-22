@@ -1,7 +1,7 @@
 .confirm-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,56 +14,76 @@
   max-width: 430px;
   background: var(--surface);
   color: var(--text-primary);
-  border-radius: 0.85rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  padding: 1.2rem;
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow-lg);
+  padding: 1.35rem;
   border: 1px solid var(--border-color);
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
 .confirm-dialog h3 {
-  margin: 0 0 0.6rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.65rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .confirm-dialog p {
   margin: 0;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.55;
+  font-size: 0.95rem;
 }
 
 .confirm-dialog-actions {
-  margin-top: 1.2rem;
+  margin-top: 1.35rem;
   display: flex;
   justify-content: flex-end;
-  gap: 0.6rem;
+  gap: 0.65rem;
 }
 
 .confirm-dialog-cancel-btn,
 .confirm-dialog-confirm-btn {
   border: none;
-  border-radius: 0.55rem;
-  padding: 0.55rem 1rem;
+  border-radius: var(--radius-pill);
+  padding: 0.6rem 1.25rem;
+  font-family: inherit;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease,
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .confirm-dialog-cancel-btn {
-  background: var(--border-color);
+  background: var(--surface);
   color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.confirm-dialog-cancel-btn:hover {
+  border-color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .confirm-dialog-confirm-btn {
   background: var(--error-color);
-  color: #fff;
+  color: #f8fafc;
 }
 
-.confirm-dialog-cancel-btn:hover,
 .confirm-dialog-confirm-btn:hover {
   opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .confirm-dialog-cancel-btn:active,
 .confirm-dialog-confirm-btn:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }

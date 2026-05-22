@@ -14,9 +14,10 @@
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
-  background: var(--background, #f5f7fa);
+  background: var(--background);
   margin-left: 250px;
   min-height: calc(100vh - 70px);
+  scroll-margin-top: 5rem;
 }
 
 @media (max-width: 768px) {

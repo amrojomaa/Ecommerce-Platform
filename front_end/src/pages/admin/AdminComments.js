@@ -7,6 +7,7 @@ import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, RATING_ENDPOINTS, buildUrl } from
 import API_BASE_URL from '../../config/api';
 import { formatDate } from '../../utils/helpers';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -245,10 +246,15 @@ const AdminComments = () => {
   products.filter((product) => product.id === selectedProductId) :
   filteredProducts;
 
+  const manageReviewsTitle = tUi("ui.pages.admin.adminComments.manageReviews_9e45000031");
+
   return (
-    <div className="admin-comments">
+    <div className="admin-page-shell admin-comments">
       <div className="admin-comments-header">
-        <h1>{tUi("ui.pages.admin.adminComments.manageReviews_9e45000031")}</h1>
+        <PageHeader
+          kicker={manageReviewsTitle}
+          title={manageReviewsTitle}
+          actions={
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="product-selector">
             <label htmlFor="product-search">{tUi("ui.pages.admin.adminComments.searchProduct_e0487af2dc")}</label>
@@ -301,6 +307,8 @@ const AdminComments = () => {
             </div>
           }
         </div>
+          }
+        />
       </div>
 
       <div className="products-grid">
@@ -345,7 +353,7 @@ const AdminComments = () => {
       }
 
       {loading ?
-      <div className="loading-container">
+      <div className="page-loading loading-container">
           <LoadingSpinner />
         </div> :
       !selectedProductId ?

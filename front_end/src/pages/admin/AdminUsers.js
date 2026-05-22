@@ -6,6 +6,7 @@ import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirm } from '../../hooks/useConfirm';
 import { formatDate as formatLocalizedDate } from '../../utils/helpers';
@@ -254,17 +255,17 @@ const AdminUsers = () => {
 
   if (loading) {
     return (
-      <div className="admin-users-loading">
+      <div className="page-loading admin-users-loading">
         <LoadingSpinner size="large" />
       </div>);
 
   }
 
+  const manageUsersTitle = tUi("ui.pages.admin.adminUsers.manageUsers_eac32c061d");
+
   return (
-    <div className="admin-users">
-      <div className="admin-users-header">
-        <h1>{tUi("ui.pages.admin.adminUsers.manageUsers_eac32c061d")}</h1>
-      </div>
+    <div className="admin-page-shell admin-users">
+      <PageHeader kicker={manageUsersTitle} title={manageUsersTitle} />
 
       <div className="filter-section">
         <div className="users-search-row">

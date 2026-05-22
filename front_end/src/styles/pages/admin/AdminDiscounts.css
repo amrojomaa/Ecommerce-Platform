@@ -1,25 +1,47 @@
 .admin-discounts {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.admin-discounts {
+  gap: 2.5rem;
+}
+
+.admin-discounts .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .admin-discounts-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
-.admin-discounts-header h1 {
+.admin-discounts-header h1,
+.admin-discounts-header .page-header h1 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  line-height: 1.1;
 }
 
 .admin-discounts-header p {
+  margin: 0;
+  max-width: 640px;
   color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .discounts-search {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+  flex-wrap: wrap;
 }
 
 .discounts-search input {
@@ -27,18 +49,20 @@
   max-width: 420px;
   padding: 0.75rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   background: var(--background);
   color: var(--text-primary);
 }
 
 .discounts-search-clear {
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.3s ease, color 0.3s ease;
 }
 
 .discounts-search-clear:hover:not(:disabled) {
@@ -60,17 +84,25 @@
   grid-column: 1 / -1;
   background: var(--surface);
   border: 1px dashed var(--border-color);
-  border-radius: 0.75rem;
-  padding: 1.25rem;
+  border-radius: 1.2rem;
+  padding: 1.75rem;
   color: var(--text-secondary);
   text-align: center;
 }
 
 .discount-card {
   background: var(--surface);
-  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   overflow: hidden;
   box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.discount-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .discount-card-image {
@@ -91,6 +123,8 @@
 
 .discount-card-body h3 {
   margin: 0 0 0.25rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
@@ -122,6 +156,10 @@
   color: #dc2626;
 }
 
+.dark .price-after.active {
+  color: #f87171;
+}
+
 .discount-toggle-row {
   display: flex;
   align-items: center;
@@ -142,7 +180,7 @@
 .discount-controls input {
   padding: 0.65rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   background: var(--background);
   color: var(--text-primary);
 }
@@ -151,13 +189,17 @@
   width: 100%;
   background: var(--primary-color);
   color: #fff;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   padding: 0.7rem;
   font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 .save-discount-btn:hover:not(:disabled) {
   background: var(--primary-hover);
+  transform: translateY(-2px);
 }
 
 .save-discount-btn:disabled {
@@ -166,16 +208,8 @@
 }
 
 @media (max-width: 768px) {
-  .discounts-search {
-    flex-wrap: wrap;
-  }
-
-  .discounts-search input {
-    max-width: 100%;
-  }
-
-  .discounts-search-clear {
-    width: 100%;
+  .discounts-grid {
+    grid-template-columns: 1fr;
   }
 
   .discount-controls {
@@ -184,10 +218,6 @@
 }
 
 @media (max-width: 480px) {
-  .discounts-grid {
-    grid-template-columns: 1fr;
-  }
-
   .discount-card-image {
     height: 160px;
   }

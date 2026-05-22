@@ -1,10 +1,12 @@
-.checkout-page {
+.checkout-page.page-shell {
   width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
 }
 
-.checkout-page h1 {
-  margin-bottom: 2rem;
-  color: var(--text-primary);
+.checkout-page .page-header {
+  margin-bottom: 0.25rem;
 }
 
 .checkout-container {
@@ -13,17 +15,12 @@
   gap: 2rem;
 }
 
-.checkout-form {
-  background-color: var(--surface);
+.checkout-form.page-form-panel {
   padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
 }
 
-.checkout-form h2 {
+.checkout-form h2.page-section-title {
   margin-bottom: 1.5rem;
-  color: var(--text-primary);
 }
 
 .form-group {
@@ -67,42 +64,21 @@
   gap: 1rem;
 }
 
-.submit-order-btn {
+.submit-order-btn.page-btn-primary {
   width: 100%;
-  background-color: var(--primary-color);
-  color: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
   margin-top: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  font-size: 1.05rem;
 }
 
-.submit-order-btn:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+.submit-order-btn.page-btn-primary:disabled {
+  opacity: 0.65;
 }
 
-.submit-order-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.order-summary.page-summary-card {
+  top: 5.25rem;
 }
 
-.order-summary {
-  background-color: var(--surface);
-  padding: 2rem;
-  border-radius: 1rem;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
-  position: sticky;
-  top: 100px;
-  height: fit-content;
-}
-
-.dark .checkout-form {
+.dark .checkout-form.page-form-panel {
   background-color: var(--surface);
   border-color: var(--border-color);
 }
@@ -122,9 +98,8 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
-.order-summary h2 {
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
+.order-summary h2.page-section-title {
+  margin-bottom: 1.25rem;
 }
 
 .order-items {
@@ -206,10 +181,6 @@
 }
 
 @media (max-width: 480px) {
-  .checkout-page h1 {
-    margin-bottom: 1.2rem;
-  }
-
   .checkout-form,
   .order-summary {
     padding: 1.2rem;

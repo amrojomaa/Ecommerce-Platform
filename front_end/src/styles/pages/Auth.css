@@ -353,3 +353,126 @@ html[dir='rtl'] .password-toggle {
     margin-bottom: 1.5rem;
   }
 }
+
+.page-shell.auth-page-wrap {
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Auth: page shell + PageHeader (customer) --- */
+.auth-page-wrap {
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 260px);
+  padding: 1.75rem 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.auth-page-header .page-header-top {
+  justify-content: center;
+}
+
+.auth-page-header .page-header-copy {
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.auth-page-header.page-header h1 {
+  text-align: center;
+}
+
+.auth-page-header .page-subtitle {
+  margin-inline: auto;
+}
+
+.auth-container.page-form-panel {
+  width: 100%;
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-container.auth-container--wide.page-form-panel {
+  max-width: 560px;
+}
+
+.auth-full-width-btn {
+  width: 100%;
+}
+
+.auth-verify-submit {
+  margin-top: 1rem;
+}
+
+.auth-body-text {
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0 0 0.65rem;
+  line-height: 1.5;
+}
+
+.auth-inline-notice {
+  margin: 0 0 0.75rem;
+  text-align: center;
+}
+
+.auth-inline-notice--warning {
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+.auth-code-display {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.35rem;
+  color: var(--primary-color);
+  text-align: center;
+  margin: 0 0 1.25rem;
+}
+
+.auth-email-highlight {
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 1.25rem;
+  color: var(--text-primary);
+}
+
+.auth-timer-msg {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.auth-timer-msg--muted {
+  color: var(--text-secondary);
+}
+
+.auth-timer-msg--danger {
+  color: var(--error-color);
+}
+
+.auth-error-below-fields {
+  margin-top: 0.85rem;
+}
+
+.auth-link.auth-link-spaced {
+  margin-top: 1.35rem !important;
+}
+
+.auth-inline-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-inline-link:hover {
+  text-decoration: underline;
+}
+
+.google-sso-btn {
+  width: 100%;
+}
+
+.verification-input {
+  border-radius: 0.75rem !important;
+}

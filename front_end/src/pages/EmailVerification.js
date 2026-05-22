@@ -1,10 +1,12 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const EmailVerification = () => {
   const navigate = useNavigate();
@@ -125,43 +127,42 @@ const EmailVerification = () => {
   }
 
   return (
-    <div className="auth-page">
+    <div className="page-shell email-verification-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.emailVerification.verifyYourEmail_372dab72dc")}</h1>
+        <PageHeader
+          kicker={tUi("ui.pages.emailVerification.verifyYourEmail_372dab72dc")}
+          title={tUi("ui.pages.emailVerification.verifyYourEmail_372dab72dc")}
+          className="auth-page-header"
+          animate={false}
+        />
         {providedCode ?
         <>
-            <p style={{ color: '#e67e22', marginBottom: '10px', fontWeight: 'bold' }}>{tUi("ui.pages.emailVerification.emailServiceNotConfigured_f1229624dd")}
+            <p className="auth-inline-notice auth-inline-notice--warning">{tUi("ui.pages.emailVerification.emailServiceNotConfigured_f1229624dd")}
 
           </p>
-            <p>{tUi("ui.pages.emailVerification.useTheVerificationCodeBelow_367d5fb1fd")}</p>
-            <p style={{
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            color: '#3498db',
-            marginBottom: '20px',
-            letterSpacing: '0.5rem'
-          }}>
+            <p className="auth-body-text">{tUi("ui.pages.emailVerification.useTheVerificationCodeBelow_367d5fb1fd")}</p>
+            <p className="auth-code-display">
               {providedCode}
             </p>
           </> :
 
         <>
-            <p>{tUi("ui.pages.emailVerification.weVeSentA6_128266b80a")}</p>
-            <p style={{ fontWeight: 'bold', marginBottom: '20px' }}>{email}</p>
+            <p className="auth-body-text">{tUi("ui.pages.emailVerification.weVeSentA6_128266b80a")}</p>
+            <p className="auth-email-highlight">{email}</p>
           </>
         }
 
         {timeLeft > 0 ?
-        <p style={{ color: '#666', marginBottom: '30px' }}>{tUi("ui.pages.emailVerification.codeExpiresIn_8601755255")}
+        <p className="auth-timer-msg auth-timer-msg--muted">{tUi("ui.pages.emailVerification.codeExpiresIn_8601755255")}
           <strong>{formatTime(timeLeft)}</strong>
           </p> :
 
-        <p style={{ color: '#e74c3c', marginBottom: '30px' }}>{tUi("ui.pages.emailVerification.codeHasExpiredPleaseSign_5c4639499c")}
+        <p className="auth-timer-msg auth-timer-msg--danger">{tUi("ui.pages.emailVerification.codeHasExpiredPleaseSign_5c4639499c")}
 
         </p>
         }
@@ -186,14 +187,13 @@ const EmailVerification = () => {
             )}
           </div>
 
-          {error && <div className="error-message" style={{ marginTop: '15px' }}>{error}</div>}
+          {error && <div className="error-message auth-error-below-fields">{error}</div>}
 
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
-              disabled={loading || timeLeft === 0 || verificationCode.join('').length !== 6}
-              style={{ marginTop: '30px' }}>
+              className="page-btn-primary auth-full-width-btn auth-verify-submit"
+              disabled={loading || timeLeft === 0 || verificationCode.join('').length !== 6}>
               
               {loading ?
               <>
@@ -207,9 +207,9 @@ const EmailVerification = () => {
           </motion.div>
         </form>
 
-        <p className="auth-link" style={{ marginTop: '20px' }}>{tUi("ui.pages.emailVerification.didnTReceiveTheCode_acb1a79a21")}
+        <p className="auth-link auth-link-spaced">{tUi("ui.pages.emailVerification.didnTReceiveTheCode_acb1a79a21")}
           {' '}
-          <Link to="/signup" style={{ color: '#3498db' }}>{tUi("ui.pages.emailVerification.signUpAgain_63456b734d")}
+          <Link to="/signup" className="auth-inline-link">{tUi("ui.pages.emailVerification.signUpAgain_63456b734d")}
 
           </Link>
         </p>

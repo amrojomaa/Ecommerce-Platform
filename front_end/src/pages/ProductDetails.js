@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect, useRef } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -18,6 +19,7 @@ import { getImageUrl } from '../utils/helpers';
 import { useTranslation } from 'react-i18next';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
+import PageHeader from '../components/PageHeader';
 
 const ProductDetails = () => {
   const { name } = useParams();
@@ -119,8 +121,10 @@ const ProductDetails = () => {
 
   if (loading) {
     return (
-      <div className="product-details-loading">
-        <LoadingSpinner size="large" />
+      <div className="page-shell product-details-page">
+        <div className="page-loading">
+          <LoadingSpinner size="large" />
+        </div>
       </div>);
 
   }
@@ -141,7 +145,7 @@ const ProductDetails = () => {
   const isOutOfStock = maxQuantity === 0;
 
   return (
-    <div className="product-details-page">
+    <div className="page-shell product-details-page">
       <motion.div
         className="product-details-container"
         initial={{ opacity: 0 }}
@@ -162,6 +166,14 @@ const ProductDetails = () => {
           <FaArrowLeft />
           <span>{tUi("ui.pages.productDetails.backToProducts_349cc09ded")}</span>
         </motion.button>
+
+        <PageHeader
+          className="product-details-heading"
+          kicker={localizedProduct.localized_category_name}
+          title={localizedProduct.localized_name}
+          subtitle={isOutOfStock ? tUi("ui.pages.productDetails.outOfStock_2f92caa56c") : undefined}
+          animate={false}
+        />
 
         <div className="product-details-grid">
           {/* Image Gallery */}
@@ -209,7 +221,7 @@ const ProductDetails = () => {
               {isAuthenticated &&
               <div className="wishlist-button-container">
                   <motion.button
-                  className={`wishlist-btn ${isInWishlist(product.name) ? 'active' : ''}`}
+                  className={`wishlist-btn page-btn-secondary ${isInWishlist(product.name) ? 'active' : ''}`}
                   onClick={handleToggleWishlist}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
@@ -257,7 +269,7 @@ const ProductDetails = () => {
                 </div>
 
                 <motion.button
-                  className="add-to-cart-btn"
+                  className="add-to-cart-btn page-btn-primary"
                   onClick={handleAddToCart}
                   disabled={addingToCart || isOutOfStock}
                   whileHover={{ scale: isOutOfStock ? 1 : 1.05 }}
@@ -276,23 +288,6 @@ const ProductDetails = () => {
                 </motion.button>
               </div>
             </motion.div>
-
-            <motion.h1
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}>
-              
-              {localizedProduct.localized_name}
-            </motion.h1>
-
-            <motion.p
-              className="product-category"
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}>
-              
-              {localizedProduct.localized_category_name}
-            </motion.p>
 
             <motion.div
               className="product-price"
@@ -360,7 +355,7 @@ const ProductDetails = () => {
         <div className="product-comments-section">
             <button
             type="button"
-            className="product-comments-toggle-btn"
+            className="product-comments-toggle-btn page-btn-secondary"
             onClick={() => setIsCommentsOpen((prev) => !prev)}>
               {isCommentsOpen ?
               tUi("ui.pages.productDetails.hideCommentsReviews_695cb75f4d") :

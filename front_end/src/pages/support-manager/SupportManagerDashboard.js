@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import http from '../../services/http';
 import { TICKET_ENDPOINTS, FEEDBACK_ENDPOINTS, COMMENT_ENDPOINTS, USER_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/support-manager/SupportManagerDashboard.css';
 
 const SupportManagerDashboard = () => {
@@ -66,14 +67,14 @@ const SupportManagerDashboard = () => {
     }
   };
 
-  if (loading) return <div className="dashboard-loading"><LoadingSpinner size="large" /></div>;
+  if (loading) return <div className="page-loading dashboard-loading"><LoadingSpinner size="large" /></div>;
+
+  const smTitle = tUi("ui.pages.support_manager.dashboard.title");
+  const smSubtitle = tUi("ui.pages.support_manager.dashboard.subtitle");
 
   return (
-    <div className="support-manager-dashboard">
-      <header className="dashboard-header">
-        <h1>{tUi("ui.pages.support_manager.dashboard.title")}</h1>
-        <p>{tUi("ui.pages.support_manager.dashboard.subtitle")}</p>
-      </header>
+    <div className="admin-page-shell support-manager-dashboard">
+      <PageHeader kicker={smTitle} title={smTitle} subtitle={smSubtitle} />
 
       <div className="stats-grid">
         <motion.div className="stat-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

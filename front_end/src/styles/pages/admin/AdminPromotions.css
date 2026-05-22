@@ -1,10 +1,27 @@
 .admin-promotions {
-  display: grid;
-  gap: 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
 
-.admin-promotions-header h1 {
-  margin-bottom: 0.3rem;
+.admin-page-shell.admin-promotions {
+  gap: 2.5rem;
+}
+
+.admin-promotions-header h1,
+.admin-promotions .page-header h1 {
+  margin: 0 0 0.3rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.admin-promotions .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .admin-promotions-header p {
@@ -21,8 +38,8 @@
 
 .promotion-header-btn {
   border: none;
-  border-radius: 8px;
-  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  padding: 0.65rem 1.25rem;
   background: #2563eb;
   color: #fff;
   font-weight: 600;
@@ -39,10 +56,17 @@
 .promotion-form-card,
 .promotion-list-card {
   background: var(--surface, #fff);
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 1.2rem;
+  padding: 1.25rem;
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color, #ddd);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.promotion-list-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .promotion-form {
@@ -149,8 +173,8 @@
 .promotion-form-actions button,
 .promotion-item-actions button {
   border: none;
-  border-radius: 8px;
-  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
   cursor: pointer;
   background: #2563eb;
   color: #fff;
@@ -195,7 +219,7 @@
 
 .promotion-item {
   border: 1px solid var(--border-color, #ddd);
-  border-radius: 10px;
+  border-radius: 1.2rem;
   padding: 0.9rem;
   display: grid;
   gap: 0.35rem;
@@ -221,6 +245,10 @@
 
 .promotion-item-top h3 {
   margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
+  font-size: 1.08rem;
+  color: var(--text-primary, #0f172a);
 }
 
 .promotion-badge {

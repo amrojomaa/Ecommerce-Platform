@@ -1,8 +1,10 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
 import { formatDateTime, getImageUrl } from '../../utils/helpers';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -452,19 +454,24 @@ const DriverActiveJob = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
+
+  const activeDeliveryTitle = tUi('ui.pages.driver.driverActiveJob.activeDelivery_29af547736');
 
   if (!activeJob) {
     return (
-      <div className="active-job-page">
+      <div className="page-shell active-job-page">
+        <PageHeader
+          kicker={activeDeliveryTitle}
+          title={tUi('ui.pages.driver.driverActiveJob.noActiveDelivery_4321221a6f')}
+          subtitle={tUi('ui.pages.driver.driverActiveJob.youDonTHaveAny_36a11095cf')}
+        />
         <div className="no-active-job">
           <div className="no-job-icon">🚚</div>
-          <h2>{tUi("ui.pages.driver.driverActiveJob.noActiveDelivery_4321221a6f")}</h2>
-          <p>{tUi("ui.pages.driver.driverActiveJob.youDonTHaveAny_36a11095cf")}</p>
           <a href="/driver/map" className="btn-find-jobs">{tUi("ui.pages.driver.driverActiveJob.findAvailableJobs_e12cd068e4")}</a>
         </div>
       </div>);
@@ -485,8 +492,8 @@ const DriverActiveJob = () => {
   const canUploadDeliveryProof = activeJob.status === 'picked_up' || activeJob.status === 'delivering';
 
   return (
-    <div className="active-job-page">
-      <h1>{tUi("ui.pages.driver.driverActiveJob.activeDelivery_29af547736")}</h1>
+    <div className="page-shell active-job-page">
+      <PageHeader kicker={activeDeliveryTitle} title={activeDeliveryTitle} />
       {jobs.length > 1 &&
       <div className="info-card">
           <h3>{tUi("ui.pages.driver.driverActiveJob.yourActiveOrders_f7aa9c2b9d")}{jobs.length})</h3>

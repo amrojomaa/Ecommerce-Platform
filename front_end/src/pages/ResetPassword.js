@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -6,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { isStrongPassword, getStrongPasswordErrorMessage } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/pages/Auth.css';
+import PageHeader from '../components/PageHeader';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -94,20 +96,25 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="auth-page">
+    <div className="page-shell reset-password-page auth-page-wrap">
       <motion.div
-        className="auth-container"
+        className="auth-container page-form-panel"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}>
         
-        <h1>{tUi("ui.pages.resetPassword.resetPassword_3e8e15d37c")}</h1>
-        <p>{tUi("ui.pages.resetPassword.enterYourNewPasswordBelow_cabc85c425")}</p>
+        <PageHeader
+          kicker={tUi("ui.pages.resetPassword.resetPassword_3e8e15d37c")}
+          title={tUi("ui.pages.resetPassword.resetPassword_3e8e15d37c")}
+          subtitle={tUi("ui.pages.resetPassword.enterYourNewPasswordBelow_cabc85c425")}
+          className="auth-page-header"
+          animate={false}
+        />
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label htmlFor="newPassword">{tUi("ui.pages.resetPassword.newPassword_f79bf0add5")}</label>
-            <div style={{ position: 'relative' }}>
+            <div className="password-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
                 id="newPassword"
@@ -121,18 +128,10 @@ const ResetPassword = () => {
               
               <button
                 type="button"
+                className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  color: '#666'
-                }}>
+                aria-label={showPassword ? tUi("ui.pages.login.hidePassword_34503b95bb") : tUi("ui.pages.login.showPassword_e3faa6cab8")}
+              >
                 
                 {showPassword ? '👁️' : '👁️‍🗨️'}
               </button>
@@ -141,7 +140,7 @@ const ResetPassword = () => {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">{tUi("ui.pages.resetPassword.confirmPassword_5f9f1e8060")}</label>
-            <div style={{ position: 'relative' }}>
+            <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
@@ -155,18 +154,10 @@ const ResetPassword = () => {
               
               <button
                 type="button"
+                className="password-toggle"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  color: '#666'
-                }}>
+                aria-label={showConfirmPassword ? tUi("ui.pages.login.hidePassword_34503b95bb") : tUi("ui.pages.login.showPassword_e3faa6cab8")}
+              >
                 
                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
               </button>
@@ -178,7 +169,7 @@ const ResetPassword = () => {
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <button
               type="submit"
-              className="auth-button"
+              className="page-btn-primary auth-full-width-btn"
               disabled={loading}>
               
               {loading ?

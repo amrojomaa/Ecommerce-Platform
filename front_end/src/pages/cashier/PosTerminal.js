@@ -1,10 +1,12 @@
-import { tUi } from "../../i18n/uiText"; import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { POS_ENDPOINTS } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/cashier/PosTerminal.css';
 
 const thumbUrl = (path) => {
@@ -201,19 +203,20 @@ const PosTerminal = () => {
   const previewGrandTotal = promotionSummary.grand_total;
 
   return (
-    <div className="pos-terminal">
-      {/* LEFT PANEL */}
-      <div className="pos-left-panel">
-        <header className="pos-header">
-          <div>
-            <h1>{tUi("ui.pages.cashier.posTerminal.pointOfSale_dd320e4c12")}</h1>
-            <p className="pos-sub">{tUi("ui.pages.cashier.posTerminal.searchProductsBuildTheCart_9022e9704c")}</p>
-          </div>
-          <button className="pos-history-btn" onClick={() => setShowHistoryModal(true)}>
-            {tUi("ui.pages.cashier.posTerminal.mySalesToday_69ede91d75")}
+    <div className="admin-page-shell pos-terminal-shell">
+      <PageHeader
+        kicker={tUi('ui.pages.cashier.posTerminal.pointOfSale_dd320e4c12')}
+        title={tUi('ui.pages.cashier.posTerminal.pointOfSale_dd320e4c12')}
+        subtitle={tUi('ui.pages.cashier.posTerminal.searchProductsBuildTheCart_9022e9704c')}
+        actions={
+          <button type="button" className="pos-history-btn" onClick={() => setShowHistoryModal(true)}>
+            {tUi('ui.pages.cashier.posTerminal.mySalesToday_69ede91d75')}
           </button>
-        </header>
-
+        }
+      />
+      <div className="pos-terminal">
+        {/* LEFT PANEL */}
+      <div className="pos-left-panel">
         <div className="pos-filters">
           <input
             type="search"
@@ -354,6 +357,7 @@ const PosTerminal = () => {
             {submitting ? tUi("ui.pages.cashier.posTerminal.processing_94fb04c5f3") : tUi("ui.pages.cashier.posTerminal.completeSale_1b0458b1b4")}
           </button>
         </div>
+      </div>
       </div>
 
       {/* TODAY'S SALES MODAL */}

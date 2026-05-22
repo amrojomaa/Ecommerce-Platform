@@ -38,9 +38,9 @@ const SUPPORT_MANAGER_MENU_ITEMS = [
 
 const WAREHOUSE_MANAGER_MENU_ITEMS = [
 { path: '/warehouse', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
-{ path: '/warehouse/inventory', labelKey: 'Inventory', icon: '📦' },
-{ path: '/warehouse/approvals', labelKey: 'Approvals', icon: '✅' },
-{ path: '/warehouse/issues', labelKey: 'Issues', icon: '⚠️' }];
+{ path: '/warehouse/inventory', labelKey: 'ui.sidebar.menu.warehouseInventory', icon: '📦' },
+{ path: '/warehouse/approvals', labelKey: 'ui.sidebar.menu.warehouseApprovals', icon: '✅' },
+{ path: '/warehouse/issues', labelKey: 'ui.sidebar.menu.warehouseIssues', icon: '⚠️' }];
 
 
 const getStorageKey = (userId) => `admin-sidebar-order:${userId || 'default'}`;

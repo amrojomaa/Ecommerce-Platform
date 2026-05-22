@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { CATEGORY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminCategories.css';
 
@@ -113,25 +114,32 @@ const AdminCategories = () => {
     setShowModal(false);
   };
 
+  const categoriesTitle = tUi("ui.pages.admin.adminCategories.manageCategories_0cb9f43ae9");
+
   return (
-    <div className="admin-categories">
+    <div className="admin-page-shell admin-categories">
       <div className="admin-categories-header">
-        <h1>{tUi("ui.pages.admin.adminCategories.manageCategories_0cb9f43ae9")}</h1>
-        <motion.button
-          className="add-category-btn"
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}>{tUi("ui.pages.admin.adminCategories.addCategory_32232f6ec9")}
+        <PageHeader
+          kicker={categoriesTitle}
+          title={categoriesTitle}
+          actions={
+          <motion.button
+            className="add-category-btn"
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}>{tUi("ui.pages.admin.adminCategories.addCategory_32232f6ec9")}
 
 
-        </motion.button>
+          </motion.button>
+          }
+        />
       </div>
 
       {loading ?
-      <div className="categories-loading">
+      <div className="page-loading categories-loading">
           <LoadingSpinner size="large" />
         </div> :
 

@@ -1,4 +1,5 @@
-import { tUi } from "../i18n/uiText";import React, { useCallback, useEffect, useState } from 'react';
+import { tUi } from "../i18n/uiText";
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -14,6 +15,7 @@ import {
 '../services/recommendations';
 
 import '../styles/pages/Recommendations.css';
+import PageHeader from '../components/PageHeader';
 
 const imgUrl = (path) => {
   if (!path) return `${API_BASE_URL}/images/placeholder.jpg`;
@@ -131,27 +133,25 @@ const Recommendations = () => {
   };
 
   return (
-    <div className="recommendations-page">
+    <div className="page-shell recommendations-page">
       <div className="recommendations-inner">
-        <header className="recommendations-header">
-          <div className="recommendations-title-row">
-            <div>
-              <h1>{tUi("ui.pages.recommendations.recommendedForYou_33db7a2db1")}</h1>
-              <p className="recommendations-sub">{tUi("ui.pages.recommendations.usesYourViewsSearchesWishlist_7518b14b04")}
-
-              </p>
-            </div>
+        <PageHeader
+          kicker={tUi("ui.pages.recommendations.recommendedForYou_33db7a2db1")}
+          title={tUi("ui.pages.recommendations.recommendedForYou_33db7a2db1")}
+          subtitle={tUi("ui.pages.recommendations.usesYourViewsSearchesWishlist_7518b14b04")}
+          actions={
             <button
               type="button"
-              className="reco-reset-btn"
+              className="reco-reset-btn page-btn-danger reco-reset-btn-ds"
               onClick={handleResetRecommendations}
               disabled={resetting}
               title={tUi("ui.pages.recommendations.clearRecommendationHistoryDoesNot_d511c61ddd")}>
               
               <FaUndo /> {resetting ? tUi("ui.pages.recommendations.resetting_c7defdfad7") : tUi("ui.pages.recommendations.resetRecommendations_10844cd05c")}
             </button>
-          </div>
-        </header>
+          }
+          animate={false}
+        />
 
         {historyJustCleared &&
         <p className="reco-cleared-banner" role="status">{tUi("ui.pages.recommendations.yourPersonalizationLogWasCleared_99b6775cce")}
@@ -161,17 +161,17 @@ const Recommendations = () => {
 
         <section className="reco-section">
           <div className="reco-section-head">
-            <h2>{tUi("ui.pages.recommendations.realtime_37d7df59d7")}</h2>
-            <button type="button" className="reco-refresh-btn" onClick={() => loadRealtime()} disabled={loadingRt}>
+            <h2 className="page-section-title reco-section-title">{tUi("ui.pages.recommendations.realtime_37d7df59d7")}</h2>
+            <button type="button" className="reco-refresh-btn page-btn-secondary reco-refresh-btn--sm" onClick={() => loadRealtime()} disabled={loadingRt}>
               <FaSync className={loadingRt ? "spin" : ''} />{tUi("ui.pages.recommendations.refresh_ba2298225f")}
             </button>
           </div>
           {loadingRt ?
-          <p className="reco-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</p> :
+          <div className="page-loading reco-section-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</div> :
           realtime.length === 0 ?
-          <p className="reco-empty">{tUi("ui.pages.recommendations.nothingYetViewAProduct_7f253a9a74")}
-
-          </p> :
+          <div className="page-empty reco-empty-state">
+            <p>{tUi("ui.pages.recommendations.nothingYetViewAProduct_7f253a9a74")}</p>
+          </div> :
 
           <div className="reco-grid">{realtime.map((e, i) => renderCard(e, i))}</div>
           }
@@ -179,22 +179,22 @@ const Recommendations = () => {
 
         <section className="reco-section">
           <div className="reco-section-head">
-            <h2>{tUi("ui.pages.recommendations.batchCached_5246e3e266")}</h2>
+            <h2 className="page-section-title reco-section-title">{tUi("ui.pages.recommendations.batchCached_5246e3e266")}</h2>
             <div className="reco-batch-actions">
-              <button type="button" className="reco-refresh-btn" onClick={() => loadBatch(false)} disabled={loadingBatch || refreshingBatch}>
+              <button type="button" className="reco-refresh-btn page-btn-secondary reco-refresh-btn--sm" onClick={() => loadBatch(false)} disabled={loadingBatch || refreshingBatch}>
                 <FaSync className={loadingBatch ? "spin" : ''} />{tUi("ui.pages.recommendations.loadCache_e03259ab79")}
               </button>
-              <button type="button" className="reco-refresh-btn primary" onClick={() => loadBatch(true)} disabled={loadingBatch || refreshingBatch}>
+              <button type="button" className="reco-refresh-btn page-btn-primary reco-refresh-btn--sm" onClick={() => loadBatch(true)} disabled={loadingBatch || refreshingBatch}>
                 <FaSync className={refreshingBatch ? "spin" : ''} />{tUi("ui.pages.recommendations.recomputeNow_bac7d8c8a7")}
               </button>
             </div>
           </div>
           {loadingBatch && batch.length === 0 ?
-          <p className="reco-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</p> :
+          <div className="page-loading reco-section-loading">{tUi("ui.pages.recommendations.loading_c951e2c5a2")}</div> :
           batch.length === 0 ?
-          <p className="reco-empty">{tUi("ui.pages.recommendations.noBatchResultsYetView_1937d58ec4")}
-
-          </p> :
+          <div className="page-empty reco-empty-state">
+            <p>{tUi("ui.pages.recommendations.noBatchResultsYetView_1937d58ec4")}</p>
+          </div> :
 
           <div className="reco-grid">{batch.map((e, i) => renderCard(e, i))}</div>
           }

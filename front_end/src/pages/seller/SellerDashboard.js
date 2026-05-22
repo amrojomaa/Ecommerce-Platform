@@ -4,7 +4,10 @@ import { motion } from 'framer-motion';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, SELLER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import '../../styles/pages/seller/SellerDashboard.css';
+
+const SELLER_DASH_TITLE = 'Seller Dashboard';
 
 const SellerDashboard = () => {
   const navigate = useNavigate();
@@ -72,7 +75,7 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="seller-dashboard-loading">
+      <div className="page-loading seller-dashboard-loading">
         <LoadingSpinner size="large" />
       </div>
     );
@@ -88,8 +91,8 @@ const SellerDashboard = () => {
   ];
 
   return (
-    <div className="seller-dashboard">
-      <h1>Seller Dashboard</h1>
+    <div className="admin-page-shell seller-dashboard">
+      <PageHeader kicker={SELLER_DASH_TITLE} title={SELLER_DASH_TITLE} />
 
       <div className="seller-stats-grid">
         {statCards.map((stat, index) => (

@@ -1,74 +1,109 @@
 .support-agent-dashboard {
-  padding: 2rem;
+  width: 100%;
+  padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.support-agent-dashboard {
+  gap: 2.5rem;
+}
+
+.support-agent-dashboard .page-header {
+  scroll-margin-top: 5rem;
 }
 
 .dashboard-header {
-  margin-bottom: 3rem;
+  margin-bottom: 0;
 }
 
-.dashboard-header h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+.dashboard-header h1,
+.dashboard-header .page-header h1 {
+  margin: 0 0 0.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .dashboard-header p {
-  color: #666;
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 4rem;
+  gap: 1.25rem;
+  margin-bottom: 0;
 }
 
 .stat-card {
-  background: white;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: 1.2rem;
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
 }
 
 .stat-card .icon {
   font-size: 2rem;
   padding: 0.75rem;
-  border-radius: 12px;
+  border-radius: 1rem;
 }
 
-.stat-card.manager .icon { background: #e3f2fd; color: #2196f3; }
-.stat-card.self .icon { background: #f3e5f5; color: #9c27b0; }
-.stat-card.available .icon { background: #fff3e0; color: #ff9800; }
-.stat-card.progress .icon { background: #e1f5fe; color: #03a9f4; }
+.stat-card.manager .icon { background: rgba(37, 99, 235, 0.12); color: var(--primary-color); }
+.stat-card.self .icon { background: rgba(124, 58, 237, 0.12); color: #7c3aed; }
+.stat-card.available .icon { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+.stat-card.progress .icon { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
 
 .stat-card h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   font-size: 1.75rem;
   margin: 0;
   font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .stat-card span {
-  font-size: 0.9rem;
-  color: #888;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .dashboard-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  margin-top: 2rem;
+  gap: 2.5rem;
+  margin-top: 0;
 }
 
 .dashboard-actions h2,
 .active-tickets-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.25rem;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .action-grid {
@@ -78,11 +113,11 @@
 }
 
 .active-tickets-section {
-  background: white;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   padding: 2rem;
-  border-radius: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
 }
 
 .tickets-list {
@@ -96,26 +131,32 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.25rem;
-  background: #f9f9f9;
-  border-radius: 16px;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .ticket-item:hover {
-  background: #f0f7ff;
-  transform: translateX(5px);
+  background: rgba(37, 99, 235, 0.04);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .ticket-info h4 {
   margin: 0 0 0.25rem 0;
   font-size: 1rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 
 .ticket-info span {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .ticket-meta {
@@ -127,32 +168,32 @@
 
 .status-badge {
   padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
 }
 
-.status-badge.open { background: #e3f2fd; color: #2196f3; }
-.status-badge.in-progress { background: #fff3e0; color: #ff9800; }
-.status-badge.resolved { background: #e8f5e9; color: #4caf50; }
+.status-badge.open { background: rgba(37, 99, 235, 0.12); color: var(--primary-color); }
+.status-badge.in-progress { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+.status-badge.resolved { background: rgba(22, 163, 74, 0.12); color: #15803d; }
 
 .date {
   font-size: 0.75rem;
-  color: #bbb;
+  color: var(--text-secondary);
 }
 
-/* Dark Mode */
 .dark .active-tickets-section {
-  background: #1e1e2d;
-  border-color: #333;
+  background: var(--surface);
+  border-color: var(--border-color);
 }
 
 .dark .ticket-item {
-  background: #2a2a3d;
+  background: var(--background);
+  border-color: var(--border-color);
 }
 
 .dark .ticket-item:hover {
-  background: #34344d;
+  background: rgba(96, 165, 250, 0.08);
 }
 
 @media (max-width: 1024px) {
@@ -164,6 +205,6 @@
 
 @media (max-width: 768px) {
   .support-agent-dashboard {
-    padding: 1rem;
+    gap: 2rem;
   }
 }

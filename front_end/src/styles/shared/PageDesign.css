@@ -1,0 +1,364 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ===== Shared page shell ===== */
+.page-shell {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.page-shell--compact {
+  gap: 2rem;
+}
+
+/* ===== Page header pattern (Home / Products canonical) ===== */
+.page-header {
+  padding-bottom: 0.25rem;
+}
+
+.page-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem 2rem;
+  flex-wrap: wrap;
+}
+
+.page-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 240px;
+  text-align: start;
+  align-items: flex-start;
+}
+
+.page-kicker {
+  display: inline-flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.page-kicker--discount {
+  color: #dc2626;
+}
+
+.dark .page-kicker--discount {
+  color: #f87171;
+}
+
+.page-header h1,
+.page-shell > h1 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.page-subtitle {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ===== Cards & surfaces ===== */
+.page-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 1.75rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.page-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.page-card--static:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+  border-color: var(--border-color);
+}
+
+.page-card h2,
+.page-card h3 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.page-section-title {
+  margin: 0 0 1.5rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* ===== Empty states ===== */
+.page-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+}
+
+.page-empty-icon {
+  font-size: 3.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  opacity: 0.45;
+}
+
+.page-empty p,
+.page-empty h2 {
+  color: var(--text-secondary);
+}
+
+.page-empty h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.page-empty p {
+  font-size: 1.05rem;
+  margin-bottom: 1.75rem;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===== Buttons ===== */
+.page-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.page-btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  color: #fff;
+}
+
+.page-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.page-btn-secondary:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.page-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--error-color);
+  color: #fff;
+  padding: 0.65rem 1.15rem;
+  border-radius: 999px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+.page-btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.page-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== Loading ===== */
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+/* ===== Status badges ===== */
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.page-badge--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.page-badge--warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.page-badge--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.page-badge--info {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+}
+
+.dark .page-badge--success {
+  color: #34d399;
+}
+
+.dark .page-badge--warning {
+  color: #fbbf24;
+}
+
+.dark .page-badge--error {
+  color: #f87171;
+}
+
+/* ===== Discount pricing ===== */
+.page-price-old {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-size: 0.9rem;
+}
+
+.page-price-sale {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.dark .page-price-sale {
+  color: #f87171;
+}
+
+/* ===== Form panels (profile, checkout, etc.) ===== */
+.page-form-panel {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.page-form-panel h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* ===== Summary sidebar (cart, checkout) ===== */
+.page-summary-card {
+  position: sticky;
+  top: 5rem;
+  height: fit-content;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.page-summary-card h2 {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.page-summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  gap: 1rem;
+}
+
+.page-summary-row span:last-child {
+  text-align: end;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.page-summary-row--total {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.page-summary-row--discount {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.dark .page-summary-row--discount {
+  color: #22c55e;
+}
+
+@media (max-width: 968px) {
+  .page-summary-card {
+    position: static;
+  }
+}

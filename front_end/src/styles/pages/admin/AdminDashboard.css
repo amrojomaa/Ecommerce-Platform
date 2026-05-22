@@ -1,3 +1,13 @@
+/* Legacy classes kept for AdminPosAnalytics and other pages */
+
+.admin-dashboard-loading,
+.admin-dashboard-loading.admin-page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
 .admin-dashboard {
   width: 100%;
   display: flex;
@@ -14,24 +24,6 @@
   scroll-margin-top: 5rem;
 }
 
-.admin-dashboard > h1,
-.admin-dashboard .page-header h1 {
-  margin: 0;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  line-height: 1.1;
-}
-
-.admin-dashboard-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 50vh;
-}
-
-/* Mirrors .admin-stats-grid / .admin-stat-card */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -120,37 +112,8 @@
 }
 
 @media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-actions {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dashboard-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
   .stats-grid,
   .dashboard-actions {
     grid-template-columns: 1fr;
-  }
-
-  .stat-card,
-  .dashboard-action-card {
-    padding: 1.2rem;
-  }
-
-  .stat-content h3 {
-    font-size: 1.5rem;
   }
 }

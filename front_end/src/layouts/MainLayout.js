@@ -30,19 +30,21 @@ const MainLayout = () => {
     );
   }
 
-  if (isAuthenticated && user?.role === 'cashier') {
+  const isProfilePage = location.pathname === '/profile';
+
+  if (!isProfilePage && isAuthenticated && user?.role === 'cashier') {
     return <Navigate to="/cashier" replace />;
   }
 
-  if (isAuthenticated && isAdmin && typeof isAdmin === 'function' && isAdmin()) {
+  if (!isProfilePage && isAuthenticated && isAdmin && typeof isAdmin === 'function' && isAdmin()) {
     return <Navigate to="/admin" replace />;
   }
 
-  if (isAuthenticated && isDriver && typeof isDriver === 'function' && isDriver()) {
+  if (!isProfilePage && isAuthenticated && isDriver && typeof isDriver === 'function' && isDriver()) {
     return <Navigate to="/driver" replace />;
   }
 
-  if (isAuthenticated && isWarehouseManager && typeof isWarehouseManager === 'function' && isWarehouseManager()) {
+  if (!isProfilePage && isAuthenticated && isWarehouseManager && typeof isWarehouseManager === 'function' && isWarehouseManager()) {
     return <Navigate to="/warehouse" replace />;
   }
 

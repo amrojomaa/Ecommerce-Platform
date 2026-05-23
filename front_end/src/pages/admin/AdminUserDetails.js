@@ -140,7 +140,7 @@ const AdminUserDetails = () => {
           <button
             type="button"
             className="adm-btn-secondary"
-            onClick={() => navigate('/admin/users')}
+        onClick={() => navigate('/admin/users')}
           >
             {tUi('ui.pages.admin.adminUserDetails.backToUsers_7540061aa2')}
           </button>
@@ -196,7 +196,7 @@ const AdminUserDetails = () => {
                   {user.is_blocked
                     ? tUi('ui.pages.admin.adminUsers.suspended_d2685f367b')
                     : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
-                </span>
+              </span>
               </div>
             </div>
           </div>
@@ -285,9 +285,9 @@ const AdminUserDetails = () => {
                       {user.is_verified
                         ? tUi('ui.pages.admin.adminUserDetails.verified_ebcf9e3db7')
                         : tUi('ui.pages.admin.adminUserDetails.notVerified_b491c0f754')}
-                    </span>
+                </span>
                   </dd>
-                </div>
+              </div>
                 <div className="adm-udetail-row">
                   <dt>{tUi('ui.pages.admin.adminUserDetails.accountStatus_4e5f6a7b8c')}</dt>
                   <dd>
@@ -297,58 +297,58 @@ const AdminUserDetails = () => {
                       {user.is_blocked
                         ? tUi('ui.pages.admin.adminUsers.suspended_d2685f367b')
                         : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
-                    </span>
+                </span>
                   </dd>
-                </div>
+              </div>
                 <div className="adm-udetail-row">
                   <dt>{tUi('ui.pages.admin.adminUserDetails.provider_7b822b516f')}</dt>
                   <dd>{user.provider || tUi('ui.pages.admin.adminUserDetails.email_54eefb5d1b')}</dd>
-                </div>
+              </div>
                 <div className="adm-udetail-row">
                   <dt>{tUi('ui.pages.admin.adminUserDetails.accountCreated_5c0218c58d')}</dt>
                   <dd>{formatDate(user.created_at)}</dd>
-                </div>
+              </div>
               </dl>
             </section>
-          </div>
-        </motion.div>
+        </div>
+      </motion.div>
       )}
 
       <AnimatePresence>
         {showImageModal && user && (
-          <motion.div
+        <motion.div
             className="adm-udetail-image-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
             onClick={() => setShowImageModal(false)}
           >
             <motion.div
               className="adm-udetail-image-panel"
               initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+            animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
                 className="adm-udetail-image-close"
-                onClick={() => setShowImageModal(false)}
+              onClick={() => setShowImageModal(false)}
                 aria-label={tUi('ui.pages.admin.adminUserDetails.closeImage_e6ea38fce1')}
               >
                 <FaTimes />
               </button>
               <img
-                src={getProfileImageUrl()}
+              src={getProfileImageUrl()}
                 alt={tUi('ui.pages.admin.adminUserDetails.valueValue_44af41b31d', {
                   value0: user.first_name,
                   value1: user.last_name,
                 })}
                 className="adm-udetail-image-full"
-                onError={(e) => {
-                  if (e.target.src !== defaultProfileImage) {
-                    e.target.src = defaultProfileImage;
-                  }
+              onError={(e) => {
+                if (e.target.src !== defaultProfileImage) {
+                  e.target.src = defaultProfileImage;
+                }
                 }}
               />
             </motion.div>

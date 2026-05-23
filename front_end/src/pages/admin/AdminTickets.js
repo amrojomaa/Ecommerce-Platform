@@ -61,7 +61,7 @@ const AdminTickets = () => {
   const [rejectingDelete, setRejectingDelete] = useState(null);
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
   const { markAsViewed } = useUnreadTickets();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const confirm = useConfirm();
 
   useEffect(() => {

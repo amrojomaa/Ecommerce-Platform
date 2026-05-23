@@ -402,8 +402,8 @@ const AdminDiscounts = () => {
             <div className="adm-discount-search-wrap">
               <div className="adm-discount-search">
                 <FaMagnifyingGlass className="adm-discount-search-icon" aria-hidden />
-                <input
-                  type="text"
+        <input
+          type="text"
                   value={listSearch}
                   onChange={(e) => setListSearch(e.target.value)}
                   placeholder={tUi('ui.pages.admin.adminDiscounts.searchByProductNameOr_231a9422f6')}
@@ -430,8 +430,8 @@ const AdminDiscounts = () => {
                   : tUi('ui.pages.admin.adminDiscounts.noDiscountsYet_5e6f7a8b9c')}
               </p>
               {!listTerm && (
-                <button
-                  type="button"
+        <button
+          type="button"
                   className="adm-btn-primary adm-discount-create-btn"
                   onClick={() => {
                     resetForm();
@@ -439,14 +439,14 @@ const AdminDiscounts = () => {
                   }}
                 >
                   {tUi('ui.pages.admin.adminDiscounts.createDiscountBtn_7a8b9c0d1e')}
-                </button>
+        </button>
               )}
-            </div>
+      </div>
           ) : (
             <div className="adm-discount-list">
               {filteredDiscounts.map((product) => {
                 const finalPrice = product.discounted_price ?? product.price;
-                return (
+          return (
                   <article key={product.id} className="adm-discount-list-card is-discounted">
                     <div className="adm-discount-list-card-media">
                       <img
@@ -457,14 +457,14 @@ const AdminDiscounts = () => {
                         }
                         alt={product.name}
                       />
-                    </div>
+                </div>
                     <div className="adm-discount-list-card-body">
                       <div className="adm-discount-list-card-top">
-                        <h3>{product.name}</h3>
+                  <h3>{product.name}</h3>
                         <span className="adm-discount-list-badge">
                           {tUi('ui.pages.admin.adminProducts.discount_e4537e1136')}
-                        </span>
-                      </div>
+                    </span>
+                  </div>
                       <p className="adm-discount-list-meta">{product.category_name}</p>
                       <p className="adm-discount-list-meta">
                         {tUi('ui.pages.admin.adminPromotions.discount_3560202e5f')}{' '}
@@ -480,17 +480,17 @@ const AdminDiscounts = () => {
                         </button>
                         <button type="button" className="adm-btn-danger" onClick={() => removeDiscount(product)}>
                           {tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01')}
-                        </button>
-                      </div>
+                  </button>
+                </div>
                     </div>
                   </article>
                 );
-              })}
-            </div>
+        })}
+        </div>
           )}
         </section>
       )}
-    </div>
+        </div>
   );
 };
 

@@ -24,7 +24,7 @@ const SupportAgentTickets = () => {
   const confirm = useConfirm();
 
   const { markAsViewed } = useUnreadTickets();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState('assigned');
   const [assignedTickets, setAssignedTickets] = useState([]);

@@ -166,23 +166,23 @@ const AdminInstallments = () => {
               <label className="adm-inst-filter-label" htmlFor="adm-inst-status-filter">
                 {tUi('ui.pages.admin.adminInstallments.filterByStatus_c1d2e3f4a5')}
               </label>
-              <select
+          <select
                 id="adm-inst-status-filter"
                 className="adm-inst-select"
-                value={statusFilter}
+            value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value)}
               >
                 {STATUS_FILTERS.map((status) => (
-                  <option key={status} value={status}>
+            <option key={status} value={status}>
                     {formatFilterLabel(status)}
-                  </option>
+              </option>
                 ))}
-              </select>
+          </select>
             </div>
             <p className="adm-inst-header-meta" aria-live="polite">
               <strong>{requests.length}</strong> {requestCountLabel}
             </p>
-          </div>
+        </div>
         }
       />
 
@@ -200,8 +200,8 @@ const AdminInstallments = () => {
             <div className="adm-inst-list-panel">
               <div className="adm-inst-data-panel" role="region" aria-label={installmentTitle}>
                 <table className="adm-inst-table">
-                  <thead>
-                    <tr>
+              <thead>
+                <tr>
                       <th className="adm-inst-col-id" scope="col">
                         {tUi('ui.common.id')}
                       </th>
@@ -220,12 +220,12 @@ const AdminInstallments = () => {
                       <th className="adm-inst-col-status" scope="col">
                         {tUi('ui.pages.admin.adminInstallments.status_757a85a464')}
                       </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                </tr>
+              </thead>
+              <tbody>
                     {requests.map((request, index) => (
                       <motion.tr
-                        key={request.id}
+                key={request.id}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02 }}
@@ -252,18 +252,18 @@ const AdminInstallments = () => {
                         </td>
                         <td className="adm-inst-col-remaining adm-inst-amount">
                           {formatCurrency(request.remaining_balance)}
-                        </td>
+                    </td>
                         <td className="adm-inst-col-status">
                           <span
                             className={`adm-inst-status adm-inst-status--${(request.status || 'pending').toLowerCase()}`}
                           >
-                            {statusLabel(request.status)}
-                          </span>
-                        </td>
+                        {statusLabel(request.status)}
+                      </span>
+                    </td>
                       </motion.tr>
                     ))}
-                  </tbody>
-                </table>
+              </tbody>
+            </table>
               </div>
             </div>
 
@@ -361,7 +361,7 @@ const AdminInstallments = () => {
                         {formatDate(selectedRequest.created_at)}
                       </span>
                     </div>
-                  </div>
+                </div>
 
                   {selectedRequest.user_note && (
                     <div className="adm-inst-note-block">
@@ -375,35 +375,35 @@ const AdminInstallments = () => {
                       {tUi('ui.pages.admin.adminInstallments.verificationDocuments_b2c3d4e5f6')}
                     </h3>
                     <div className="adm-inst-documents-grid">
-                      {REQUIRED_DOCUMENT_TYPES.map((documentType) => {
-                        const document = (selectedRequest.documents || []).find(
-                          (doc) => doc.document_type === documentType
-                        );
+                  {REQUIRED_DOCUMENT_TYPES.map((documentType) => {
+                const document = (selectedRequest.documents || []).find(
+                  (doc) => doc.document_type === documentType
+                );
                         const documentLabel = tUi(
                           DOCUMENT_TYPE_LABEL_KEYS[documentType] || documentType
                         );
-                        if (!document) {
-                          return (
+                if (!document) {
+                  return (
                             <div key={`missing-${documentType}`} className="adm-inst-document-missing">
-                              <strong>{documentLabel}</strong>
+                          <strong>{documentLabel}</strong>
                               <span>{tUi('ui.pages.admin.adminInstallments.notUploaded_b78a3d1521')}</span>
                             </div>
                           );
-                        }
-                        return (
-                          <a
-                            key={document.id}
+                }
+                return (
+                  <a
+                    key={document.id}
                             className="adm-inst-document-card"
-                            href={getImageUrl(document.file_path)}
-                            target="_blank"
+                    href={getImageUrl(document.file_path)}
+                    target="_blank"
                             rel="noreferrer"
                           >
-                            <img src={getImageUrl(document.file_path)} alt={documentLabel} />
-                            <span>{documentLabel}</span>
+                        <img src={getImageUrl(document.file_path)} alt={documentLabel} />
+                        <span>{documentLabel}</span>
                           </a>
                         );
-                      })}
-                    </div>
+              })}
+                </div>
                   </section>
 
                   {selectedRequest.status === 'pending' && (
@@ -411,31 +411,31 @@ const AdminInstallments = () => {
                       <label className="adm-inst-field-label" htmlFor="admin-note">
                         {tUi('ui.pages.admin.adminInstallments.adminNote_ea6470d41f')}
                       </label>
-                      <textarea
-                        id="admin-note"
+                    <textarea
+                id="admin-note"
                         className="adm-inst-textarea"
-                        rows={3}
-                        value={adminNote}
+                rows={3}
+                value={adminNote}
                         onChange={(event) => setAdminNote(event.target.value)}
                       />
                       <div className="adm-inst-review-actions">
-                        <button
+                      <button
                           type="button"
                           className="adm-inst-btn-approve"
                           onClick={() => handleReview('approve')}
                           disabled={savingReview}
                         >
                           {tUi('ui.pages.admin.adminInstallments.approve_1d97c149aa')}
-                        </button>
-                        <button
+                </button>
+                      <button
                           type="button"
                           className="adm-inst-btn-reject"
                           onClick={() => handleReview('reject')}
                           disabled={savingReview}
                         >
                           {tUi('ui.pages.admin.adminInstallments.reject_b300f1d667')}
-                        </button>
-                      </div>
+                </button>
+                    </div>
                     </section>
                   )}
 
@@ -443,16 +443,16 @@ const AdminInstallments = () => {
                     selectedRequest.status !== 'cancelled' &&
                     selectedRequest.status !== 'approved' && (
                       <section className="adm-inst-review-section">
-                        <button
+                    <button
                           type="button"
                           className="adm-inst-btn-cancel"
-                          onClick={handleCancelRequest}
+                onClick={handleCancelRequest}
                           disabled={cancellingRequest}
                         >
                           {cancellingRequest
                             ? tUi('ui.pages.admin.adminInstallments.cancelling_23939436ee')
                             : tUi('ui.pages.admin.adminInstallments.cancelRequest_a6b7885506')}
-                        </button>
+                    </button>
                       </section>
                     )}
 
@@ -463,20 +463,20 @@ const AdminInstallments = () => {
                       </h3>
                       <div className="adm-inst-schedule-panel">
                         <table className="adm-inst-schedule-table">
-                          <thead>
-                            <tr>
-                              <th>#</th>
+                      <thead>
+                        <tr>
+                          <th>#</th>
                               <th>{tUi('ui.pages.admin.adminInstallments.dueDate_b86b269e67')}</th>
                               <th>{tUi('ui.pages.admin.adminInstallments.amount_f04179eb75')}</th>
                               <th>{tUi('ui.pages.admin.adminInstallments.status_757a85a464')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                        </tr>
+                      </thead>
+                      <tbody>
                             {selectedRequest.schedules.map((schedule) => (
-                              <tr key={schedule.id}>
-                                <td>{schedule.installment_number}</td>
-                                <td>{formatDate(schedule.due_date)}</td>
-                                <td>{formatCurrency(schedule.amount_due)}</td>
+                  <tr key={schedule.id}>
+                            <td>{schedule.installment_number}</td>
+                            <td>{formatDate(schedule.due_date)}</td>
+                            <td>{formatCurrency(schedule.amount_due)}</td>
                                 <td>
                                   <span
                                     className={`adm-inst-status adm-inst-status--${(schedule.status || 'pending').toLowerCase()}`}
@@ -484,11 +484,11 @@ const AdminInstallments = () => {
                                     {statusLabel(schedule.status)}
                                   </span>
                                 </td>
-                              </tr>
+                          </tr>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      </tbody>
+                    </table>
+                  </div>
                     </section>
                   )}
 
@@ -498,28 +498,28 @@ const AdminInstallments = () => {
                         {tUi('ui.pages.admin.adminInstallments.paymentHistory_f1eac32837')}
                       </h3>
                       <ul className="adm-inst-history-list">
-                        {[...(selectedRequest.payments || [])]
-                          .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at))
+                      {[...(selectedRequest.payments || [])]
+                .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at))
                           .map((payment) => (
-                            <li key={payment.id}>
+                <li key={payment.id}>
                               {formatDate(payment.paid_at)} — {formatCurrency(payment.amount)}
                               {payment.note
                                 ? tUi('ui.pages.admin.adminInstallments.value_0e4b2e2dbc', {
                                     value0: payment.note
                                   })
                                 : ''}
-                            </li>
+                        </li>
                           ))}
                       </ul>
                     </section>
                   )}
                 </>
-              )}
+                )}
             </aside>
-          </div>
+                  </div>
         )}
-      </section>
-    </div>
+          </section>
+        </div>
   );
 };
 

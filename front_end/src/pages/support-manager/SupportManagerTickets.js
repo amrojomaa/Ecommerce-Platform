@@ -22,7 +22,7 @@ const SupportManagerTickets = () => {
   const [assigningTo, setAssigningTo] = useState('');
   const [responseMsg, setResponseMsg] = useState('');
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchData();

@@ -1,6 +1,8 @@
-import { tUi } from "../i18n/uiText";
+import { tUi } from '../i18n/uiText';
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiX, FiSend } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiPlus, FiX, FiSend, FiMessageCircle } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
@@ -9,11 +11,26 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import { useConfirm } from '../hooks/useConfirm';
 import SupportTicketChatModal from '../components/SupportTicketChatModal';
+import TicketUserAvatar from '../components/TicketUserAvatar';
 import { useAuth } from '../hooks/useAuth';
-import '../styles/pages/Tickets.css';
 import PageHeader from '../components/PageHeader';
+import '../styles/pages/Tickets.css';
+
+const TICKET_STATUS_LABEL_KEYS = {
+  open: 'ui.pages.tickets.statusOpen_a1b2c3d4e1',
+  in_progress: 'ui.pages.tickets.statusInProgress_b2c3d4e5f2',
+  resolved: 'ui.pages.tickets.statusResolved_c3d4e5f6a3',
+  closed: 'ui.pages.tickets.closed_f259bec343',
+};
+
+const normalizeTicketStatus = (status) =>
+  String(status || 'open')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
 
 const Tickets = () => {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedTicketId, setExpandedTicketId] = useState(null);
@@ -30,7 +47,6 @@ const Tickets = () => {
 
   useEffect(() => {
     fetchTickets();
-    // Mark tickets as viewed when page loads
     markAsViewed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -42,7 +58,7 @@ const Tickets = () => {
       setTickets(response.data || []);
     } catch (error) {
       console.error('Error fetching tickets:', error);
-      toast.error(tUi("ui.pages.tickets.failedToFetchTickets_550b44f85c"));
+      toast.error(tUi('ui.pages.tickets.failedToFetchTickets_550b44f85c'));
       setTickets([]);
     } finally {
       setLoading(false);
@@ -52,14 +68,14 @@ const Tickets = () => {
   const handleCreateTicket = async (e) => {
     e.preventDefault();
     if (!newTicket.title.trim() || !newTicket.description.trim()) {
-      toast.error(tUi("ui.pages.tickets.pleaseFillInAllFields_4471417b8d"));
+      toast.error(tUi('ui.pages.tickets.pleaseFillInAllFields_4471417b8d'));
       return;
     }
 
     setCreating(true);
     try {
       await http.post(TICKET_ENDPOINTS.CREATE, newTicket);
-      toast.success(tUi("ui.pages.tickets.ticketCreatedSuccessfully_160b1ad7b1"));
+      toast.success(tUi('ui.pages.tickets.ticketCreatedSuccessfully_160b1ad7b1'));
       setNewTicket({ title: '', description: '' });
       setShowCreateForm(false);
       fetchTickets();
@@ -73,7 +89,7 @@ const Tickets = () => {
 
   const handleAddResponse = async (ticketId) => {
     if (!responseMessage.trim()) {
-      toast.error(tUi("ui.pages.tickets.pleaseEnterAMessage_2ac42d2101"));
+      toast.error(tUi('ui.pages.tickets.pleaseEnterAMessage_2ac42d2101'));
       return;
     }
 
@@ -81,7 +97,7 @@ const Tickets = () => {
     try {
       const url = buildUrl(TICKET_ENDPOINTS.ADD_RESPONSE, { ticket_id: ticketId });
       await http.post(url, { message: responseMessage });
-      toast.success(tUi("ui.pages.tickets.responseAddedSuccessfully_4454e51342"));
+      toast.success(tUi('ui.pages.tickets.responseAddedSuccessfully_4454e51342'));
       setResponseMessage('');
       fetchTickets();
     } catch (error) {
@@ -94,18 +110,18 @@ const Tickets = () => {
 
   const handleDeleteTicket = async (ticketId) => {
     const confirmed = await confirm({
-      title: "Delete Ticket",
-      message: "Are you sure you want to delete this ticket? This action cannot be undone.",
-      confirmText: "Delete",
-      cancelText: "Cancel"
+      title: tUi('ui.pages.tickets.deleteTicketTitle_d4e5f6a7b8'),
+      message: tUi('ui.pages.tickets.deleteTicketMessage_e5f6a7b8c9'),
+      confirmText: tUi('ui.pages.tickets.deleteConfirm_f6a7b8c9d0'),
+      cancelText: tUi('ui.pages.tickets.cancel_320b7f4df0'),
     });
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
     setDeletingTicketId(ticketId);
     try {
       await http.delete(`${TICKET_ENDPOINTS.MY.replace('/my', '')}/${ticketId}`);
-      toast.success("Ticket deleted successfully");
+      toast.success(tUi('ui.pages.tickets.ticketDeleted_a7b8c9d0e1'));
+      if (expandedTicketId === ticketId) setExpandedTicketId(null);
       fetchTickets();
     } catch (error) {
       console.error('Error deleting ticket:', error);
@@ -115,258 +131,352 @@ const Tickets = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'In Progress':
-        return 'status-in-progress';
-      case 'Resolved':
-        return 'status-resolved';
-      case 'Closed':
-        return 'status-closed';
-      default:
-        return 'status-default';
+  const getStatusClass = (status) => {
+    const normalized = normalizeTicketStatus(status);
+    if (['in_progress', 'resolved', 'closed', 'open'].includes(normalized)) {
+      return `tkt-status tkt-status--${normalized}`;
     }
+    return 'tkt-status tkt-status--default';
   };
 
-  if (loading) {
-    return (
-      <div className="page-shell tickets-page">
-        <div className="page-loading">
-          <LoadingSpinner size="large" />
-        </div>
-      </div>);
+  const getStatusLabel = (status) => {
+    const normalized = normalizeTicketStatus(status);
+    const key = TICKET_STATUS_LABEL_KEYS[normalized];
+    if (key) return tUi(key);
+    return status;
+  };
 
-  }
+  const toggleExpanded = (ticketId) => {
+    const next = expandedTicketId === ticketId ? null : ticketId;
+    setExpandedTicketId(next);
+    if (next) markAsViewed();
+  };
+
+  const pageTitle = tUi('ui.pages.tickets.myTickets_7b2e55ccc1');
+  const supportKicker = t('ui.pages.tickets.supportKicker_f1a2b3c4d5', { defaultValue: 'Support' });
 
   return (
-    <div className="page-shell tickets-page">
-      <div className="tickets-layout">
-        <div className="tickets-main">
+    <div className="page-shell tkt-page">
+      <div className="tkt-layout">
+        <div className="tkt-main">
           <PageHeader
-            kicker={tUi("ui.pages.tickets.myTickets_7b2e55ccc1")}
-            title={tUi("ui.pages.tickets.myTickets_7b2e55ccc1")}
-            subtitle="View and manage your support requests"
+            kicker={supportKicker}
+            title={pageTitle}
+            subtitle={tUi('ui.pages.tickets.subtitle_g2b3c4d5e6')}
             actions={
               <button
-                className={`${showCreateForm ? 'page-btn-secondary' : 'page-btn-primary'} tickets-header-cta`}
-                onClick={() => setShowCreateForm(!showCreateForm)}>
+                type="button"
+                className={showCreateForm ? 'page-btn-secondary tkt-header-cta' : 'page-btn-primary tkt-header-cta'}
+                onClick={() => setShowCreateForm(!showCreateForm)}
+              >
                 {showCreateForm ? (
-                  <><FiX /> {tUi("ui.pages.tickets.cancel_320b7f4df0")}</>
+                  <>
+                    <FiX aria-hidden /> {tUi('ui.pages.tickets.cancel_320b7f4df0')}
+                  </>
                 ) : (
-                  <><FiPlus /> {tUi("ui.pages.tickets.createNewTicket_b216e424fe")}</>
+                  <>
+                    <FiPlus aria-hidden /> {tUi('ui.pages.tickets.createNewTicket_b216e424fe')}
+                  </>
                 )}
               </button>
             }
             animate={false}
           />
 
-          {showCreateForm && (
-            <div className="create-ticket-form page-card page-card--static">
-              <h2 className="page-section-title">{tUi("ui.pages.tickets.createNewTicket_0662914296")}</h2>
-              <form onSubmit={handleCreateTicket}>
-                <div className="form-group">
-                  <label htmlFor="title">{tUi("ui.pages.tickets.title_1ae4d1369f")}</label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={newTicket.title}
-                    onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
-                    placeholder={tUi("ui.pages.tickets.enterTicketTitle_97d186e8ee")}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="description">{tUi("ui.pages.tickets.description_5df2b50e3c")}</label>
-                  <textarea
-                    id="description"
-                    value={newTicket.description}
-                    onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                    placeholder={tUi("ui.pages.tickets.describeYourIssueOrQuestion_ed3fd64aae")}
-                    rows="5"
-                    required
-                  />
-                </div>
-                <div className="form-actions">
-                  <button type="submit" disabled={creating} className="submit-btn page-btn-primary tickets-submit-create">
-                    {creating ? (
-                      tUi("ui.pages.tickets.creating_5f1a5f7f04")
-                    ) : (
-                      <><FiSend /> {tUi("ui.pages.tickets.createTicket_6a6e8488fc")}</>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+          <AnimatePresence>
+            {showCreateForm && (
+              <motion.section
+                className="tkt-create-card page-card page-card--static"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.25 }}
+              >
+                <h2 className="page-section-title">
+                  {tUi('ui.pages.tickets.createNewTicket_0662914296')}
+                </h2>
+                <form className="tkt-form" onSubmit={handleCreateTicket}>
+                  <div className="tkt-field">
+                    <label htmlFor="tkt-title">{tUi('ui.pages.tickets.title_1ae4d1369f')}</label>
+                    <input
+                      id="tkt-title"
+                      type="text"
+                      value={newTicket.title}
+                      onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
+                      placeholder={tUi('ui.pages.tickets.enterTicketTitle_97d186e8ee')}
+                      required
+                    />
+                  </div>
+                  <div className="tkt-field">
+                    <label htmlFor="tkt-description">
+                      {tUi('ui.pages.tickets.description_5df2b50e3c')}
+                    </label>
+                    <textarea
+                      id="tkt-description"
+                      value={newTicket.description}
+                      onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                      placeholder={tUi('ui.pages.tickets.describeYourIssueOrQuestion_ed3fd64aae')}
+                      rows={5}
+                      required
+                    />
+                  </div>
+                  <div className="tkt-form-actions">
+                    <button
+                      type="submit"
+                      disabled={creating}
+                      className="page-btn-primary tkt-submit-create"
+                    >
+                      {creating ? (
+                        tUi('ui.pages.tickets.creating_5f1a5f7f04')
+                      ) : (
+                        <>
+                          <FiSend aria-hidden /> {tUi('ui.pages.tickets.createTicket_6a6e8488fc')}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.section>
+            )}
+          </AnimatePresence>
 
-          {tickets.length === 0 ? (
-            <div className="empty-tickets page-empty tickets-empty-card">
-              <div className="page-empty-icon empty-icon" aria-hidden>🎫</div>
-              <p>{tUi("ui.pages.tickets.youHavenTCreatedAny_d33bce3131")}</p>
+          {loading ? (
+            <div className="tkt-loading">
+              <LoadingSpinner size="large" />
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="tkt-empty page-card page-card--static page-empty">
+              <div className="page-empty-icon" aria-hidden>
+                🎫
+              </div>
+              <p>{tUi('ui.pages.tickets.youHavenTCreatedAny_d33bce3131')}</p>
               {!showCreateForm && (
                 <button
-                  className="page-btn-primary tickets-empty-cta"
-                  onClick={() => setShowCreateForm(true)}>
-                  {tUi("ui.pages.tickets.createYourFirstTicket_a2720076a8")}
+                  type="button"
+                  className="page-btn-primary"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  {tUi('ui.pages.tickets.createYourFirstTicket_a2720076a8')}
                 </button>
               )}
             </div>
           ) : (
-            <div className="tickets-list">
-              {tickets.map((ticket) => {
+            <div className="tkt-list">
+              {tickets.map((ticket, index) => {
                 const isExpanded = expandedTicketId === ticket.id;
+                const nonChatResponses = (ticket.responses || []).filter((r) => !r.is_chat);
+                const isAgent = (user) => user?.id !== ticket.customer_id;
+
                 return (
-                  <div key={ticket.id} className={`ticket-card page-card tickets-ticket-card ${isExpanded ? 'expanded' : ''}`}>
+                  <motion.article
+                    key={ticket.id}
+                    className={`tkt-card${isExpanded ? ' is-expanded' : ''}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                  >
                     <div
-                      className="ticket-header clickable"
-                      onClick={() => {
-                        setExpandedTicketId(isExpanded ? null : ticket.id);
-                        if (!isExpanded) markAsViewed(); // Mark as viewed when expanding
+                      className="tkt-card-header"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => toggleExpanded(ticket.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleExpanded(ticket.id);
+                        }
                       }}
                     >
-                      <div className="ticket-title-group">
-                        <div className="status-indicator" style={{ background: ticket.status === 'In Progress' ? '#eab308' : ticket.status === 'Resolved' ? '#22c55e' : '#64748b' }}></div>
-                        <div>
-                          <h3>{ticket.title}</h3>
-                          <p className="ticket-date">{tUi("ui.pages.tickets.created_caf8e8fb6f")} {formatDate(ticket.created_at)}</p>
+                      <div className="tkt-card-header-start">
+                        <TicketUserAvatar user={ticket.customer || currentUser} size={44} />
+                        <div className="tkt-card-copy">
+                          <h3 className="tkt-card-title">{ticket.title}</h3>
+                          <p className="tkt-card-meta">
+                            {tUi('ui.pages.tickets.created_caf8e8fb6f')} {formatDate(ticket.created_at)}
+                          </p>
                         </div>
                       </div>
-                      <div className="ticket-header-right">
-                        <span className={`status-badge ${getStatusColor(ticket.status)}`}>
-                          {ticket.status}
+                      <div className="tkt-card-header-end">
+                        <span className={getStatusClass(ticket.status)}>
+                          {getStatusLabel(ticket.status)}
                         </span>
-                        <span className="expand-icon">{isExpanded ? '−' : '+'}</span>
+                        <span className="tkt-expand" aria-hidden>
+                          {isExpanded ? '−' : '+'}
+                        </span>
                       </div>
                     </div>
 
                     {isExpanded && (
-                      <div className="ticket-details">
-                        <div className="ticket-content-grid">
-                          <div className="ticket-info-section">
-                            <div className="ticket-description">
-                              <h4>{tUi("ui.pages.tickets.description_5df2b50e3c")}</h4>
+                      <div className="tkt-detail">
+                        <div className="tkt-detail-grid">
+                          <div className="tkt-info-col">
+                            <div className="tkt-block">
+                              <h4>{tUi('ui.pages.tickets.description_5df2b50e3c')}</h4>
                               <p>{ticket.description}</p>
                             </div>
 
-                            <div className="ticket-responses">
-                              <h4>{tUi("ui.pages.tickets.responses_71bbaea046")} ({ticket.responses?.filter(r => !r.is_chat).length || 0})</h4>
-                              {ticket.responses && ticket.responses.filter(r => !r.is_chat).length > 0 ? (
-                                <div className="responses-list">
-                                  {ticket.responses.filter(r => !r.is_chat).map((response) => (
-                                    <div key={response.id} className={`response-item ${response.user.role !== 'customer' ? 'agent-response' : ''}`}>
-                                      <div className="response-header">
-                                        <span className="response-author">
+                            <div className="tkt-block tkt-responses">
+                              <h4>
+                                {tUi('ui.pages.tickets.responses_71bbaea046')}
+                                {nonChatResponses.length})
+                              </h4>
+                              {nonChatResponses.length > 0 ? (
+                                nonChatResponses.map((response) => (
+                                  <div
+                                    key={response.id}
+                                    className={`tkt-response${isAgent(response.user) ? ' is-agent' : ''}`}
+                                  >
+                                    <TicketUserAvatar user={response.user} size={36} />
+                                    <div className="tkt-response-body">
+                                      <div className="tkt-response-top">
+                                        <span className="tkt-response-author">
                                           {response.user.first_name} {response.user.last_name}
-                                          {response.user.role !== 'customer' && <span className="agent-tag">Support Agent</span>}
+                                          {isAgent(response.user) && (
+                                            <span className="tkt-agent-tag">
+                                              {tUi('ui.pages.tickets.supportAgentTag_h3i4j5k6l7')}
+                                            </span>
+                                          )}
                                         </span>
-                                        <span className="response-date">{formatDate(response.created_at)}</span>
+                                        <span className="tkt-response-date">
+                                          {formatDate(response.created_at)}
+                                        </span>
                                       </div>
-                                      <p className="response-message">{response.message}</p>
+                                      <p className="tkt-response-msg">{response.message}</p>
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                ))
                               ) : (
-                                <p className="no-responses">{tUi("ui.pages.tickets.noResponsesYet_c19fb28b39")}</p>
+                                <p className="tkt-no-responses">
+                                  {tUi('ui.pages.tickets.noResponsesYet_c19fb28b39')}
+                                </p>
                               )}
                             </div>
                           </div>
 
-                          {ticket.status !== "Closed" && ticket.status !== "Resolved" && (
-                            <div className="ticket-actions-section">
-                              <div className="chat-integration-card">
-                                <h5>Live Support</h5>
-                                <p>Chat directly with an agent for faster resolution.</p>
-                                <button 
+                          {ticket.status !== 'Closed' && ticket.status !== 'Resolved' && (
+                            <div className="tkt-actions-col">
+                              <div className="tkt-chat-card">
+                                <h5>{tUi('ui.pages.tickets.liveSupport_i4j5k6l7m8')}</h5>
+                                <p>{tUi('ui.pages.tickets.liveSupportDesc_j5k6l7m8n9')}</p>
+                                <button
                                   type="button"
-                                  className={`live-chat-launch-btn page-btn-primary tickets-live-chat-btn ${!ticket.employee ? 'disabled' : ''}`}
+                                  className={`page-btn-primary tkt-chat-btn${!ticket.employee ? ' is-disabled' : ''}`}
                                   onClick={() => ticket.employee && setActiveChatTicketId(ticket.id)}
                                   disabled={!ticket.employee}
-                                  title={!ticket.employee ? "Waiting for an agent to be assigned" : ""}
+                                  title={
+                                    !ticket.employee
+                                      ? tUi('ui.pages.tickets.waitingForAgent_k6l7m8n9o0')
+                                      : undefined
+                                  }
                                 >
-                                  💬 {!ticket.employee ? 'Waiting for Agent...' : 'Start Live Chat'}
+                                  <FiMessageCircle aria-hidden />
+                                  {ticket.employee
+                                    ? tUi('ui.pages.tickets.startLiveChat_l7m8n9o0p1')
+                                    : tUi('ui.pages.tickets.waitingForAgent_k6l7m8n9o0')}
                                 </button>
                                 {ticket.employee ? (
-                                  <div className="assigned-agent-info">
-                                    <div className="agent-avatar">
-                                      {ticket.employee.first_name[0]}{ticket.employee.last_name[0]}
-                                    </div>
-                                    <div className="agent-details">
-                                      <span className="label">Assigned Agent</span>
-                                      <span className="name">{ticket.employee.first_name} {ticket.employee.last_name}</span>
+                                  <div className="tkt-agent-row">
+                                    <TicketUserAvatar user={ticket.employee} size={48} />
+                                    <div>
+                                      <span className="tkt-agent-label">
+                                        {tUi('ui.pages.tickets.assignedAgent_m8n9o0p1q2')}
+                                      </span>
+                                      <span className="tkt-agent-name">
+                                        {ticket.employee.first_name} {ticket.employee.last_name}
+                                      </span>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="pending-assignment-info">
-                                    <p className="status-note">Our team will assign an agent soon. You can chat once an agent is active on your ticket.</p>
+                                  <div className="tkt-pending-note">
+                                    <p>{tUi('ui.pages.tickets.pendingAssignment_n9o0p1q2r3')}</p>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="quick-response">
-                                <h5>Add Quick Note</h5>
+                              <div className="tkt-note-card">
+                                <h5>{tUi('ui.pages.tickets.addQuickNote_o0p1q2r3s4')}</h5>
                                 <textarea
+                                  className="tkt-note-textarea"
                                   value={responseMessage}
                                   onChange={(e) => setResponseMessage(e.target.value)}
-                                  placeholder={!ticket.employee ? "Responses available once an agent is assigned" : tUi("ui.pages.tickets.typeYourResponse_2fc5ce1286")}
-                                  rows="3"
+                                  placeholder={
+                                    !ticket.employee
+                                      ? tUi('ui.pages.tickets.noteWhenAssigned_p1q2r3s4t5')
+                                      : tUi('ui.pages.tickets.typeYourResponse_2fc5ce1286')
+                                  }
+                                  rows={3}
                                   disabled={!ticket.employee}
                                 />
                                 <button
                                   type="button"
-                                  className="submit-response-btn page-btn-secondary tickets-send-note-btn"
+                                  className="page-btn-secondary tkt-note-btn"
                                   onClick={() => handleAddResponse(ticket.id)}
-                                  disabled={!ticket.employee || respondingTicketId === ticket.id || !responseMessage.trim()}
+                                  disabled={
+                                    !ticket.employee ||
+                                    respondingTicketId === ticket.id ||
+                                    !responseMessage.trim()
+                                  }
                                 >
-                                  {respondingTicketId === ticket.id ? tUi("ui.pages.tickets.sending_feee595abe") : tUi("ui.pages.tickets.sendResponse_9963e23826")}
+                                  {respondingTicketId === ticket.id
+                                    ? tUi('ui.pages.tickets.sending_feee595abe')
+                                    : tUi('ui.pages.tickets.sendResponse_9963e23826')}
                                 </button>
                               </div>
                             </div>
                           )}
                         </div>
 
-                        <div className="tickets-delete-row">
+                        <div className="tkt-delete-row">
                           <button
                             type="button"
-                            className="page-btn-danger tickets-delete-btn"
+                            className="page-btn-danger"
                             onClick={() => handleDeleteTicket(ticket.id)}
                             disabled={deletingTicketId === ticket.id}
                           >
-                            {deletingTicketId === ticket.id ? "Deleting..." : "Delete Ticket"}
+                            {deletingTicketId === ticket.id
+                              ? tUi('ui.pages.tickets.deleting_q2r3s4t5u6')
+                              : tUi('ui.pages.tickets.deleteTicketTitle_d4e5f6a7b8')}
                           </button>
                         </div>
                       </div>
                     )}
-                  </div>
+                  </motion.article>
                 );
               })}
             </div>
           )}
         </div>
 
-        <div className="tickets-sidebar">
-
-          <div className="sidebar-card support-info tickets-sidebar-card page-card page-card--static">
-            <h4>Support Hours</h4>
-            <p>Mon - Fri: 9:00 AM - 6:00 PM</p>
-            <p>Sat - Sun: 10:00 AM - 4:00 PM</p>
-            <hr />
-            <h4>Common Questions</h4>
-            <ul className="faq-links">
-              <li><a href="/faq">Shipping Policy</a></li>
-              <li><a href="/faq">Refunds & Returns</a></li>
-              <li><a href="/faq">Account Settings</a></li>
+        <aside className="tkt-sidebar">
+          <div className="tkt-side-card page-card page-card--static">
+            <h4>{tUi('ui.pages.tickets.supportHours_r3s4t5u6v7')}</h4>
+            <p>{tUi('ui.pages.tickets.supportHoursWeek_s4t5u6v7w8')}</p>
+            <p>{tUi('ui.pages.tickets.supportHoursWeekend_t5u6v7w8x9')}</p>
+            <hr className="tkt-side-divider" />
+            <h4>{tUi('ui.pages.tickets.commonQuestions_u6v7w8x9y0')}</h4>
+            <ul className="tkt-faq-links">
+              <li>
+                <a href="/faq">{tUi('ui.pages.tickets.faqShipping_v7w8x9y0z1')}</a>
+              </li>
+              <li>
+                <a href="/faq">{tUi('ui.pages.tickets.faqRefunds_w8x9y0z1a2')}</a>
+              </li>
+              <li>
+                <a href="/faq">{tUi('ui.pages.tickets.faqAccount_x9y0z1a2b3')}</a>
+              </li>
             </ul>
           </div>
-        </div>
+        </aside>
       </div>
 
-      <SupportTicketChatModal 
+      <SupportTicketChatModal
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
-        ticketStatus={tickets.find(t => t.id === activeChatTicketId)?.status}
+        currentUserProfileImage={currentUser?.profile_image}
+        ticketStatus={tickets.find((t) => t.id === activeChatTicketId)?.status}
       />
     </div>
   );

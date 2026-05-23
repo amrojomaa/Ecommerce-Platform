@@ -8,6 +8,7 @@ import PageHeader from '../../components/PageHeader';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
 import { useConfirm } from '../../hooks/useConfirm';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
+import TicketUserAvatar from '../../components/TicketUserAvatar';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/pages/support-agent/SupportAgentTickets.css';
 
@@ -247,12 +248,15 @@ const SupportAgentTickets = () => {
                 className="ticket-header clickable"
                 onClick={() => setExpandedTicketId(isExpanded ? null : ticket.id)}>
                 
-                  <div>
-                    <h3>{ticket.title}</h3>
-                    <p className="ticket-meta">{tUi("ui.pages.support_agent.supportAgentTickets.customer_e8c953034b")}
-                    {ticket.customer.first_name} {ticket.customer.last_name} ({ticket.customer.email}{tUi("ui.pages.support_agent.supportAgentTickets.created_182602e694")}
-                    {formatDate(ticket.created_at)}
-                    </p>
+                  <div className="ticket-header-start">
+                    <TicketUserAvatar user={ticket.customer} size={44} />
+                    <div>
+                      <h3>{ticket.title}</h3>
+                      <p className="ticket-meta">{tUi("ui.pages.support_agent.supportAgentTickets.customer_e8c953034b")}
+                      {ticket.customer.first_name} {ticket.customer.last_name} ({ticket.customer.email}{tUi("ui.pages.support_agent.supportAgentTickets.created_182602e694")}
+                      {formatDate(ticket.created_at)}
+                      </p>
+                    </div>
                   </div>
                   <div className="ticket-header-right">
                     {activeTab === 'unassigned' && (
@@ -339,15 +343,18 @@ const SupportAgentTickets = () => {
                   <div className="responses-list">
                           {ticket.responses.filter(r => !r.is_chat).map((response) =>
                     <div key={response.id} className="response-item">
-                              <div className="response-header">
-                                <span className="response-author">
-                                  {response.user.first_name} {response.user.last_name}
-                                </span>
-                                <span className="response-date">
-                                  {formatDate(response.created_at)}
-                                </span>
+                              <TicketUserAvatar user={response.user} size={36} />
+                              <div className="response-body">
+                                <div className="response-header">
+                                  <span className="response-author">
+                                    {response.user.first_name} {response.user.last_name}
+                                  </span>
+                                  <span className="response-date">
+                                    {formatDate(response.created_at)}
+                                  </span>
+                                </div>
+                                <p className="response-message">{response.message}</p>
                               </div>
-                              <p className="response-message">{response.message}</p>
                             </div>
                     )}
                         </div> :
@@ -401,12 +408,13 @@ const SupportAgentTickets = () => {
         })}
         </div>
       }
-      <SupportTicketChatModal 
+      <SupportTicketChatModal
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        currentUserProfileImage={currentUser?.profile_image}
       />
     </div>);
 

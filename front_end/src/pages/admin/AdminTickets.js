@@ -1,4 +1,7 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
@@ -8,7 +11,9 @@ import PageHeader from '../../components/PageHeader';
 import { useUnreadTickets } from '../../hooks/useUnreadTickets';
 import { useConfirm } from '../../hooks/useConfirm';
 import SupportTicketChatModal from '../../components/SupportTicketChatModal';
+import TicketUserAvatar from '../../components/TicketUserAvatar';
 import { useAuth } from '../../hooks/useAuth';
+import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminTickets.css';
 
 const TICKET_STATUS_LABEL_KEYS = {
@@ -17,9 +22,21 @@ const TICKET_STATUS_LABEL_KEYS = {
   closed: 'ui.pages.admin.adminTickets.closed_5b72d42e4a',
 };
 
-const normalizeTicketStatus = (status) => String(status || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', labelKey: 'ui.pages.admin.adminTickets.all_89e88f8e70' },
+  { value: 'In Progress', labelKey: 'ui.pages.admin.adminTickets.inProgress_18e19f0fd6' },
+  { value: 'Resolved', labelKey: 'ui.pages.admin.adminTickets.resolved_696eb2f977' },
+  { value: 'Closed', labelKey: 'ui.pages.admin.adminTickets.closed_5b72d42e4a' },
+];
+
+const normalizeTicketStatus = (status) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
 
 const AdminTickets = () => {
+  const { t } = useTranslation();
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
   const [supportAgents, setSupportAgents] = useState([]);
@@ -43,19 +60,18 @@ const AdminTickets = () => {
   const { currentUser } = useAuth();
   const confirm = useConfirm();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTickets();
     fetchSupportAgents();
     fetchPendingDeletes();
-    // Mark tickets as viewed when page loads
     markAsViewed();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     filterTickets();
-  }, [statusFilter, assignedToFilter, tickets]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, assignedToFilter, tickets]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -65,8 +81,9 @@ const AdminTickets = () => {
       setFilteredTickets(response.data || []);
     } catch (error) {
       console.error('Error fetching tickets:', error);
-      toast.error(tUi("ui.pages.admin.adminTickets.failedToFetchTickets_bbd8cd3f96"));
+      toast.error(tUi('ui.pages.admin.adminTickets.failedToFetchTickets_bbd8cd3f96'));
       setTickets([]);
+      setFilteredTickets([]);
     } finally {
       setLoading(false);
     }
@@ -75,7 +92,7 @@ const AdminTickets = () => {
   const fetchSupportAgents = async () => {
     try {
       const response = await http.get(USER_ENDPOINTS.ALL, {
-        params: { role: 'support_agent' }
+        params: { role: 'support_agent' },
       });
       setSupportAgents(response.data || []);
     } catch (error) {
@@ -95,36 +112,27 @@ const AdminTickets = () => {
   const filterTickets = () => {
     let filtered = tickets;
 
-    // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(
         (ticket) => normalizeTicketStatus(ticket.status) === normalizeTicketStatus(statusFilter)
       );
     }
 
-    // Filter by assigned employee
     if (assignedToFilter === 'unassigned') {
       filtered = filtered.filter((ticket) => {
-        // Check both employee_id and employee.id
         const employeeId = ticket.employee_id || (ticket.employee && ticket.employee.id);
-        return !employeeId || employeeId === null || employeeId === undefined;
+        return !employeeId;
       });
     } else if (assignedToFilter !== 'all' && assignedToFilter !== '') {
       const employeeId = parseInt(assignedToFilter, 10);
-      if (!isNaN(employeeId)) {
+      if (!Number.isNaN(employeeId)) {
         filtered = filtered.filter((ticket) => {
-          // Get employee ID from either employee_id field or employee object
           const ticketEmployeeId = ticket.employee_id || (ticket.employee && ticket.employee.id);
-
-          if (ticketEmployeeId === null || ticketEmployeeId === undefined) {
-            return false;
-          }
-          // Convert both to numbers for comparison
+          if (ticketEmployeeId === null || ticketEmployeeId === undefined) return false;
           return Number(ticketEmployeeId) === employeeId;
         });
       }
     }
-    // If assignedToFilter is 'all', no filtering is applied (show all tickets)
 
     setFilteredTickets(filtered);
   };
@@ -137,15 +145,15 @@ const AdminTickets = () => {
 
   const handleConfirmAssign = async () => {
     if (!selectedTicket || !selectedSupportAgentId) {
-      toast.error(tUi("ui.pages.admin.adminTickets.pleaseSelectASupportAgent_6b43f647e4"));
+      toast.error(tUi('ui.pages.admin.adminTickets.pleaseSelectASupportAgent_6b43f647e4'));
       return;
     }
 
     setAssigning(true);
     try {
       const url = buildUrl(TICKET_ENDPOINTS.ASSIGN, { ticket_id: selectedTicket.id });
-      await http.patch(url, { employee_id: parseInt(selectedSupportAgentId) });
-      toast.success(tUi("ui.pages.admin.adminTickets.ticketAssignedSuccessfully_e8f368d365"));
+      await http.patch(url, { employee_id: parseInt(selectedSupportAgentId, 10) });
+      toast.success(tUi('ui.pages.admin.adminTickets.ticketAssignedSuccessfully_e8f368d365'));
       setShowAssignModal(false);
       fetchTickets();
     } catch (error) {
@@ -161,7 +169,7 @@ const AdminTickets = () => {
     try {
       const url = buildUrl(TICKET_ENDPOINTS.UPDATE_STATUS, { ticket_id: ticketId });
       await http.patch(url, { status: newStatus });
-      toast.success(tUi("ui.pages.admin.adminTickets.ticketStatusUpdated_427b063fd8"));
+      toast.success(tUi('ui.pages.admin.adminTickets.ticketStatusUpdated_427b063fd8'));
       fetchTickets();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -173,7 +181,7 @@ const AdminTickets = () => {
 
   const handleAddResponse = async (ticketId) => {
     if (!responseMessage.trim()) {
-      toast.error(tUi("ui.pages.admin.adminTickets.pleaseEnterAMessage_f6c65dd8c8"));
+      toast.error(tUi('ui.pages.admin.adminTickets.pleaseEnterAMessage_f6c65dd8c8'));
       return;
     }
 
@@ -181,7 +189,7 @@ const AdminTickets = () => {
     try {
       const url = buildUrl(TICKET_ENDPOINTS.ADD_RESPONSE, { ticket_id: ticketId });
       await http.post(url, { message: responseMessage });
-      toast.success(tUi("ui.pages.admin.adminTickets.responseAddedSuccessfully_5e9379f27d"));
+      toast.success(tUi('ui.pages.admin.adminTickets.responseAddedSuccessfully_5e9379f27d'));
       setResponseMessage('');
       fetchTickets();
     } catch (error) {
@@ -194,20 +202,18 @@ const AdminTickets = () => {
 
   const handleDeleteTicket = async (ticketId) => {
     const confirmed = await confirm({
-      title: tUi("ui.pages.admin.adminTickets.deleteTicket_a55318815b"),
-      message: tUi("ui.pages.admin.adminTickets.areYouSureYouWant_59d1414125"),
-      confirmText: tUi("ui.pages.admin.adminTickets.delete_96591806d8"),
-      cancelText: tUi("ui.pages.admin.adminTickets.cancel_b33ccf8e29")
+      title: tUi('ui.pages.admin.adminTickets.deleteTicket_a55318815b'),
+      message: tUi('ui.pages.admin.adminTickets.areYouSureYouWant_59d1414125'),
+      confirmText: tUi('ui.pages.admin.adminTickets.delete_96591806d8'),
+      cancelText: tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29'),
     });
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setDeleting(ticketId);
     try {
       const url = buildUrl(TICKET_ENDPOINTS.DELETE, { ticket_id: ticketId });
       await http.delete(url);
-      toast.success(tUi("ui.pages.admin.adminTickets.ticketDeletedSuccessfully_37475331df"));
+      toast.success(tUi('ui.pages.admin.adminTickets.ticketDeletedSuccessfully_37475331df'));
       fetchTickets();
       fetchPendingDeletes();
     } catch (error) {
@@ -220,20 +226,18 @@ const AdminTickets = () => {
 
   const handleApproveDelete = async (ticketId) => {
     const confirmed = await confirm({
-      title: tUi("ui.pages.admin.adminTickets.approveDeleteRequest_b023259325"),
-      message: tUi("ui.pages.admin.adminTickets.approveAndDeleteThisTicket_93b6b71614"),
-      confirmText: tUi("ui.pages.admin.adminTickets.approveDelete_4efd775c5f"),
-      cancelText: tUi("ui.pages.admin.adminTickets.cancel_b33ccf8e29")
+      title: tUi('ui.pages.admin.adminTickets.approveDeleteRequest_b023259325'),
+      message: tUi('ui.pages.admin.adminTickets.approveAndDeleteThisTicket_93b6b71614'),
+      confirmText: tUi('ui.pages.admin.adminTickets.approveDelete_4efd775c5f'),
+      cancelText: tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29'),
     });
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setApprovingDelete(ticketId);
     try {
       const url = buildUrl(TICKET_ENDPOINTS.APPROVE_DELETE, { ticket_id: ticketId });
       await http.post(url);
-      toast.success(tUi("ui.pages.admin.adminTickets.deleteRequestApprovedAndTicket_e02ef83db1"));
+      toast.success(tUi('ui.pages.admin.adminTickets.deleteRequestApprovedAndTicket_e02ef83db1'));
       fetchTickets();
       fetchPendingDeletes();
     } catch (error) {
@@ -249,7 +253,7 @@ const AdminTickets = () => {
     try {
       const url = buildUrl(TICKET_ENDPOINTS.REJECT_DELETE, { ticket_id: ticketId });
       await http.post(url);
-      toast.success(tUi("ui.pages.admin.adminTickets.deleteRequestRejected_4224b23e53"));
+      toast.success(tUi('ui.pages.admin.adminTickets.deleteRequestRejected_4224b23e53'));
       fetchTickets();
       fetchPendingDeletes();
     } catch (error) {
@@ -260,17 +264,12 @@ const AdminTickets = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (normalizeTicketStatus(status)) {
-      case 'in_progress':
-        return 'status-in-progress';
-      case 'resolved':
-        return 'status-resolved';
-      case 'closed':
-        return 'status-closed';
-      default:
-        return 'status-default';
+  const getStatusClass = (status) => {
+    const normalized = normalizeTicketStatus(status);
+    if (['in_progress', 'resolved', 'closed'].includes(normalized)) {
+      return `adm-tkt-status adm-tkt-status--${normalized}`;
     }
+    return 'adm-tkt-status adm-tkt-status--default';
   };
 
   const getStatusLabel = (status) => {
@@ -280,294 +279,445 @@ const AdminTickets = () => {
     return status || normalized.replace(/_/g, ' ');
   };
 
-  if (loading) {
-    return (
-      <div className="page-loading admin-tickets-loading">
-        <LoadingSpinner size="large" />
-      </div>);
+  const formatTicketMeta = (ticket) => {
+    const customerName = `${ticket.customer?.first_name || ''} ${ticket.customer?.last_name || ''}`.trim();
+    return tUi('ui.pages.admin.adminTickets.ticketMeta_9a8b7c6d5e', {
+      value0: customerName,
+      value1: ticket.customer?.email || '',
+      value2: formatDate(ticket.created_at),
+    });
+  };
 
-  }
+  const formatPendingMeta = (ticket) => {
+    const agentName = ticket.employee
+      ? `${ticket.employee.first_name} ${ticket.employee.last_name}`.trim()
+      : '—';
+    return tUi('ui.pages.admin.adminTickets.pendingRequestMeta_8b7c6d5e4f', {
+      value0: agentName,
+      value1: formatDate(ticket.delete_requested_at),
+    });
+  };
 
-  const allTicketsTitle = tUi("ui.pages.admin.adminTickets.allTickets_10363e2701");
+  const allTicketsTitle = tUi('ui.pages.admin.adminTickets.allTickets_10363e2701');
+  const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
+  const ticketCountLabel =
+    filteredTickets.length === 1
+      ? tUi('ui.pages.admin.adminTickets.ticket_6f5e4d3c2b')
+      : tUi('ui.pages.admin.adminTickets.tickets_5e4d3c2b1a');
+
+  const toggleExpanded = (ticketId) => {
+    setExpandedTicketId((prev) => (prev === ticketId ? null : ticketId));
+  };
+
+  const isResolvedOrClosed = (status) => {
+    const normalized = normalizeTicketStatus(status);
+    return normalized === 'resolved' || normalized === 'closed';
+  };
 
   return (
-    <div className="admin-page-shell admin-tickets-page">
-      {pendingDeletes.length > 0 &&
-      <div className="pending-deletes-section">
-          <h2>{tUi("ui.pages.admin.adminTickets.pendingDeleteRequests_649a08b553")}{pendingDeletes.length})</h2>
-          <div className="pending-deletes-list">
-            {pendingDeletes.map((ticket) =>
-          <div key={ticket.id} className="pending-delete-card">
-                <div className="pending-delete-info">
-                  <h4>{ticket.title}</h4>
-                  <p>{tUi("ui.pages.admin.adminTickets.requestedBy_b55aa2d519")}
-                {ticket.employee?.first_name} {ticket.employee?.last_name}{tUi("ui.pages.admin.adminTickets.requested_53af939820")}
-                {formatDate(ticket.delete_requested_at)}
-                  </p>
-                  <p className="ticket-description-preview">{ticket.description.substring(0, 100)}...</p>
-                </div>
-                <div className="pending-delete-actions">
-                  <button
-                className="approve-delete-btn"
-                onClick={() => handleApproveDelete(ticket.id)}
-                disabled={approvingDelete === ticket.id}>
-                
-                    {approvingDelete === ticket.id ? tUi("ui.pages.admin.adminTickets.approving_a1f7bf53e2") : tUi("ui.pages.admin.adminTickets.approveDelete_4efd775c5f")}
-                  </button>
-                  <button
-                className="reject-delete-btn"
-                onClick={() => handleRejectDelete(ticket.id)}
-                disabled={rejectingDelete === ticket.id}>
-                
-                    {rejectingDelete === ticket.id ? tUi("ui.pages.admin.adminTickets.rejecting_75790791ce") : tUi("ui.pages.admin.adminTickets.reject_6ed0dbd575")}
-                  </button>
-                </div>
-              </div>
-          )}
-          </div>
-        </div>
-      }
-
+    <div className="admin-page-shell adm-page adm-tkt-page">
       <PageHeader
-        kicker={allTicketsTitle}
+        kicker={panelKicker}
         title={allTicketsTitle}
+        subtitle={tUi('ui.pages.admin.adminTickets.subtitle_1a2b3c4d5j')}
         actions={
-        <div className="filters-container">
-          <div className="status-filter">
-            <label>{tUi("ui.pages.admin.adminTickets.filterByStatus_9e240a5b82")}</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}>
-              
-              <option value="all">{tUi("ui.pages.admin.adminTickets.all_89e88f8e70")}</option>
-              <option value="In Progress">{tUi("ui.pages.admin.adminTickets.inProgress_18e19f0fd6")}</option>
-              <option value="Resolved">{tUi("ui.pages.admin.adminTickets.resolved_696eb2f977")}</option>
-              <option value="Closed">{tUi("ui.pages.admin.adminTickets.closed_5b72d42e4a")}</option>
-            </select>
-          </div>
-          <div className="assigned-filter">
-            <label>{tUi("ui.pages.admin.adminTickets.filterByAssignedTo_d037356f6b")}</label>
-            <select
-              value={assignedToFilter}
-              onChange={(e) => setAssignedToFilter(e.target.value)}>
-              
-              <option value="all">{tUi("ui.pages.admin.adminTickets.all_89e88f8e70")}</option>
-              <option value="unassigned">{tUi("ui.pages.admin.adminTickets.unassigned_0796076cc1")}</option>
-              {supportAgents.map((agent) =>
-              <option key={agent.id} value={agent.id}>
-                  {agent.first_name} {agent.last_name}
+          <div className="adm-tkt-header-filter">
+            <div className="adm-tkt-filter-row">
+              <label className="adm-tkt-filter-label" htmlFor="adm-tkt-status-filter">
+                {tUi('ui.pages.admin.adminTickets.filterByStatus_9e240a5b82')}
+              </label>
+              <select
+                id="adm-tkt-status-filter"
+                className="adm-tkt-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {tUi(opt.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="adm-tkt-filter-row">
+              <label className="adm-tkt-filter-label" htmlFor="adm-tkt-assigned-filter">
+                {tUi('ui.pages.admin.adminTickets.filterByAssignedTo_d037356f6b')}
+              </label>
+              <select
+                id="adm-tkt-assigned-filter"
+                className="adm-tkt-select"
+                value={assignedToFilter}
+                onChange={(e) => setAssignedToFilter(e.target.value)}
+              >
+                <option value="all">{tUi('ui.pages.admin.adminTickets.all_89e88f8e70')}</option>
+                <option value="unassigned">
+                  {tUi('ui.pages.admin.adminTickets.unassigned_0796076cc1')}
                 </option>
-              )}
-            </select>
+                {supportAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.first_name} {agent.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="adm-tkt-header-meta" aria-live="polite">
+              <strong>{filteredTickets.length}</strong> {ticketCountLabel}
+            </p>
           </div>
-        </div>
         }
       />
 
-      {filteredTickets.length === 0 ?
-      <div className="empty-tickets">
-          <p>{tUi("ui.pages.admin.adminTickets.noTicketsFound_563b84a408")}</p>
-        </div> :
-
-      <div className="tickets-list">
-          {filteredTickets.map((ticket) => {
-          const isExpanded = expandedTicketId === ticket.id;
-          return (
-            <div key={ticket.id} className="ticket-card">
-                <div
-                className="ticket-header clickable"
-                onClick={() => setExpandedTicketId(isExpanded ? null : ticket.id)}>
-                
-                  <div>
-                    <h3>{ticket.title}</h3>
-                    <p className="ticket-meta">{tUi("ui.pages.admin.adminTickets.customer_b9f6549afe")}
-                    {ticket.customer.first_name} {ticket.customer.last_name} ({ticket.customer.email}{tUi("ui.pages.admin.adminTickets.created_f71b3b1a93")}
-                    {formatDate(ticket.created_at)}
-                    </p>
-                  </div>
-                  <div className="ticket-header-right">
-                    <span className={`status-badge ${getStatusColor(ticket.status)}`}>
-                      {getStatusLabel(ticket.status)}
-                    </span>
-                    {ticket.employee &&
-                  <span className="assigned-to">{tUi("ui.pages.admin.adminTickets.assignedTo_b40e00f557")}
-                    {ticket.employee.first_name} {ticket.employee.last_name}
-                      </span>
-                  }
-                    <span className="expand-icon">
-                      {isExpanded ? '▼' : '▶'}
-                    </span>
-                  </div>
+      {pendingDeletes.length > 0 && (
+        <section className="adm-tkt-section adm-tkt-pending-section" aria-labelledby="adm-tkt-pending-title">
+          <h2 id="adm-tkt-pending-title" className="adm-tkt-pending-title">
+            {tUi('ui.pages.admin.adminTickets.pendingDeleteRequestsTitle_7d6c5b4a3f', {
+              count: pendingDeletes.length,
+            })}
+          </h2>
+          <div className="adm-tkt-pending-list">
+            {pendingDeletes.map((ticket) => (
+              <article key={ticket.id} className="adm-tkt-pending-card">
+                <div className="adm-tkt-pending-copy">
+                  <h4>{ticket.title}</h4>
+                  <p>{formatPendingMeta(ticket)}</p>
+                  <p className="adm-tkt-pending-preview">
+                    {ticket.description?.length > 100
+                      ? `${ticket.description.substring(0, 100)}…`
+                      : ticket.description}
+                  </p>
                 </div>
+                <div className="adm-tkt-pending-actions">
+                  <button
+                    type="button"
+                    className="adm-tkt-btn adm-tkt-btn--approve"
+                    onClick={() => handleApproveDelete(ticket.id)}
+                    disabled={approvingDelete === ticket.id}
+                  >
+                    {approvingDelete === ticket.id
+                      ? tUi('ui.pages.admin.adminTickets.approving_a1f7bf53e2')
+                      : tUi('ui.pages.admin.adminTickets.approveDelete_4efd775c5f')}
+                  </button>
+                  <button
+                    type="button"
+                    className="adm-tkt-btn adm-tkt-btn--reject"
+                    onClick={() => handleRejectDelete(ticket.id)}
+                    disabled={rejectingDelete === ticket.id}
+                  >
+                    {rejectingDelete === ticket.id
+                      ? tUi('ui.pages.admin.adminTickets.rejecting_75790791ce')
+                      : tUi('ui.pages.admin.adminTickets.reject_6ed0dbd575')}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
-                {isExpanded &&
-              <div className="ticket-details">
-                    <div className="ticket-description">
-                      <h4>{tUi("ui.pages.admin.adminTickets.description_eafb618058")}</h4>
-                      <p>{ticket.description}</p>
+      <section className="adm-tkt-section">
+        {loading ? (
+          <div className="adm-tkt-loading">
+            <LoadingSpinner size="large" />
+          </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="adm-tkt-empty">
+            <p>{tUi('ui.pages.admin.adminTickets.noTicketsFound_563b84a408')}</p>
+          </div>
+        ) : (
+          <div className="adm-tkt-list">
+            {filteredTickets.map((ticket, index) => {
+              const isExpanded = expandedTicketId === ticket.id;
+              return (
+                <motion.article
+                  key={ticket.id}
+                  className={`adm-tkt-card${isExpanded ? ' is-expanded' : ''}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <div
+                    className="adm-tkt-card-header"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleExpanded(ticket.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleExpanded(ticket.id);
+                      }
+                    }}
+                  >
+                    <div className="adm-tkt-card-header-start">
+                      <TicketUserAvatar user={ticket.customer} size={44} className="adm-tkt-card-avatar" />
+                      <div>
+                        <h3 className="adm-tkt-card-title">{ticket.title}</h3>
+                        <p className="adm-tkt-card-meta">{formatTicketMeta(ticket)}</p>
+                      </div>
                     </div>
-
-                    <div className="ticket-actions">
-                      <div className="action-group">
-                        <label>{tUi("ui.pages.admin.adminTickets.assignToSupportAgent_4abaeb3f1c")}</label>
-                        <select
-                      value={ticket.employee_id || ''}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          handleAssignTicket({ ...ticket, employee_id: parseInt(e.target.value) });
-                        }
-                      }}>
-                      
-                          <option value="">{tUi("ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d")}</option>
-                          {supportAgents.map((agent) =>
-                      <option key={agent.id} value={agent.id}>
-                              {agent.first_name} {agent.last_name} ({agent.email})
-                            </option>
+                    <div className="adm-tkt-card-header-end">
+                      <span className={getStatusClass(ticket.status)}>{getStatusLabel(ticket.status)}</span>
+                      {ticket.employee && (
+                        <span className="adm-tkt-assigned">
+                          <TicketUserAvatar user={ticket.employee} size={28} className="adm-tkt-assigned-avatar" />
+                          <span>
+                            {tUi('ui.pages.admin.adminTickets.assignedTo_b40e00f557')}{' '}
+                            {ticket.employee.first_name} {ticket.employee.last_name}
+                          </span>
+                        </span>
                       )}
-                        </select>
+                      <span className="adm-tkt-expand" aria-hidden>
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div
+                      className="adm-tkt-detail"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="adm-tkt-detail-block">
+                        <h4>{tUi('ui.pages.admin.adminTickets.description_eafb618058')}</h4>
+                        <p>{ticket.description}</p>
                       </div>
 
-                      <div className="action-group">
-                        <label>{tUi("ui.pages.admin.adminTickets.updateStatus_393c292f40")}</label>
-                        <select
-                      value={ticket.status}
-                      onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                      disabled={updatingStatus === ticket.id}>
-                      
-                          <option value="In Progress">{tUi("ui.pages.admin.adminTickets.inProgress_18e19f0fd6")}</option>
-                          <option value="Resolved">{tUi("ui.pages.admin.adminTickets.resolved_696eb2f977")}</option>
-                          <option value="Closed">{tUi("ui.pages.admin.adminTickets.closed_5b72d42e4a")}</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="ticket-responses">
-                      <h4>{tUi("ui.pages.admin.adminTickets.responses_2332bf585e")}{ticket.responses?.length || 0})</h4>
-                      {ticket.responses && ticket.responses.length > 0 ?
-                  <div className="responses-list">
-                          {ticket.responses.map((response) =>
-                    <div key={response.id} className="response-item">
-                              <div className="response-header">
-                                <span className="response-author">
-                                  {response.user.first_name} {response.user.last_name}
-                                </span>
-                                <span className="response-date">
-                                  {formatDate(response.created_at)}
-                                </span>
-                              </div>
-                              <p className="response-message">{response.message}</p>
-                            </div>
-                    )}
-                        </div> :
-
-                  <p className="no-responses">{tUi("ui.pages.admin.adminTickets.noResponsesYet_5773352778")}</p>
-                  }
-                    </div>
-
-                    {ticket.status !== 'Resolved' && ticket.status !== 'Closed' && (
-                      <div className="add-response">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                          <h4 style={{ margin: 0 }}>{tUi("ui.pages.admin.adminTickets.addResponse_aefbf99ded")}</h4>
-                          <button 
-                            className="btn-primary-action" 
-                            style={{ backgroundColor: '#4f46e5', color: '#fff', padding: '5px 15px', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer', border: 'none' }}
-                            onClick={() => setActiveChatTicketId(ticket.id)}
+                      <div className="adm-tkt-actions-panel">
+                        <div className="adm-tkt-field">
+                          <label htmlFor={`assign-${ticket.id}`}>
+                            {tUi('ui.pages.admin.adminTickets.assignToSupportAgent_4abaeb3f1c')}
+                          </label>
+                          <select
+                            id={`assign-${ticket.id}`}
+                            className="adm-tkt-select"
+                            value={ticket.employee_id || ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAssignTicket({
+                                  ...ticket,
+                                  employee_id: parseInt(e.target.value, 10),
+                                });
+                              }
+                            }}
                           >
-                            💬 Join Live Chat
-                          </button>
+                            <option value="">
+                              {tUi('ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d')}
+                            </option>
+                            {supportAgents.map((agent) => (
+                              <option key={agent.id} value={agent.id}>
+                                {agent.first_name} {agent.last_name} ({agent.email})
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                        <textarea
-                      value={responseMessage}
-                      onChange={(e) => setResponseMessage(e.target.value)}
-                      placeholder={tUi("ui.pages.admin.adminTickets.typeYourResponse_3b25ee5a90")}
-                      rows="3" />
-                    
-                        <button
-                      className="submit-response-btn"
-                      onClick={() => handleAddResponse(ticket.id)}
-                      disabled={respondingTicketId === ticket.id || !responseMessage.trim()}>
-                      
-                          {respondingTicketId === ticket.id ? tUi("ui.pages.admin.adminTickets.sending_7c92c00154") : tUi("ui.pages.admin.adminTickets.sendResponse_19ad5c5ebf")}
-                        </button>
-                      </div>
-                    )}
 
-                    <div className="ticket-delete-section">
-                      {ticket.pending_delete ?
-                  <div className="delete-pending">
-                          <p>{tUi("ui.pages.admin.adminTickets.deleteRequestPendingApproval_30beb02ce2")}</p>
-                          <div className="pending-delete-admin-actions">
+                        <div className="adm-tkt-field">
+                          <label htmlFor={`status-${ticket.id}`}>
+                            {tUi('ui.pages.admin.adminTickets.updateStatus_393c292f40')}
+                          </label>
+                          <select
+                            id={`status-${ticket.id}`}
+                            className="adm-tkt-select"
+                            value={ticket.status}
+                            onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
+                            disabled={updatingStatus === ticket.id}
+                          >
+                            <option value="In Progress">
+                              {tUi('ui.pages.admin.adminTickets.inProgress_18e19f0fd6')}
+                            </option>
+                            <option value="Resolved">
+                              {tUi('ui.pages.admin.adminTickets.resolved_696eb2f977')}
+                            </option>
+                            <option value="Closed">
+                              {tUi('ui.pages.admin.adminTickets.closed_5b72d42e4a')}
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="adm-tkt-detail-block">
+                        <h4>
+                          {tUi('ui.pages.admin.adminTickets.responses_2332bf585e')}
+                          {ticket.responses?.filter((r) => !r.is_chat).length || 0})
+                        </h4>
+                        {ticket.responses && ticket.responses.filter((r) => !r.is_chat).length > 0 ? (
+                          <div className="adm-tkt-responses">
+                            {ticket.responses.filter((r) => !r.is_chat).map((response) => (
+                              <div key={response.id} className="adm-tkt-response">
+                                <TicketUserAvatar user={response.user} size={36} />
+                                <div className="adm-tkt-response-body">
+                                  <div className="adm-tkt-response-top">
+                                    <span className="adm-tkt-response-author">
+                                      {response.user.first_name} {response.user.last_name}
+                                    </span>
+                                    <span className="adm-tkt-response-date">
+                                      {formatDate(response.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className="adm-tkt-response-msg">{response.message}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="adm-tkt-no-responses">
+                            {tUi('ui.pages.admin.adminTickets.noResponsesYet_5773352778')}
+                          </p>
+                        )}
+                      </div>
+
+                      {!isResolvedOrClosed(ticket.status) && (
+                        <div className="adm-tkt-response-form">
+                          <div className="adm-tkt-response-form-head">
+                            <h4>{tUi('ui.pages.admin.adminTickets.addResponse_aefbf99ded')}</h4>
                             <button
-                        className="approve-delete-btn"
-                        onClick={() => handleApproveDelete(ticket.id)}
-                        disabled={approvingDelete === ticket.id}>
-                        
-                              {approvingDelete === ticket.id ? tUi("ui.pages.admin.adminTickets.approving_a1f7bf53e2") : tUi("ui.pages.admin.adminTickets.approveDelete_4efd775c5f")}
-                            </button>
-                            <button
-                        className="reject-delete-btn"
-                        onClick={() => handleRejectDelete(ticket.id)}
-                        disabled={rejectingDelete === ticket.id}>
-                        
-                              {rejectingDelete === ticket.id ? tUi("ui.pages.admin.adminTickets.rejecting_75790791ce") : tUi("ui.pages.admin.adminTickets.reject_6ed0dbd575")}
+                              type="button"
+                              className="adm-tkt-btn adm-tkt-btn--chat"
+                              onClick={() => setActiveChatTicketId(ticket.id)}
+                            >
+                              {tUi('ui.pages.admin.adminTickets.joinLiveChat_4d3c2b1a0f')}
                             </button>
                           </div>
-                        </div> :
+                          <textarea
+                            className="adm-tkt-textarea"
+                            value={responseMessage}
+                            onChange={(e) => setResponseMessage(e.target.value)}
+                            placeholder={tUi('ui.pages.admin.adminTickets.typeYourResponse_3b25ee5a90')}
+                            rows={3}
+                          />
+                          <button
+                            type="button"
+                            className="adm-btn-primary"
+                            onClick={() => handleAddResponse(ticket.id)}
+                            disabled={respondingTicketId === ticket.id || !responseMessage.trim()}
+                          >
+                            {respondingTicketId === ticket.id
+                              ? tUi('ui.pages.admin.adminTickets.sending_7c92c00154')
+                              : tUi('ui.pages.admin.adminTickets.sendResponse_19ad5c5ebf')}
+                          </button>
+                        </div>
+                      )}
 
-                  <button
-                    className="delete-ticket-btn"
-                    onClick={() => handleDeleteTicket(ticket.id)}
-                    disabled={deleting === ticket.id}>
-                    
-                          {deleting === ticket.id ? tUi("ui.pages.admin.adminTickets.deleting_d794a0c704") : tUi("ui.pages.admin.adminTickets.deleteTicket_737e638768")}
-                        </button>
-                  }
+                      <div className="adm-tkt-delete-zone">
+                        {ticket.pending_delete ? (
+                          <div className="adm-tkt-delete-pending">
+                            <p>
+                              {tUi('ui.pages.admin.adminTickets.deleteRequestPendingApproval_30beb02ce2')}
+                            </p>
+                            <div className="adm-tkt-delete-actions">
+                              <button
+                                type="button"
+                                className="adm-tkt-btn adm-tkt-btn--approve"
+                                onClick={() => handleApproveDelete(ticket.id)}
+                                disabled={approvingDelete === ticket.id}
+                              >
+                                {approvingDelete === ticket.id
+                                  ? tUi('ui.pages.admin.adminTickets.approving_a1f7bf53e2')
+                                  : tUi('ui.pages.admin.adminTickets.approveDelete_4efd775c5f')}
+                              </button>
+                              <button
+                                type="button"
+                                className="adm-tkt-btn adm-tkt-btn--reject"
+                                onClick={() => handleRejectDelete(ticket.id)}
+                                disabled={rejectingDelete === ticket.id}
+                              >
+                                {rejectingDelete === ticket.id
+                                  ? tUi('ui.pages.admin.adminTickets.rejecting_75790791ce')
+                                  : tUi('ui.pages.admin.adminTickets.reject_6ed0dbd575')}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="adm-tkt-btn adm-tkt-btn--delete"
+                            onClick={() => handleDeleteTicket(ticket.id)}
+                            disabled={deleting === ticket.id}
+                          >
+                            {deleting === ticket.id
+                              ? tUi('ui.pages.admin.adminTickets.deleting_d794a0c704')
+                              : tUi('ui.pages.admin.adminTickets.deleteTicket_737e638768')}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-              }
-              </div>);
-
-        })}
-        </div>
-      }
-
-      {showAssignModal &&
-      <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{tUi("ui.pages.admin.adminTickets.assignTicket_a1cbabca83")}</h2>
-            <p>{tUi("ui.pages.admin.adminTickets.assignTicket_81adca4b2c")}{selectedTicket?.title}{tUi("ui.pages.admin.adminTickets.toASupportAgent_7f18876815")}</p>
-            <select
-            value={selectedSupportAgentId}
-            onChange={(e) => setSelectedSupportAgentId(e.target.value)}>
-            
-              <option value="">{tUi("ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d")}</option>
-              {supportAgents.map((agent) =>
-            <option key={agent.id} value={agent.id}>
-                  {agent.first_name} {agent.last_name} ({agent.email})
-                </option>
-            )}
-            </select>
-            <div className="modal-actions">
-              <button onClick={() => setShowAssignModal(false)}>{tUi("ui.pages.admin.adminTickets.cancel_b33ccf8e29")}</button>
-              <button
-              onClick={handleConfirmAssign}
-              disabled={assigning || !selectedSupportAgentId}>
-              
-                {assigning ? tUi("ui.pages.admin.adminTickets.assigning_2d95e01d36") : tUi("ui.pages.admin.adminTickets.assign_b71a20df8c")}
-              </button>
-            </div>
+                  )}
+                </motion.article>
+              );
+            })}
           </div>
-        </div>
-      }
-      <SupportTicketChatModal 
+        )}
+      </section>
+
+      <AnimatePresence>
+        {showAssignModal && selectedTicket && (
+          <motion.div
+            className="adm-tkt-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAssignModal(false)}
+          >
+            <motion.div
+              className="adm-tkt-modal"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>{tUi('ui.pages.admin.adminTickets.assignTicket_a1cbabca83')}</h2>
+              <p className="adm-tkt-modal-text">
+                {tUi('ui.pages.admin.adminTickets.assignTicket_81adca4b2c')}
+                {selectedTicket.title}
+                {tUi('ui.pages.admin.adminTickets.toASupportAgent_7f18876815')}
+              </p>
+              <select
+                className="adm-tkt-select"
+                value={selectedSupportAgentId}
+                onChange={(e) => setSelectedSupportAgentId(e.target.value)}
+              >
+                <option value="">
+                  {tUi('ui.pages.admin.adminTickets.selectSupportAgent_6385419f6d')}
+                </option>
+                {supportAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.first_name} {agent.last_name} ({agent.email})
+                  </option>
+                ))}
+              </select>
+              <div className="adm-tkt-modal-actions">
+                <button
+                  type="button"
+                  className="adm-btn-secondary"
+                  onClick={() => setShowAssignModal(false)}
+                >
+                  {tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29')}
+                </button>
+                <button
+                  type="button"
+                  className="adm-btn-primary"
+                  onClick={handleConfirmAssign}
+                  disabled={assigning || !selectedSupportAgentId}
+                >
+                  {assigning
+                    ? tUi('ui.pages.admin.adminTickets.assigning_2d95e01d36')
+                    : tUi('ui.pages.admin.adminTickets.assign_b71a20df8c')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SupportTicketChatModal
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        currentUserProfileImage={currentUser?.profile_image}
       />
-    </div>);
-
+    </div>
+  );
 };
 
 export default AdminTickets;

@@ -4,9 +4,18 @@ import { toast } from 'react-toastify';
 import http from '../services/http';
 import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
 import { buildWebSocketUrl } from '../utils/helpers';
+import TicketUserAvatar from './TicketUserAvatar';
 import '../styles/components/ChatWidget.css';
 
-const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, userName, ticketStatus }) => {
+const SupportTicketChatModal = ({
+  isOpen,
+  onClose,
+  ticketId,
+  currentUserId,
+  userName,
+  currentUserProfileImage,
+  ticketStatus,
+}) => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -121,8 +130,9 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
         id: currentUserId,
         first_name: userName.split(' ')[0],
         last_name: userName.split(' ')[1] || '',
-        role: 'customer'
-      }
+        profile_image: currentUserProfileImage,
+        role: 'customer',
+      },
     };
     setMessages((prev) => [...prev, optimisticMsg]);
 
@@ -176,12 +186,28 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
               messages.map((msg, index) => {
                 const isMe = isOwnMessage(msg);
                 return (
-                  <div key={msg.id || index} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '2px', textAlign: isMe ? 'right' : 'left' }}>
-                      {isMe ? 'You' : `${msg.user.first_name} ${msg.user.last_name}`}
-                    </div>
-                    <div style={{ background: isMe ? '#4f46e5' : '#f3f4f6', color: isMe ? '#fff' : '#1f2937', padding: '8px 12px', borderRadius: '12px', borderBottomRightRadius: isMe ? '2px' : '12px', borderBottomLeftRadius: isMe ? '12px' : '2px', fontSize: '0.9rem' }}>
-                      {msg.message}
+                  <div
+                    key={msg.id || index}
+                    className={`ticket-chat-row${isMe ? ' is-own' : ''}`}
+                    style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '88%' }}
+                  >
+                    <TicketUserAvatar user={msg.user} size={32} />
+                    <div className="ticket-chat-bubble-wrap">
+                      <div
+                        className="ticket-chat-sender"
+                        style={{ textAlign: isMe ? 'right' : 'left' }}
+                      >
+                        {isMe ? 'You' : `${msg.user?.first_name || ''} ${msg.user?.last_name || ''}`.trim()}
+                      </div>
+                      <div
+                        className={`ticket-chat-bubble${isMe ? ' is-own' : ''}`}
+                        style={{
+                          background: isMe ? '#4f46e5' : '#f3f4f6',
+                          color: isMe ? '#fff' : '#1f2937',
+                        }}
+                      >
+                        {msg.message}
+                      </div>
                     </div>
                   </div>
                 );

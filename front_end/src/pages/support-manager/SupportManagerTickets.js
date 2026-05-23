@@ -289,12 +289,13 @@ const SupportManagerTickets = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <SupportTicketChatModal 
+      <SupportTicketChatModal
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        currentUserProfileImage={currentUser?.profile_image}
       />
     </div>
   );

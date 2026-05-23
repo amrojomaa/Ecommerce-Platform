@@ -39,10 +39,14 @@ def get_all_user(
     
     # Filter by role if provided
     if role:
-        if role not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "support_agent", "customer", "driver", "cashier", "walkin"]:
+        if role not in schemas.ALL_USER_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid role. Must be one of: admin, support_manager, operations_manager, warehouse_manager, support_agent, customer, driver, cashier, walkin"
+                detail=(
+                    "Invalid role. Must be one of: admin, support_manager, support_agent, "
+                    "operations_manager, warehouse_manager, seller, warehouse_staff, employee, "
+                    "customer, driver, cashier, walkin"
+                ),
             )
         query = query.filter(models.DBUser.role == role)
     

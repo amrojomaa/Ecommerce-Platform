@@ -322,29 +322,29 @@ const AdminDeliveries = () => {
                   ? tUi('ui.pages.admin.adminDeliveries.issueReportNeeds_9d4a2961c3')
                   : tUi('ui.pages.admin.adminDeliveries.issueReportsNeed_06c771831a')}
                 {tUi('ui.pages.admin.adminDeliveries.adminAttention_5a79bc3bce')}
-              </div>
-              <button
-                type="button"
+        </div>
+          <button
+          type="button"
                 className="adm-del-notice-btn"
-                onClick={() => {
-                  setShowIssueOnly(true);
-                  setShowProofOnly(false);
+          onClick={() => {
+            setShowIssueOnly(true);
+            setShowProofOnly(false);
                   setStatusFilter('all');
-                  setExpandedJobId(null);
+            setExpandedJobId(null);
                 }}
               >
                 {tUi('ui.pages.admin.adminDeliveries.viewIssueOrders_863af5a2ad')}
-              </button>
+        </button>
               {showIssueOnly && (
-                <button
-                  type="button"
+        <button
+          type="button"
                   className="adm-del-notice-btn adm-del-notice-btn--clear"
                   onClick={() => setShowIssueOnly(false)}
                 >
                   {tUi('ui.pages.admin.adminDeliveries.clear_9b77f46f9c')}
-                </button>
+        </button>
               )}
-            </div>
+        </div>
           )}
 
           {proofPhotoCount > 0 && (
@@ -352,7 +352,7 @@ const AdminDeliveries = () => {
               <div className="adm-del-notice-icon" aria-hidden="true">
                 <span className="adm-del-notice-bell">📸</span>
                 <span className="adm-del-notice-count">{proofPhotoCount}</span>
-              </div>
+          </div>
               <div className="adm-del-notice-text">
                 <strong>{proofPhotoCount}</strong>
                 {tUi('ui.pages.admin.adminDeliveries.delivery_8e33d75337')}
@@ -360,29 +360,29 @@ const AdminDeliveries = () => {
                   ? tUi('ui.pages.admin.adminDeliveries.jobHas_b7c5f7c5de')
                   : tUi('ui.pages.admin.adminDeliveries.jobsHave_aa577eee49')}
                 {tUi('ui.pages.admin.adminDeliveries.proofPhotosUploadedByDrivers_6d35ed5c58')}
-              </div>
-              <button
-                type="button"
+        </div>
+          <button
+          type="button"
                 className="adm-del-notice-btn"
-                onClick={() => {
-                  setShowProofOnly(true);
-                  setShowIssueOnly(false);
+          onClick={() => {
+            setShowProofOnly(true);
+            setShowIssueOnly(false);
                   setStatusFilter('all');
-                  setExpandedJobId(null);
+            setExpandedJobId(null);
                 }}
               >
                 {tUi('ui.pages.admin.adminDeliveries.viewPhotoOrders_58b886c5cd')}
-              </button>
+        </button>
               {showProofOnly && (
-                <button
-                  type="button"
+        <button
+          type="button"
                   className="adm-del-notice-btn adm-del-notice-btn--clear"
                   onClick={() => setShowProofOnly(false)}
                 >
                   {tUi('ui.pages.admin.adminDeliveries.clear_9b77f46f9c')}
-                </button>
+        </button>
               )}
-            </div>
+        </div>
           )}
         </div>
       )}
@@ -393,10 +393,10 @@ const AdminDeliveries = () => {
             <LoadingSpinner size="large" />
           </div>
         ) : error ? (
-          <motion.div
+      <motion.div
             className="adm-del-error"
             initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
           >
             <p>
               <strong>{tUi('ui.pages.admin.adminDeliveries.error_c7f47eee32')}</strong> {error}
@@ -417,7 +417,7 @@ const AdminDeliveries = () => {
             {statusFilter !== 'all' && (
               <button type="button" onClick={() => setStatusFilter('all')} className="adm-btn-secondary">
                 {tUi('ui.pages.admin.adminDeliveries.showAllJobs_7eacebe8db')}
-              </button>
+        </button>
             )}
           </motion.div>
         ) : (
@@ -537,7 +537,7 @@ const AdminDeliveries = () => {
                               >
                                 <FaXmark aria-hidden />
                               </button>
-                            </div>
+                          </div>
                           </header>
 
                           <div className="adm-del-job-meta">
@@ -649,30 +649,30 @@ const AdminDeliveries = () => {
                                     <p>{job.driver_name || tUi('ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1')}</p>
                                     {canAssignDriver && (
                                       <div className="adm-del-assign-controls">
-                                        <select
+                                  <select
                                           value={
                                             selectedDriverByJob[job.id] ??
                                             (job.driver_id ? String(job.driver_id) : '')
                                           }
-                                          onChange={(e) => {
-                                            const value = e.target.value;
-                                            setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
                                           }}
                                         >
                                           <option value="">
                                             {tUi('ui.pages.admin.adminDeliveries.selectDriver_a679aadb8d')}
                                           </option>
                                           {drivers.map((driver) => (
-                                            <option key={driver.id} value={String(driver.id)}>
-                                              {driver.first_name} {driver.last_name} ({driver.email})
-                                            </option>
+                                  <option key={driver.id} value={String(driver.id)}>
+                                        {driver.first_name} {driver.last_name} ({driver.email})
+                                      </option>
                                           ))}
-                                        </select>
-                                        <button
-                                          type="button"
+                                  </select>
+                                  <button
+                                  type="button"
                                           className="adm-btn-primary adm-del-assign-btn"
-                                          disabled={
-                                            assigningDriverJobId === job.id ||
+                                  disabled={
+                                  assigningDriverJobId === job.id ||
                                             !(selectedDriverByJob[job.id] ??
                                               (job.driver_id ? String(job.driver_id) : ''))
                                           }
@@ -681,7 +681,7 @@ const AdminDeliveries = () => {
                                           {assigningDriverJobId === job.id
                                             ? tUi('ui.pages.admin.adminDeliveries.assigning_0faec53f0e')
                                             : tUi('ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a')}
-                                        </button>
+                                  </button>
                                       </div>
                                     )}
                                   </div>
@@ -701,13 +701,13 @@ const AdminDeliveries = () => {
                                     </div>
                                   </section>
                                 )}
-                              </div>
+                            </div>
                             )}
 
                             {expandedJobTab === 'map' && (
                               <div className="adm-del-map-section">
                                 <OrderMapTracker deliveryJob={job} />
-                              </div>
+                          </div>
                             )}
 
                             {expandedJobTab === 'proof' && (pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (
@@ -717,8 +717,8 @@ const AdminDeliveries = () => {
                                     <div className="adm-del-proof-group">
                                       <div className="adm-del-proof-header">
                                         <h5>{tUi('ui.pages.admin.adminDeliveries.pickedUp_519b67e151')}</h5>
-                                        <button
-                                          type="button"
+                                      <button
+                                    type="button"
                                           className="adm-del-btn-ok"
                                           disabled={
                                             job.pickup_photo_checked ||
@@ -731,18 +731,18 @@ const AdminDeliveries = () => {
                                             : reviewingPhotoType === `${job.id}-pickup`
                                               ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
                                               : tUi('ui.pages.admin.adminDeliveries.markOk_245791044e')}
-                                        </button>
-                                      </div>
+                                      </button>
+                                    </div>
                                       <div className="adm-del-proof-grid">
                                         {pickupPhotos.map((photo) => (
                                           <div className="adm-del-proof-card" key={`pickup-photo-${photo.id}`}>
-                                            <img
-                                              src={getImageUrl(photo.image_path)}
+                                          <img
+                                      src={getImageUrl(photo.image_path)}
                                               alt={tUi('ui.pages.admin.adminDeliveries.pickupProof_de18bafb10')}
                                               className="adm-del-proof-img"
                                             />
-                                            <span>{formatDate(photo.created_at)}</span>
-                                          </div>
+                                          <span>{formatDate(photo.created_at)}</span>
+                                        </div>
                                         ))}
                                       </div>
                                     </div>
@@ -752,8 +752,8 @@ const AdminDeliveries = () => {
                                     <div className="adm-del-proof-group">
                                       <div className="adm-del-proof-header">
                                         <h5>{tUi('ui.pages.admin.adminDeliveries.delivered_7131e29334')}</h5>
-                                        <button
-                                          type="button"
+                                      <button
+                                    type="button"
                                           className="adm-del-btn-ok"
                                           disabled={
                                             job.delivery_photo_checked ||
@@ -766,23 +766,23 @@ const AdminDeliveries = () => {
                                             : reviewingPhotoType === `${job.id}-delivery`
                                               ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
                                               : tUi('ui.pages.admin.adminDeliveries.markOk_245791044e')}
-                                        </button>
-                                      </div>
+                                      </button>
+                                    </div>
                                       <div className="adm-del-proof-grid">
                                         {deliveryPhotos.map((photo) => (
                                           <div className="adm-del-proof-card" key={`delivery-photo-${photo.id}`}>
-                                            <img
-                                              src={getImageUrl(photo.image_path)}
+                                          <img
+                                      src={getImageUrl(photo.image_path)}
                                               alt={tUi('ui.pages.admin.adminDeliveries.deliveryProof_8e26a61d41')}
                                               className="adm-del-proof-img"
                                             />
-                                            <span>{formatDate(photo.created_at)}</span>
+                                          <span>{formatDate(photo.created_at)}</span>
                                           </div>
                                         ))}
                                       </div>
-                                    </div>
+                                        </div>
                                   )}
-                                </div>
+                                    </div>
                               </section>
                             )}
 
@@ -796,19 +796,19 @@ const AdminDeliveries = () => {
                                       {tUi('ui.pages.admin.adminDeliveries.solved_1bad684e4b')}
                                     </span>
                                   )}
-                                  {job.issue_description && <p>{job.issue_description}</p>}
+                              {job.issue_description && <p>{job.issue_description}</p>}
                                   {issuePhotos.length > 0 && (
                                     <div className="adm-del-issue-photos">
                                       {issuePhotos.map((photo) => (
-                                        <img
-                                          key={`issue-photo-${photo.id}`}
-                                          src={getImageUrl(photo.image_path)}
+                              <img
+                                key={`issue-photo-${photo.id}`}
+                                src={getImageUrl(photo.image_path)}
                                           alt={tUi('ui.pages.admin.adminDeliveries.issueReport_8c535704c0')}
                                           className="adm-del-issue-img"
                                         />
                                       ))}
                                     </div>
-                                  )}
+                              )}
                                 </div>
 
                                 <div className="adm-del-issue-thread">
@@ -838,19 +838,19 @@ const AdminDeliveries = () => {
                                                 : tUi('ui.pages.admin.adminDeliveries.user_532f4a40ae')}{' '}
                                               • {formatDateTime(msg.created_at)}
                                             </span>
-                                          </div>
-                                          <p>{msg.message}</p>
+                                        </div>
+                                        <p>{msg.message}</p>
                                         </div>
                                       ))}
-                                    </div>
-                                  )}
+                                      </div>
+                                )}
 
                                   {!job.issue_resolved ? (
                                     <div className="adm-del-thread-actions">
-                                      <input
-                                        type="text"
-                                        value={issueMessageText}
-                                        onChange={(e) => setIssueMessageText(e.target.value)}
+                                    <input
+                                  type="text"
+                                  value={issueMessageText}
+                                  onChange={(e) => setIssueMessageText(e.target.value)}
                                         placeholder={tUi(
                                           'ui.pages.admin.adminDeliveries.replyToDriver_f3e492b4fe'
                                         )}
@@ -863,27 +863,27 @@ const AdminDeliveries = () => {
                                         {issueSending
                                           ? tUi('ui.pages.admin.adminDeliveries.sending_c686f867c6')
                                           : tUi('ui.pages.admin.adminDeliveries.send_50281357f3')}
-                                      </button>
-                                      <button
+                                    </button>
+                                    <button
                                         type="button"
                                         className="adm-del-btn-resolve"
-                                        onClick={() => handleResolveIssue(job.id)}
+                                  onClick={() => handleResolveIssue(job.id)}
                                         disabled={resolvingIssue}
                                       >
                                         {resolvingIssue
                                           ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
                                           : tUi('ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7')}
-                                      </button>
-                                    </div>
+                                    </button>
+                              </div>
                                   ) : (
                                     <p className="adm-del-thread-closed">
                                       {tUi('ui.pages.admin.adminDeliveries.issueClosedByAdmin_a88a36322d')}
                                     </p>
-                                  )}
-                                </div>
+                              )}
+                              </div>
                               </section>
                             )}
-                          </div>
+                            </div>
                         </div>
                       </td>
                     </tr>
@@ -894,7 +894,7 @@ const AdminDeliveries = () => {
             })}
             </tbody>
           </table>
-          </div>
+        </div>
         )}
       </section>
     </div>

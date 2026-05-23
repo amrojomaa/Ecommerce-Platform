@@ -358,7 +358,8 @@ async def add_ticket_response(
             "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "email": user.email
+            "email": user.email,
+            "profile_image": user.profile_image,
         }
     }
     await ticket_manager.broadcast(broadcast_payload, ticket_id)
@@ -487,7 +488,8 @@ async def websocket_ticket_chat(websocket: WebSocket, ticket_id: int, token: str
             "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "email": user.email
+            "email": user.email,
+            "profile_image": user.profile_image,
         }
     finally:
         db.close()

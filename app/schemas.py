@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+﻿from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
@@ -815,6 +815,11 @@ class TicketCreate(BaseModel):
     description: str
 
 
+class TicketUpdate(BaseModel):
+    title: str
+    description: str
+
+
 class TicketResponseUser(BaseModel):
     id: int
     first_name: str
@@ -869,8 +874,8 @@ class TicketStatusUpdate(BaseModel):
     @field_validator('status')
     @classmethod
     def validate_status(cls, v):
-        if v not in ["In Progress", "Resolved", "Closed"]:
-            raise ValueError('Status must be one of: In Progress, Resolved, Closed')
+        if v not in ["Open", "In Progress", "Resolved", "Closed"]:
+            raise ValueError('Status must be one of: Open, In Progress, Resolved, Closed')
         return v
 
 

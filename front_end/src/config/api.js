@@ -158,6 +158,7 @@ export const TICKET_ENDPOINTS = {
   UNASSIGNED: '/tickets/unassigned',
   CLAIM: '/tickets/{ticket_id}/claim',
   BY_ID: '/tickets/{ticket_id}',
+  UPDATE: '/tickets/{ticket_id}',
   ASSIGN: '/tickets/{ticket_id}/assign',
   UPDATE_STATUS: '/tickets/{ticket_id}/status',
   ADD_RESPONSE: '/tickets/{ticket_id}/response',

@@ -2,14 +2,13 @@ import { tUi } from '../i18n/uiText';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiX, FiSend, FiMessageCircle } from 'react-icons/fi';
+import { FiPlus, FiX, FiSend, FiMessageCircle, FiEdit2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
 import { formatDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
-import { useConfirm } from '../hooks/useConfirm';
 import SupportTicketChatModal from '../components/SupportTicketChatModal';
 import TicketUserAvatar from '../components/TicketUserAvatar';
 import { useAuth } from '../hooks/useAuth';
@@ -40,9 +39,10 @@ const Tickets = () => {
   const [responseMessage, setResponseMessage] = useState('');
   const [respondingTicketId, setRespondingTicketId] = useState(null);
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
-  const [deletingTicketId, setDeletingTicketId] = useState(null);
+  const [editingTicketId, setEditingTicketId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
   const { markAsViewed } = useUnreadTickets();
-  const confirm = useConfirm();
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -50,6 +50,12 @@ const Tickets = () => {
     markAsViewed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (tickets.some((ticket) => ticket.status !== 'Closed')) {
+      setShowCreateForm(false);
+    }
+  }, [tickets]);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -67,6 +73,10 @@ const Tickets = () => {
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
+    if (hasOpenTicketSlot === false) {
+      toast.warn(tUi('ui.pages.tickets.cannotCreateUntilClosed_a1b2c3d4e6'));
+      return;
+    }
     if (!newTicket.title.trim() || !newTicket.description.trim()) {
       toast.error(tUi('ui.pages.tickets.pleaseFillInAllFields_4471417b8d'));
       return;
@@ -108,26 +118,34 @@ const Tickets = () => {
     }
   };
 
-  const handleDeleteTicket = async (ticketId) => {
-    const confirmed = await confirm({
-      title: tUi('ui.pages.tickets.deleteTicketTitle_d4e5f6a7b8'),
-      message: tUi('ui.pages.tickets.deleteTicketMessage_e5f6a7b8c9'),
-      confirmText: tUi('ui.pages.tickets.deleteConfirm_f6a7b8c9d0'),
-      cancelText: tUi('ui.pages.tickets.cancel_320b7f4df0'),
-    });
-    if (!confirmed) return;
+  const handleStartEdit = (ticket) => {
+    setEditingTicketId(ticket.id);
+    setEditForm({ title: ticket.title, description: ticket.description });
+  };
 
-    setDeletingTicketId(ticketId);
+  const handleCancelEdit = () => {
+    setEditingTicketId(null);
+    setEditForm({ title: '', description: '' });
+  };
+
+  const handleSaveEdit = async (ticketId) => {
+    if (!editForm.title.trim() || !editForm.description.trim()) {
+      toast.error(tUi('ui.pages.tickets.pleaseFillInAllFields_4471417b8d'));
+      return;
+    }
+
+    setSavingEdit(true);
     try {
-      await http.delete(`${TICKET_ENDPOINTS.MY.replace('/my', '')}/${ticketId}`);
-      toast.success(tUi('ui.pages.tickets.ticketDeleted_a7b8c9d0e1'));
-      if (expandedTicketId === ticketId) setExpandedTicketId(null);
+      await http.patch(buildUrl(TICKET_ENDPOINTS.UPDATE, { ticket_id: ticketId }), editForm);
+      toast.success(tUi('ui.pages.tickets.ticketUpdated_b2c3d4e5f7'));
+      setEditingTicketId(null);
+      setEditForm({ title: '', description: '' });
       fetchTickets();
     } catch (error) {
-      console.error('Error deleting ticket:', error);
-      toast.error(error.response?.data?.detail || 'Failed to delete ticket');
+      console.error('Error updating ticket:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update ticket');
     } finally {
-      setDeletingTicketId(null);
+      setSavingEdit(false);
     }
   };
 
@@ -154,6 +172,8 @@ const Tickets = () => {
 
   const pageTitle = tUi('ui.pages.tickets.myTickets_7b2e55ccc1');
   const supportKicker = t('ui.pages.tickets.supportKicker_f1a2b3c4d5', { defaultValue: 'Support' });
+  const hasOpenTicketSlot = !tickets.some((ticket) => ticket.status !== 'Closed');
+  const canCreateTicket = hasOpenTicketSlot && !loading;
 
   return (
     <div className="page-shell tkt-page">
@@ -164,21 +184,27 @@ const Tickets = () => {
             title={pageTitle}
             subtitle={tUi('ui.pages.tickets.subtitle_g2b3c4d5e6')}
             actions={
-              <button
-                type="button"
-                className={showCreateForm ? 'page-btn-secondary tkt-header-cta' : 'page-btn-primary tkt-header-cta'}
-                onClick={() => setShowCreateForm(!showCreateForm)}
-              >
-                {showCreateForm ? (
-                  <>
-                    <FiX aria-hidden /> {tUi('ui.pages.tickets.cancel_320b7f4df0')}
-                  </>
-                ) : (
-                  <>
-                    <FiPlus aria-hidden /> {tUi('ui.pages.tickets.createNewTicket_b216e424fe')}
-                  </>
-                )}
-              </button>
+              canCreateTicket ? (
+                <button
+                  type="button"
+                  className={showCreateForm ? 'page-btn-secondary tkt-header-cta' : 'page-btn-primary tkt-header-cta'}
+                  onClick={() => setShowCreateForm(!showCreateForm)}
+                >
+                  {showCreateForm ? (
+                    <>
+                      <FiX aria-hidden /> {tUi('ui.pages.tickets.cancel_320b7f4df0')}
+                    </>
+                  ) : (
+                    <>
+                      <FiPlus aria-hidden /> {tUi('ui.pages.tickets.createNewTicket_b216e424fe')}
+                    </>
+                  )}
+                </button>
+              ) : (
+                <p className="tkt-create-blocked-note">
+                  {tUi('ui.pages.tickets.cannotCreateUntilClosed_a1b2c3d4e6')}
+                </p>
+              )
             }
             animate={false}
           />
@@ -250,7 +276,7 @@ const Tickets = () => {
                 🎫
               </div>
               <p>{tUi('ui.pages.tickets.youHavenTCreatedAny_d33bce3131')}</p>
-              {!showCreateForm && (
+              {canCreateTicket && !showCreateForm && (
                 <button
                   type="button"
                   className="page-btn-primary"
@@ -266,6 +292,8 @@ const Tickets = () => {
                 const isExpanded = expandedTicketId === ticket.id;
                 const nonChatResponses = (ticket.responses || []).filter((r) => !r.is_chat);
                 const isAgent = (user) => user?.id !== ticket.customer_id;
+                const isOpen = normalizeTicketStatus(ticket.status) === 'open';
+                const isEditing = editingTicketId === ticket.id;
 
                 return (
                   <motion.article
@@ -311,8 +339,71 @@ const Tickets = () => {
                         <div className="tkt-detail-grid">
                           <div className="tkt-info-col">
                             <div className="tkt-block">
-                              <h4>{tUi('ui.pages.tickets.description_5df2b50e3c')}</h4>
-                              <p>{ticket.description}</p>
+                              <div className="tkt-block-head">
+                                <h4>{tUi('ui.pages.tickets.description_5df2b50e3c')}</h4>
+                                {isOpen && !isEditing && (
+                                  <button
+                                    type="button"
+                                    className="page-btn-secondary tkt-edit-btn"
+                                    onClick={() => handleStartEdit(ticket)}
+                                  >
+                                    <FiEdit2 aria-hidden />
+                                    {tUi('ui.pages.tickets.editTicket_c3d4e5f6a8')}
+                                  </button>
+                                )}
+                              </div>
+                              {isEditing ? (
+                                <div className="tkt-edit-form">
+                                  <div className="tkt-field">
+                                    <label htmlFor={`tkt-edit-title-${ticket.id}`}>
+                                      {tUi('ui.pages.tickets.title_1ae4d1369f')}
+                                    </label>
+                                    <input
+                                      id={`tkt-edit-title-${ticket.id}`}
+                                      type="text"
+                                      value={editForm.title}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, title: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="tkt-field">
+                                    <label htmlFor={`tkt-edit-desc-${ticket.id}`}>
+                                      {tUi('ui.pages.tickets.description_5df2b50e3c')}
+                                    </label>
+                                    <textarea
+                                      id={`tkt-edit-desc-${ticket.id}`}
+                                      value={editForm.description}
+                                      onChange={(e) =>
+                                        setEditForm({ ...editForm, description: e.target.value })
+                                      }
+                                      rows={4}
+                                    />
+                                  </div>
+                                  <div className="tkt-edit-actions">
+                                    <button
+                                      type="button"
+                                      className="page-btn-secondary"
+                                      onClick={handleCancelEdit}
+                                      disabled={savingEdit}
+                                    >
+                                      {tUi('ui.pages.tickets.cancel_320b7f4df0')}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="page-btn-primary"
+                                      onClick={() => handleSaveEdit(ticket.id)}
+                                      disabled={savingEdit}
+                                    >
+                                      {savingEdit
+                                        ? tUi('ui.pages.tickets.savingEdit_d4e5f6a7b9')
+                                        : tUi('ui.pages.tickets.saveChanges_e5f6a7b8c0')}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p>{ticket.description}</p>
+                              )}
                             </div>
 
                             <div className="tkt-block tkt-responses">
@@ -424,19 +515,6 @@ const Tickets = () => {
                               </div>
                             </div>
                           )}
-                        </div>
-
-                        <div className="tkt-delete-row">
-                          <button
-                            type="button"
-                            className="page-btn-danger"
-                            onClick={() => handleDeleteTicket(ticket.id)}
-                            disabled={deletingTicketId === ticket.id}
-                          >
-                            {deletingTicketId === ticket.id
-                              ? tUi('ui.pages.tickets.deleting_q2r3s4t5u6')
-                              : tUi('ui.pages.tickets.deleteTicketTitle_d4e5f6a7b8')}
-                          </button>
                         </div>
                       </div>
                     )}

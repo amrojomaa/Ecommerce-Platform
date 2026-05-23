@@ -17,6 +17,7 @@ import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminTickets.css';
 
 const TICKET_STATUS_LABEL_KEYS = {
+  open: 'ui.pages.tickets.statusOpen_a1b2c3d4e1',
   in_progress: 'ui.pages.admin.adminTickets.inProgress_18e19f0fd6',
   resolved: 'ui.pages.admin.adminTickets.resolved_696eb2f977',
   closed: 'ui.pages.admin.adminTickets.closed_5b72d42e4a',
@@ -24,10 +25,13 @@ const TICKET_STATUS_LABEL_KEYS = {
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', labelKey: 'ui.pages.admin.adminTickets.all_89e88f8e70' },
+  { value: 'Open', labelKey: 'ui.pages.tickets.statusOpen_a1b2c3d4e1' },
   { value: 'In Progress', labelKey: 'ui.pages.admin.adminTickets.inProgress_18e19f0fd6' },
   { value: 'Resolved', labelKey: 'ui.pages.admin.adminTickets.resolved_696eb2f977' },
   { value: 'Closed', labelKey: 'ui.pages.admin.adminTickets.closed_5b72d42e4a' },
 ];
+
+const STATUS_UPDATE_OPTIONS = STATUS_FILTER_OPTIONS.filter((opt) => opt.value !== 'all');
 
 const normalizeTicketStatus = (status) =>
   String(status || '')
@@ -266,7 +270,7 @@ const AdminTickets = () => {
 
   const getStatusClass = (status) => {
     const normalized = normalizeTicketStatus(status);
-    if (['in_progress', 'resolved', 'closed'].includes(normalized)) {
+    if (['open', 'in_progress', 'resolved', 'closed'].includes(normalized)) {
       return `adm-tkt-status adm-tkt-status--${normalized}`;
     }
     return 'adm-tkt-status adm-tkt-status--default';
@@ -521,15 +525,11 @@ const AdminTickets = () => {
                             onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
                             disabled={updatingStatus === ticket.id}
                           >
-                            <option value="In Progress">
-                              {tUi('ui.pages.admin.adminTickets.inProgress_18e19f0fd6')}
-                            </option>
-                            <option value="Resolved">
-                              {tUi('ui.pages.admin.adminTickets.resolved_696eb2f977')}
-                            </option>
-                            <option value="Closed">
-                              {tUi('ui.pages.admin.adminTickets.closed_5b72d42e4a')}
-                            </option>
+                            {STATUS_UPDATE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {tUi(opt.labelKey)}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

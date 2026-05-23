@@ -59,6 +59,16 @@ def create_ticket(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only customers can create tickets"
         )
+
+    open_ticket = db.query(models.DBTicket).filter(
+        models.DBTicket.customer_id == current_user.id,
+        models.DBTicket.status != "Closed",
+    ).first()
+    if open_ticket:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot create a new ticket until your current ticket is closed",
+        )
     
     new_ticket = models.DBTicket(
         title=ticket.title,
@@ -108,10 +118,10 @@ def get_all_tickets(
     )
     
     if status_filter:
-        if status_filter not in ["In Progress", "Resolved", "Closed"]:
+        if status_filter not in ["Open", "In Progress", "Resolved", "Closed"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid status. Must be one of: In Progress, Resolved, Closed"
+                detail="Invalid status. Must be one of: Open, In Progress, Resolved, Closed"
             )
         query = query.filter(models.DBTicket.status == status_filter)
     
@@ -176,6 +186,52 @@ def claim_ticket(
     db.commit()
     db.refresh(ticket)
     
+    return ticket
+
+
+@router.patch("/tickets/{ticket_id:int}", response_model=schemas.TicketBase)
+def update_ticket(
+    ticket_id: int,
+    update: schemas.TicketUpdate,
+    db: Session = Depends(get_db),
+    current_user: int = Depends(OAuth2.get_current_user),
+):
+    """Update ticket title/description — customer only, while status is Open."""
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    ticket = db.query(models.DBTicket).filter(models.DBTicket.id == ticket_id).first()
+
+    if not ticket:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ticket not found",
+        )
+
+    if user.role != "customer" or ticket.customer_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only edit your own tickets",
+        )
+
+    if ticket.status != "Open":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You can only edit a ticket while its status is Open",
+        )
+
+    title = update.title.strip()
+    description = update.description.strip()
+    if not title or not description:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Title and description are required",
+        )
+
+    ticket.title = title
+    ticket.description = description
+    ticket.updated_at = datetime.now(timezone.utc)
+    ticket.last_updated_by = current_user.id
+    db.commit()
+    db.refresh(ticket)
     return ticket
 
 
@@ -627,8 +683,11 @@ def delete_ticket(
             detail="Ticket not found"
         )
     
-    if user.role == "customer" and ticket.customer_id != user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own tickets")
+    if user.role == "customer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Customers cannot delete tickets",
+        )
     elif user.role == "support_agent" and ticket.employee_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete tickets assigned to you")
     elif user.role not in ["admin", "support_manager", "support_agent", "customer"]:

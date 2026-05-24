@@ -10,33 +10,44 @@ import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import { formatDateTime } from '../../utils/helpers';
+import { formatDateTime, resolveProfileImageUrl, DEFAULT_PROFILE_IMAGE } from '../../utils/helpers';
+import { getRoleLabel as translateRoleLabel } from '../../i18n/roles';
+import { useAuth } from '../../hooks/useAuth';
+import { useConfirm } from '../../hooks/useConfirm';
 import '../../styles/pages/admin/AdminPanel.css';
+import '../../styles/pages/admin/AdminUsers.css';
 import '../../styles/pages/admin/AdminUserDetails.css';
 
-const ROLE_LABEL_KEYS = {
-  admin: 'ui.pages.admin.adminUsers.admin_9b8c8c337f',
-  support_manager: 'ui.pages.admin.adminUsers.supportManager_2a7bb3b941',
-  support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
-  operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
-  warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
-  seller: 'roles.seller',
-  warehouse_staff: 'roles.warehouse_staff',
-  driver: 'ui.pages.admin.adminUsers.driver_533424916e',
-  customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
-  cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
-};
+const AVATAR_DISPLAY_SIZE = 112;
+
+const ROLE_OPTIONS = [
+  'admin',
+  'support_manager',
+  'support_agent',
+  'operations_manager',
+  'warehouse_manager',
+  'seller',
+  'warehouse_staff',
+  'driver',
+  'customer',
+  'cashier',
+];
 
 const AdminUserDetails = () => {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentAuthUser } = useAuth();
+  const confirm = useConfirm();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showImageModal, setShowImageModal] = useState(false);
-
-  const defaultProfileImage =
-    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState('customer');
+  const [updating, setUpdating] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -77,23 +88,12 @@ const AdminUserDetails = () => {
     }
   };
 
-  const getProfileImageUrl = () => {
-    if (!user) {
-      return defaultProfileImage;
-    }
-
-    const profileImage = user.profile_image;
-    if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
-      return defaultProfileImage;
-    }
-
-    if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
-      return profileImage;
-    }
-
-    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
-    return `${API_BASE_URL}/${normalizedPath}`;
-  };
+  const getProfileImageUrl = (displaySize = AVATAR_DISPLAY_SIZE) =>
+    resolveProfileImageUrl(user?.profile_image, {
+      apiBaseUrl: API_BASE_URL,
+      defaultImage: DEFAULT_PROFILE_IMAGE,
+      displaySize,
+    });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -106,18 +106,106 @@ const AdminUserDetails = () => {
     });
   };
 
-  const getRoleLabel = (role) => {
-    const normalized = String(role || '').toLowerCase();
-    const key = ROLE_LABEL_KEYS[normalized];
-    if (!key) return normalized.replace(/_/g, ' ');
-    if (key.startsWith('roles.')) return t(key);
-    return tUi(key);
-  };
+  const getRoleLabel = (role) => translateRoleLabel(role);
 
   const getRoleBadgeClass = (role) => {
     const normalized = String(role || 'customer').toLowerCase();
     return `adm-udetail-role adm-udetail-role--${normalized}`;
   };
+
+  const getUsersRoleBadgeClass = (role) => {
+    const normalized = String(role || 'customer').toLowerCase();
+    return `adm-users-role adm-users-role--${normalized}`;
+  };
+
+  const handleOpenRoleModal = () => {
+    if (!user) return;
+    setNewRole(user.role);
+    setShowRoleModal(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!user || user.role === newRole) {
+      setShowRoleModal(false);
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      await http.patch(buildUrl(USER_ENDPOINTS.UPDATE_ROLE, { id: user.id }), { role: newRole });
+      setUser((prev) => (prev ? { ...prev, role: newRole } : prev));
+      toast.success(
+        tUi('ui.pages.admin.adminUsers.userRoleUpdatedToValue_65e151007e', {
+          value0: getRoleLabel(newRole),
+        })
+      );
+      setShowRoleModal(false);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error(error.response?.data?.detail || 'Failed to update user role');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!user || !currentAuthUser || user.id === currentAuthUser.id) return;
+
+    const nextBlocked = !user.is_blocked;
+    if (nextBlocked) {
+      const agreed = await confirm({
+        title: tUi('ui.pages.admin.adminUsers.suspendThisUser_753829cad1'),
+        message: tUi('ui.pages.admin.adminUserDetails.suspendConfirm_8a9b0c1d2e', {
+          value0: `${user.first_name} ${user.last_name}`,
+          value1: user.email,
+        }),
+        confirmText: tUi('ui.pages.admin.adminUsers.suspend_b9bc672f89'),
+        cancelText: tUi('ui.pages.admin.adminUsers.cancel_5783570289'),
+      });
+      if (!agreed) return;
+    }
+
+    setBlocking(true);
+    try {
+      const { data } = await http.patch(buildUrl(USER_ENDPOINTS.UPDATE_BLOCK, { id: user.id }), {
+        is_blocked: nextBlocked,
+      });
+      setUser((prev) => (prev ? { ...prev, ...data } : prev));
+      toast.success(
+        nextBlocked
+          ? tUi('ui.pages.admin.adminUserDetails.userSuspended_9b0c1d2e3f')
+          : tUi('ui.pages.admin.adminUserDetails.userReactivated_0c1d2e3f4a')
+      );
+    } catch (error) {
+      const msg = error.response?.data?.detail || error.message || 'Failed to update account';
+      toast.error(typeof msg === 'string' ? msg : 'Failed to update account');
+    } finally {
+      setBlocking(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user) return;
+
+    setDeleting(true);
+    try {
+      await http.delete(buildUrl(USER_ENDPOINTS.DELETE, { id: user.id }));
+      toast.success(
+        tUi('ui.pages.admin.adminUserDetails.userDeleted_1d2e3f4a5b', {
+          value0: `${user.first_name} ${user.last_name}`,
+        })
+      );
+      navigate('/admin/users');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete user');
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const isSelf = currentAuthUser?.id === user?.id;
 
   const pageTitle = tUi('ui.pages.admin.adminUserDetails.userAccountInformation_1a87059564');
   const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
@@ -127,15 +215,7 @@ const AdminUserDetails = () => {
       <PageHeader
         kicker={panelKicker}
         title={pageTitle}
-        subtitle={
-          user
-            ? tUi('ui.pages.admin.adminUserDetails.subtitleUser_2c3d4e5f6a', {
-                value0: `${user.first_name} ${user.last_name}`.trim(),
-                value1: user.email,
-                value2: user.id,
-              })
-            : tUi('ui.pages.admin.adminUserDetails.subtitle_1a2b3c4d5i')
-        }
+        subtitle={tUi('ui.pages.admin.adminUserDetails.subtitle_1a2b3c4d5i')}
         actions={
           <button
             type="button"
@@ -159,44 +239,86 @@ const AdminUserDetails = () => {
           transition={{ duration: 0.35 }}
         >
           <div className="adm-udetail-hero">
-            <div className="adm-udetail-avatar-wrap">
-              <img
-                key={`user-${user.id}-${user.profile_image || 'default'}`}
-                src={getProfileImageUrl()}
-                alt={tUi('ui.pages.admin.adminUserDetails.valueValue_44af41b31d', {
-                  value0: user.first_name,
-                  value1: user.last_name,
-                })}
-                className="adm-udetail-avatar"
-                loading="eager"
-                decoding="async"
-                onClick={() => setShowImageModal(true)}
-                onError={(e) => {
-                  if (e.target.src !== defaultProfileImage) {
-                    e.target.src = defaultProfileImage;
-                  }
-                }}
-              />
+            <div className="adm-udetail-hero-main">
+              <div className="adm-udetail-avatar-wrap">
+                <img
+                  key={`user-${user.id}-${user.profile_image || 'default'}`}
+                  src={getProfileImageUrl()}
+                  alt={tUi('ui.pages.admin.adminUserDetails.valueValue_44af41b31d', {
+                    value0: user.first_name,
+                    value1: user.last_name,
+                  })}
+                  className="adm-udetail-avatar"
+                  width={AVATAR_DISPLAY_SIZE}
+                  height={AVATAR_DISPLAY_SIZE}
+                  loading="eager"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onClick={() => setShowImageModal(true)}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== DEFAULT_PROFILE_IMAGE) {
+                      e.currentTarget.src = DEFAULT_PROFILE_IMAGE;
+                    }
+                  }}
+                />
+              </div>
+              <div className="adm-udetail-hero-copy">
+                <h2 className="adm-udetail-hero-name">
+                  {user.first_name} {user.last_name}
+                </h2>
+                <p className="adm-udetail-hero-email">{user.email}</p>
+                <div className="adm-udetail-hero-badges">
+                  <span className={getRoleBadgeClass(user.role)}>{getRoleLabel(user.role)}</span>
+                  <span className={`adm-udetail-verified ${user.is_verified ? 'is-yes' : 'is-no'}`}>
+                    {user.is_verified
+                      ? tUi('ui.pages.admin.adminUserDetails.verified_ebcf9e3db7')
+                      : tUi('ui.pages.admin.adminUserDetails.notVerified_b491c0f754')}
+                  </span>
+                  <span
+                    className={`adm-udetail-account ${user.is_blocked ? 'is-suspended' : 'is-active'}`}
+                  >
+                    {user.is_blocked
+                      ? tUi('ui.pages.admin.adminUsers.suspended_d2685f367b')
+                      : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="adm-udetail-hero-copy">
-              <h2 className="adm-udetail-hero-name">
-                {user.first_name} {user.last_name}
-              </h2>
-              <p className="adm-udetail-hero-email">{user.email}</p>
-              <div className="adm-udetail-hero-badges">
-                <span className={getRoleBadgeClass(user.role)}>{getRoleLabel(user.role)}</span>
-                <span className={`adm-udetail-verified ${user.is_verified ? 'is-yes' : 'is-no'}`}>
-                  {user.is_verified
-                    ? tUi('ui.pages.admin.adminUserDetails.verified_ebcf9e3db7')
-                    : tUi('ui.pages.admin.adminUserDetails.notVerified_b491c0f754')}
-                </span>
-                <span
-                  className={`adm-udetail-account ${user.is_blocked ? 'is-suspended' : 'is-active'}`}
+
+            <div className="adm-udetail-hero-actions" aria-label={tUi('ui.pages.admin.adminUserDetails.actions_7e8f9a0b1c')}>
+              <div className="adm-udetail-actions">
+                {!isSelf && (
+                  <button
+                    type="button"
+                    className="adm-btn-primary adm-udetail-action-btn"
+                    onClick={handleOpenRoleModal}
+                    disabled={updating || deleting || blocking}
+                  >
+                    {tUi('ui.pages.admin.adminUsers.changeRole_3f89e37f4b')}
+                  </button>
+                )}
+                {!isSelf && (
+                  <button
+                    type="button"
+                    className={`adm-btn-secondary adm-udetail-action-btn ${user.is_blocked ? 'adm-udetail-action-btn--unblock' : 'adm-udetail-action-btn--block'}`}
+                    onClick={handleToggleBlock}
+                    disabled={updating || deleting || blocking}
+                  >
+                    {blocking
+                      ? tUi('ui.pages.admin.adminUsers.updating_10c0262ea0')
+                      : user.is_blocked
+                        ? tUi('ui.pages.admin.adminUsers.unblock_6cbc50835c')
+                        : tUi('ui.pages.admin.adminUsers.block_acca25213e')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="adm-users-btn adm-users-btn--delete adm-udetail-action-btn adm-udetail-action-btn--delete"
+                  onClick={() => setShowDeleteModal(true)}
+                  disabled={updating || deleting || blocking}
                 >
-                  {user.is_blocked
-                    ? tUi('ui.pages.admin.adminUsers.suspended_d2685f367b')
-                    : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
-              </span>
+                  {tUi('ui.pages.admin.adminUsers.delete_a6a9493a15')}
+                </button>
               </div>
             </div>
           </div>
@@ -279,6 +401,10 @@ const AdminUserDetails = () => {
                   </dd>
                 </div>
                 <div className="adm-udetail-row">
+                  <dt>{tUi('ui.pages.admin.adminUserDetails.created_6f7a8b9c0d')}</dt>
+                  <dd>{formatDate(user.created_at)}</dd>
+                </div>
+                <div className="adm-udetail-row">
                   <dt>{tUi('ui.pages.admin.adminUserDetails.verificationStatus_52adfe9a86')}</dt>
                   <dd>
                     <span className={`adm-udetail-verified ${user.is_verified ? 'is-yes' : 'is-no'}`}>
@@ -303,16 +429,146 @@ const AdminUserDetails = () => {
                 <div className="adm-udetail-row">
                   <dt>{tUi('ui.pages.admin.adminUserDetails.provider_7b822b516f')}</dt>
                   <dd>{user.provider || tUi('ui.pages.admin.adminUserDetails.email_54eefb5d1b')}</dd>
-              </div>
-                <div className="adm-udetail-row">
-                  <dt>{tUi('ui.pages.admin.adminUserDetails.accountCreated_5c0218c58d')}</dt>
-                  <dd>{formatDate(user.created_at)}</dd>
-              </div>
+                </div>
               </dl>
             </section>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
       )}
+
+      <AnimatePresence>
+        {showRoleModal && user && (
+          <motion.div
+            className="adm-users-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowRoleModal(false)}
+          >
+            <motion.div
+              className="adm-users-modal"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>{tUi('ui.pages.admin.adminUsers.changeUserRole_086699c24a')}</h2>
+              <div className="adm-users-modal-info">
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.user_47b8c7478c')}</strong>
+                  {user.first_name} {user.last_name}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.email_9b95f1bdda')}</strong>
+                  {user.email}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.currentRole_307a24331e')}</strong>
+                  <span className={getUsersRoleBadgeClass(user.role)}>{getRoleLabel(user.role)}</span>
+                </p>
+              </div>
+              <div className="adm-users-field">
+                <label htmlFor="adm-udetail-new-role">
+                  {tUi('ui.pages.admin.adminUsers.newRole_1fb198cad7')}
+                </label>
+                <select
+                  id="adm-udetail-new-role"
+                  className="adm-users-select"
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  disabled={updating}
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {getRoleLabel(role)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="adm-users-modal-actions">
+                <button
+                  type="button"
+                  className="adm-btn-secondary"
+                  onClick={() => setShowRoleModal(false)}
+                  disabled={updating}
+                >
+                  {tUi('ui.pages.admin.adminUsers.cancel_5783570289')}
+                </button>
+                <button
+                  type="button"
+                  className="adm-btn-primary"
+                  onClick={handleUpdateRole}
+                  disabled={updating || user.role === newRole}
+                >
+                  {updating
+                    ? tUi('ui.pages.admin.adminUsers.updating_10c0262ea0')
+                    : tUi('ui.pages.admin.adminUsers.updateRole_cfc1a123e5')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteModal && user && (
+          <motion.div
+            className="adm-users-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              className="adm-users-modal"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>{tUi('ui.pages.admin.adminUsers.deleteUser_e3ea89de3e')}</h2>
+              <div className="adm-users-modal-info">
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.user_47b8c7478c')}</strong>
+                  {user.first_name} {user.last_name}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.email_9b95f1bdda')}</strong>
+                  {user.email}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.role_5bf17f27d3')}</strong>
+                  <span className={getUsersRoleBadgeClass(user.role)}>{getRoleLabel(user.role)}</span>
+                </p>
+              </div>
+              <div className="adm-users-modal-warning">
+                <p>{tUi('ui.pages.admin.adminUsers.areYouSureYouWant_f9aef4fec1')}</p>
+                <p>{tUi('ui.pages.admin.adminUsers.thisActionCannotBeUndone_c8a181f419')}</p>
+              </div>
+              <div className="adm-users-modal-actions">
+                <button
+                  type="button"
+                  className="adm-btn-secondary"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deleting}
+                >
+                  {tUi('ui.pages.admin.adminUsers.cancel_5783570289')}
+                </button>
+                <button
+                  type="button"
+                  className="adm-users-btn--delete-modal"
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                >
+                  {deleting
+                    ? tUi('ui.pages.admin.adminUsers.deleting_51d4fbc5d4')
+                    : tUi('ui.pages.admin.adminUsers.deleteUser_e3ea89de3e')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showImageModal && user && (
@@ -339,16 +595,17 @@ const AdminUserDetails = () => {
                 <FaTimes />
               </button>
               <img
-              src={getProfileImageUrl()}
+                src={getProfileImageUrl(480)}
                 alt={tUi('ui.pages.admin.adminUserDetails.valueValue_44af41b31d', {
                   value0: user.first_name,
                   value1: user.last_name,
                 })}
                 className="adm-udetail-image-full"
-              onError={(e) => {
-                if (e.target.src !== defaultProfileImage) {
-                  e.target.src = defaultProfileImage;
-                }
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  if (e.currentTarget.src !== DEFAULT_PROFILE_IMAGE) {
+                    e.currentTarget.src = DEFAULT_PROFILE_IMAGE;
+                  }
                 }}
               />
             </motion.div>

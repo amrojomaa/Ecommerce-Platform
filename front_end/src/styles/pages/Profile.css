@@ -1,9 +1,32 @@
 .profile-page {
   width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 0;
+  min-width: 0;
   gap: 4rem;
   font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  box-sizing: border-box;
+}
+
+.admin-content .profile-page {
+  max-width: 100%;
+  margin-inline: 0;
+}
+
+.profile-content-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.profile-main-column,
+.profile-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  min-width: 0;
 }
 
 .profile-page .page-header {
@@ -135,7 +158,7 @@
 /* Detail grid */
 .profile-details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
   gap: 1rem;
 }
 
@@ -450,9 +473,100 @@
   color: var(--text-primary);
 }
 
+@media (min-width: 1024px) {
+  .profile-overview-card {
+    gap: 2rem 2.5rem;
+    padding: 2rem 2.25rem;
+  }
+
+  .profile-image-display {
+    width: 136px;
+    height: 136px;
+  }
+
+  .profile-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+
+  .profile-form-panel,
+  .profile-feedback-panel {
+    padding: 2rem 2.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .profile-page {
+    gap: 4rem;
+  }
+
+  .profile-content-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .profile-main-column,
+  .profile-side-column {
+    gap: 2.5rem;
+  }
+
+  .profile-overview-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .profile-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-section--feedback {
+    position: sticky;
+    top: calc(var(--navbar-height) + 1.5rem);
+  }
+
+  .profile-feedback-panel {
+    min-height: 100%;
+  }
+}
+
+@media (min-width: 1600px) {
+  .profile-details-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-overview-card {
+    padding: 2.25rem 2.5rem;
+  }
+
+  .profile-image-display {
+    width: 148px;
+    height: 148px;
+  }
+}
+
 @media (max-width: 768px) {
   .profile-page {
     gap: 2.5rem;
+  }
+
+  .profile-content-columns,
+  .profile-main-column,
+  .profile-side-column {
+    gap: 2.5rem;
+  }
+
+  .profile-section--feedback {
+    position: static;
   }
 
   .profile-overview-card {

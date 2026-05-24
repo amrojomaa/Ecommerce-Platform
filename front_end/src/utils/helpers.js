@@ -399,14 +399,16 @@ export const resolveProfileImageUrl = (profileImage, options = {}) => {
     return defaultImage;
   }
 
-  if (profileImage.startsWith('data:')) {
-    return profileImage;
+  const normalizedImage = String(profileImage).trim().replace(/\\/g, '/');
+
+  if (normalizedImage.startsWith('data:')) {
+    return normalizedImage;
   }
 
-  if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
-    return enhanceRemoteProfileImageUrl(profileImage, displaySize);
+  if (normalizedImage.startsWith('http://') || normalizedImage.startsWith('https://')) {
+    return enhanceRemoteProfileImageUrl(normalizedImage, displaySize);
   }
 
-  const normalizedPath = profileImage.startsWith('/') ? profileImage : `/${profileImage}`;
-  return `${apiBaseUrl}${normalizedPath}`;
+  const normalizedPath = normalizedImage.startsWith('/') ? normalizedImage : `/${normalizedImage}`;
+  return `${apiBaseUrl.replace(/\/$/, '')}${normalizedPath}`;
 };

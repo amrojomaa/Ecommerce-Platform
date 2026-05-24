@@ -366,7 +366,7 @@ const Profile = () => {
       />
 
       <motion.section
-        className="profile-section"
+        className="profile-section profile-section--overview"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -436,7 +436,9 @@ const Profile = () => {
         </div>
       </motion.section>
 
-      <section className="profile-section">
+      <div className="profile-content-columns">
+        <div className="profile-main-column">
+      <section className="profile-section profile-section--account">
         <div className="profile-section-header">
           <h2>{tUi('ui.pages.profile.accountInformation_d02e627c43')}</h2>
         </div>
@@ -479,7 +481,7 @@ const Profile = () => {
 
       {isUpdateProfileOpen && (
         <motion.section
-          className="profile-section"
+          className="profile-section profile-section--update"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -567,8 +569,11 @@ const Profile = () => {
         </motion.section>
       )}
 
+        </div>
+
+        <div className="profile-side-column">
       <motion.section
-        className="profile-section"
+        className="profile-section profile-section--feedback"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
@@ -635,6 +640,8 @@ const Profile = () => {
           )}
         </div>
       </motion.section>
+        </div>
+      </div>
     </div>
   );
 

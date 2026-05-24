@@ -42,3 +42,57 @@
 .language-switcher.compact .language-switcher-select {
   min-width: 96px;
 }
+
+.language-switcher--icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.language-switcher-icon-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  pointer-events: none;
+}
+
+.language-switcher-icon {
+  font-size: 1.3rem;
+}
+
+.language-switcher--icon:hover .language-switcher-icon-shell,
+.language-switcher--icon:focus-within .language-switcher-icon-shell {
+  background-color: var(--surface);
+  color: var(--text-primary);
+}
+
+.language-switcher-select--icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.language-switcher-select--icon:focus-visible {
+  opacity: 1;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}

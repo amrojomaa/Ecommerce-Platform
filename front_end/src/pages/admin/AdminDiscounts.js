@@ -435,7 +435,7 @@ const AdminDiscounts = () => {
               </p>
               {!listTerm && (
                 <motion.button
-                  type="button"
+          type="button"
                   className="adm-btn-primary"
                   onClick={() => {
                     resetForm();

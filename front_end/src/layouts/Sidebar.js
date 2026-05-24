@@ -6,41 +6,43 @@ import { useAuth } from '../hooks/useAuth';
 import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import { useDeliveryIssueCount } from '../hooks/useDeliveryIssueCount';
 import { useDeliveryPhotoCount } from '../hooks/useDeliveryPhotoCount';
+import SidebarMenuIcon, { SidebarPanelBrandIcon } from '../components/SidebarMenuIcon';
 import '../styles/layouts/Sidebar.css';
 
 const ADMIN_MENU_ITEMS = [
-{ path: '/admin', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
-{ path: '/admin/products', labelKey: 'ui.sidebar.menu.products', icon: '📦' },
-{ path: '/admin/promotions', labelKey: 'ui.sidebar.menu.promotions', icon: '🎯' },
-{ path: '/admin/discounts', labelKey: 'ui.sidebar.menu.discounts', icon: '🏷️' },
-{ path: '/admin/categories', labelKey: 'ui.sidebar.menu.categories', icon: '🏷️' },
-{ path: '/admin/orders', labelKey: 'ui.sidebar.menu.orders', icon: '📋' },
-{ path: '/admin/installments', labelKey: 'ui.sidebar.menu.installments', icon: '💳' },
-{ path: '/admin/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: '🚚' },
-{ path: '/admin/users', labelKey: 'ui.sidebar.menu.users', icon: '👥' },
-{ path: '/admin/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: '🎫' },
-{ path: '/admin/comments', labelKey: 'ui.sidebar.menu.reviews', icon: '💬' },
-{ path: '/admin/feedback', labelKey: 'ui.sidebar.menu.feedback', icon: '⭐' }];
-
+  { path: '/admin', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/admin/products', labelKey: 'ui.sidebar.menu.products', icon: 'products' },
+  { path: '/admin/promotions', labelKey: 'ui.sidebar.menu.promotions', icon: 'promotions' },
+  { path: '/admin/discounts', labelKey: 'ui.sidebar.menu.discounts', icon: 'discounts' },
+  { path: '/admin/categories', labelKey: 'ui.sidebar.menu.categories', icon: 'categories' },
+  { path: '/admin/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
+  { path: '/admin/installments', labelKey: 'ui.sidebar.menu.installments', icon: 'installments' },
+  { path: '/admin/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: 'deliveries' },
+  { path: '/admin/users', labelKey: 'ui.sidebar.menu.users', icon: 'users' },
+  { path: '/admin/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: 'tickets' },
+  { path: '/admin/comments', labelKey: 'ui.sidebar.menu.reviews', icon: 'reviews' },
+  { path: '/admin/feedback', labelKey: 'ui.sidebar.menu.feedback', icon: 'feedback' },
+];
 
 const OPERATIONS_MANAGER_MENU_ITEMS = [
-{ path: '/admin/orders', labelKey: 'ui.sidebar.menu.orders', icon: '📋' },
-{ path: '/admin/installments', labelKey: 'ui.sidebar.menu.installments', icon: '💳' },
-{ path: '/admin/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: '🚚' }];
-
+  { path: '/admin/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
+  { path: '/admin/installments', labelKey: 'ui.sidebar.menu.installments', icon: 'installments' },
+  { path: '/admin/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: 'deliveries' },
+];
 
 const SUPPORT_MANAGER_MENU_ITEMS = [
-{ path: '/support', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
-{ path: '/support/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: '🎫' },
-{ path: '/support/comments', labelKey: 'ui.sidebar.menu.reviews', icon: '💬' },
-{ path: '/support/feedback', labelKey: 'ui.sidebar.menu.feedback', icon: '⭐' }];
-
+  { path: '/support', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/support/tickets', labelKey: 'ui.sidebar.menu.tickets', icon: 'tickets' },
+  { path: '/support/comments', labelKey: 'ui.sidebar.menu.reviews', icon: 'reviews' },
+  { path: '/support/feedback', labelKey: 'ui.sidebar.menu.feedback', icon: 'feedback' },
+];
 
 const WAREHOUSE_MANAGER_MENU_ITEMS = [
-{ path: '/warehouse', labelKey: 'ui.sidebar.menu.dashboard', icon: '📊' },
-{ path: '/warehouse/inventory', labelKey: 'ui.sidebar.menu.warehouseInventory', icon: '📦' },
-{ path: '/warehouse/approvals', labelKey: 'ui.sidebar.menu.warehouseApprovals', icon: '✅' },
-{ path: '/warehouse/issues', labelKey: 'ui.sidebar.menu.warehouseIssues', icon: '⚠️' }];
+  { path: '/warehouse', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/warehouse/inventory', labelKey: 'ui.sidebar.menu.warehouseInventory', icon: 'warehouseInventory' },
+  { path: '/warehouse/approvals', labelKey: 'ui.sidebar.menu.warehouseApprovals', icon: 'warehouseApprovals' },
+  { path: '/warehouse/issues', labelKey: 'ui.sidebar.menu.warehouseIssues', icon: 'warehouseIssues' },
+];
 
 
 const getStorageKey = (userId) => `admin-sidebar-order:${userId || 'default'}`;
@@ -128,6 +130,13 @@ const Sidebar = () => {
     return 'ui.sidebar.panel.admin';
   }, [user?.role]);
 
+  const panelBrandKey = useMemo(() => {
+    if (user?.role === 'operations_manager') return 'operations';
+    if (user?.role === 'support_manager') return 'support';
+    if (user?.role === 'warehouse_manager') return 'warehouse';
+    return 'admin';
+  }, [user?.role]);
+
   const handleDragStart = (event, path) => {
     setDraggedPath(path);
     event.dataTransfer.effectAllowed = 'move';
@@ -164,10 +173,13 @@ const Sidebar = () => {
   return (
     <aside className={`sidebar ${isDarkMode ? 'dark' : ''}`}>
       <div className="sidebar-header">
-        <h2>
-          {t(panelTitle)}
-        </h2>
-        <p className="sidebar-reorder-hint">{dragHint}</p>
+        <div className="sidebar-brand">
+          <SidebarPanelBrandIcon panelKey={panelBrandKey} />
+          <div className="sidebar-brand-copy">
+            <h2>{t(panelTitle)}</h2>
+            <p className="sidebar-reorder-hint">{dragHint}</p>
+          </div>
+        </div>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
@@ -191,8 +203,8 @@ const Sidebar = () => {
                 draggable={false}>
                 
                 <span className="sidebar-drag-handle" aria-hidden="true">⋮⋮</span>
-                <span className="sidebar-icon">{item.icon}</span>
-                <span>{t(item.labelKey)}</span>
+                <SidebarMenuIcon name={item.icon} />
+                <span className="sidebar-link-label">{t(item.labelKey)}</span>
                 {isTickets && unreadCount > 0 &&
                 <span className="sidebar-badge">{unreadCount}</span>
                 }

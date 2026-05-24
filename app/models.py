@@ -360,6 +360,7 @@ class DBCustomerFeedback(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
+    sentiment = Column(String, nullable=True)  # 'positive', 'neutral', or 'negative'
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     updated_at = Column(
         TIMESTAMP(timezone=True),

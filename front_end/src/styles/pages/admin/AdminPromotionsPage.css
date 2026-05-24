@@ -14,11 +14,30 @@
   scroll-margin-top: 5rem;
 }
 
+.adm-promotions-page .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .adm-promotions-page .page-header-actions .adm-btn-secondary,
 .adm-promotions-page .page-header-actions .adm-btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+@media (min-width: 1280px) {
+  .adm-promo-list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .adm-promo-list {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
 }
 
 .adm-promo-section {

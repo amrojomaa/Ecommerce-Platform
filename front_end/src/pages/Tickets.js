@@ -562,17 +562,17 @@ const Tickets = () => {
             </span>
             <p>{tUi('ui.pages.tickets.youHavenTCreatedAny_d33bce3131')}</p>
             {canCreateTicket && !showCreateForm && (
-              <button
+                <button
                 type="button"
                 className="tkt-btn tkt-btn--primary"
                 onClick={() => setShowCreateForm(true)}
               >
                 <FiPlus aria-hidden />
                 {tUi('ui.pages.tickets.createYourFirstTicket_a2720076a8')}
-              </button>
-            )}
-          </div>
-        ) : (
+                </button>
+              )}
+            </div>
+          ) : (
           <>
             {tickets.length > 1 && (
               <nav className="tkt-ticket-nav" aria-label={tUi('ui.pages.tickets.selectTicket_i4j5k6l7m9')}>
@@ -590,10 +590,10 @@ const Tickets = () => {
                       <span className="tkt-ticket-pill-title">{ticket.title}</span>
                       <span className={getStatusClass(ticket.status)}>
                         {getStatusLabel(ticket.status)}
-                      </span>
+                        </span>
                     </button>
-                  ))}
-                </div>
+                                  ))}
+                                </div>
               </nav>
             )}
 
@@ -607,25 +607,25 @@ const Tickets = () => {
                   <div className="tkt-side-card-head">
                     <FiClock aria-hidden />
                     <h4>{tUi('ui.pages.tickets.supportHours_r3s4t5u6v7')}</h4>
-                  </div>
+                            </div>
                   <div className="tkt-hours-rows">
                     <div className="tkt-hours-row">
                       <span>{tUi('ui.pages.tickets.supportHoursWeekLabel_p1q2r3s4t6')}</span>
                       <span>{tUi('ui.pages.tickets.supportHoursWeek_s4t5u6v7w8')}</span>
-                    </div>
+                          </div>
                     <div className="tkt-hours-row">
                       <span>{tUi('ui.pages.tickets.supportHoursWeekendLabel_q2r3s4t5u7')}</span>
                       <span>{tUi('ui.pages.tickets.supportHoursWeekend_t5u6v7w8x9')}</span>
-                    </div>
-                  </div>
+                                    </div>
+                                  </div>
                   <p className="tkt-timezone">{tUi('ui.pages.tickets.timezoneNote_h3i4j5k6l8')}</p>
-                </div>
+                              </div>
 
                 <div className="tkt-side-card tkt-side-card--glass">
                   <div className="tkt-side-card-head">
                     <FiHelpCircle aria-hidden />
                     <h4>{tUi('ui.pages.tickets.commonQuestions_u6v7w8x9y0')}</h4>
-                  </div>
+                              </div>
                   <ul className="tkt-faq-links">
                     {TICKET_FAQ_ITEMS.map((item) => {
                       const isOpen = openFaqId === item.id;
@@ -659,8 +659,8 @@ const Tickets = () => {
                             )}
                           </AnimatePresence>
                         </li>
-                      );
-                    })}
+                );
+              })}
                   </ul>
                 </div>
               </aside>
@@ -668,7 +668,7 @@ const Tickets = () => {
           </>
         )}
 
-      <SupportTicketChatModal
+      <SupportTicketChatModal 
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}

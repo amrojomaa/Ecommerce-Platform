@@ -3,16 +3,12 @@
 .adm-categories-page {
   gap: 1.5rem;
   width: 100%;
-  max-width: none;
-  margin-inline: 0;
 }
 
 .adm-categories-page.adm-page,
 .admin-page-shell.adm-categories-page {
   gap: 1.5rem;
   width: 100%;
-  max-width: none;
-  margin-inline: 0;
 }
 
 .adm-categories-page .page-header {
@@ -20,16 +16,17 @@
   scroll-margin-top: 5rem;
 }
 
+.adm-categories-page .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .adm-categories-page .page-header-actions .adm-btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.adm-cat-create-btn {
-  padding: 0.75rem 1.75rem;
-  font-size: 1rem;
-  min-height: 48px;
 }
 
 .adm-cat-section {
@@ -165,9 +162,21 @@
 
 .adm-cat-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 1.25rem;
   width: 100%;
+}
+
+@media (min-width: 1280px) {
+  .adm-cat-list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .adm-cat-list {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
 }
 
 .adm-cat-card {

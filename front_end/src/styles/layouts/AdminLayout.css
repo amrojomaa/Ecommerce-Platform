@@ -24,11 +24,6 @@
   scroll-margin-top: 5rem;
 }
 
-html[dir='rtl'] .admin-content {
-  margin-inline-start: 0;
-  margin-inline-end: 250px;
-}
-
 @media (max-width: 1024px) {
   .admin-container {
     flex-direction: column;

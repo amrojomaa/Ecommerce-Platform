@@ -272,8 +272,9 @@ def get_all_products(db: Session = Depends (get_db)):
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
 def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_seller_or_admin)):
-    products = db.query(models.DBProduct).all() 
-    return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
+    products = db.query(models.DBProduct).all()
+    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
+    return [schemas.ProductBase(**get_product_with_images(p, ratings_map)) for p in products]
 
 
 @router.get("/products/name/byadmin", response_model=schemas.ProductBase)

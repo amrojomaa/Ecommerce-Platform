@@ -4,6 +4,7 @@
   flex-direction: column;
   gap: 2.5rem;
   font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --adm-fb-card-width: 220px;
 }
 
 .admin-page-shell.admin-feedback {
@@ -12,64 +13,442 @@
 
 .admin-feedback .page-header {
   scroll-margin-top: 5rem;
+  padding-bottom: 0;
 }
 
-.admin-feedback-header h1,
-.admin-feedback .page-header h1 {
-  margin: 0 0 0.35rem;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  line-height: 1.1;
-}
-
-.admin-feedback-header p,
-.admin-feedback .page-subtitle {
-  margin: 0 0 0.25rem 0;
-  max-width: 640px;
-  color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.admin-feedback-toolbar {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 0;
-}
-
-.admin-feedback-search {
+.admin-feedback .page-header-copy {
   flex: 1;
-  min-width: 240px;
+  min-width: 200px;
+}
+
+.admin-feedback .page-header-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: auto;
+  margin-top: 1.85rem;
+}
+
+.adm-fb-header-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.adm-fb-header-filter {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.adm-fb-header-filter label {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.adm-fb-header-filter input {
+  height: 42px;
+  min-width: 14rem;
+  max-width: 16rem;
+  padding: 0 1rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  background: var(--surface);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adm-fb-header-filter input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.adm-fb-header-filter input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.adm-fb-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  min-width: 0;
+}
+
+.adm-fb-split {
+  display: grid;
+  grid-template-columns: var(--adm-fb-card-width) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.adm-fb-month-panel {
+  position: sticky;
+  top: 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: var(--adm-fb-card-width);
+  max-width: var(--adm-fb-card-width);
+}
+
+.adm-fb-selected-slot,
+.adm-fb-selected-slot .adm-fb-month-card-wrapper {
+  width: var(--adm-fb-card-width);
+  max-width: var(--adm-fb-card-width);
+}
+
+.adm-fb-clear-btn {
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.adm-fb-clear-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.adm-fb-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.adm-fb-detail-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.adm-fb-detail-kicker,
+.adm-fb-catalog-kicker {
+  display: inline-flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.adm-fb-detail-title,
+.adm-fb-catalog-title {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
-.admin-feedback-filters {
+.adm-fb-summary-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-items: start;
+  gap: 0.35rem 2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.adm-fb-summary-rating-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.adm-fb-summary-sentiment-label {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  text-align: end;
+}
+
+.adm-fb-summary-rating-row {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+}
+
+.adm-fb-summary-sentiment-filters {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.adm-fb-summary-rating-filters {
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.adm-fb-rating-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.adm-fb-sentiment-label,
+.adm-fb-rating-filter-label {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.admin-feedback .rating-summary-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.admin-feedback .rating-summary-value {
+  color: var(--text-primary);
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-inline-end: 0.35rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+}
+
+.admin-feedback .rating-summary-count {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.admin-feedback .rating-summary-stars {
+  color: #f59e0b;
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+.admin-feedback .sentiment-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.admin-feedback-filter-btn {
-  border: 1px solid var(--border-color);
+.admin-feedback .filter-btn {
+  padding: 0.5rem 0.85rem;
   border-radius: 999px;
-  padding: 0.5rem 0.8rem;
-  background: var(--surface);
+  border: 1px solid var(--border-color);
+  background-color: var(--background);
   color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.85rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.3s ease, background-color 0.3s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.admin-feedback-filter-btn.active {
+.admin-feedback .filter-btn:hover {
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.admin-feedback .filter-btn.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
   border-color: var(--primary-color);
-  background: var(--primary-color);
-  color: #fff;
+}
+
+.adm-fb-rating-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.adm-fb-rating-filter-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: var(--shadow-md);
+}
+
+.adm-fb-rating-filter-btn.is-active.is-all {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.28);
+}
+
+.adm-fb-rating-filter-btn.is-active.is-stars {
+  border-color: #d97706;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.28);
+}
+
+.adm-fb-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.adm-fb-catalog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.adm-fb-catalog-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.adm-fb-count {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.adm-fb-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, var(--adm-fb-card-width)));
+  justify-content: start;
+  gap: 1.15rem;
+}
+
+.adm-fb-month-card-wrapper {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
+.adm-fb-month-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  padding: 1rem;
+  background: var(--surface);
+  border-radius: 1.2rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  text-align: start;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.adm-fb-month-card:hover {
+  border-color: rgba(37, 99, 235, 0.24);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.adm-fb-month-card.is-selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18), var(--shadow-md);
+}
+
+.adm-fb-month-card.is-readonly {
+  cursor: default;
+}
+
+.adm-fb-month-card.is-readonly:hover {
+  transform: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18), var(--shadow-md);
+}
+
+.adm-fb-month-card-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.adm-fb-month-card-title {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.adm-fb-month-card-stars {
+  color: #f59e0b;
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+}
+
+.adm-fb-month-card-avg {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.adm-fb-month-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: auto;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .admin-feedback-loading,
@@ -79,58 +458,19 @@
   align-items: center;
   min-height: 220px;
   color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+  padding: 2rem;
+}
+
+.admin-feedback-empty p {
+  margin: 0;
 }
 
 .admin-feedback-list {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-}
-
-.admin-feedback-grouped-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.admin-feedback-group {
-  border-radius: 1.2rem;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.admin-feedback-group-toggle {
-  width: 100%;
-  border: none;
-  background: var(--surface);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border-color);
-  font-family: inherit;
-}
-
-.admin-feedback-group-label {
-  font-weight: 700;
-}
-
-.admin-feedback-group-meta {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.admin-feedback-group-body {
-  padding: 0.75rem;
-}
-
-.admin-feedback-group-body:not(.expanded) {
-  display: none;
 }
 
 .admin-feedback-card {
@@ -148,6 +488,11 @@
   border-color: rgba(37, 99, 235, 0.2);
 }
 
+.admin-feedback-card-negative {
+  border-inline-start: 4px solid #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
 .admin-feedback-card-header {
   display: flex;
   justify-content: space-between;
@@ -156,21 +501,67 @@
   margin-bottom: 0.6rem;
 }
 
-.admin-feedback-card-header h3 {
+.adm-fb-user {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.adm-fb-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.adm-fb-user-info h3 {
   margin: 0;
   font-family: 'Fraunces', 'Space Grotesk', serif;
   letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
-.admin-feedback-card-header p {
-  margin: 0.25rem 0 0;
+.adm-fb-user-info p,
+.adm-fb-user-date {
+  margin: 0;
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
+.adm-fb-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.adm-fb-sentiment-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.adm-fb-sentiment-badge-positive {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.adm-fb-sentiment-badge-neutral {
+  background-color: rgba(156, 163, 175, 0.1);
+  color: #9ca3af;
+}
+
+.adm-fb-sentiment-badge-negative {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
 .admin-feedback-rating-wrap {
-  text-align: right;
+  text-align: end;
 }
 
 .admin-feedback-stars {
@@ -191,18 +582,80 @@
   line-height: 1.5;
 }
 
-.admin-feedback-meta {
-  margin: 0.7rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
+@media (max-width: 1024px) {
+  .admin-feedback .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-feedback .page-header-actions {
+    width: 100%;
+    margin-top: 0;
+    justify-content: flex-start;
+  }
+
+  .adm-fb-header-filters {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .adm-fb-header-filter {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .adm-fb-header-filter input {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .adm-fb-split {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-fb-month-panel,
+  .adm-fb-selected-slot,
+  .adm-fb-selected-slot .adm-fb-month-card-wrapper {
+    width: 100%;
+    max-width: min(100%, var(--adm-fb-card-width));
+    margin-inline: auto;
+  }
+
+  .adm-fb-month-panel {
+    position: static;
+  }
+
+  .adm-fb-summary-bar {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: 0.75rem;
+  }
+
+  .adm-fb-summary-rating-label,
+  .adm-fb-summary-sentiment-label,
+  .adm-fb-summary-rating-row,
+  .adm-fb-summary-sentiment-filters,
+  .adm-fb-summary-rating-filters {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: stretch;
+  }
+
+  .adm-fb-summary-sentiment-label,
+  .adm-fb-summary-rating-filters {
+    align-items: stretch;
+    text-align: start;
+  }
+
+  .admin-feedback .sentiment-filters,
+  .adm-fb-rating-filters {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 768px) {
-  .admin-feedback-search {
-    width: 100%;
-  }
-
   .admin-feedback-rating-wrap {
-    text-align: left;
+    text-align: start;
   }
 }

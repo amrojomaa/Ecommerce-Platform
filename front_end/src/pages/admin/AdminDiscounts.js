@@ -2,7 +2,8 @@ import { tUi } from '../../i18n/uiText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FaMagnifyingGlass, FaPercent } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaPercent, FaPlus } from 'react-icons/fa6';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS } from '../../config/api';
@@ -365,16 +366,19 @@ const AdminDiscounts = () => {
               {tUi('ui.pages.admin.adminDiscounts.backToDiscounts_2b3c4d5e6f')}
             </button>
           ) : (
-            <button
+            <motion.button
               type="button"
-              className="adm-btn-primary adm-discount-create-btn"
+              className="adm-btn-primary"
               onClick={() => {
                 resetForm();
                 navigate(`${basePath}/create`);
               }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              {tUi('ui.pages.admin.adminDiscounts.createDiscountBtn_7a8b9c0d1e')}
-            </button>
+              <FaPlus aria-hidden />
+              <span>{tUi('ui.pages.admin.adminDiscounts.createDiscountBtn_7a8b9c0d1e')}</span>
+            </motion.button>
           )
         }
       />
@@ -430,16 +434,19 @@ const AdminDiscounts = () => {
                   : tUi('ui.pages.admin.adminDiscounts.noDiscountsYet_5e6f7a8b9c')}
               </p>
               {!listTerm && (
-        <button
-          type="button"
-                  className="adm-btn-primary adm-discount-create-btn"
+                <motion.button
+                  type="button"
+                  className="adm-btn-primary"
                   onClick={() => {
                     resetForm();
                     navigate(`${basePath}/create`);
                   }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {tUi('ui.pages.admin.adminDiscounts.createDiscountBtn_7a8b9c0d1e')}
-        </button>
+                  <FaPlus aria-hidden />
+                  <span>{tUi('ui.pages.admin.adminDiscounts.createDiscountBtn_7a8b9c0d1e')}</span>
+                </motion.button>
               )}
       </div>
           ) : (

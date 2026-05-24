@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
@@ -251,6 +251,8 @@ class ProductBase(BaseModel):
     category_name_ar: Optional[str] = None
     category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
+    average_rating: float = 0.0
+    total_ratings: int = 0
 
     class Config:
         orm_mode = True
@@ -988,6 +990,7 @@ class CustomerFeedbackUser(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    profile_image: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -997,6 +1000,7 @@ class CustomerFeedbackDisplay(BaseModel):
     id: int
     rating: int
     comment: Optional[str] = None
+    sentiment: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     user: CustomerFeedbackUser

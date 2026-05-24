@@ -6,6 +6,7 @@ from sqlalchemy import desc
 
 from .. import OAuth2, models, schemas
 from ..database import get_db
+from ..utils.sentiment_analysis import analyze_sentiment
 from .admin import require_admin_or_support_manager
 
 router = APIRouter(tags=["Customer Feedback"])
@@ -43,6 +44,7 @@ def create_my_feedback(
         user_id=current_user.id,
         rating=payload.rating,
         comment=payload.comment,
+        sentiment=analyze_sentiment(payload.comment or ""),
     )
     db.add(feedback)
 
@@ -73,4 +75,14 @@ def get_all_feedback(
         .limit(limit)
         .all()
     )
+
+    needs_commit = False
+    for feedback in feedback_rows:
+        if feedback.sentiment is None:
+            feedback.sentiment = analyze_sentiment(feedback.comment or "")
+            needs_commit = True
+
+    if needs_commit:
+        db.commit()
+
     return feedback_rows

@@ -1,26 +1,33 @@
 ---
-description: Premium dashboard/panel design system — Warehouse Panel is the canonical admin UI reference
+description: Premium dashboard/panel design system — shared layout tokens; Admin uses adm-*, Warehouse uses wm-*
 alwaysApply: true
 ---
 
 # Dashboard & Panel Design System (Canonical Reference)
 
-Use the **Warehouse Panel** as the main UI reference for admin, manager, and internal dashboard pages.
+Internal dashboard pages share one design language. Pick the prefix for your area:
 
-**Live reference implementation:**
-- Pages: `front_end/src/pages/warehouse-manager/` (Dashboard, Inventory, Approvals, Issues)
-- Shared styles: `front_end/src/styles/pages/warehouse-manager/WarehousePanel.css`
-- Layout shell: `front_end/src/styles/layouts/AdminLayout.css` + `front_end/src/styles/layouts/Sidebar.css`
-- Header component: `front_end/src/components/PageHeader.js`
-- Shared tokens/patterns: `front_end/src/styles/shared/PageDesign.css`, `front_end/src/styles/App.css`
+| Panel | Prefix | Shared CSS | Pages |
+|-------|--------|------------|-------|
+| **Admin** | `adm-*` | `AdminPanel.css` | `front_end/src/pages/admin/` |
+| **Warehouse** | `wm-*` | `WarehousePanel.css` | `front_end/src/pages/warehouse-manager/` |
 
-Customer/storefront pages still follow `.cursor/rules/home-design-system.mdc`. Panel pages follow this rule.
+**Admin-specific architecture, routes, roles, i18n, and business logic:** `.cursor/rules/admin-panel-system.mdc`
+
+**Live reference implementations:**
+- Admin: `AdminDashboard.js`, `AdminOrders.js`, `AdminCategories.js` + `AdminPanel.css`
+- Warehouse: Dashboard, Inventory, Approvals, Issues + `WarehousePanel.css`
+- Layout shell: `front_end/src/styles/layouts/AdminLayout.css` + `Sidebar.css`
+- Header: `front_end/src/components/PageHeader.js`
+- Tokens: `front_end/src/styles/App.css`, `PageDesign.css`
+
+Customer/storefront pages follow `.cursor/rules/home-design-system.mdc`.
 
 ## Scope & naming
-- Wrap panel pages in: `admin-page-shell` + page-scoped prefix (e.g. `wm-page`, future `panel-page` or `{role}-page`)
-- **Always use page-scoped CSS prefixes** (`wm-*`, `panel-*`, `admin-*`) — never generic class names like `.card` or `.stat-card` without a prefix
-- Max content width: **1200px** centered inside admin content area (1400px shell)
-- i18n: all visible strings via `useTranslation()` / `t('ui.pages...')` keys in `front_end/src/locales/{en,ar,fr}/common.json`
+- Wrap panel pages in: `admin-page-shell` + page-scoped prefix (`adm-page`, `wm-page`, etc.)
+- **Always use page-scoped CSS prefixes** (`adm-*`, `wm-*`, `panel-*`) — never generic class names like `.card` or `.stat-card` without a prefix
+- Max content width: **1200px** default; admin catalog pages may widen to **1400–1600px** (see admin-panel-system rule)
+- i18n: all visible strings via `useTranslation()` / `tUi()` keys in `front_end/src/locales/{en,ar,fr}/common.json`
 
 ## Layout structure
 ```
@@ -112,13 +119,13 @@ Standard card / panel recipe (stats, actions, list items, toolbars):
 - Loading: centered spinner in `.wm-page-loading` / `.page-loading`, min-height ~400px
 
 ## Page patterns (reuse before inventing)
-| Pattern | Reference |
-|---------|-----------|
-| Dashboard + stats + quick actions | `WarehouseManagerDashboard.js` |
-| Filter toolbar + data table | `WarehouseInventory.js` |
-| Expandable approval cards | `WarehouseApprovals.js` |
-| Pill tabs + issue cards + resolve form | `WarehouseIssues.js` |
-| Page header with actions | `PageHeader` + `WarehouseIssues.js` tabs |
+| Pattern | Admin reference | Warehouse reference |
+|---------|-----------------|---------------------|
+| Dashboard + stats + quick actions | `AdminDashboard.js` | `WarehouseManagerDashboard.js` |
+| Filter toolbar + data table | `AdminOrders.js` | `WarehouseInventory.js` |
+| Expandable approval cards | `AdminTickets.js` | `WarehouseApprovals.js` |
+| Pill tabs + issue cards + resolve form | per-page tabs | `WarehouseIssues.js` |
+| Page header with actions | `PageHeader` + `AdminProducts.js` | `PageHeader` + `WarehouseIssues.js` |
 
 ## Dark mode
 - Override surfaces/borders under `.dark` in page CSS — keep using tokens

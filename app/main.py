@@ -410,6 +410,14 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE IF EXISTS customer_feedback
+                ADD COLUMN IF NOT EXISTS sentiment VARCHAR
+                """
+            )
+        )
 
         connection.execute(
             text(

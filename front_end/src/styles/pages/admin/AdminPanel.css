@@ -2,12 +2,20 @@
 
 .adm-page {
   width: 100%;
-  max-width: 1200px;
+  max-width: min(100%, 1200px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 4rem;
   font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.adm-page.adm-dashboard,
+.adm-products-page.adm-page,
+.adm-promotions-page.adm-page,
+.adm-discounts-page.adm-page,
+.adm-categories-page.adm-page {
+  max-width: min(100%, 1400px);
 }
 
 .admin-page-shell.adm-page {
@@ -175,9 +183,10 @@
 
 .adm-actions-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 1.25rem;
   align-items: stretch;
+  width: 100%;
 }
 
 .adm-action-card-wrap {
@@ -385,6 +394,19 @@ html[dir='rtl'] .adm-action-card-arrow {
   cursor: not-allowed;
 }
 
+/* Page header CTAs — consistent size (matches Manage Products Add Product) */
+.adm-page .page-header-actions .adm-btn-primary,
+.adm-page .page-header-actions .adm-btn-secondary {
+  font-size: 1rem;
+  padding: 0.65rem 1.5rem;
+  min-height: 44px;
+}
+
+.adm-page .page-header-actions .adm-btn-primary svg,
+.adm-page .page-header-actions .adm-btn-secondary svg {
+  font-size: 0.95rem;
+}
+
 .dark .adm-stat-card,
 .dark .adm-action-card {
   background: var(--surface);
@@ -414,5 +436,33 @@ html[dir='rtl'] .adm-action-card-arrow {
 
   .adm-actions-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1280px) {
+  .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .adm-page.adm-dashboard,
+  .adm-products-page.adm-page,
+  .adm-promotions-page.adm-page,
+  .adm-discounts-page.adm-page,
+  .adm-categories-page.adm-page {
+    max-width: min(100%, 1600px);
+  }
+
+  .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
 }

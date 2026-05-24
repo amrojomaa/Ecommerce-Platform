@@ -53,7 +53,7 @@
   --products-shadow: 0 24px 60px rgba(4, 10, 24, 0.35);
 }
 
-.admin-products-shell button,
+.admin-products-shell button:not(.adm-btn-primary):not(.adm-btn-secondary),
 .admin-products-shell input,
 .admin-products-shell textarea,
 .admin-products-shell select {
@@ -384,6 +384,18 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.1rem;
+}
+
+@media (min-width: 1280px) {
+  .admin-products-shell .products-grid-dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .admin-products-shell .products-grid-dashboard {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
 }
 
 .admin-product-card-dashboard {

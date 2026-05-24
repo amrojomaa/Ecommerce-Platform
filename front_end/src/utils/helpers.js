@@ -249,6 +249,15 @@ export const fetchLatestExchangeRates = async () => {
   };
 };
 
+export const formatMonthYear = (dateInput, languageCode = getStoredLanguage()) => {
+  if (!dateInput) return '';
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  return new Intl.DateTimeFormat(getCurrentLocale(languageCode), {
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+};
+
 export const formatDate = (dateString, options = {}, languageCode = getStoredLanguage()) => {
   if (!dateString) return '';
   const date = new Date(dateString);

@@ -2,7 +2,7 @@ import { tUi } from '../../i18n/uiText';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { FaMagnifyingGlass, FaTag, FaXmark } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaPlus, FaTag, FaXmark } from 'react-icons/fa6';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { CATEGORY_ENDPOINTS } from '../../config/api';
@@ -145,12 +145,13 @@ const AdminCategories = () => {
         actions={
           <motion.button
             type="button"
-            className="adm-btn-primary adm-cat-create-btn"
+            className="adm-btn-primary"
             onClick={openCreateModal}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            {tUi('ui.pages.admin.adminCategories.addCategoryBtn_6e7f8a9b0c')}
+            <FaPlus aria-hidden />
+            <span>{tUi('ui.pages.admin.adminCategories.addCategoryBtn_6e7f8a9b0c')}</span>
           </motion.button>
         }
       />
@@ -197,9 +198,16 @@ const AdminCategories = () => {
                 : tUi('ui.pages.admin.adminCategories.noCategoriesYet_3c4d5e6f7a')}
             </p>
             {!term && (
-              <button type="button" className="adm-btn-primary adm-cat-create-btn" onClick={openCreateModal}>
-                {tUi('ui.pages.admin.adminCategories.addCategoryBtn_6e7f8a9b0c')}
-              </button>
+              <motion.button
+                type="button"
+                className="adm-btn-primary"
+                onClick={openCreateModal}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <FaPlus aria-hidden />
+                <span>{tUi('ui.pages.admin.adminCategories.addCategoryBtn_6e7f8a9b0c')}</span>
+              </motion.button>
             )}
           </div>
         ) : (

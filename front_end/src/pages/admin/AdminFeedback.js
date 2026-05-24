@@ -29,7 +29,6 @@ const AdminFeedback = () => {
   const [selectedMonthKey, setSelectedMonthKey] = useState(null);
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -48,27 +47,10 @@ const AdminFeedback = () => {
     fetchFeedback();
   }, []);
 
-  const visibleFeedback = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return feedbackRows;
-    }
-    const normalized = searchTerm.toLowerCase();
-    return feedbackRows.filter((entry) => {
-      const fullName = `${entry.user?.first_name || ''} ${entry.user?.last_name || ''}`.toLowerCase();
-      const email = (entry.user?.email || '').toLowerCase();
-      const comment = (entry.comment || '').toLowerCase();
-      return (
-        fullName.includes(normalized) ||
-        email.includes(normalized) ||
-        comment.includes(normalized)
-      );
-    });
-  }, [feedbackRows, searchTerm]);
-
   const groupedFeedback = useMemo(() => {
     const groupsMap = new Map();
 
-    visibleFeedback.forEach((entry) => {
+    feedbackRows.forEach((entry) => {
       const dateSource = entry.created_at || entry.updated_at;
       const entryDate = new Date(dateSource);
       const groupKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
@@ -105,7 +87,7 @@ const AdminFeedback = () => {
             new Date(a.created_at || a.updated_at).getTime()
         ),
       }));
-  }, [visibleFeedback]);
+  }, [feedbackRows]);
 
   const selectedGroup = useMemo(
     () => groupedFeedback.find((group) => group.key === selectedMonthKey) || null,
@@ -421,22 +403,6 @@ const AdminFeedback = () => {
         kicker={customerFeedbackTitle}
         title={customerFeedbackTitle}
         subtitle={tUi('ui.pages.admin.adminFeedback.ratingsAndComments_9672ebdf0c')}
-        actions={
-          <div className="adm-fb-header-filters">
-            <div className="adm-fb-header-filter">
-              <label htmlFor="adm-fb-search">
-                {tUi('ui.pages.admin.adminFeedback.searchFeedback_c1d2e3f4a5')}
-              </label>
-              <input
-                id="adm-fb-search"
-                type="text"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={tUi('ui.pages.admin.adminFeedback.searchByNameEmailOr_a135b39828')}
-              />
-            </div>
-          </div>
-        }
       />
 
       <main className="adm-fb-main">

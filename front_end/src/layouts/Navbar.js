@@ -184,7 +184,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`navbar ${isDarkMode ? 'dark' : ''}`}>
+    <nav className={`navbar ${isDarkMode ? 'dark' : ''} ${isRestrictedArea ? 'navbar--panel' : ''}`}>
       <div className="navbar-container">
         <Link
           to={isRestrictedArea ? getDashboardHomePath() : '/'}
@@ -352,10 +352,19 @@ const Navbar = () => {
               }
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div
-                className="profile-image-wrapper"
-                onClick={toggleProfileDropdown}
-                onMouseEnter={() => setProfileDropdownOpen(true)}>
-                
+                  className="profile-image-wrapper"
+                  onClick={toggleProfileDropdown}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      toggleProfileDropdown();
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={profileDropdownOpen}
+                  aria-haspopup="true"
+                >
                   <img
                   key={`${user?.id || 'no-user'}-${user?.profile_image || 'default'}`}
                   src={getProfileImageUrl()}

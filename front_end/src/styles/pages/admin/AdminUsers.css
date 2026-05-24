@@ -290,6 +290,14 @@
   width: 6.5rem;
 }
 
+.adm-users-col-created {
+  width: 8.75rem;
+  min-width: 8rem;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
 .adm-users-col-actions {
   width: 14rem;
   min-width: 14rem;
@@ -308,12 +316,14 @@
 }
 
 .adm-users-avatar {
+  display: block;
   width: 40px;
   height: 40px;
   min-width: 40px;
   border-radius: 999px;
   object-fit: cover;
   border: 2px solid var(--border-color);
+  background: var(--background);
 }
 
 .adm-users-name-cell span {
@@ -645,7 +655,7 @@
   }
 
   .adm-users-table {
-    min-width: 48rem;
+    min-width: 42rem;
   }
 
   .adm-users-actions {

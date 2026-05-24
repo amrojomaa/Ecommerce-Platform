@@ -66,7 +66,8 @@
 .adm-udetail-hero {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: space-between;
+  gap: 1.5rem 2rem;
   flex-wrap: wrap;
   padding: 1.5rem 1.75rem;
   background: var(--surface);
@@ -75,11 +76,51 @@
   box-shadow: var(--shadow);
 }
 
+.adm-udetail-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.adm-udetail-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.adm-udetail-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.adm-udetail-hero-actions .adm-udetail-action-btn {
+  min-height: 36px;
+  width: auto;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.adm-udetail-hero-actions .adm-btn-primary.adm-udetail-action-btn {
+  padding: 0.45rem 0.95rem;
+}
+
 .adm-udetail-avatar-wrap {
   flex-shrink: 0;
+  width: 112px;
+  height: 112px;
 }
 
 .adm-udetail-avatar {
+  display: block;
   width: 112px;
   height: 112px;
   border-radius: 999px;
@@ -331,6 +372,32 @@
   margin-inline-start: auto;
 }
 
+.adm-udetail-actions-card {
+  width: 100%;
+}
+
+.adm-udetail-action-btn--block {
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.adm-udetail-action-btn--unblock {
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.adm-udetail-action-btn--delete {
+  min-height: 36px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+}
+
+.adm-udetail-actions-note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 /* Image modal */
 .adm-udetail-image-overlay {
   position: fixed;
@@ -403,9 +470,24 @@
 
   .adm-udetail-hero {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     text-align: center;
     padding: 1.25rem;
+  }
+
+  .adm-udetail-hero-main {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .adm-udetail-hero-actions {
+    justify-content: center;
+    margin-inline-start: 0;
+    width: 100%;
+  }
+
+  .adm-udetail-actions {
+    justify-content: center;
   }
 
   .adm-udetail-hero-copy {

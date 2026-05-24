@@ -161,6 +161,7 @@ function App() {
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="discounts" element={<AdminDiscounts />} />
+                    <Route path="discounts/create" element={<AdminDiscounts />} />
                     <Route path="promotions" element={<AdminPromotions />} />
                     <Route path="promotions/create" element={<AdminPromotions />} />
                     <Route path="categories" element={<AdminCategories />} />
@@ -174,23 +175,27 @@ function App() {
                     <Route path="comments/product/:productId" element={<AdminComments />} />
                     <Route path="feedback" element={<AdminFeedback />} />
                     <Route path="pos-analytics" element={<AdminPosAnalytics />} />
+                    <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<SupportManagerDashboard />} />
                     <Route path="tickets" element={<SupportManagerTickets />} />
                     <Route path="comments" element={<SupportManagerComments />} />
                     <Route path="feedback" element={<SupportManagerFeedback />} />
+                    <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<WarehouseManagerDashboard />} />
                     <Route path="inventory" element={<WarehouseInventory />} />
                     <Route path="approvals" element={<WarehouseApprovals />} />
                     <Route path="issues" element={<WarehouseIssues />} />
+                    <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="/support-agent" element={<ProtectedRoute requireSupportAgent={true}><SupportAgentLayout /></ProtectedRoute>}>
                     <Route index element={<SupportAgentDashboard />} />
                     <Route path="tickets" element={<SupportAgentTickets />} />
                     <Route path="chats" element={<SupportAgentChats />} />
+                    <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="/driver" element={<ProtectedRoute requireDriver={true}><DriverLayout /></ProtectedRoute>}>
@@ -199,10 +204,12 @@ function App() {
                     <Route path="active" element={<DriverActiveJob />} />
                     <Route path="history" element={<DriverJobHistory />} />
                     <Route path="earnings" element={<DriverEarnings />} />
+                    <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="/cashier" element={<ProtectedRoute requireCashier={true}><CashierLayout /></ProtectedRoute>}>
           <Route index element={<PosTerminal />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="/seller" element={<ProtectedRoute requireSeller={true}><SellerLayout /></ProtectedRoute>}>
@@ -212,11 +219,13 @@ function App() {
           <Route path="categories" element={<AdminCategories />} />
           <Route path="promotions" element={<AdminPromotions />} />
           <Route path="promotions/create" element={<AdminPromotions />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="/warehouse-staff" element={<ProtectedRoute requireWarehouseStaff={true}><WarehouseStaffLayout /></ProtectedRoute>}>
           <Route index element={<WarehouseStaffDashboard />} />
           <Route path="orders" element={<WarehouseStaffOrders />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

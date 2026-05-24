@@ -8,21 +8,20 @@
 .admin-container {
   display: flex;
   flex: 1;
+  min-width: 0;
 }
 
 .admin-content {
   flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 2rem 2.25rem 3rem;
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
-  margin-left: 250px;
+  margin-inline-start: 250px;
+  margin-inline-end: 0;
+  width: calc(100% - 250px);
+  max-width: none;
+  overflow-x: clip;
   scroll-margin-top: 5rem;
-}
-
-html[dir='rtl'] .admin-content {
-  margin-left: auto;
-  margin-right: 250px;
 }
 
 @media (max-width: 1024px) {
@@ -31,8 +30,9 @@ html[dir='rtl'] .admin-content {
   }
 
   .admin-content {
-    margin-left: 0;
-    margin-right: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    width: 100%;
     max-width: 100%;
     padding: 1.35rem 1.25rem 2.25rem;
   }
@@ -41,7 +41,8 @@ html[dir='rtl'] .admin-content {
 @media (max-width: 768px) {
   .admin-content {
     padding: 1rem 1rem 2rem;
-    margin-left: 0;
-    margin-right: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    width: 100%;
   }
 }

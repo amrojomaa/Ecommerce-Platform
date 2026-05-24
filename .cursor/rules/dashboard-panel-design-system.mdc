@@ -1,0 +1,145 @@
+---
+description: Premium dashboard/panel design system — shared layout tokens; Admin uses adm-*, Warehouse uses wm-*
+alwaysApply: true
+---
+
+# Dashboard & Panel Design System (Canonical Reference)
+
+Internal dashboard pages share one design language. Pick the prefix for your area:
+
+| Panel | Prefix | Shared CSS | Pages |
+|-------|--------|------------|-------|
+| **Admin** | `adm-*` | `AdminPanel.css` | `front_end/src/pages/admin/` |
+| **Warehouse** | `wm-*` | `WarehousePanel.css` | `front_end/src/pages/warehouse-manager/` |
+
+**Admin-specific architecture, routes, roles, i18n, and business logic:** `.cursor/rules/admin-panel-system.mdc`
+
+**Live reference implementations:**
+- Admin: `AdminDashboard.js`, `AdminOrders.js`, `AdminCategories.js` + `AdminPanel.css`
+- Warehouse: Dashboard, Inventory, Approvals, Issues + `WarehousePanel.css`
+- Layout shell: `front_end/src/styles/layouts/AdminLayout.css` + `Sidebar.css`
+- Header: `front_end/src/components/PageHeader.js`
+- Tokens: `front_end/src/styles/App.css`, `PageDesign.css`
+
+Customer/storefront pages follow `.cursor/rules/home-design-system.mdc`.
+
+## Scope & naming
+- Wrap panel pages in: `admin-page-shell` + page-scoped prefix (`adm-page`, `wm-page`, etc.)
+- **Always use page-scoped CSS prefixes** (`adm-*`, `wm-*`, `panel-*`) — never generic class names like `.card` or `.stat-card` without a prefix
+- Max content width: **1200px** default; admin catalog pages may widen to **1400–1600px** (see admin-panel-system rule)
+- i18n: all visible strings via `useTranslation()` / `tUi()` keys in `front_end/src/locales/{en,ar,fr}/common.json`
+
+## Layout structure
+```
+admin-page-shell {prefix}-page
+  PageHeader (kicker → Fraunces title → subtitle; optional actions slot)
+  section.{prefix}-section (repeat per block)
+    {prefix}-section-header (h2 + optional description)
+    content (grid | toolbar | data-panel | list | empty)
+```
+
+- **Vertical page gap:** `4rem` between major blocks (`2.5rem` on mobile)
+- **Section internal gap:** `1.5rem`
+- **Scroll anchor:** `scroll-margin-top: 5rem` on headers
+- **No hero gradient bands** on standard panel pages — use plain `PageHeader` on page background (hero bands are optional, Home/customer only unless explicitly requested)
+
+## Typography
+- **UI/body:** Space Grotesk (`'Space Grotesk', 'Segoe UI', sans-serif`)
+- **Headlines / card titles / stat values:** Fraunces
+- **Page kicker:** uppercase, `letter-spacing: 0.18–0.2em`, `0.75–0.8rem`, semibold, `var(--primary-color)` via `.page-kicker`
+- **Page title (h1):** `clamp(2rem, 4vw, 2.2rem)`, `-0.02em` letter-spacing, Fraunces
+- **Section title (h2):** `1.35rem`, `-0.01em` letter-spacing, Fraunces
+- **Subtitle / meta:** `var(--text-secondary)`, max-width ~640px, `0.95–1rem`
+- **Table headers:** uppercase, `0.72rem`, `letter-spacing: 0.1em`, semibold, secondary color
+
+## Color palette & tokens
+Always prefer CSS variables from `App.css` — never hardcode when a token exists.
+
+| Role | Token / value |
+|------|----------------|
+| Primary | `--primary-color` `#2563eb`, hover `--primary-hover` `#1d4ed8` |
+| Surfaces | `--surface`, `--background` |
+| Text | `--text-primary`, `--text-secondary` |
+| Borders | `--border-color` `#e2e8f0` (dark: `#334155`) |
+| Shadows | `--shadow`, `--shadow-md`, `--shadow-lg` |
+| Focus ring | `--control-focus-ring` / `rgba(37, 99, 235, 0.15)` |
+| Success action | `#16a34a` / hover `#15803d` |
+| Warning stat | `#d97706` on `rgba(245, 158, 11, 0.12)` |
+| Error stat | `#dc2626` on `rgba(239, 68, 68, 0.12)` |
+| Info stat | `var(--primary-color)` on `rgba(37, 99, 235, 0.12)` |
+
+**Icon boxes:** 52×52px, `border-radius: 1rem`, tinted background at ~12% opacity, icon color matches semantic hue.
+
+## Sidebar (panel navigation)
+Match `Sidebar.css` + `Sidebar.js` patterns:
+- Fixed width **250px**, `var(--surface)` bg, `1px` border toward content edge
+- Title: Fraunces `1.25rem`; reorder hint in secondary `0.78rem`
+- Links: flex row, icon + label, `0.85rem 1.5rem` padding, pill radius on trailing edge (`border-radius: 0 999px 999px 0`)
+- **Active state:** `var(--background)` fill + **3px primary accent** on start edge (mirror for RTL)
+- Hover: background + primary text color; transition `0.3s ease`
+- Badges: small red pill, absolute top-right (mirror for RTL)
+- **≤1024px:** horizontal scroll nav, bottom accent border on active item
+- Menu labels via i18n keys (`ui.sidebar.menu.*`, `ui.sidebar.panel.*`)
+
+## Cards, surfaces & borders
+Standard card / panel recipe (stats, actions, list items, toolbars):
+- `background: var(--surface)`
+- `border: 1px solid var(--border-color)`
+- `border-radius: 1.2rem`
+- `box-shadow: var(--shadow)`
+- `padding: 1.25–1.75rem`
+- **Hover (clickable):** `translateY(-4px to -5px)`, `--shadow-md`, border tint `rgba(37, 99, 235, 0.2–0.25)`
+
+**Stat cards:** number + label on one side, semantic icon box on opposite side (`justify-content: space-between` in `.stat-top`).
+
+**Action cards:** horizontal layout — icon box | title + description | arrow; equal height grid (`repeat(3, minmax(0, 1fr))` desktop, 1 col mobile); min-height ~132px.
+
+**Data panel:** wrapped table/list inside `.wm-data-panel` — rounded container, no double borders on outer edge.
+
+**Empty state:** dashed border, centered icon + message, `4rem 2rem` padding.
+
+## Grids & spacing
+- Stats: `repeat(auto-fill, minmax(220px, 1fr))`, gap `1.25rem`
+- Actions: 3 equal columns desktop; `1fr` stack ≤768px
+- Toolbar: flex, space-between; filters grouped inline; pill inputs
+- List cards: vertical stack, gap `0.85rem`
+
+## Forms, filters & controls
+- **Text/select inputs:** height `42px`, pill radius `999px`, `var(--background)` fill, `1px` border
+- **Focus:** primary border + 3px focus ring — no default outline
+- **Primary button:** pill, `var(--primary-color)`, semibold; hover lift `-2px`
+- **Success button:** green pill variant for approve/resolve actions
+- **Save inline button:** small primary pill in table rows
+- **Tabs:** pill tab bar (`.wm-pill-tabs`) — inactive transparent, active filled primary; count badges as small pills
+
+## Motion & UX
+- CSS transitions: **`0.3s ease`** for hover/cards; **`0.2s ease`** for buttons/inputs
+- Framer Motion: subtle entrance (`opacity 0→1`, `y: 10–20`), stagger ~`0.03–0.08s`, hover scale ≤`1.02`
+- CTA arrows slide on hover; **RTL:** mirror arrow with `scaleX(-1)` and reverse translate
+- Loading: centered spinner in `.wm-page-loading` / `.page-loading`, min-height ~400px
+
+## Page patterns (reuse before inventing)
+| Pattern | Admin reference | Warehouse reference |
+|---------|-----------------|---------------------|
+| Dashboard + stats + quick actions | `AdminDashboard.js` | `WarehouseManagerDashboard.js` |
+| Filter toolbar + data table | `AdminOrders.js` | `WarehouseInventory.js` |
+| Expandable approval cards | `AdminTickets.js` | `WarehouseApprovals.js` |
+| Pill tabs + issue cards + resolve form | per-page tabs | `WarehouseIssues.js` |
+| Page header with actions | `PageHeader` + `AdminProducts.js` | `PageHeader` + `WarehouseIssues.js` |
+
+## Dark mode
+- Override surfaces/borders under `.dark` in page CSS — keep using tokens
+- Never put `var(--text-primary)` on light overlay backgrounds in dark mode
+- Stat/action cards: preserve semantic icon tint backgrounds at ~12–15% opacity
+
+## Responsiveness
+- **≤768px:** reduce page gap to `2.5rem`; stack toolbars; single-column action grid; horizontal scroll for wide tables inside data panel
+- **≤1024px:** sidebar becomes top horizontal nav; admin content full width, reduced padding
+- Use logical properties (`margin-inline`, `text-align: start`, `padding-inline`) for Arabic/RTL
+
+## When building new panel pages
+1. Copy structure from closest Warehouse Panel page
+2. Import / extend `WarehousePanel.css` patterns (or extract shared `panel-*` equivalents)
+3. Use `PageHeader` with panel kicker + title + subtitle
+4. Add i18n keys for en, ar, fr together
+5. Match premium look: soft corners, subtle depth, restrained motion, no flat/unstyled tables or raw HTML controls

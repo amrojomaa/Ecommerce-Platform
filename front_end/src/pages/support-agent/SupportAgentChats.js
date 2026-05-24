@@ -125,12 +125,13 @@ const SupportAgentChats = () => {
         </div>
       </div>
 
-      <SupportTicketChatModal 
+      <SupportTicketChatModal
         isOpen={!!selectedTicketId}
         onClose={() => setSelectedTicketId(null)}
         ticketId={selectedTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        currentUserProfileImage={currentUser?.profile_image}
       />
     </div>
   );

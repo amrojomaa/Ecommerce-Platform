@@ -1,5 +1,7 @@
-import { tUi } from "../../i18n/uiText"; import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
@@ -9,6 +11,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import OrderMapTracker from '../../components/OrderMapTracker';
+import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminOrders.css';
 
 const ORDER_STATUS_LABEL_KEYS = {
@@ -22,51 +25,69 @@ const ORDER_STATUS_LABEL_KEYS = {
   delivered: 'ui.pages.orders.status.delivered',
   cancelled: 'ui.pages.orders.status.cancelled',
   failed: 'ui.pages.orders.status.failed',
-  refunded: 'ui.pages.orders.status.refunded',
+  refunded: 'ui.pages.orders.status.refunded'
 };
 
+const ORDER_STATUSES = [
+  'all',
+  'revenue',
+  'pos',
+  'created',
+  'paid',
+  'assigned',
+  'picked_up',
+  'delivering',
+  'shipped',
+  'delivered',
+  'cancelled'
+];
+
 const AdminOrders = () => {
+  const { t } = useTranslation();
   const { formatCurrency } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const [orders, setOrders] = useState([]);
-  const [allOrders, setAllOrders] = useState([]); // Store all orders for filtering
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState({});
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [expandedOrderTab, setExpandedOrderTab] = useState('report');
-  const [statusFilter, setStatusFilter] = useState(() => {
-    // Initialize from URL parameter if present
-    const filterParam = searchParams.get('filter');
-    return filterParam || 'all';
-  });
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('filter') || 'all');
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  // Apply filter when statusFilter changes or when orders are loaded
   useEffect(() => {
-    if (allOrders.length > 0) {
-      if (statusFilter === 'all') {
-        setOrders(allOrders);
-      } else if (statusFilter === 'revenue') {
-        // Filter for revenue orders: paid, shipped, and delivered
-        const filtered = allOrders.filter((order) => {
+    if (allOrders.length === 0) return;
+
+    if (statusFilter === 'all') {
+      setOrders(allOrders);
+      return;
+    }
+
+    if (statusFilter === 'revenue') {
+      setOrders(
+        allOrders.filter((order) => {
           const status = (order.status || 'created').toLowerCase();
           return status === 'paid' || status === 'shipped' || status === 'delivered';
-        });
-        setOrders(filtered);
-      } else if (statusFilter === 'pos') {
-        setOrders(allOrders.filter((order) => order.sale_channel === 'pos'));
-      } else {
-        const filtered = allOrders.filter((order) =>
-          (order.status || 'created').toLowerCase() === statusFilter.toLowerCase()
-        );
-        setOrders(filtered);
-      }
+        })
+      );
+      return;
     }
+
+    if (statusFilter === 'pos') {
+      setOrders(allOrders.filter((order) => order.sale_channel === 'pos'));
+      return;
+    }
+
+    setOrders(
+      allOrders.filter(
+        (order) => (order.status || 'created').toLowerCase() === statusFilter.toLowerCase()
+      )
+    );
   }, [statusFilter, allOrders]);
 
   const fetchOrders = async () => {
@@ -74,27 +95,12 @@ const AdminOrders = () => {
     setError(null);
     try {
       const response = await http.get(ORDER_ENDPOINTS.ALL_ORDERS);
-      console.log('Orders API Response:', response);
-      console.log('Orders Data:', response.data);
-
-      // Handle both array and object responses
       const ordersData = Array.isArray(response.data) ? response.data : response.data?.orders || [];
-      setAllOrders(ordersData); // Store all orders - the useEffect will handle filtering
-
-      if (ordersData.length === 0) {
-        console.log('No orders found in database');
-      }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.status,
-        data: error.data,
-        response: error.response
-      });
-
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch orders';
+      setAllOrders(ordersData);
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to fetch orders';
       setError(errorMessage);
+      setAllOrders([]);
       setOrders([]);
     } finally {
       setLoading(false);
@@ -102,35 +108,27 @@ const AdminOrders = () => {
   };
 
   const getAvailableStatuses = (currentStatus) => {
-    // Admin can change:
-    // - paid → shipped
-    // - shipped → delivered
-    // - any status → cancelled
-    // Delivery statuses (assigned, picked_up, delivering) are set by drivers — admin can only cancel
     if (currentStatus === 'paid') {
       return ['shipped', 'cancelled'];
-    } else if (currentStatus === 'shipped') {
+    }
+    if (currentStatus === 'shipped') {
       return ['delivered', 'cancelled'];
-    } else if (['assigned', 'picked_up', 'delivering'].includes(currentStatus)) {
-      return ['cancelled'];
-    } else {
+    }
+    if (['assigned', 'picked_up', 'delivering'].includes(currentStatus)) {
       return ['cancelled'];
     }
+    return ['cancelled'];
   };
 
   const handleStatusFilterChange = (e) => {
     const filterValue = e.target.value;
     setStatusFilter(filterValue);
-
-    // Update URL parameter
     if (filterValue === 'all') {
       setSearchParams({});
     } else {
       setSearchParams({ filter: filterValue });
     }
   };
-
-  const orderStatuses = ['all', 'revenue', 'pos', 'created', 'paid', 'assigned', 'picked_up', 'delivering', 'shipped', 'delivered', 'cancelled'];
 
   const getOrderStatusLabel = (status) => {
     const normalized = String(status || 'created').toLowerCase();
@@ -140,10 +138,25 @@ const AdminOrders = () => {
   };
 
   const formatFilterLabel = (value) => {
-    if (value === 'pos') return tUi("ui.pages.admin.adminOrders.pos_a479fcd150");
-    if (value === 'revenue') return tUi("ui.pages.admin.adminOrders.revenue_a1caf5553a");
-    if (value === 'all') return tUi("ui.pages.admin.adminOrders.all_80e364fbdb");
+    if (value === 'pos') return tUi('ui.pages.admin.adminOrders.pos_a479fcd150');
+    if (value === 'revenue') return tUi('ui.pages.admin.adminOrders.revenue_a1caf5553a');
+    if (value === 'all') return tUi('ui.pages.admin.adminOrders.all_80e364fbdb');
     return getOrderStatusLabel(value);
+  };
+
+  const getEmptyMessage = () => {
+    if (statusFilter === 'all') {
+      return tUi('ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28');
+    }
+    if (statusFilter === 'revenue') {
+      return tUi('ui.pages.admin.adminOrders.noOrdersFoundWithStatus_935a07a75e');
+    }
+    if (statusFilter === 'pos') {
+      return tUi('ui.pages.admin.adminOrders.noInStorePosOrders_e985e1c501');
+    }
+    return tUi('ui.pages.admin.adminOrders.noOrdersFoundWithStatus_abbac05c5c', {
+      value0: formatFilterLabel(statusFilter)
+    });
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
@@ -152,223 +165,170 @@ const AdminOrders = () => {
       const updateUrl = ORDER_ENDPOINTS.UPDATE_STATUS.replace('{order_id}', orderId);
       await http.patch(updateUrl, { status: newStatus });
 
-      // Update the order in both filtered and all orders lists
       const updatedOrder = { ...orders.find((o) => o.id === orderId), status: newStatus };
 
-      setAllOrders((prevAllOrders) =>
-        prevAllOrders.map((order) =>
-          order.id === orderId ? updatedOrder : order
-        )
-      );
-
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order.id === orderId ? updatedOrder : order
-        )
-      );
-
+      setAllOrders((prev) => prev.map((order) => (order.id === orderId ? updatedOrder : order)));
+      setOrders((prev) => prev.map((order) => (order.id === orderId ? updatedOrder : order)));
       setSelectedStatus({ ...selectedStatus, [orderId]: '' });
-      toast.success(tUi("ui.pages.admin.adminOrders.orderStatusUpdatedSuccessfully_fc30445a1d"));
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to update order status';
+      toast.success(tUi('ui.pages.admin.adminOrders.orderStatusUpdatedSuccessfully_fc30445a1d'));
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to update order status';
       toast.error(`Failed to update order status: ${errorMsg}`);
     } finally {
       setUpdatingOrderId(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page-loading admin-orders-loading">
-        <LoadingSpinner size="large" />
-      </div>);
-
-  }
-
-  const allOrdersTitle = tUi("ui.pages.admin.adminOrders.allOrders_4b39990b5b");
+  const allOrdersTitle = tUi('ui.pages.admin.adminOrders.allOrders_4b39990b5b');
+  const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
+  const orderCountLabel =
+    orders.length === 1
+      ? tUi('ui.pages.admin.adminOrders.order_34aea86a72')
+      : tUi('ui.pages.admin.adminOrders.orders_0e0e34ceea');
 
   return (
-    <div className="admin-page-shell admin-orders">
+    <div className="admin-page-shell adm-page adm-orders-page">
       <PageHeader
-        kicker={allOrdersTitle}
+        kicker={panelKicker}
         title={allOrdersTitle}
+        subtitle={tUi('ui.pages.admin.adminOrders.subtitle_1a2b3c4d5e')}
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label htmlFor="status-filter" style={{ fontWeight: '500' }}>{tUi("ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa")}</label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-                fontSize: '14px',
-                cursor: 'pointer',
-                minWidth: '150px'
-              }}>
-              {orderStatuses.map((status) =>
-                <option key={status} value={status}>
-                  {formatFilterLabel(status)}
-                </option>
-              )}
-            </select>
-            {statusFilter !== "all" &&
-              <span style={{ color: '#666', fontSize: '14px' }}>
-                ({orders.length} {orders.length === 1 ? tUi("ui.pages.admin.adminOrders.order_34aea86a72") : tUi("ui.pages.admin.adminOrders.orders_0e0e34ceea")})
-              </span>}
+          <div className="adm-orders-header-filter">
+            <div className="adm-orders-filter-row">
+              <label className="adm-orders-filter-label" htmlFor="adm-orders-status-filter">
+                {tUi('ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa')}
+              </label>
+              <select
+                id="adm-orders-status-filter"
+                className="adm-orders-select"
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+              >
+                {ORDER_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {formatFilterLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="adm-orders-header-meta" aria-live="polite">
+              <strong>{orders.length}</strong> {orderCountLabel}
+            </p>
           </div>
         }
       />
 
-      {error ?
-        <motion.div
-          className="error-message"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            padding: '20px',
-            backgroundColor: '#ffebee',
-            color: '#c62828',
-            borderRadius: '8px',
-            margin: '20px 0'
-          }}>
-
-          <p><strong>{tUi("ui.pages.admin.adminOrders.error_4f8aad30a6")}</strong> {error}</p>
-          <button
-            onClick={fetchOrders}
-            style={{
-              marginTop: '10px',
-              padding: '8px 16px',
-              backgroundColor: '#c62828',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}>{tUi("ui.pages.admin.adminOrders.retry_b584d994cc")}
-
-
-          </button>
-        </motion.div> :
-        orders.length === 0 ?
-          <motion.div
-            className="empty-orders"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}>
-
+      <section className="adm-orders-section">
+        {loading ? (
+          <div className="adm-orders-loading">
+            <LoadingSpinner size="large" />
+          </div>
+        ) : error ? (
+          <div className="adm-orders-error">
             <p>
-              {statusFilter === "all" ? tUi("ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28") :
-
-                statusFilter === "revenue" ? tUi("ui.pages.admin.adminOrders.noOrdersFoundWithStatus_935a07a75e") :
-
-                  statusFilter === "pos" ? tUi("ui.pages.admin.adminOrders.noInStorePosOrders_e985e1c501") : tUi("ui.pages.admin.adminOrders.noOrdersFoundWithStatus_abbac05c5c", {
-                    value0:
-
-                      formatFilterLabel(statusFilter)
-                  })}
+              <strong>{tUi('ui.pages.admin.adminOrders.error_4f8aad30a6')}</strong> {error}
             </p>
-            {statusFilter !== "all" &&
+            <button type="button" className="adm-btn-primary" onClick={fetchOrders}>
+              {tUi('ui.pages.admin.adminOrders.retry_b584d994cc')}
+            </button>
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="adm-orders-empty">
+            <p>{getEmptyMessage()}</p>
+            {statusFilter !== 'all' && (
               <button
+                type="button"
+                className="adm-btn-secondary"
                 onClick={() => {
-                  setStatusFilter("all");
+                  setStatusFilter('all');
                   setSearchParams({});
                 }}
-                style={{
-                  marginTop: '10px',
-                  padding: '8px 16px',
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}>{tUi("ui.pages.admin.adminOrders.showAllOrders_a234fdd874")}
-
-
+              >
+                {tUi('ui.pages.admin.adminOrders.showAllOrders_a234fdd874')}
               </button>
-            }
-          </motion.div> :
+            )}
+          </div>
+        ) : (
+          <div className="adm-orders-data-panel">
+            <div className="adm-orders-table-scroll">
+              <table className="adm-orders-table">
+                <thead>
+                  <tr>
+                    <th>{tUi('ui.pages.admin.adminOrders.orderId_87fb94b0ea')}</th>
+                    <th>{tUi('ui.pages.admin.adminOrders.customer_af49dd1c93')}</th>
+                    <th>{tUi('ui.pages.admin.adminOrders.saleChannel_6e7f8a9b0c')}</th>
+                    <th>{tUi('ui.pages.admin.adminOrders.date_d12a0581d9')}</th>
+                    <th>{tUi('ui.pages.admin.adminOrders.items_716d042f1e')}</th>
+                    <th>{tUi('ui.pages.admin.adminOrders.total_fe96c090ae')}</th>
+                    <th className="adm-orders-col-status">
+                      {tUi('ui.pages.admin.adminOrders.status_7bb0ee7637')}
+                    </th>
+                    <th className="adm-orders-col-actions">
+                      {tUi('ui.pages.admin.adminOrders.actions_8926462604')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order, index) => {
+                    const orderStatus = (order.status || '').toLowerCase();
+                    const isExpanded = expandedOrderId === order.id;
 
-          <div className="orders-table-container">
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>{tUi("ui.pages.admin.adminOrders.orderId_87fb94b0ea")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.customer_af49dd1c93")}</th>
-                  <th>Sale Channel</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.date_d12a0581d9")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.items_716d042f1e")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.total_fe96c090ae")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.status_7bb0ee7637")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.notification_21ad4e898c")}</th>
-                  <th>{tUi("ui.pages.admin.adminOrders.actions_8926462604")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order, index) =>
-                  <React.Fragment key={order.id}>
-                    {(() => {
-                      const orderStatus = (order.status || '').toLowerCase();
-                      const showIssueNotification = !!order.order_delivery?.issue_type && !order.order_delivery?.issue_resolved && !["cancelled", "delivered"].includes(orderStatus);
-                      return (
+                    return (
+                      <React.Fragment key={order.id}>
                         <motion.tr
-                          initial={{ opacity: 0, y: 10 }}
+                          initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className={expandedOrderId === order.id ? "row-expanded" : ''}>
-
-                          <td>#{order.id}</td>
+                          transition={{ delay: index * 0.02 }}
+                          className={isExpanded ? 'is-expanded' : ''}
+                        >
+                          <td className="adm-orders-id">#{order.id}</td>
                           <td>
-                            {order.sale_channel === "pos" ?
-                              <>
-                                <span className="user-name" style={{ display: 'block', fontWeight: 'bold' }}>
+                            {order.sale_channel === 'pos' ? (
+                              <div className="adm-orders-customer">
+                                <span className="adm-orders-customer-name">
                                   {order.customer_name || 'Walk-in Customer'}
                                 </span>
-                                {order.cashier ?
-                                  <>
-                                    <span className="pos-customer-primary" style={{ fontSize: '0.85em', color: '#666' }}>
-                                      Cashier: {order.cashier.email}
-                                    </span>
-                                  </> :
-
-                                  <span className="user-name" style={{ fontSize: '0.85em', color: '#666' }}>{tUi("ui.pages.admin.adminOrders.cashierNotRecorded_fc0dc3a12d")}</span>
-                                }
-                              </> :
-
-                              <>
-                                {order.user?.email || tUi("ui.pages.admin.adminOrders.nA_eb6526e85d")}
-                                {order.user?.first_name && order.user?.last_name &&
-                                  <span className="user-name">
-                                    {' '}({order.user.first_name} {order.user.last_name})
+                                <span className="adm-orders-customer-meta">
+                                  {order.cashier
+                                    ? `Cashier: ${order.cashier.email}`
+                                    : tUi('ui.pages.admin.adminOrders.cashierNotRecorded_fc0dc3a12d')}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="adm-orders-customer">
+                                <span className="adm-orders-customer-name">
+                                  {order.user?.email || tUi('ui.pages.admin.adminOrders.nA_eb6526e85d')}
+                                </span>
+                                {order.user?.first_name && order.user?.last_name && (
+                                  <span className="adm-orders-customer-meta">
+                                    ({order.user.first_name} {order.user.last_name})
                                   </span>
-                                }
-                              </>
-                            }
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td>
-                            {order.sale_channel === "pos" ?
-                              <span style={{ backgroundColor: '#e3f2fd', color: '#1976d2', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold', display: 'inline-block' }}>In-Store (POS)</span> :
-                              <span style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold', display: 'inline-block' }}>Online</span>
-                            }
+                            {order.sale_channel === 'pos' ? (
+                              <span className="adm-orders-channel adm-orders-channel--pos">
+                                {tUi('ui.pages.admin.adminOrders.inStorePosSale_28efdad1f0')}
+                              </span>
+                            ) : (
+                              <span className="adm-orders-channel adm-orders-channel--online">
+                                {tUi('ui.pages.admin.adminOrders.onlineChannel_8b9c0d1e2f')}
+                              </span>
+                            )}
                           </td>
                           <td>{formatDate(order.created_at)}</td>
                           <td>{order.items?.length || order.orderitems?.length || 0}</td>
-                          <td>{formatCurrency(order.total_amount)}</td>
-                          <td>
-                            <span className={`order-status status-${order.status || 'created'}`}>
+                          <td className="adm-orders-total">{formatCurrency(order.total_amount)}</td>
+                          <td className="adm-orders-col-status">
+                            <span className={`adm-orders-status adm-orders-status--${orderStatus || 'created'}`}>
                               {getOrderStatusLabel(order.status || 'created')}
                             </span>
                           </td>
-                          <td>
-                            {showIssueNotification ?
-                              <span className="issue-notification-badge">{tUi("ui.pages.admin.adminOrders.driverIssue_0d9f42cb96")}</span> :
-
-                              <span className="no-action">{tUi("ui.pages.admin.adminOrders.none_840aa967a8")}</span>
-                            }
-                          </td>
-                          <td>
-                            <div className="order-actions-cell">
-                              {getAvailableStatuses(order.status || "created").length > 0 ?
+                          <td className="adm-orders-col-actions">
+                            <div className="adm-orders-actions">
+                              {getAvailableStatuses(order.status || 'created').length > 0 ? (
                                 <select
                                   value={selectedStatus[order.id] || ''}
                                   onChange={(e) => {
@@ -377,113 +337,144 @@ const AdminOrders = () => {
                                     }
                                   }}
                                   disabled={updatingOrderId === order.id}
-                                  className="status-select">
-
-                                  <option value="">{tUi("ui.pages.admin.adminOrders.changeStatus_82cd1fa50c")}</option>
-                                  {getAvailableStatuses(order.status || "created").map((status) =>
+                                  className="adm-orders-status-select"
+                                  aria-label={tUi('ui.pages.admin.adminOrders.changeStatus_82cd1fa50c')}
+                                >
+                                  <option value="">
+                                    {tUi('ui.pages.admin.adminOrders.changeStatus_82cd1fa50c')}
+                                  </option>
+                                  {getAvailableStatuses(order.status || 'created').map((status) => (
                                     <option key={status} value={status}>
                                       {getOrderStatusLabel(status)}
                                     </option>
-                                  )}
-                                </select> :
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="adm-orders-muted">
+                                  {tUi('ui.pages.admin.adminOrders.noActions_8095e03ffa')}
+                                </span>
+                              )}
 
-                                <span className="no-action">{tUi("ui.pages.admin.adminOrders.noActions_8095e03ffa")}</span>
-                              }
-
-                              {(order.order_delivery?.issue_type || (order.order_delivery?.photos?.length || 0) > 0) &&
+                              {(order.order_delivery?.issue_type ||
+                                (order.order_delivery?.photos?.length || 0) > 0) && (
                                 <button
-                                  className="btn-view-issue"
+                                  type="button"
+                                  className="adm-orders-btn-issue"
                                   onClick={() => {
                                     setExpandedOrderTab('report');
-                                    setExpandedOrderId(expandedOrderId === order.id && expandedOrderTab === 'report' ? null : order.id);
-                                  }}>
-
-                                  {expandedOrderId === order.id && expandedOrderTab === 'report' ? tUi("ui.pages.admin.adminOrders.hideReport_ede910d752") : tUi("ui.pages.admin.adminOrders.viewReport_1b00ec094c")}
+                                    setExpandedOrderId(
+                                      isExpanded && expandedOrderTab === 'report' ? null : order.id
+                                    );
+                                  }}
+                                >
+                                  {isExpanded && expandedOrderTab === 'report'
+                                    ? tUi('ui.pages.admin.adminOrders.hideReport_ede910d752')
+                                    : tUi('ui.pages.admin.adminOrders.viewReport_1b00ec094c')}
                                 </button>
-                              }
+                              )}
 
-                              {order.order_delivery?.id &&
+                              {order.order_delivery?.id && (
                                 <button
-                                  className="btn-view-map"
+                                  type="button"
+                                  className="adm-orders-btn-map"
                                   onClick={() => {
                                     setExpandedOrderTab('map');
-                                    setExpandedOrderId(expandedOrderId === order.id && expandedOrderTab === 'map' ? null : order.id);
+                                    setExpandedOrderId(
+                                      isExpanded && expandedOrderTab === 'map' ? null : order.id
+                                    );
                                   }}
-                                  style={{ marginLeft: '8px', padding: '6px 12px', background: '#e3f2fd', color: '#1976d2', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85em', fontWeight: '500' }}>
-                                  Track Driver
+                                >
+                                  {tUi('ui.pages.admin.adminOrders.trackDriver_4d5e6f7a8b')}
                                 </button>
-                              }
+                              )}
                             </div>
                           </td>
-                        </motion.tr>);
+                        </motion.tr>
 
-                    })()}
+                        {isExpanded && (
+                          <tr className="adm-orders-expanded-row">
+                            <td colSpan={8}>
+                              <div className="adm-orders-expanded-panel">
+                                <div className="adm-orders-tabs">
+                                  <button
+                                    type="button"
+                                    className={expandedOrderTab === 'report' ? 'is-active' : ''}
+                                    onClick={() => setExpandedOrderTab('report')}
+                                  >
+                                    {tUi('ui.pages.admin.adminOrders.driverReport_1685bd9703')}
+                                  </button>
+                                  {order.order_delivery?.id && (
+                                    <button
+                                      type="button"
+                                      className={expandedOrderTab === 'map' ? 'is-active' : ''}
+                                      onClick={() => setExpandedOrderTab('map')}
+                                    >
+                                      {tUi('ui.pages.admin.adminOrders.liveTrackingMap_5e6f7a8b9c')}
+                                    </button>
+                                  )}
+                                </div>
 
-                    {expandedOrderId === order.id &&
-                      <tr className="order-expanded-row">
-                        <td colSpan="9">
-                          <div className="order-expanded-panel">
-                            <div className="expanded-tabs" style={{ display: 'flex', gap: '15px', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                              <button 
-                                onClick={() => setExpandedOrderTab('report')}
-                                style={{ background: 'none', border: 'none', padding: '5px 10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', color: expandedOrderTab === 'report' ? '#333' : '#999', borderBottom: expandedOrderTab === 'report' ? '2px solid #333' : 'none' }}>
-                                Driver Report
-                              </button>
-                              {order.order_delivery?.id &&
-                              <button 
-                                onClick={() => setExpandedOrderTab('map')}
-                                style={{ background: 'none', border: 'none', padding: '5px 10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', color: expandedOrderTab === 'map' ? '#1976d2' : '#999', borderBottom: expandedOrderTab === 'map' ? '2px solid #1976d2' : 'none' }}>
-                                Live Tracking Map
-                              </button>
-                              }
-                            </div>
-
-                            {expandedOrderTab === 'report' && (
-                              <div>
-                                {order.order_delivery?.issue_type ?
-                                  <p className="issue-report-line">
-                                    <strong>{tUi("ui.pages.admin.adminOrders.type_5479c42965")}</strong> {order.order_delivery.issue_type.replace(/_/g, ' ')}
-                                  </p> :
-
-                                  <p className="issue-report-line">{tUi("ui.pages.admin.adminOrders.noIssueTypeProvided_be64d46132")}</p>
-                                }
-
-                                {order.order_delivery?.issue_description &&
-                                  <p className="issue-report-line">
-                                    <strong>{tUi("ui.pages.admin.adminOrders.description_ddd5e10a09")}</strong> {order.order_delivery.issue_description}
-                                  </p>
-                                }
-
-                                {Array.isArray(order.order_delivery?.photos) && order.order_delivery.photos.length > 0 &&
-                                  <div className="order-issue-photo-grid">
-                                    {order.order_delivery.photos.map((photo) =>
-                                      <div className="order-issue-photo-card" key={`order-photo-${photo.id}`}>
-                                        <img src={getImageUrl(photo.image_path)} alt={tUi("ui.pages.admin.adminOrders.deliveryValue_8de82198a5", { value0: photo.photo_type })} />
-                                        <span>{photo.photo_type.replace(/_/g, ' ')}</span>
-                                      </div>
+                                {expandedOrderTab === 'report' && (
+                                  <div className="adm-orders-report">
+                                    {order.order_delivery?.issue_type ? (
+                                      <p className="adm-orders-report-line">
+                                        <strong>{tUi('ui.pages.admin.adminOrders.type_5479c42965')}</strong>{' '}
+                                        {order.order_delivery.issue_type.replace(/_/g, ' ')}
+                                      </p>
+                                    ) : (
+                                      <p className="adm-orders-report-line">
+                                        {tUi('ui.pages.admin.adminOrders.noIssueTypeProvided_be64d46132')}
+                                      </p>
                                     )}
+
+                                    {order.order_delivery?.issue_description && (
+                                      <p className="adm-orders-report-line">
+                                        <strong>
+                                          {tUi('ui.pages.admin.adminOrders.description_ddd5e10a09')}
+                                        </strong>{' '}
+                                        {order.order_delivery.issue_description}
+                                      </p>
+                                    )}
+
+                                    {Array.isArray(order.order_delivery?.photos) &&
+                                      order.order_delivery.photos.length > 0 && (
+                                        <div className="adm-orders-photo-grid">
+                                          {order.order_delivery.photos.map((photo) => (
+                                            <div className="adm-orders-photo-card" key={`order-photo-${photo.id}`}>
+                                              <img
+                                                src={getImageUrl(photo.image_path)}
+                                                alt={tUi('ui.pages.admin.adminOrders.deliveryValue_8de82198a5', {
+                                                  value0: photo.photo_type
+                                                })}
+                                              />
+                                              <span>{photo.photo_type.replace(/_/g, ' ')}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                   </div>
-                                }
-                              </div>
-                            )}
+                                )}
 
-                            {expandedOrderTab === 'map' && order.order_delivery?.id && (
-                              <div className="tracking-map-section">
-                                <OrderMapTracker deliveryJob={order.order_delivery} />
+                                {expandedOrderTab === 'map' && order.order_delivery?.id && (
+                                  <div className="adm-orders-map">
+                                    <OrderMapTracker deliveryJob={order.order_delivery} />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </React.Fragment>
-                )}
-              </tbody>
-            </table>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-      }
-    </div>);
-
+        )}
+      </section>
+    </div>
+  );
 };
 
 export default AdminOrders;

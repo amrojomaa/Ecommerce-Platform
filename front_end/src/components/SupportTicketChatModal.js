@@ -1,12 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { tUi } from '../i18n/uiText';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import { TICKET_ENDPOINTS, buildUrl } from '../config/api';
 import { buildWebSocketUrl } from '../utils/helpers';
+import { useAuth } from '../hooks/useAuth';
+import TicketUserAvatar from './TicketUserAvatar';
 import '../styles/components/ChatWidget.css';
 
-const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, userName, ticketStatus }) => {
+const normalizeStatus = (status) =>
+  String(status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+
+const sortMessages = (messages) =>
+  [...messages].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+
+const SupportTicketChatModal = ({
+  isOpen,
+  onClose,
+  ticketId,
+  currentUserId,
+  userName,
+  ticketStatus,
+}) => {
+  const { user } = useAuth();
+  const effectiveUserId = currentUserId ?? user?.id;
+
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +38,46 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
   const inputRef = useRef(null);
+  const knownIdsRef = useRef(new Set());
+
+  const getMessageUserId = (msg) => msg?.user?.id ?? msg?.user_id;
+
+  const isOwnMessage = useCallback(
+    (msg) => String(getMessageUserId(msg)) === String(effectiveUserId),
+    [effectiveUserId]
+  );
+
+  const upsertMessage = useCallback((prev, incoming) => {
+    if (!incoming?.message) return prev;
+
+    const incomingId = incoming.id != null ? String(incoming.id) : null;
+    const incomingText = incoming.message.trim();
+
+    if (incomingId && knownIdsRef.current.has(incomingId)) {
+      const existingIdx = prev.findIndex((m) => String(m.id) === incomingId);
+      if (existingIdx !== -1) {
+        const next = [...prev];
+        next[existingIdx] = { ...next[existingIdx], ...incoming };
+        return sortMessages(next);
+      }
+    }
+
+    const filtered = prev.filter((m) => {
+      if (incomingId && m.id != null && String(m.id) === incomingId) return false;
+      if (m.id == null && m.message?.trim() === incomingText) {
+        return String(m.user?.id) !== String(incoming.user?.id);
+      }
+      return true;
+    });
+
+    if (incomingId && filtered.some((m) => String(m.id) === incomingId)) {
+      return sortMessages(filtered);
+    }
+
+    if (incomingId) knownIdsRef.current.add(incomingId);
+
+    return sortMessages([...filtered, incoming]);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,20 +93,31 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
     }
   }, [isOpen]);
 
-  // Fetch initial history and connect to WebSocket
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('support-ticket-chat-open');
+    } else {
+      document.body.classList.remove('support-ticket-chat-open');
+    }
+    return () => document.body.classList.remove('support-ticket-chat-open');
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen || !ticketId) return;
 
     let isMounted = true;
+    knownIdsRef.current = new Set();
 
-    // Fetch history
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
         const response = await http.get(buildUrl(TICKET_ENDPOINTS.BY_ID, { ticket_id: ticketId }));
         if (isMounted) {
-          const chatMessages = (response.data.responses || []).filter(m => m.is_chat);
-          setMessages(chatMessages);
+          const chatMessages = (response.data.responses || []).filter((m) => m.is_chat);
+          chatMessages.forEach((m) => {
+            if (m.id != null) knownIdsRef.current.add(String(m.id));
+          });
+          setMessages(sortMessages(chatMessages));
         }
       } catch (error) {
         console.error('Error fetching ticket history:', error);
@@ -70,24 +145,16 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
-        ws.onopen = () => console.log('Ticket Chat Connected');
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (isMounted) {
-              if (!data.is_chat) return;
-              setMessages((prev) => {
-                const filtered = prev.filter(m => !(m.id === null && m.user?.id === data.user?.id && m.message === data.message));
-                if (filtered.some(m => m.id === data.id)) return filtered;
-                return [...filtered, data];
-              });
-            }
+            if (!isMounted || !data.is_chat) return;
+            setMessages((prev) => upsertMessage(prev, data));
           } catch (e) {
             console.error('Error parsing WS message', e);
           }
         };
         ws.onerror = (error) => console.error('WebSocket error:', error);
-        ws.onclose = () => console.log('Ticket Chat Disconnected');
       } catch (error) {
         console.error('Failed to connect to ticket chat WS:', error);
       }
@@ -102,7 +169,15 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
         wsRef.current = null;
       }
     };
-  }, [isOpen, ticketId]);
+  }, [isOpen, ticketId, upsertMessage]);
+
+  const getSenderLabel = (msg) => {
+    if (isOwnMessage(msg)) {
+      return tUi('ui.components.supportTicketChatModal.you_a1b2c3d4e5');
+    }
+    const name = `${msg.user?.first_name || ''} ${msg.user?.last_name || ''}`.trim();
+    return name || msg.user?.email || tUi('ui.components.supportTicketChatModal.supportAgent_b2c3d4e5f6');
+  };
 
   const sendMessage = async () => {
     const text = inputMessage.trim();
@@ -111,35 +186,32 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
     setIsSending(true);
     setInputMessage('');
 
-    // Optimistic UI
-    const optimisticMsg = {
-      id: null,
-      message: text,
-      created_at: new Date().toISOString(),
-      is_chat: true,
-      user: {
-        id: currentUserId,
-        first_name: userName.split(' ')[0],
-        last_name: userName.split(' ')[1] || '',
-        role: 'customer'
-      }
-    };
-    setMessages((prev) => [...prev, optimisticMsg]);
-
     try {
-      await http.post(
+      const response = await http.post(
         buildUrl(TICKET_ENDPOINTS.ADD_RESPONSE, { ticket_id: ticketId }),
         { message: text, is_chat: true }
       );
-      // Message will be replaced/confirmed via WebSocket broadcast
+
+      const confirmed = {
+        id: response.data.id,
+        message: response.data.message,
+        created_at: response.data.created_at,
+        is_chat: true,
+        user: response.data.user || {
+          id: effectiveUserId,
+          first_name: userName?.split(' ')[0] || user?.first_name || '',
+          last_name: userName?.split(' ').slice(1).join(' ') || user?.last_name || '',
+        },
+      };
+
+      setMessages((prev) => upsertMessage(prev, confirmed));
     } catch (error) {
       console.error('Error sending ticket message:', error);
-      // Remove optimistic message on failure
-      setMessages((prev) => prev.filter(m => m !== optimisticMsg));
       setInputMessage(text);
-      toast.error('Failed to send message');
+      toast.error(tUi('ui.components.supportTicketChatModal.sendFailed_c3d4e5f6a7'));
     } finally {
       setIsSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -150,38 +222,71 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
     }
   };
 
-  const isOwnMessage = (msg) => String(msg?.user?.id) === String(currentUserId);
+  const chatDisabled = ['resolved', 'closed'].includes(normalizeStatus(ticketStatus));
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="chat-widget active-job-chat-widget"
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          className="chat-widget support-ticket-chat-widget"
+          initial={{ opacity: 0, y: 20, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000, width: '350px', height: '500px', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-          
-          <div className="chat-header" style={{ padding: '15px', background: '#4f46e5', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem' }}>Support Chat</h3>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+          exit={{ opacity: 0, y: 20, scale: 0.96 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="chat-header">
+            <div className="chat-header-content">
+              <h3>{tUi('ui.components.supportTicketChatModal.title_d4e5f6a7b8')}</h3>
+              <div className="chat-header-actions">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="chat-close-button"
+                  aria-label={tUi('ui.components.supportTicketChatModal.close_e5f6a7b8c9')}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="chat-messages" style={{ flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {isLoading ? (
-              <div style={{ textAlign: 'center', color: '#666' }}>Loading messages...</div>
+          <div className="chat-messages">
+            {isLoading && messages.length === 0 ? (
+              <div className="support-ticket-chat-placeholder">
+                {tUi('ui.components.supportTicketChatModal.loading_f6a7b8c9d0')}
+              </div>
             ) : messages.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>No messages yet.</div>
+              <div className="support-ticket-chat-placeholder">
+                {tUi('ui.components.supportTicketChatModal.empty_a7b8c9d0e1')}
+              </div>
             ) : (
-              messages.map((msg, index) => {
+              messages.map((msg) => {
                 const isMe = isOwnMessage(msg);
-                return (
-                  <div key={msg.id || index} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#666', marginBottom: '2px', textAlign: isMe ? 'right' : 'left' }}>
-                      {isMe ? 'You' : `${msg.user.first_name} ${msg.user.last_name}`}
+                if (isMe) {
+                  return (
+                    <div
+                      key={msg.id != null ? `msg-${msg.id}` : `pending-${msg.created_at}-${msg.message}`}
+                      className="chat-message user-message"
+                    >
+                      <div className="support-ticket-chat-sender">
+                        {tUi('ui.components.supportTicketChatModal.you_a1b2c3d4e5')}
+                      </div>
+                      <div className="message-content">{msg.message}</div>
                     </div>
-                    <div style={{ background: isMe ? '#4f46e5' : '#f3f4f6', color: isMe ? '#fff' : '#1f2937', padding: '8px 12px', borderRadius: '12px', borderBottomRightRadius: isMe ? '2px' : '12px', borderBottomLeftRadius: isMe ? '12px' : '2px', fontSize: '0.9rem' }}>
-                      {msg.message}
+                  );
+                }
+
+                return (
+                  <div
+                    key={msg.id != null ? `msg-${msg.id}` : `pending-${msg.created_at}-${msg.message}`}
+                    className="chat-message assistant-message"
+                  >
+                    <div className="support-ticket-chat-other-row">
+                      <TicketUserAvatar user={msg.user} size={34} />
+                      <div className="support-ticket-chat-other-body">
+                        <div className="support-ticket-chat-sender">{getSenderLabel(msg)}</div>
+                        <div className="message-content">{msg.message}</div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -190,30 +295,35 @@ const SupportTicketChatModal = ({ isOpen, onClose, ticketId, currentUserId, user
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="chat-input-container" style={{ padding: '15px', borderTop: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {ticketStatus === 'Resolved' || ticketStatus === 'Closed' ? (
-              <div style={{ padding: '10px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'center' }}>
-                Chat is disabled because this ticket is {ticketStatus}.
+          <div className="chat-input-container">
+            {chatDisabled ? (
+              <div className="support-ticket-chat-disabled">
+                {tUi('ui.components.supportTicketChatModal.disabled_b8c9d0e1f2', {
+                  status: ticketStatus,
+                })}
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <>
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Type a message..."
+                  className="chat-input"
+                  placeholder={tUi('ui.components.supportTicketChatModal.placeholder_c9d0e1f2a3')}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={isSending}
-                  style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid #d1d5db', outline: 'none' }}
                 />
                 <button
+                  type="button"
+                  className="chat-send-button"
                   onClick={sendMessage}
                   disabled={!inputMessage.trim() || isSending}
-                  style={{ background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}>
-                  ➤
+                  aria-label={tUi('ui.components.supportTicketChatModal.send_d0e1f2a3b4')}
+                >
+                  {isSending ? '⏳' : '➤'}
                 </button>
-              </div>
+              </>
             )}
           </div>
         </motion.div>

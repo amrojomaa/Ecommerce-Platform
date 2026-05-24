@@ -1,0 +1,80 @@
+/* Admin Manage Products — top shell only (product cards unchanged) */
+
+.adm-products-page {
+  gap: 1.5rem;
+}
+
+.adm-products-page.adm-page,
+.admin-page-shell.adm-products-page {
+  gap: 1.5rem;
+}
+
+.adm-products-page .page-header {
+  padding-bottom: 0;
+  scroll-margin-top: 5rem;
+}
+
+.adm-products-page .page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.adm-products-page .page-header-actions .adm-btn-secondary,
+.adm-products-page .page-header-actions .adm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.adm-products-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.adm-products-search-wrap {
+  flex: 1 1 280px;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+.adm-products-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-inline-start: auto;
+  flex: 0 1 auto;
+}
+
+.adm-products-banner {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .adm-products-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adm-products-search-wrap .products-search-inline {
+    width: 100%;
+    max-width: none;
+  }
+
+  .adm-products-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adm-products-page .page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

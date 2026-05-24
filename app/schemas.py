@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from datetime import datetime
 from typing import List, Optional, Union, Literal, Any, Dict
 from enum import Enum
@@ -9,12 +9,50 @@ import re
 class UserRole(str, Enum):
     ADMIN = "admin"
     SUPPORT_MANAGER = "support_manager"
+    SUPPORT_AGENT = "support_agent"
     OPERATIONS_MANAGER = "operations_manager"
     WAREHOUSE_MANAGER = "warehouse_manager"
+    SELLER = "seller"
+    WAREHOUSE_STAFF = "warehouse_staff"
     EMPLOYEE = "employee"
     CUSTOMER = "customer"
     DRIVER = "driver"
     CASHIER = "cashier"
+    WALKIN = "walkin"
+
+
+ASSIGNABLE_USER_ROLES = {
+    UserRole.ADMIN.value,
+    UserRole.SUPPORT_MANAGER.value,
+    UserRole.SUPPORT_AGENT.value,
+    UserRole.OPERATIONS_MANAGER.value,
+    UserRole.WAREHOUSE_MANAGER.value,
+    UserRole.SELLER.value,
+    UserRole.WAREHOUSE_STAFF.value,
+    UserRole.EMPLOYEE.value,
+    UserRole.CUSTOMER.value,
+    UserRole.DRIVER.value,
+    UserRole.CASHIER.value,
+}
+
+ALL_USER_ROLES = ASSIGNABLE_USER_ROLES | {UserRole.WALKIN.value}
+
+ROLE_VALIDATION_MESSAGE = (
+    "Role must be one of: admin, support_manager, support_agent, operations_manager, "
+    "warehouse_manager, seller, warehouse_staff, employee, customer, driver, cashier"
+)
+
+
+def validate_assignable_user_role(value: str) -> str:
+    if value not in ASSIGNABLE_USER_ROLES:
+        raise ValueError(ROLE_VALIDATION_MESSAGE)
+    return value
+
+
+def validate_stored_user_role(value: str) -> str:
+    if value not in ALL_USER_ROLES:
+        raise ValueError(ROLE_VALIDATION_MESSAGE + ", walkin")
+    return value
 
 
 PASSWORD_MIN_LENGTH = 9  # More than 8 characters
@@ -213,6 +251,8 @@ class ProductBase(BaseModel):
     category_name_ar: Optional[str] = None
     category_name_fr: Optional[str] = None
     images: Optional[List[str]] = []
+    average_rating: float = 0.0
+    total_ratings: int = 0
 
     class Config:
         orm_mode = True
@@ -271,21 +311,22 @@ class UserBase(BaseModel):
     street: Optional[str] = None
     profile_image: Optional[str] = None
     role: Optional[str] = "customer"  # Default role for new users
-    
+
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None:
+            return validate_assignable_user_role(v)
         return v
 
     @field_validator('password')
     @classmethod
     def validate_password_strength(cls, v):
         return validate_strong_password(v)
-    
+
     class Config:
         orm_mode = True
+
 
 class UserUpdate(BaseModel):
     email: EmailStr
@@ -298,12 +339,12 @@ class UserUpdate(BaseModel):
     street: Optional[str] = None
     profile_image: Optional[str] = None
     role: Optional[str] = None  # Role can be updated by admin
-    
+
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v is not None and v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
+        if v is not None:
+            return validate_assignable_user_role(v)
         return v
 
     @field_validator('password')
@@ -312,9 +353,10 @@ class UserUpdate(BaseModel):
         if v is None or v == "":
             return None
         return validate_strong_password(v)
-    
+
     class Config:
         orm_mode = True
+
 
 class User(BaseModel):
     id: int
@@ -326,17 +368,15 @@ class User(BaseModel):
     city: Optional[str] = None
     street: Optional[str] = None
     profile_image: Optional[str] = None
-    role: str  # admin, employee, or customer
+    role: str
     is_verified: bool
     is_blocked: bool = False
     created_at: datetime
-    
+
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
-        return v
+        return validate_stored_user_role(v)
 
     class Config:
         orm_mode = True
@@ -651,13 +691,11 @@ class ResetPassword(BaseModel):
 
 class UserRoleUpdate(BaseModel):
     role: str
-    
+
     @field_validator('role')
     @classmethod
     def validate_role(cls, v):
-        if v not in ["admin", "support_manager", "operations_manager", "warehouse_manager", "employee", "customer", "driver", "cashier"]:
-            raise ValueError('Role must be one of: admin, support_manager, operations_manager, warehouse_manager, employee, customer, driver, cashier')
-        return v
+        return validate_assignable_user_role(v)
 
 
 class UserBlockUpdate(BaseModel):
@@ -779,12 +817,18 @@ class TicketCreate(BaseModel):
     description: str
 
 
+class TicketUpdate(BaseModel):
+    title: str
+    description: str
+
+
 class TicketResponseUser(BaseModel):
     id: int
     first_name: str
     last_name: str
     email: str
-    
+    profile_image: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -793,8 +837,9 @@ class TicketResponseMessage(BaseModel):
     id: int
     message: str
     created_at: datetime
+    is_chat: bool = False
     user: TicketResponseUser
-    
+
     class Config:
         from_attributes = True
 
@@ -831,13 +876,14 @@ class TicketStatusUpdate(BaseModel):
     @field_validator('status')
     @classmethod
     def validate_status(cls, v):
-        if v not in ["In Progress", "Resolved", "Closed"]:
-            raise ValueError('Status must be one of: In Progress, Resolved, Closed')
+        if v not in ["Open", "In Progress", "Resolved", "Closed"]:
+            raise ValueError('Status must be one of: Open, In Progress, Resolved, Closed')
         return v
 
 
 class TicketResponseCreate(BaseModel):
     message: str
+    is_chat: bool = False
 
 
 # Comment Schemas
@@ -944,6 +990,7 @@ class CustomerFeedbackUser(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    profile_image: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -953,6 +1000,7 @@ class CustomerFeedbackDisplay(BaseModel):
     id: int
     rating: int
     comment: Optional[str] = None
+    sentiment: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     user: CustomerFeedbackUser

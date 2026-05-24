@@ -22,7 +22,7 @@ const SupportManagerTickets = () => {
   const [assigningTo, setAssigningTo] = useState('');
   const [responseMsg, setResponseMsg] = useState('');
   const [activeChatTicketId, setActiveChatTicketId] = useState(null);
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchData();
@@ -289,12 +289,13 @@ const SupportManagerTickets = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <SupportTicketChatModal 
+      <SupportTicketChatModal
         isOpen={!!activeChatTicketId}
         onClose={() => setActiveChatTicketId(null)}
         ticketId={activeChatTicketId}
         currentUserId={currentUser?.id}
         userName={currentUser ? `${currentUser.first_name} ${currentUser.last_name}` : ''}
+        currentUserProfileImage={currentUser?.profile_image}
       />
     </div>
   );

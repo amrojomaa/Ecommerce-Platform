@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaArrowTrendUp,
@@ -23,9 +24,13 @@ import API_BASE_URL, {
   buildUrl
 } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import PageHeader from '../../components/PageHeader';
 import { ProductCardSkeleton } from '../../components/Skeleton';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useCurrency } from '../../hooks/useCurrency';
+import '../../styles/pages/admin/AdminPanel.css';
+import '../../styles/pages/admin/AdminProductsPage.css';
+import '../../styles/pages/admin/AdminProductsModal.css';
 import '../../styles/pages/admin/AdminProducts.css';
 
 const DEFAULT_ANALYTICS = {
@@ -36,6 +41,7 @@ const DEFAULT_ANALYTICS = {
 };
 
 const AdminProducts = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -460,95 +466,94 @@ const AdminProducts = () => {
   const discountedCount = allProducts.filter((product) => product.discount_enabled).length;
   const isAnyQuickFilterActive = isLowStockFilter || quickFilters.lowstock || quickFilters.discounted;
   const isLowStockActive = isLowStockFilter || quickFilters.lowstock;
+  const panelKicker = location.pathname.startsWith('/warehouse')
+    ? t('ui.sidebar.panel.warehouse')
+    : t('ui.sidebar.panel.admin');
 
   return (
-    <div className="admin-products admin-products-shell">
-      <section className="admin-products-hero">
-        <div className="admin-products-hero-main">
-          <div className="admin-products-hero-top">
-            <div className="admin-products-hero-copy">
-              <span className="admin-products-eyebrow">Catalog control center</span>
-              <h1>{tUi('ui.pages.admin.adminProducts.manageProducts_273cb9a998')}</h1>
-              <p className="admin-products-subtitle">
-                Track inventory, update details, and manage your catalog faster.
-              </p>
-            </div>
+    <div className="admin-products admin-products-shell admin-page-shell adm-page adm-products-page">
+      <PageHeader
+        kicker={panelKicker}
+        title={tUi('ui.pages.admin.adminProducts.manageProducts_273cb9a998')}
+        subtitle={tUi('ui.pages.admin.adminProducts.trackInventoryUpdateDetailsAnd_86a8fb17ed')}
+        actions={
+          <>
+            <button type="button" className="adm-btn-secondary" onClick={handleExportCsv}>
+              <FaDownload aria-hidden />
+              <span>Export CSV</span>
+            </button>
+            <motion.button
+              type="button"
+              className="adm-btn-primary"
+              onClick={() => {
+                resetForm();
+                setShowModal(true);
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FaPlus aria-hidden />
+              <span>{tUi('ui.pages.admin.adminProducts.addProduct_2792a039d2').replace('+ ', '')}</span>
+            </motion.button>
+          </>
+        }
+      />
 
-            <div className="admin-products-hero-actions">
-              <button type="button" className="products-ghost-button" onClick={handleExportCsv}>
-                <FaDownload />
-                <span>Export CSV</span>
+      <div className="adm-products-toolbar">
+        <div className="adm-products-search-wrap">
+          <div className="products-search products-search-panel products-search-inline">
+            <FaMagnifyingGlass className="products-search-icon" aria-hidden />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={tUi('ui.pages.admin.adminProducts.searchByProductOrCategory_61793e3378')}
+              aria-label={tUi('ui.pages.admin.adminProducts.searchProducts_ab5d94763a')}
+            />
+            {searchQuery ? (
+              <button type="button" className="clear-search-btn clear-search-inline" onClick={clearSearch}>
+                {tUi('ui.pages.admin.adminProducts.clear_049e273c52')}
               </button>
-              <motion.button
-                type="button"
-                className="add-product-btn add-product-btn-hero"
-                onClick={() => {
-                  resetForm();
-                  setShowModal(true);
-                }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}>
-                <FaPlus />
-                <span>{tUi('ui.pages.admin.adminProducts.addProduct_2792a039d2').replace('+ ', '')}</span>
-              </motion.button>
-            </div>
+            ) : null}
           </div>
-
-          <div className="admin-products-hero-bottom">
-            <div className="products-overview products-overview-panel products-overview-inline">
-              <button
-                type="button"
-                className={`overview-item overview-pill ${!isAnyQuickFilterActive ? 'active' : ''}`}
-                onClick={clearQuickFilters}>
-                <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.total_e2ad894d2e')}</span>
-                <span className="overview-pill-value">{totalProducts}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`overview-item overview-pill overview-pill-warn ${isLowStockActive ? 'active' : ''}`}
-                onClick={() => handleQuickFilterClick('lowstock')}>
-                <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.lowStock_4da96beeec')}</span>
-                <span className="overview-pill-value">{lowStockCount}</span>
-              </button>
-
-              <button
-                type="button"
-                className={`overview-item overview-pill overview-pill-sale ${quickFilters.discounted ? 'active' : ''}`}
-                onClick={() => handleQuickFilterClick('discounted')}>
-                <span className="overview-pill-dot" />
-                <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.discounted_0b5fed5eb6')}</span>
-                <span className="overview-pill-value">{discountedCount}</span>
-              </button>
-            </div>
-
-            <div className="products-toolbar products-toolbar-panel products-toolbar-inline">
-              <div className="products-search products-search-panel products-search-inline">
-                <FaMagnifyingGlass className="products-search-icon" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={tUi('ui.pages.admin.adminProducts.searchByProductOrCategory_61793e3378')}
-                  aria-label={tUi('ui.pages.admin.adminProducts.searchProducts_ab5d94763a')}
-                />
-                {searchQuery ? (
-                  <button type="button" className="clear-search-btn clear-search-inline" onClick={clearSearch}>
-                    {tUi('ui.pages.admin.adminProducts.clear_049e273c52')}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          {isLowStockFilter ? (
-            <p className="low-stock-banner admin-products-hero-banner">
-              {tUi('ui.pages.admin.adminProducts.showingLowStockItemsQuantity_52b64ac8b5')} {'<'}{' '}
-              {lowStockThreshold})
-            </p>
-          ) : null}
         </div>
-      </section>
+
+        <div className="adm-products-filters">
+          <button
+            type="button"
+            className={`overview-item overview-pill ${!isAnyQuickFilterActive ? 'active' : ''}`}
+            onClick={clearQuickFilters}
+          >
+            <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.total_e2ad894d2e')}</span>
+            <span className="overview-pill-value">{totalProducts}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`overview-item overview-pill overview-pill-warn ${isLowStockActive ? 'active' : ''}`}
+            onClick={() => handleQuickFilterClick('lowstock')}
+          >
+            <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.lowStock_4da96beeec')}</span>
+            <span className="overview-pill-value">{lowStockCount}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`overview-item overview-pill overview-pill-sale ${quickFilters.discounted ? 'active' : ''}`}
+            onClick={() => handleQuickFilterClick('discounted')}
+          >
+            <span className="overview-pill-dot" />
+            <span className="overview-pill-label">{tUi('ui.pages.admin.adminProducts.discounted_0b5fed5eb6')}</span>
+            <span className="overview-pill-value">{discountedCount}</span>
+          </button>
+        </div>
+      </div>
+
+      {isLowStockFilter ? (
+        <p className="low-stock-banner adm-products-banner">
+          {tUi('ui.pages.admin.adminProducts.showingLowStockItemsQuantity_52b64ac8b5')} {'<'} {lowStockThreshold})
+        </p>
+      ) : null}
 
       {loading ? (
         <div className="products-grid products-grid-dashboard">
@@ -600,9 +605,7 @@ const AdminProducts = () => {
                     <span className="product-category-badge">{product.category_name}</span>
                     {product.discount_enabled ? (
                       <span className="product-sale-badge">
-                        {product.discount_type === 'percentage'
-                          ? `-${Math.round(product.discount_value || 0)}%`
-                          : tUi('ui.pages.admin.adminProducts.discount_e4537e1136')}
+                        {tUi('ui.pages.admin.adminProducts.discount_e4537e1136')}
                       </span>
                     ) : null}
                   </div>
@@ -730,53 +733,68 @@ const AdminProducts = () => {
       <AnimatePresence>
         {showModal ? (
           <motion.div
-            className="modal-overlay"
+            className="admin-modal-overlay adm-product-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={resetForm}>
+            onClick={resetForm}
+          >
             <motion.div
-              className="modal-content"
-              initial={{ scale: 0.94, opacity: 0 }}
+              className="adm-product-modal admin-modal"
+              initial={{ scale: 0.96, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.94, opacity: 0 }}
-              onClick={(event) => event.stopPropagation()}>
-              <div className="modal-header">
+              exit={{ scale: 0.96, opacity: 0 }}
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-labelledby="adm-product-modal-title"
+            >
+              <header className="adm-product-modal-header">
                 <div>
-                  <span className="modal-eyebrow">{editingProduct ? 'Catalog update' : 'New catalog item'}</span>
-                  <h2>
+                  <span className="page-kicker">{panelKicker}</span>
+                  <h2 id="adm-product-modal-title">
                     {editingProduct
                       ? tUi('ui.pages.admin.adminProducts.editProduct_e63de796e6')
                       : tUi('ui.pages.admin.adminProducts.addNewProduct_109f983c59')}
                   </h2>
+                  <p className="adm-product-modal-subtitle">
+                    {editingProduct
+                      ? t('ui.pages.admin.adminProducts.modal.editSubtitle')
+                      : t('ui.pages.admin.adminProducts.modal.addSubtitle')}
+                  </p>
                 </div>
-                <button type="button" className="modal-close-button" onClick={resetForm}>
-                  <FaXmark />
+                <button
+                  type="button"
+                  className="adm-product-modal-close"
+                  onClick={resetForm}
+                  aria-label={tUi('ui.pages.admin.adminProducts.cancel_bf8eef7581')}
+                >
+                  <FaXmark aria-hidden />
                 </button>
-              </div>
+              </header>
 
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>{tUi('ui.pages.admin.adminProducts.productName_f2fbd60c6e')}</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
-                </div>
-
-                <div className="form-grid-triple">
-                  <div className="form-group">
-                    <label>Product Name (Arabic)</label>
-                    <input type="text" name="name_ar" value={formData.name_ar} onChange={handleInputChange} />
+              <form className="adm-product-modal-form" onSubmit={handleSubmit}>
+                <section className="adm-product-modal-section">
+                  <h3>{t('ui.pages.admin.adminProducts.modal.section.details')}</h3>
+                  <div className="adm-product-field">
+                    <label htmlFor="adm-product-name">{tUi('ui.pages.admin.adminProducts.productName_f2fbd60c6e')}</label>
+                    <input
+                      id="adm-product-name"
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
-                  <div className="form-group">
-                    <label>Product Name (French)</label>
-                    <input type="text" name="name_fr" value={formData.name_fr} onChange={handleInputChange} />
-                  </div>
-                  <div className="form-group form-group-highlight">
-                    <label>{tUi('ui.pages.admin.adminProducts.categoryName_d2ea6c7aa6')}</label>
+                  <div className="adm-product-field">
+                    <label htmlFor="adm-product-category">{tUi('ui.pages.admin.adminProducts.categoryName_d2ea6c7aa6')}</label>
                     <select
+                      id="adm-product-category"
                       name="category_name"
                       value={formData.category_name}
                       onChange={handleInputChange}
-                      required>
+                      required
+                    >
                       <option value="">{tUi('ui.pages.admin.adminProducts.selectACategory_bb39da5ab8')}</option>
                       {categories.map((category) => (
                         <option key={category.name} value={category.name}>
@@ -785,152 +803,149 @@ const AdminProducts = () => {
                       ))}
                     </select>
                   </div>
-                </div>
-
-                <div className="form-group">
-                  <label>{tUi('ui.pages.admin.adminProducts.description_92d5f9f27a')}</label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    required
-                    rows="4"
-                  />
-                </div>
-
-                <div className="form-grid-double">
-                  <div className="form-group">
-                    <label>Description (Arabic)</label>
-                    <textarea name="description_ar" value={formData.description_ar} onChange={handleInputChange} rows="3" />
-                  </div>
-                  <div className="form-group">
-                    <label>Description (French)</label>
-                    <textarea name="description_fr" value={formData.description_fr} onChange={handleInputChange} rows="3" />
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>{tUi('ui.pages.admin.adminProducts.price_e83d5427d6')}</label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
+                  <div className="adm-product-field">
+                    <label htmlFor="adm-product-description">{tUi('ui.pages.admin.adminProducts.description_92d5f9f27a')}</label>
+                    <textarea
+                      id="adm-product-description"
+                      name="description"
+                      value={formData.description}
                       onChange={handleInputChange}
-                      step="0.01"
-                      min="0"
                       required
+                      rows="4"
                     />
                   </div>
+                </section>
 
-                  <div className="form-group">
-                    <label>{tUi('ui.pages.admin.adminProducts.quantity_05a793b136')}</label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleInputChange}
-                      min="0"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group upload-panel">
-                  <label>{tUi('ui.pages.admin.adminProducts.productImages13Images_b802fc6b5e')}</label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading || images.length >= 3}
-                  />
-
-                  <small className="image-hint">
-                    {images.length === 0 && tUi('ui.pages.admin.adminProducts.atLeast1ImageIs_5c02b8c404')}
-                    {images.length > 0 &&
-                      tUi('ui.pages.admin.adminProducts.value3ImagesSelected_586058179b', { value0: images.length })}
-                    {' '}
-                    {images.length < 3 && tUi('ui.pages.admin.adminProducts.youCanAddMoreImages_60be49e0df')}
-                    {images.length >= 3 && tUi('ui.pages.admin.adminProducts.maximum3ImagesReached_b22426d304')}
-                  </small>
-
-                  {uploading ? <LoadingSpinner size="small" /> : null}
-
-                  {images.length > 0 ? (
-                    <div className="uploaded-images">
-                      {images.map((img, index) => (
-                        <div key={img || index} className="image-tag">
-                          <img
-                            src={getImagePreviewUrl(img)}
-                            alt={tUi('ui.pages.admin.adminProducts.productValue_68027a6752', { value0: index + 1 })}
-                            className="image-preview-thumb"
-                          />
-                          <span>{img.split('/').pop()}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(index)}
-                            className="remove-image-btn"
-                            title={tUi('ui.pages.admin.adminProducts.removeImage_f5462c1134')}>
-                            <FaXmark />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                {!editingProduct ? (
-                  <div className="form-group discount-settings">
-                    <label className="discount-toggle">
+                <section className="adm-product-modal-section">
+                  <h3>{t('ui.pages.admin.adminProducts.modal.section.localization')}</h3>
+                  <div className="adm-product-modal-grid adm-product-modal-grid--2">
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-name-ar">{t('ui.pages.admin.adminProducts.nameArabic')}</label>
                       <input
-                        type="checkbox"
-                        name="discount_enabled"
-                        checked={formData.discount_enabled}
+                        id="adm-product-name-ar"
+                        type="text"
+                        name="name_ar"
+                        value={formData.name_ar}
                         onChange={handleInputChange}
                       />
-                      {tUi('ui.pages.admin.adminProducts.enableDiscount_6f1ae41f4b')}
-                    </label>
-
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>{tUi('ui.pages.admin.adminProducts.discountType_290629062f')}</label>
-                        <select
-                          name="discount_type"
-                          value={formData.discount_type}
-                          onChange={handleInputChange}
-                          disabled={!formData.discount_enabled}>
-                          <option value="percentage">{tUi('ui.pages.admin.adminProducts.percentage_a8cb8ffe45')}</option>
-                          <option value="fixed">{tUi('ui.pages.admin.adminProducts.fixedAmount_3189e1492d')}</option>
-                        </select>
-                      </div>
-
-                      <div className="form-group">
-                        <label>
-                          {tUi('ui.pages.admin.adminProducts.discountValue_e3feb63e4a')}
-                          {formData.discount_type === 'percentage'
-                            ? ' (%)'
-                            : ` ${tUi('ui.pages.admin.adminProducts.amount_877f16267e')}`}
-                        </label>
-                        <input
-                          type="number"
-                          name="discount_value"
-                          value={formData.discount_value}
-                          onChange={handleInputChange}
-                          min="0"
-                          step="0.01"
-                          disabled={!formData.discount_enabled}
-                        />
-                      </div>
+                    </div>
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-name-fr">{t('ui.pages.admin.adminProducts.nameFrench')}</label>
+                      <input
+                        id="adm-product-name-fr"
+                        type="text"
+                        name="name_fr"
+                        value={formData.name_fr}
+                        onChange={handleInputChange}
+                      />
                     </div>
                   </div>
-                ) : null}
+                  <div className="adm-product-modal-grid adm-product-modal-grid--2">
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-desc-ar">{t('ui.pages.admin.adminProducts.descriptionArabic')}</label>
+                      <textarea
+                        id="adm-product-desc-ar"
+                        name="description_ar"
+                        value={formData.description_ar}
+                        onChange={handleInputChange}
+                        rows="3"
+                      />
+                    </div>
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-desc-fr">{t('ui.pages.admin.adminProducts.descriptionFrench')}</label>
+                      <textarea
+                        id="adm-product-desc-fr"
+                        name="description_fr"
+                        value={formData.description_fr}
+                        onChange={handleInputChange}
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </section>
 
-                <div className="modal-actions">
-                  <button type="button" onClick={resetForm} className="cancel-btn">
+                <section className="adm-product-modal-section">
+                  <h3>{t('ui.pages.admin.adminProducts.modal.section.pricing')}</h3>
+                  <div className="adm-product-modal-grid adm-product-modal-grid--2">
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-price">{tUi('ui.pages.admin.adminProducts.price_e83d5427d6')}</label>
+                      <input
+                        id="adm-product-price"
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div className="adm-product-field">
+                      <label htmlFor="adm-product-quantity">{tUi('ui.pages.admin.adminProducts.quantity_05a793b136')}</label>
+                      <input
+                        id="adm-product-quantity"
+                        type="number"
+                        name="quantity"
+                        value={formData.quantity}
+                        onChange={handleInputChange}
+                        min="0"
+                        required
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="adm-product-modal-section">
+                  <h3>{t('ui.pages.admin.adminProducts.modal.section.images')}</h3>
+                  <div className="adm-product-upload">
+                    <label htmlFor="adm-product-images">{tUi('ui.pages.admin.adminProducts.productImages13Images_b802fc6b5e')}</label>
+                    <input
+                      id="adm-product-images"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading || images.length >= 3}
+                    />
+                    <small className="adm-product-upload-hint">
+                      {images.length === 0 && tUi('ui.pages.admin.adminProducts.atLeast1ImageIs_5c02b8c404')}
+                      {images.length > 0 &&
+                        tUi('ui.pages.admin.adminProducts.value3ImagesSelected_586058179b', { value0: images.length })}
+                      {' '}
+                      {images.length < 3 && tUi('ui.pages.admin.adminProducts.youCanAddMoreImages_60be49e0df')}
+                      {images.length >= 3 && tUi('ui.pages.admin.adminProducts.maximum3ImagesReached_b22426d304')}
+                    </small>
+                    {uploading ? <LoadingSpinner size="small" /> : null}
+                    {images.length > 0 ? (
+                      <div className="adm-product-images">
+                        {images.map((img, index) => (
+                          <div key={img || index} className="adm-product-image-tag">
+                            <img
+                              src={getImagePreviewUrl(img)}
+                              alt={tUi('ui.pages.admin.adminProducts.productValue_68027a6752', { value0: index + 1 })}
+                              className="adm-product-image-thumb"
+                            />
+                            <span className="adm-product-image-name">{img.split('/').pop()}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="adm-product-image-remove"
+                              title={tUi('ui.pages.admin.adminProducts.removeImage_f5462c1134')}
+                            >
+                              <FaXmark aria-hidden />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+
+                <div className="adm-product-modal-actions">
+                  <button type="button" className="adm-btn-secondary" onClick={resetForm}>
                     {tUi('ui.pages.admin.adminProducts.cancel_bf8eef7581')}
                   </button>
-                  <button type="submit" className="save-btn">
+                  <button type="submit" className="adm-btn-primary">
                     {editingProduct
                       ? tUi('ui.pages.admin.adminProducts.update_45dc0cf26a')
                       : tUi('ui.pages.admin.adminProducts.create_a62a4e5374')}

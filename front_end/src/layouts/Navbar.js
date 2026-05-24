@@ -10,6 +10,7 @@ import '../styles/layouts/Navbar.css';
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
 import API_BASE_URL from '../config/api';
+import { DEFAULT_PROFILE_IMAGE, resolveProfileImageUrl } from '../utils/helpers';
 import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -36,7 +37,7 @@ const Navbar = () => {
   const isSupportManagerArea = location.pathname.startsWith('/support') && !location.pathname.startsWith('/support-agent');
   const isSellerArea = location.pathname.startsWith('/seller');
   const isWarehouseStaffArea = location.pathname.startsWith('/warehouse-staff');
-  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse-manager');
+  const isWarehouseManagerArea = location.pathname.startsWith('/warehouse') && !location.pathname.startsWith('/warehouse-staff');
   const isUserRestrictedByRole = user && (user.role === 'seller' || user.role === 'warehouse_staff' || user.role === 'warehouse_manager' || user.role === 'cashier' || user.role === 'driver' || user.role === 'support_agent' || user.role === 'support_manager');
   const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
 
@@ -52,8 +53,11 @@ const Navbar = () => {
   const isRealAdmin = user?.role === 'admin';
   const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
   const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
+  const adminNavDashboardLabel = isOperationsManager
+    ? t('navbar.operationsManager')
+    : t('ui.pages.admin.adminDashboard.adminDashboard_16654f6473');
   const supportPanelPath = '/support';
-  const warehousePanelPath = '/warehouse/products';
+  const warehouseManagerHomePath = '/warehouse';
   const adminHomePath = '/admin';
   const driverHomePath = '/driver';
   const cashierHomePath = '/cashier';
@@ -68,11 +72,34 @@ const Navbar = () => {
     if (user.role === 'cashier') return cashierHomePath;
     if (user.role === 'support_agent') return supportAgentHomePath;
     if (user.role === 'support_manager') return supportManagerHomePath;
-    if (user.role === 'warehouse_manager') return '/warehouse';
+    if (user.role === 'warehouse_manager') return warehouseManagerHomePath;
     if (user.role === 'seller') return sellerHomePath;
     if (user.role === 'warehouse_staff') return '/warehouse-staff';
     return '/';
   };
+
+  const getProfilePath = () => {
+    const path = location.pathname;
+    if (path.startsWith('/admin')) return '/admin/profile';
+    if (path.startsWith('/support-agent')) return '/support-agent/profile';
+    if (path.startsWith('/support')) return '/support/profile';
+    if (path.startsWith('/warehouse-staff')) return '/warehouse-staff/profile';
+    if (path.startsWith('/warehouse')) return '/warehouse/profile';
+    if (path.startsWith('/driver')) return '/driver/profile';
+    if (path.startsWith('/cashier')) return '/cashier/profile';
+    if (path.startsWith('/seller')) return '/seller/profile';
+    if (user?.role === 'admin' || user?.role === 'operations_manager') return '/admin/profile';
+    if (user?.role === 'support_manager') return '/support/profile';
+    if (user?.role === 'support_agent') return '/support-agent/profile';
+    if (user?.role === 'warehouse_manager') return '/warehouse/profile';
+    if (user?.role === 'warehouse_staff') return '/warehouse-staff/profile';
+    if (user?.role === 'driver') return '/driver/profile';
+    if (user?.role === 'cashier') return '/cashier/profile';
+    if (user?.role === 'seller') return '/seller/profile';
+    return '/profile';
+  };
+
+  const profilePath = getProfilePath();
 
   const handleLogoClick = (event) => {
     const logoPath = isRestrictedArea ? getDashboardHomePath() : '/';
@@ -125,63 +152,28 @@ const Navbar = () => {
     return isWarehouseManager && typeof isWarehouseManager === 'function' ? isWarehouseManager() : false;
   };
 
-  // Default profile image (same as Profile page)
-  const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
+  const getProfileImageUrl = () =>
+    resolveProfileImageUrl(user?.profile_image, {
+      apiBaseUrl: API_BASE_URL,
+      defaultImage: DEFAULT_PROFILE_IMAGE,
+    });
 
-  const getProfileImageUrl = () => {
-    // Return default if no user
-    if (!user) {
-      return defaultProfileImage;
-    }
-
-    // Check if profile_image exists and is not empty/null
-    const profileImage = user.profile_image;
-
-    if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
-      return defaultProfileImage;
-    }
-
-    // Check if it's already a full URL (e.g., Google profile image)
-    // Handle both http:// and https:// URLs
-    if (typeof profileImage === 'string' && (profileImage.startsWith('http://') || profileImage.startsWith('https://'))) {
-      // For Google images, ensure we use the correct format
-      // Google URLs sometimes need to be modified to work properly
-      let imageUrl = profileImage;
-
-      // If it's a Googleusercontent URL, make sure it's accessible
-      if (imageUrl.includes('googleusercontent.com')) {
-
-
-
-
-
-
-
-
-
-
-
-
-        // Remove any size restrictions that might cause issues (=s96-c)
-        // Or keep them if they work - Google images should work as-is
-        // The URL format is usually fine, but we can modify if needed
-      }return imageUrl;} // Normalize path - remove leading slash if present to avoid double slashes
-    const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage; // Construct full URL for uploaded images
-    const imageUrl = `${API_BASE_URL}/${normalizedPath}`;return imageUrl;}; // Close dropdown when clicking outside
-  useEffect(() => {const handleClickOutside = (event) => {
-        if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
-          setProfileDropdownOpen(false);
-        }
-      };
-
-      if (profileDropdownOpen) {
-        document.addEventListener('mousedown', handleClickOutside);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
       }
+    };
 
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, [profileDropdownOpen]);
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileDropdownOpen]);
+
 
   const toggleProfileDropdown = () => {
     setProfileDropdownOpen(!profileDropdownOpen);
@@ -279,7 +271,7 @@ const Navbar = () => {
                   </Link>
               }
                 {checkIsWarehouseManager() &&
-              <Link to={warehousePanelPath} className="navbar-link admin-link">
+              <Link to={warehouseManagerHomePath} className="navbar-link admin-link">
                     <span>{t("navbar.warehouseManager")}</span>
                   </Link>
               }
@@ -320,7 +312,7 @@ const Navbar = () => {
               }
               {isAdminArea &&
               <Link to={adminHomePath} className="navbar-link admin-link">
-                  <span>{t("ui.sidebar.menu.dashboard")}</span>
+                  <span>{adminNavDashboardLabel}</span>
                 </Link>
               }
               {(isDriverArea || (user?.role === 'driver' && !isDriverArea)) &&
@@ -353,6 +345,11 @@ const Navbar = () => {
                   <span>Warehouse Dashboard</span>
                 </Link>
               }
+              {(isWarehouseManagerArea || (user?.role === 'warehouse_manager' && !isWarehouseManagerArea)) &&
+              <Link to={warehouseManagerHomePath} className="navbar-link admin-link">
+                  <span>{t("navbar.warehouseManager")}</span>
+                </Link>
+              }
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div
                 className="profile-image-wrapper"
@@ -369,8 +366,8 @@ const Navbar = () => {
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     // Always fallback to default image on error
-                    if (e.target.src !== defaultProfileImage) {
-                      e.target.src = defaultProfileImage;
+                    if (e.target.src !== DEFAULT_PROFILE_IMAGE) {
+                      e.target.src = DEFAULT_PROFILE_IMAGE;
                     }
                   }} />
                 
@@ -381,7 +378,7 @@ const Navbar = () => {
                       <span className="dropdown-label">{t("navbar.email")}:</span>
                       <span className="dropdown-value">{user?.email}</span>
                     </div>
-                    <Link to="/profile" className="dropdown-item"
+                    <Link to={profilePath} className="dropdown-item"
                 onClick={() => setProfileDropdownOpen(false)}>
                       {t("navbar.profile")}
                     </Link>
@@ -500,7 +497,7 @@ const Navbar = () => {
               }
               {isAdminArea &&
               <Link to={adminHomePath} onClick={() => setMobileMenuOpen(false)}>
-                  {t("ui.sidebar.menu.dashboard")}
+                  {adminNavDashboardLabel}
                 </Link>
               }
               {isDriverArea &&
@@ -523,7 +520,12 @@ const Navbar = () => {
                   Support Manager
                 </Link>
               }
-              <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+              {isWarehouseManagerArea &&
+              <Link to={warehouseManagerHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {t("navbar.warehouseManager")}
+                </Link>
+              }
+              <Link to={profilePath} onClick={() => setMobileMenuOpen(false)}>
                 {t("navbar.profile")}
               </Link>
               <div className="mobile-currency-switcher">
@@ -554,7 +556,7 @@ const Navbar = () => {
                 </Link>
           }
               {checkIsWarehouseManager() &&
-          <Link to={warehousePanelPath} onClick={() => setMobileMenuOpen(false)}>
+          <Link to={warehouseManagerHomePath} onClick={() => setMobileMenuOpen(false)}>
                   {t("navbar.warehouseManager")}
                 </Link>
           }

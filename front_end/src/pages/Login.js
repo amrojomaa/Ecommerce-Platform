@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,31 +22,23 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      try {
-        const u = JSON.parse(localStorage.getItem('user') || '{}');
-        if (u.role === 'cashier') {
-          navigate('/cashier');
-        } else if (u.role === 'seller') {
-          navigate('/seller');
-        } else if (u.role === 'warehouse_staff') {
-          navigate('/warehouse-staff');
-        } else if (u.role === 'warehouse_manager') {
-          navigate('/warehouse');
-        } else if (u.role === 'support_manager') {
-          navigate('/support');
-        } else if (u.role === 'support_agent') {
-          navigate('/support-agent');
-        } else if (u.role === 'admin' || u.role === 'operations_manager') {
-          navigate('/admin');
-        } else {
-          navigate('/');
-        }
-      } catch {
-        navigate('/');
-      }
+    if (!isAuthenticated || !user?.role) {
+      return;
     }
-  }, [isAuthenticated, navigate]);
+
+    const roleHomePaths = {
+      cashier: '/cashier',
+      seller: '/seller',
+      warehouse_staff: '/warehouse-staff',
+      warehouse_manager: '/warehouse',
+      support_manager: '/support',
+      support_agent: '/support-agent',
+      admin: '/admin',
+      operations_manager: '/admin',
+    };
+
+    navigate(roleHomePaths[user.role] || '/', { replace: true });
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

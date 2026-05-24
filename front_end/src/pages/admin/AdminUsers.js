@@ -1,6 +1,9 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { FaMagnifyingGlass } from 'react-icons/fa6';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
@@ -9,11 +12,24 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { useConfirm } from '../../hooks/useConfirm';
-import { formatDate as formatLocalizedDate } from '../../utils/helpers';
+import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminUsers.css';
 
 const ROLE_FILTER_OPTIONS = [
   'all',
+  'admin',
+  'support_manager',
+  'support_agent',
+  'operations_manager',
+  'warehouse_manager',
+  'seller',
+  'warehouse_staff',
+  'driver',
+  'customer',
+  'cashier',
+];
+
+const ROLE_OPTIONS = [
   'admin',
   'support_manager',
   'support_agent',
@@ -33,8 +49,8 @@ const ROLE_LABEL_KEYS = {
   support_agent: 'ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c',
   operations_manager: 'ui.pages.admin.adminUsers.operationsManager_e7f7834cf9',
   warehouse_manager: 'ui.pages.admin.adminUsers.warehouseManager_3e9668a875',
-  seller: null,
-  warehouse_staff: null,
+  seller: 'roles.seller',
+  warehouse_staff: 'roles.warehouse_staff',
   driver: 'ui.pages.admin.adminUsers.driver_533424916e',
   customer: 'ui.pages.admin.adminUsers.customer_68c8b84985',
   cashier: 'ui.pages.admin.adminUsers.cashier_29b35eadb9',
@@ -42,6 +58,7 @@ const ROLE_LABEL_KEYS = {
 
 
 const AdminUsers = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user: currentAuthUser, loading: authLoading } = useAuth();
   const confirm = useConfirm();
@@ -207,352 +224,367 @@ const AdminUsers = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return formatLocalizedDate(dateString, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   const countForRoleFilter = (value) =>
   value === 'all' ? users.length : users.filter((u) => u.role === value).length;
 
   const getRoleLabel = (role) => {
     const normalizedRole = String(role || '').toLowerCase();
     const key = ROLE_LABEL_KEYS[normalizedRole];
-    if (key) return tUi(key);
-    return normalizedRole.replace(/_/g, ' ');
+    if (!key) return normalizedRole.replace(/_/g, ' ');
+    if (key.startsWith('roles.')) return t(key);
+    return tUi(key);
   };
 
   const getRoleBadgeClass = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'role-badge admin';
-      case 'support_agent':
-        return 'role-badge support_agent';
-      case 'operations_manager':
-        return 'role-badge operations_manager';
-      case 'support_manager':
-        return 'role-badge support_manager';
-      case 'warehouse_manager':
-        return 'role-badge warehouse_manager';
-      case 'seller':
-        return 'role-badge seller';
-      case 'warehouse_staff':
-        return 'role-badge warehouse_staff';
-      case 'driver':
-        return 'role-badge driver';
-      case 'customer':
-        return 'role-badge customer';
-      case 'cashier':
-        return 'role-badge cashier';
-      default:
-        return 'role-badge';
-    }
+    const normalized = String(role || 'customer').toLowerCase();
+    return `adm-users-role adm-users-role--${normalized}`;
   };
 
-  if (loading) {
-    return (
-      <div className="page-loading admin-users-loading">
-        <LoadingSpinner size="large" />
-      </div>);
-
-  }
-
-  const manageUsersTitle = tUi("ui.pages.admin.adminUsers.manageUsers_eac32c061d");
+  const manageUsersTitle = tUi('ui.pages.admin.adminUsers.manageUsers_eac32c061d');
+  const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
+  const userCountLabel =
+    filteredUsers.length === 1
+      ? tUi('ui.pages.admin.adminUsers.user_8f2a1b9c4d')
+      : tUi('ui.pages.admin.adminUsers.users_7e1a0b8c3d');
 
   return (
-    <div className="admin-page-shell admin-users">
-      <PageHeader kicker={manageUsersTitle} title={manageUsersTitle} />
+    <div className="admin-page-shell adm-page adm-users-page">
+      <PageHeader
+        kicker={panelKicker}
+        title={manageUsersTitle}
+        subtitle={tUi('ui.pages.admin.adminUsers.subtitle_1a2b3c4d5h')}
+        actions={
+          <div className="adm-users-header-filter">
+            <div className="adm-users-filter-row">
+              <label className="adm-users-filter-label" htmlFor="adm-users-role-filter">
+                {tUi('ui.pages.admin.adminUsers.filterByRole_9bb6e611f0')}
+              </label>
+              <select
+                id="adm-users-role-filter"
+                className="adm-users-select"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                {ROLE_FILTER_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {getRoleLabel(value)} ({countForRoleFilter(value)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="adm-users-header-meta" aria-live="polite">
+              <strong>{filteredUsers.length}</strong> {userCountLabel}
+            </p>
+          </div>
+        }
+      />
 
-      <div className="filter-section">
-        <div className="users-search-row">
-          <label htmlFor="admin-users-search">{tUi("ui.pages.admin.adminUsers.searchUsers_6f4c0b5424")}</label>
-          <div className="users-search-input-wrap">
+      <section className="adm-users-section">
+        <div className="adm-users-toolbar">
+          <label className="adm-users-search" htmlFor="admin-users-search">
+            <FaMagnifyingGlass className="adm-users-search-icon" aria-hidden />
             <input
               id="admin-users-search"
               type="search"
-              className="users-search-input"
-              placeholder={tUi("ui.pages.admin.adminUsers.nameOrEmail_0be30e7013")}
+              placeholder={tUi('ui.pages.admin.adminUsers.nameOrEmail_0be30e7013')}
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
-              autoComplete="off" />
-            
-            {userSearch.trim() !== '' &&
+              autoComplete="off"
+            />
+            {userSearch.trim() !== '' && (
             <button
               type="button"
-              className="users-search-clear"
+                className="adm-users-search-clear"
               onClick={() => setUserSearch('')}
-              aria-label={tUi("ui.pages.admin.adminUsers.clearSearch_2e1d2ddc8e")}>{tUi("ui.pages.admin.adminUsers.clear_7ef332b212")}
-
-
-            </button>
-            }
-          </div>
-        </div>
-        <label>{tUi("ui.pages.admin.adminUsers.filterByRole_9bb6e611f0")}</label>
-        <div className="filter-buttons">
-          {ROLE_FILTER_OPTIONS.map((value) =>
-          <button
-            key={value}
-            type="button"
-            className={roleFilter === value ? "active" : ''}
-            onClick={() => setRoleFilter(value)}>
-            
-              {getRoleLabel(value)} ({countForRoleFilter(value)})
+                aria-label={tUi('ui.pages.admin.adminUsers.clearSearch_2e1d2ddc8e')}
+              >
+                {tUi('ui.pages.admin.adminUsers.clear_7ef332b212')}
             </button>
           )}
+          </label>
         </div>
-      </div>
 
-      <div className="users-table-container">
-        <table className="users-table">
+        {loading ? (
+          <div className="adm-users-loading">
+            <LoadingSpinner size="large" />
+      </div>
+        ) : (
+          <div className="adm-users-data-panel" role="region" aria-label={manageUsersTitle}>
+            <table className="adm-users-table">
           <thead>
             <tr>
-              <th>{tUi('ui.common.id')}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.name_219118e2b5")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.email_2753725b15")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.role_da88828778")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.verified_e1f19650a1")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.account_65ee1efc26")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.created_2a4f996003")}</th>
-              <th>{tUi("ui.pages.admin.adminUsers.actions_eeeaafac64")}</th>
+              <th className="adm-users-col-id" scope="col">
+                {tUi('ui.common.id')}
+              </th>
+              <th className="adm-users-col-name" scope="col">
+                {tUi('ui.pages.admin.adminUsers.name_219118e2b5')}
+              </th>
+              <th className="adm-users-col-email" scope="col">
+                {tUi('ui.pages.admin.adminUsers.email_2753725b15')}
+              </th>
+              <th className="adm-users-col-role" scope="col">
+                {tUi('ui.pages.admin.adminUsers.role_da88828778')}
+              </th>
+              <th className="adm-users-col-verified" scope="col">
+                {tUi('ui.pages.admin.adminUsers.verified_e1f19650a1')}
+              </th>
+              <th className="adm-users-col-actions" scope="col">
+                {tUi('ui.pages.admin.adminUsers.actions_eeeaafac64')}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.length === 0 ?
-            <tr>
-                <td colSpan="8" className="no-users">
-                  {users.length === 0 ? tUi("ui.pages.admin.adminUsers.noUsersFound_53cddce410") :
-
-                userSearch.trim() ? tUi("ui.pages.admin.adminUsers.noUsersMatchYourSearch_afa1ee1f27") : tUi("ui.pages.admin.adminUsers.noUsersMatchTheSelected_6abe98d630")
-
-                }
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="adm-users-empty">
+                  {users.length === 0
+                    ? tUi('ui.pages.admin.adminUsers.noUsersFound_53cddce410')
+                    : userSearch.trim()
+                      ? tUi('ui.pages.admin.adminUsers.noUsersMatchYourSearch_afa1ee1f27')
+                      : tUi('ui.pages.admin.adminUsers.noUsersMatchTheSelected_6abe98d630')}
                 </td>
-              </tr> :
-
-            filteredUsers.map((user, index) =>
+              </tr>
+            ) : (
+              filteredUsers.map((user, index) => (
             <motion.tr
               key={user.id}
-              initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`user-row${user.is_blocked ? ' user-row-blocked' : ''}`}
+                  transition={{ delay: index * 0.03 }}
+                  className={`adm-users-row${user.is_blocked ? ' is-blocked' : ''}`}
               onClick={() => navigate(`/admin/users/${user.id}`)}
-              style={{ cursor: 'pointer' }}>
-              
-                  <td>{user.id}</td>
-                  <td>
-                    <div className="user-name">
+                >
+                  <td className="adm-users-col-id adm-users-id">{user.id}</td>
+                  <td className="adm-users-col-name">
+                    <div className="adm-users-name-cell">
                       <img
                     src={getProfileImageUrl(user.profile_image)}
-                    alt={tUi("ui.pages.admin.adminUsers.valueValue_e33c0a89f9", { value0: user.first_name, value1: user.last_name })}
-                    className="user-avatar"
+                        alt={tUi('ui.pages.admin.adminUsers.valueValue_e33c0a89f9', {
+                          value0: user.first_name,
+                          value1: user.last_name
+                        })}
+                        className="adm-users-avatar"
                     loading="lazy"
                     decoding="async"
                     onError={(e) => {
-                      // Fallback to default image on error
                       if (e.target.src !== defaultProfileImage) {
                         e.target.src = defaultProfileImage;
                       }
-                    }} />
-                  
-                      <span>{user.first_name} {user.last_name}</span>
+                        }}
+                      />
+                      <span>
+                        {user.first_name} {user.last_name}
+                      </span>
                     </div>
                   </td>
-                  <td>{user.email}</td>
-                  <td>
-                    <span className={getRoleBadgeClass(user.role)}>
-                      {getRoleLabel(user.role)}
+                  <td className="adm-users-col-email">{user.email}</td>
+                  <td className="adm-users-col-role">
+                    <span className={getRoleBadgeClass(user.role)}>{getRoleLabel(user.role)}</span>
+                  </td>
+                  <td className="adm-users-col-verified">
+                    <span className={`adm-users-verified ${user.is_verified ? 'is-yes' : 'is-no'}`}>
+                      {user.is_verified
+                        ? tUi('ui.pages.admin.adminUsers.verified_e00687bf61')
+                        : tUi('ui.pages.admin.adminUsers.notVerified_b97e561e2a')}
                     </span>
                   </td>
-                  <td>
-                    <span className={user.is_verified ? "verified" : "not-verified"}>
-                      {user.is_verified ? tUi("ui.pages.admin.adminUsers.verified_e00687bf61") : tUi("ui.pages.admin.adminUsers.notVerified_b97e561e2a")}
-                    </span>
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <span className={user.is_blocked ? "account-status suspended" : "account-status active"}>
-                      {user.is_blocked ? tUi("ui.pages.admin.adminUsers.suspended_d2685f367b") : tUi("ui.pages.admin.adminUsers.active_b157924ea3")}
-                    </span>
-                  </td>
-                  <td>{formatDate(user.created_at)}</td>
-                  <td>
-                    <div className="action-buttons">
-                      {authLoading ?
-                  <span className="action-self-placeholder">…</span> :
-                  currentAuthUser?.id === user.id ?
-                  <span className="action-self-placeholder" title={tUi("ui.pages.admin.adminUsers.youCannotBlockYourOwn_b9b05a483d")}>
+                  <td className="adm-users-col-actions" onClick={(e) => e.stopPropagation()}>
+                    <div className="adm-users-actions">
+                      {authLoading ? (
+                        <span className="adm-users-actions-placeholder">…</span>
+                      ) : currentAuthUser?.id === user.id ? (
+                        <span
+                          className="adm-users-actions-placeholder"
+                          title={tUi('ui.pages.admin.adminUsers.youCannotBlockYourOwn_b9b05a483d')}
+                        >
                           —
-                        </span> :
-
+                        </span>
+                      ) : (
                   <button
                     type="button"
-                    className={user.is_blocked ? "unblock-user-btn" : "block-user-btn"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleBlock(user);
-                    }}
-                    disabled={updating || deleting || blockingId === user.id}>
-                    
-                          {blockingId === user.id ? '…' : user.is_blocked ? tUi("ui.pages.admin.adminUsers.unblock_6cbc50835c") : tUi("ui.pages.admin.adminUsers.block_acca25213e")}
+                          className={`adm-users-btn ${user.is_blocked ? 'adm-users-btn--unblock' : 'adm-users-btn--block'}`}
+                          onClick={() => handleToggleBlock(user)}
+                          disabled={updating || deleting || blockingId === user.id}
+                        >
+                          {blockingId === user.id
+                            ? '…'
+                            : user.is_blocked
+                              ? tUi('ui.pages.admin.adminUsers.unblock_6cbc50835c')
+                              : tUi('ui.pages.admin.adminUsers.block_acca25213e')}
                         </button>
-                  }
+                      )}
                       <button
-                    className="change-role-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRoleChange(user);
-                    }}
-                    disabled={updating || deleting}>{tUi("ui.pages.admin.adminUsers.changeRole_3f89e37f4b")}
-
-
+                        type="button"
+                        className="adm-users-btn adm-users-btn--role"
+                        onClick={() => handleRoleChange(user)}
+                        disabled={updating || deleting}
+                      >
+                        {tUi('ui.pages.admin.adminUsers.changeRole_3f89e37f4b')}
                   </button>
                       <button
-                    className="delete-user-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(user);
-                    }}
-                    disabled={updating || deleting}>{tUi("ui.pages.admin.adminUsers.delete_a6a9493a15")}
-
-
+                        type="button"
+                        className="adm-users-btn adm-users-btn--delete"
+                        onClick={() => handleDeleteClick(user)}
+                        disabled={updating || deleting}
+                      >
+                        {tUi('ui.pages.admin.adminUsers.delete_a6a9493a15')}
                   </button>
                     </div>
                   </td>
                 </motion.tr>
-            )
-            }
+              ))
+            )}
           </tbody>
         </table>
       </div>
+        )}
+      </section>
 
       <AnimatePresence>
-        {showRoleModal && selectedUser &&
+        {showRoleModal && selectedUser && (
         <motion.div
-          className="modal-overlay"
+            className="adm-users-modal-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setShowRoleModal(false)}>
-          
+            onClick={() => setShowRoleModal(false)}
+          >
             <motion.div
-            className="modal-content role-modal"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}>
-            
-              <h2>{tUi("ui.pages.admin.adminUsers.changeUserRole_086699c24a")}</h2>
-              <div className="user-info">
-                <p><strong>{tUi("ui.pages.admin.adminUsers.user_47b8c7478c")}</strong> {selectedUser.first_name} {selectedUser.last_name}</p>
-                <p><strong>{tUi("ui.pages.admin.adminUsers.email_9b95f1bdda")}</strong> {selectedUser.email}</p>
-                <p><strong>{tUi("ui.pages.admin.adminUsers.currentRole_307a24331e")}</strong> 
+              className="adm-users-modal"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>{tUi('ui.pages.admin.adminUsers.changeUserRole_086699c24a')}</h2>
+              <div className="adm-users-modal-info">
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.user_47b8c7478c')}</strong>
+                  {selectedUser.first_name} {selectedUser.last_name}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.email_9b95f1bdda')}</strong>
+                  {selectedUser.email}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.currentRole_307a24331e')}</strong>
                   <span className={getRoleBadgeClass(selectedUser.role)}>
                     {getRoleLabel(selectedUser.role)}
                   </span>
                 </p>
               </div>
-              
-              <div className="form-group">
-                <label>{tUi("ui.pages.admin.adminUsers.newRole_1fb198cad7")}</label>
+              <div className="adm-users-field">
+                <label htmlFor="adm-users-new-role">
+                  {tUi('ui.pages.admin.adminUsers.newRole_1fb198cad7')}
+                </label>
                 <select
+                  id="adm-users-new-role"
+                  className="adm-users-select"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
-                disabled={updating}>
-                
-                  <option value="admin">{tUi("ui.pages.admin.adminUsers.admin_9b8c8c337f")}</option>
-                  <option value="support_manager">{tUi("ui.pages.admin.adminUsers.supportManager_2a7bb3b941")}</option>
-                  <option value="operations_manager">{tUi("ui.pages.admin.adminUsers.operationsManager_e7f7834cf9")}</option>
-                  <option value="warehouse_manager">{tUi("ui.pages.admin.adminUsers.warehouseManager_3e9668a875")}</option>
-                  <option value="seller">Seller</option>
-                  <option value="warehouse_staff">Warehouse Staff</option>
-                  <option value="support_agent">{tUi("ui.pages.admin.adminUsers.supportAgent_5f7e6a1b2c")}</option>
-                  <option value="driver">{tUi("ui.pages.admin.adminUsers.driver_533424916e")}</option>
-                  <option value="customer">{tUi("ui.pages.admin.adminUsers.customer_68c8b84985")}</option>
-                  <option value="cashier">{tUi("ui.pages.admin.adminUsers.cashier_29b35eadb9")}</option>
+                  disabled={updating}
+                >
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {getRoleLabel(role)}
+                    </option>
+                  ))}
                 </select>
               </div>
-
-              <div className="modal-actions">
+              <div className="adm-users-modal-actions">
                 <button
-                className="cancel-btn"
+                  type="button"
+                  className="adm-btn-secondary"
                 onClick={() => setShowRoleModal(false)}
-                disabled={updating}>{tUi("ui.pages.admin.adminUsers.cancel_5783570289")}
-
-
+                  disabled={updating}
+                >
+                  {tUi('ui.pages.admin.adminUsers.cancel_5783570289')}
               </button>
                 <button
-                className="save-btn"
+                  type="button"
+                  className="adm-btn-primary"
                 onClick={handleUpdateRole}
-                disabled={updating || selectedUser.role === newRole}>
-                
-                  {updating ? tUi("ui.pages.admin.adminUsers.updating_10c0262ea0") : tUi("ui.pages.admin.adminUsers.updateRole_cfc1a123e5")}
+                  disabled={updating || selectedUser.role === newRole}
+                >
+                  {updating
+                    ? tUi('ui.pages.admin.adminUsers.updating_10c0262ea0')
+                    : tUi('ui.pages.admin.adminUsers.updateRole_cfc1a123e5')}
                 </button>
               </div>
             </motion.div>
           </motion.div>
-        }
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {showDeleteModal && userToDelete &&
+        {showDeleteModal && userToDelete && (
         <motion.div
-          className="modal-overlay"
+            className="adm-users-modal-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setShowDeleteModal(false)}>
-          
+            onClick={() => {
+              setShowDeleteModal(false);
+              setUserToDelete(null);
+            }}
+          >
             <motion.div
-            className="modal-content delete-modal"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}>
-            
-              <h2>{tUi("ui.pages.admin.adminUsers.deleteUser_e3ea89de3e")}</h2>
-              <div className="user-info">
-                <p><strong>{tUi("ui.pages.admin.adminUsers.user_47b8c7478c")}</strong> {userToDelete.first_name} {userToDelete.last_name}</p>
-                <p><strong>{tUi("ui.pages.admin.adminUsers.email_9b95f1bdda")}</strong> {userToDelete.email}</p>
-                <p><strong>{tUi("ui.pages.admin.adminUsers.role_5bf17f27d3")}</strong> 
+              className="adm-users-modal"
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>{tUi('ui.pages.admin.adminUsers.deleteUser_e3ea89de3e')}</h2>
+              <div className="adm-users-modal-info">
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.user_47b8c7478c')}</strong>
+                  {userToDelete.first_name} {userToDelete.last_name}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.email_9b95f1bdda')}</strong>
+                  {userToDelete.email}
+                </p>
+                <p>
+                  <strong>{tUi('ui.pages.admin.adminUsers.role_5bf17f27d3')}</strong>
                   <span className={getRoleBadgeClass(userToDelete.role)}>
                     {getRoleLabel(userToDelete.role)}
                   </span>
                 </p>
               </div>
-              
-              <div className="delete-warning">
-                <p>{tUi("ui.pages.admin.adminUsers.areYouSureYouWant_f9aef4fec1")}</p>
-                <p>{tUi("ui.pages.admin.adminUsers.thisActionCannotBeUndone_c8a181f419")}</p>
+              <div className="adm-users-modal-warning">
+                <p>{tUi('ui.pages.admin.adminUsers.areYouSureYouWant_f9aef4fec1')}</p>
+                <p>{tUi('ui.pages.admin.adminUsers.thisActionCannotBeUndone_c8a181f419')}</p>
               </div>
-
-              <div className="modal-actions">
+              <div className="adm-users-modal-actions">
                 <button
-                className="cancel-btn"
+                  type="button"
+                  className="adm-btn-secondary"
                 onClick={() => {
                   setShowDeleteModal(false);
                   setUserToDelete(null);
                 }}
-                disabled={deleting}>{tUi("ui.pages.admin.adminUsers.cancel_5783570289")}
-
-
+                  disabled={deleting}
+                >
+                  {tUi('ui.pages.admin.adminUsers.cancel_5783570289')}
               </button>
                 <button
-                className="delete-btn"
+                  type="button"
+                  className="adm-users-btn--delete-modal"
                 onClick={handleDeleteUser}
-                disabled={deleting}>
-                
-                  {deleting ? tUi("ui.pages.admin.adminUsers.deleting_51d4fbc5d4") : tUi("ui.pages.admin.adminUsers.deleteUser_e3ea89de3e")}
+                  disabled={deleting}
+                >
+                  {deleting
+                    ? tUi('ui.pages.admin.adminUsers.deleting_51d4fbc5d4')
+                    : tUi('ui.pages.admin.adminUsers.deleteUser_e3ea89de3e')}
                 </button>
               </div>
             </motion.div>
           </motion.div>
-        }
+        )}
       </AnimatePresence>
-    </div>);
+    </div>
+  );
 
 };
 

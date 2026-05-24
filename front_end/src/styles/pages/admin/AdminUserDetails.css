@@ -1,397 +1,437 @@
-.admin-user-details {
+/* Admin User Details — panel layout (adm-udetail-* prefix) */
+
+.adm-udetail-page {
+  gap: 1.5rem;
   width: 100%;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+  overflow-x: hidden;
 }
 
-.admin-page-shell.admin-user-details {
-  gap: 2.5rem;
+.adm-udetail-page.adm-page,
+.admin-page-shell.adm-udetail-page {
+  gap: 1.5rem;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
 }
 
-.admin-user-details .page-header {
+.adm-udetail-page .page-header {
+  padding-bottom: 0;
   scroll-margin-top: 5rem;
 }
 
-.admin-user-details-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
+.adm-udetail-page .page-header-top {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
-.back-button {
+.adm-udetail-page .page-header-copy {
+  flex: 1;
+  min-width: 200px;
+}
+
+.adm-udetail-page .page-header-actions {
   display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: auto;
+  margin-top: 1.85rem;
+  padding-bottom: 0;
+}
+
+.adm-udetail-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 2rem;
+}
+
+/* Hero profile card */
+.adm-udetail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.adm-udetail-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 1.5rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+.adm-udetail-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.adm-udetail-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid rgba(37, 99, 235, 0.35);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.adm-udetail-avatar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.adm-udetail-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.adm-udetail-hero-name {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.adm-udetail-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  margin-bottom: 0;
-  background-color: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  color: var(--text-primary);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.back-button:hover {
-  background-color: var(--background);
-  border-color: var(--primary-color);
+.adm-udetail-hero-email {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.adm-udetail-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* Role / status badges (match Manage Users) */
+.adm-udetail-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.adm-udetail-role--admin {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.adm-udetail-role--support_agent {
+  background: rgba(37, 99, 235, 0.15);
   color: var(--primary-color);
 }
 
-.user-details-container {
-  background-color: var(--surface);
-  border: 1px solid var(--border-color);
-  border-radius: 1.2rem;
-  padding: 2rem;
-  box-shadow: var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+.adm-udetail-role--operations_manager {
+  background: rgba(124, 58, 237, 0.15);
+  color: #7c3aed;
 }
 
-.user-details-header {
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--border-color);
+.adm-udetail-role--support_manager {
+  background: rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
 }
 
-.user-details-header h1,
-.user-details-header .page-header h1 {
-  margin: 0;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-  line-height: 1.1;
+.adm-udetail-role--warehouse_manager {
+  background: rgba(15, 118, 110, 0.15);
+  color: #0f766e;
 }
 
-.user-details-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+.adm-udetail-role--seller {
+  background: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
 }
 
-.user-profile-section {
-  display: flex;
-  flex-direction: column;
+.adm-udetail-role--warehouse_staff {
+  background: rgba(217, 119, 6, 0.15);
+  color: #d97706;
+}
+
+.adm-udetail-role--driver {
+  background: rgba(20, 184, 166, 0.15);
+  color: #0d9488;
+}
+
+.adm-udetail-role--cashier {
+  background: rgba(13, 148, 136, 0.15);
+  color: #0f766e;
+}
+
+.adm-udetail-role--customer {
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.dark .adm-udetail-role--customer {
+  color: #cbd5e1;
+}
+
+.adm-udetail-verified {
+  display: inline-flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
-  background-color: var(--background);
-  border: 1px solid var(--border-color);
-  border-radius: 1.2rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-.profile-image-container {
-  display: flex;
-  justify-content: center;
+.adm-udetail-verified.is-yes {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.adm-udetail-verified.is-no {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.dark .adm-udetail-verified.is-no {
+  color: #f87171;
+}
+
+.adm-udetail-account {
+  display: inline-flex;
   align-items: center;
-  position: relative;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-.profile-image-display {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center;
-  border: 4px solid var(--primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: block;
-  /* Optimize image rendering for quality */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: auto;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.adm-udetail-account.is-active {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
 }
 
-.user-name-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+.adm-udetail-account.is-suspended {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
 }
 
-.user-name-header h2 {
-  margin: 0;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  letter-spacing: -0.01em;
-  color: var(--text-primary);
-  font-size: 1.5rem;
+.dark .adm-udetail-account.is-suspended {
+  color: #f87171;
 }
 
-.user-info-section {
+/* Info cards grid */
+.adm-udetail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
 }
 
-.info-group {
-  background-color: var(--background);
-  padding: 1.5rem;
-  border-radius: 1.2rem;
+.adm-udetail-card {
+  background: var(--surface);
   border: 1px solid var(--border-color);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-radius: 1.2rem;
   box-shadow: var(--shadow);
+  padding: 1.25rem 1.5rem 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.info-group:hover {
-  transform: translateY(-2px);
+.adm-udetail-card:hover {
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
-  border-color: rgba(37, 99, 235, 0.2);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
-.info-group h3 {
-  margin: 0 0 1.5rem 0;
+.adm-udetail-card-title {
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
   font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-primary);
-  font-size: 1.2rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--primary-color);
 }
 
-.info-item {
+.adm-udetail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.adm-udetail-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem 0;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.85rem 0;
   border-bottom: 1px solid var(--border-color);
 }
 
-.info-item:last-child {
+.adm-udetail-row:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
-.info-item label {
-  color: var(--text-secondary);
+.adm-udetail-row dt {
+  margin: 0;
+  flex: 0 0 auto;
+  max-width: 45%;
+  font-size: 0.72rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
 }
 
-.info-item span {
+.adm-udetail-row dd {
+  margin: 0;
+  flex: 1;
+  text-align: end;
+  font-size: 0.9rem;
+  font-weight: 500;
   color: var(--text-primary);
-  font-size: 1rem;
-  text-align: right;
+  word-break: break-word;
 }
 
-.info-item span.no-data {
+.adm-udetail-row dd.is-empty {
   color: var(--text-secondary);
   font-style: italic;
+  font-weight: 400;
 }
 
-.role-badge {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: capitalize;
+.adm-udetail-row dd .adm-udetail-role,
+.adm-udetail-row dd .adm-udetail-verified,
+.adm-udetail-row dd .adm-udetail-account {
+  margin-inline-start: auto;
 }
 
-.role-badge.admin {
-  background-color: #ff9800;
-  color: white;
-}
-
-.role-badge.support_agent {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.role-badge.operations_manager {
-  background-color: #7c3aed;
-  color: white;
-}
-
-.role-badge.support_manager {
-  background-color: #2563eb;
-  color: white;
-}
-
-.role-badge.warehouse_manager {
-  background-color: #0f766e;
-  color: white;
-}
-
-.role-badge.seller {
-  background-color: #6366f1;
-  color: white;
-}
-
-.role-badge.warehouse_staff {
-  background-color: #d97706;
-  color: white;
-}
-
-.role-badge.driver {
-  background-color: #14b8a6;
-  color: white;
-}
-
-.role-badge.customer {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.verified {
-  color: #4caf50;
-  font-weight: 600;
-}
-
-.not-verified {
-  color: #f44336;
-  font-weight: 600;
-}
-
-/* Image Modal Styles */
-.image-modal-overlay {
+/* Image modal */
+.adm-udetail-image-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.95);
+  inset: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  padding: 0;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(6px);
 }
 
-.image-modal-content {
+.adm-udetail-image-panel {
   position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
+  max-width: min(92vw, 720px);
+  max-height: 90vh;
 }
 
-.image-modal-close {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  color: white;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.adm-udetail-image-close {
+  position: absolute;
+  top: -0.5rem;
+  inset-inline-end: -0.5rem;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
   cursor: pointer;
-  font-size: 1.5rem;
-  transition: all 0.3s ease;
-  z-index: 10001;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.image-modal-close:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.8);
-  transform: scale(1.1);
+.adm-udetail-image-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.05);
 }
 
-.image-modal-image {
-  width: 100%;
-  height: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
+.adm-udetail-image-full {
+  display: block;
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 1rem;
   object-fit: contain;
-  border-radius: 0;
-  box-shadow: none;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: auto;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 1100px) {
+  .adm-udetail-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+
+  .adm-udetail-page .page-header-actions {
+    margin-top: 0;
+    margin-inline-start: 0;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 768px) {
-  .admin-user-details {
-    gap: 1.75rem;
+  .adm-udetail-page {
+    gap: 1.25rem;
   }
 
-  .user-details-container {
-    padding: 1.5rem;
+  .adm-udetail-hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem;
   }
 
-  .user-info-section {
-    grid-template-columns: 1fr;
+  .adm-udetail-hero-copy {
+    align-items: center;
   }
 
-  .profile-image-display {
-    width: 150px;
-    height: 150px;
-  }
-
-  .user-name-header h2 {
-    font-size: 1.5rem;
-  }
-
-  .image-modal-overlay {
-    padding: 1rem;
-  }
-
-  .image-modal-content {
-    padding: 1rem;
-  }
-
-  .image-modal-close {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-    font-size: 1.25rem;
-  }
-
-  .image-modal-image {
-    max-width: 98vw;
-    max-height: 95vh;
-  }
-}
-
-@media (max-width: 1024px) {
-  .admin-user-details {
-    gap: 2rem;
-  }
-
-  .user-details-container {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .back-button {
-    width: 100%;
+  .adm-udetail-hero-badges,
+  .adm-udetail-hero-meta {
     justify-content: center;
   }
 
-  .user-profile-section {
-    padding: 1rem;
+  .adm-udetail-grid {
+    grid-template-columns: 1fr;
   }
 
-  .profile-image-display {
-    width: 120px;
-    height: 120px;
-  }
-
-  .info-item {
+  .adm-udetail-row {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    align-items: stretch;
+    gap: 0.35rem;
   }
 
-  .info-item span {
-    text-align: left;
+  .adm-udetail-row dt {
+    max-width: none;
+  }
+
+  .adm-udetail-row dd {
+    text-align: start;
   }
 }

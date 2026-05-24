@@ -58,6 +58,124 @@ html[dir='rtl'] .chat-widget {
   left: 20px;
 }
 
+/* Support ticket live chat — fixed panel, above AI assistant widget */
+.support-ticket-chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  max-height: calc(100vh - 100px);
+  z-index: 1150;
+}
+
+/* Hide AI Shopping Assistant while support ticket chat is open (same corner) */
+body.support-ticket-chat-open .chat-toggle-button,
+body.support-ticket-chat-open .chat-widget:not(.support-ticket-chat-widget) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html[dir='rtl'] .support-ticket-chat-widget {
+  right: auto;
+  left: 20px;
+}
+
+.support-ticket-chat-sender {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+/* Own messages: end (right in English LTR), primary blue like buttons */
+.support-ticket-chat-widget .user-message {
+  align-self: flex-end;
+  margin-inline-start: auto;
+}
+
+.support-ticket-chat-widget .user-message .support-ticket-chat-sender {
+  text-align: end;
+  color: var(--text-secondary);
+}
+
+.support-ticket-chat-widget .user-message .message-content {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 1.2rem 1.2rem 4px 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+.dark .support-ticket-chat-widget .user-message .message-content {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* Other users: start (left in English LTR), neutral surface bubble */
+.support-ticket-chat-widget .assistant-message {
+  align-self: flex-start;
+  margin-inline-end: auto;
+}
+
+.support-ticket-chat-widget .assistant-message .support-ticket-chat-sender {
+  text-align: start;
+  color: var(--text-secondary);
+}
+
+.support-ticket-chat-widget .assistant-message .message-content {
+  background: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem 1.2rem 1.2rem 4px;
+}
+
+.dark .support-ticket-chat-widget .assistant-message .message-content {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+.support-ticket-chat-other-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.support-ticket-chat-other-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.support-ticket-chat-placeholder {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.support-ticket-chat-disabled {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #991b1b;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.dark .support-ticket-chat-disabled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
 .dark .chat-widget {
   background: var(--background);
   color: var(--text-primary);

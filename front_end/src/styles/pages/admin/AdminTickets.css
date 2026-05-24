@@ -1,156 +1,208 @@
-.admin-tickets-page {
-  padding: 0;
-  max-width: none;
-  margin: 0;
+/* Admin Tickets — panel layout (adm-tkt-* prefix) */
+
+.adm-tkt-page {
+  gap: 1.5rem;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+  overflow-x: hidden;
 }
 
-.admin-page-shell.admin-tickets-page {
-  gap: 2.5rem;
+.adm-tkt-page.adm-page,
+.admin-page-shell.adm-tkt-page {
+  gap: 1.5rem;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
 }
 
-.admin-tickets-page .page-header {
+.adm-tkt-page .page-header {
+  padding-bottom: 0;
   scroll-margin-top: 5rem;
 }
 
-.admin-tickets-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0;
-}
-
-.admin-tickets-header h1,
-.admin-tickets-page .page-header h1 {
-  margin: 0;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
-  letter-spacing: -0.02em;
-  color: var(--text-color);
-  line-height: 1.1;
-}
-
-.filters-container {
-  display: flex;
-  align-items: center;
+.adm-tkt-page .page-header-top {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: flex-start;
   gap: 2rem;
   flex-wrap: wrap;
 }
 
-.status-filter {
+.adm-tkt-page .page-header-copy {
+  flex: 1;
+  min-width: 200px;
+}
+
+.adm-tkt-page .page-header-actions {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline-start: auto;
+  margin-top: 1.85rem;
+  padding-bottom: 0;
 }
 
-.status-filter label {
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.status-filter select {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.assigned-filter {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.assigned-filter label {
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.assigned-filter select {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-/* Dark mode styling for status-filter select dropdowns */
-.dark .status-filter select,
-body.dark .status-filter select,
-[data-theme="dark"] .status-filter select {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dark .status-filter select option,
-body.dark .status-filter select option,
-[data-theme="dark"] .status-filter select option {
-  background-color: var(--control-bg) !important;
-  color: var(--control-text) !important;
-}
-
-/* Dark mode styling for assigned-filter select dropdowns */
-.dark .assigned-filter select,
-body.dark .assigned-filter select,
-[data-theme="dark"] .assigned-filter select {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dark .assigned-filter select option,
-body.dark .assigned-filter select option,
-[data-theme="dark"] .assigned-filter select option {
-  background-color: var(--control-bg) !important;
-  color: var(--control-text) !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  .status-filter select {
-    background-color: var(--bg-color) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .status-filter select option {
-    background-color: var(--control-bg) !important;
-    color: var(--control-text) !important;
-  }
-
-  .assigned-filter select {
-    background-color: var(--bg-color) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .assigned-filter select option {
-    background-color: var(--control-bg) !important;
-    color: var(--control-text) !important;
-  }
-}
-
-.empty-tickets {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-color);
-}
-
-.tickets-list {
+.adm-tkt-header-filter {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  align-items: flex-end;
+  gap: 0.55rem;
 }
 
-.ticket-card {
-  background: var(--card-bg);
+.adm-tkt-filter-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.adm-tkt-filter-label {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.adm-tkt-header-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.adm-tkt-header-meta strong {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.adm-tkt-select {
+  height: 42px;
+  min-width: 11rem;
+  padding: 0 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.adm-tkt-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
+}
+
+.adm-tkt-loading,
+.adm-tkt-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  padding: 2rem;
+}
+
+.adm-tkt-empty p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Pending delete alerts */
+.adm-tkt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.adm-tkt-pending-section {
+  padding: 1.25rem 1.5rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 1.2rem;
+}
+
+.dark .adm-tkt-pending-section {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.adm-tkt-pending-title {
+  margin: 0 0 1rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #b45309;
+}
+
+.dark .adm-tkt-pending-title {
+  color: #fbbf24;
+}
+
+.adm-tkt-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.adm-tkt-pending-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.adm-tkt-pending-copy h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.adm-tkt-pending-copy p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-pending-preview {
+  font-style: italic;
+}
+
+.adm-tkt-pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Ticket cards */
+.adm-tkt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.adm-tkt-card {
+  background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: 1.2rem;
   box-shadow: var(--shadow);
@@ -158,834 +210,477 @@ body.dark .assigned-filter select option,
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-.ticket-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: rgba(37, 99, 235, 0.2);
+.adm-tkt-card:hover {
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
-.ticket-header {
-  padding: 1.5rem;
+.adm-tkt-card.is-expanded {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.adm-tkt-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.35rem;
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
-.ticket-header:hover {
-  background: var(--hover-bg);
-}
-
-.ticket-header h3 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text-color);
-  font-size: 1.25rem;
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  letter-spacing: -0.01em;
-}
-
-.ticket-meta {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.ticket-header-right {
+.adm-tkt-card-header-start {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.status-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-in-progress {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-resolved {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-closed {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.assigned-to {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.expand-icon {
-  font-size: 1.2rem;
-  color: var(--text-secondary);
-}
-
-.ticket-details {
-  padding: 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.ticket-description {
-  margin-bottom: 2rem;
-}
-
-.ticket-description h4 {
-  margin-bottom: 0.75rem;
-  color: var(--text-color);
-}
-
-.ticket-description p {
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.ticket-actions {
-  display: flex;
-  gap: 2rem;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 1.2rem;
-}
-
-.action-group {
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
   flex: 1;
 }
 
-.action-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-color);
-  font-weight: 500;
+.adm-tkt-card-header-start > div {
+  min-width: 0;
 }
 
-.action-group select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--text-color);
-  font-size: 1rem;
-  cursor: pointer;
+.adm-tkt-card-header:hover {
+  background: rgba(37, 99, 235, 0.04);
 }
 
-.action-group select[multiple] {
-  min-height: 120px;
-  padding: 0.5rem;
+.dark .adm-tkt-card-header:hover {
+  background: rgba(96, 165, 250, 0.06);
 }
 
-.action-group select[multiple] option {
-  padding: 0.5rem;
-  margin: 0.25rem 0;
+.adm-tkt-card-title {
+  margin: 0 0 0.4rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 
-.action-group select[multiple] option:checked {
-  background: var(--primary-color);
-  color: white;
-}
-
-.action-group small {
-  display: block;
-  margin-top: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.action-group select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Dark mode styling for action-group select dropdowns */
-.dark .action-group select,
-body.dark .action-group select,
-[data-theme="dark"] .action-group select {
-  background-color: var(--card-bg) !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dark .action-group select option,
-body.dark .action-group select option,
-[data-theme="dark"] .action-group select option {
-  background-color: var(--control-bg) !important;
-  color: var(--control-text) !important;
-}
-
-/* Force dark background for dropdown options in dark mode */
-@media (prefers-color-scheme: dark) {
-  .action-group select {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .action-group select option {
-    background-color: var(--control-bg) !important;
-    color: var(--control-text) !important;
-  }
-}
-
-.ticket-responses {
-  margin-bottom: 2rem;
-}
-
-.ticket-responses h4 {
-  margin-bottom: 1rem;
-  color: var(--text-color);
-}
-
-.responses-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.response-item {
-  background: var(--bg-color);
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 3px solid var(--primary-color);
-}
-
-.response-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.response-author {
-  font-weight: 500;
-  color: var(--text-color);
-}
-
-.response-date {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.response-message {
-  color: var(--text-secondary);
-  line-height: 1.6;
+.adm-tkt-card-meta {
   margin: 0;
-}
-
-.no-responses {
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  font-style: italic;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
-.add-response {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+.adm-tkt-card-header-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.adm-tkt-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.adm-tkt-status--in_progress {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.adm-tkt-status--open {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+}
+
+.adm-tkt-status--resolved {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.adm-tkt-status--closed {
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.dark .adm-tkt-status--closed {
+  color: #cbd5e1;
+}
+
+.adm-tkt-status--default {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+}
+
+.adm-tkt-assigned {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.adm-tkt-expand {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.adm-tkt-detail {
+  padding: 0 1.35rem 1.35rem;
   border-top: 1px solid var(--border-color);
 }
 
-.add-response h4 {
-  margin-bottom: 1rem;
-  color: var(--text-color);
+.adm-tkt-detail-block {
+  margin-top: 1.15rem;
 }
 
-.add-response textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+.adm-tkt-detail-block h4 {
+  margin: 0 0 0.6rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
   font-size: 1rem;
-  font-family: inherit;
-  background: var(--bg-color);
-  color: var(--text-color);
-  resize: vertical;
-  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
 }
 
-.add-response textarea:focus {
+.adm-tkt-detail-block p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-actions-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  margin-top: 1.15rem;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+
+.adm-tkt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.adm-tkt-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-field .adm-tkt-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.adm-tkt-responses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.adm-tkt-response {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  border-inline-start: 3px solid var(--primary-color);
+}
+
+.adm-tkt-response-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-tkt-response-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.adm-tkt-response-author {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.adm-tkt-response-date {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-response-msg {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-no-responses {
+  margin: 0;
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-response-form {
+  margin-top: 1.15rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.adm-tkt-response-form-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.adm-tkt-response-form-head h4 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.adm-tkt-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.adm-tkt-textarea:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
 }
 
-.submit-response-btn {
-  padding: 0.75rem 1.5rem;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.3s;
-}
-
-.submit-response-btn:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.submit-response-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  padding: 2rem;
-  border-radius: 1.2rem;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-/* Ensure modal background is solid in dark mode */
-.dark .modal-content,
-body.dark .modal-content,
-[data-theme="dark"] .modal-content {
-  background: var(--card-bg) !important;
-  opacity: 1 !important;
-}
-
-.modal-content h2 {
-  margin-bottom: 1rem;
-  color: var(--text-color);
-}
-
-.modal-content p {
-  margin-bottom: 1rem;
-  color: var(--text-secondary);
-}
-
-.modal-content select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-size: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.modal-content select[multiple] {
-  min-height: 200px;
-  padding: 0.5rem;
-}
-
-.modal-content select[multiple] option {
-  padding: 0.5rem;
-  margin: 0.25rem 0;
-}
-
-.modal-content select[multiple] option:checked {
-  background: var(--primary-color);
-  color: white;
-}
-
-.modal-content small {
-  display: block;
-  margin-top: 0.5rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-/* Dark mode styling for modal select dropdowns */
-.dark .modal-content select,
-body.dark .modal-content select,
-[data-theme="dark"] .modal-content select {
-  background-color: var(--bg-color) !important;
-  color: var(--text-color) !important;
-  border-color: var(--border-color) !important;
-}
-
-.dark .modal-content select option,
-body.dark .modal-content select option,
-[data-theme="dark"] .modal-content select option {
-  background-color: var(--control-bg) !important;
-  color: var(--control-text) !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  .modal-content select {
-    background-color: var(--bg-color) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .modal-content select option {
-    background-color: var(--control-bg) !important;
-    color: var(--control-text) !important;
-  }
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.modal-actions button {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.3s;
-}
-
-.modal-actions button:first-child {
-  background: var(--bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-}
-
-.modal-actions button:first-child:hover {
-  background: var(--hover-bg);
-}
-
-.modal-actions button:last-child {
-  background: var(--primary-color);
-  color: white;
-}
-
-.modal-actions button:last-child:hover:not(:disabled) {
-  background: var(--primary-hover);
-}
-
-.modal-actions button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.admin-tickets-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
-
-.clickable {
-  cursor: pointer;
-}
-
-/* Global dark mode fix for all select options - Use explicit dark mode colors */
-.dark select option,
-body.dark select option,
-[data-theme="dark"] select option,
-.dark .action-group select option,
-.dark .status-filter select option,
-.dark .assigned-filter select option,
-.dark .modal-content select option {
-  background-color: var(--control-bg) !important;
-  color: var(--control-text) !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  select option,
-  .action-group select option,
-  .status-filter select option,
-  .assigned-filter select option,
-  .modal-content select option {
-    background-color: var(--control-bg) !important;
-    color: var(--control-text) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .admin-tickets-page {
-    padding: 1rem;
-  }
-
-  .admin-tickets-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .filters-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    width: 100%;
-  }
-
-  .status-filter,
-  .assigned-filter {
-    width: 100%;
-  }
-
-  .status-filter select,
-  .assigned-filter select {
-    flex: 1;
-    min-width: 200px;
-  }
-
-  .ticket-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .ticket-actions {
-    flex-direction: column;
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 1024px) {
-  .admin-tickets-page {
-    padding: 1.25rem;
-  }
-
-  .admin-tickets-header {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .filters-container {
-    gap: 1rem;
-  }
-
-  .pending-delete-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .ticket-header {
-    padding: 1rem;
-  }
-
-  .ticket-details {
-    padding: 1rem;
-  }
-
-  .pending-deletes-section {
-    padding: 1rem;
-  }
-
-  .pending-delete-actions,
-  .pending-delete-admin-actions {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .approve-delete-btn,
-  .reject-delete-btn,
-  .delete-ticket-btn,
-  .submit-response-btn {
-    width: 100%;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-}
-
-/* Pending Deletes Section */
-.pending-deletes-section {
-  margin-bottom: 0;
-  padding: 2rem;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 1.2rem;
-  box-shadow: var(--shadow);
-}
-
-.pending-deletes-section h2 {
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  letter-spacing: -0.01em;
-  color: var(--text-color);
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-}
-
-.pending-deletes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.pending-delete-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  background: var(--bg-color);
-  border-radius: 8px;
-  border-left: 4px solid #ffc107;
-}
-
-.pending-delete-info {
-  flex: 1;
-}
-
-.pending-delete-info h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text-color);
-}
-
-.pending-delete-info p {
-  margin: 0.25rem 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.ticket-description-preview {
-  margin-top: 0.5rem !important;
-  font-style: italic;
-}
-
-.pending-delete-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-/* Delete Section in Ticket Details */
-.ticket-delete-section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+.adm-tkt-delete-zone {
+  margin-top: 1.25rem;
+  padding-top: 1.15rem;
   border-top: 1px solid var(--border-color);
 }
 
-.delete-ticket-btn {
-  padding: 0.75rem 1.5rem;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.3s;
+.adm-tkt-delete-pending {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 1rem;
+  background: rgba(245, 158, 11, 0.1);
 }
 
-.delete-ticket-btn:hover:not(:disabled) {
-  background: #c82333;
+.adm-tkt-delete-pending p {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #b45309;
 }
 
-.delete-ticket-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.dark .adm-tkt-delete-pending p {
+  color: #fbbf24;
 }
 
-.delete-pending {
-  padding: 1rem;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 8px;
-}
-
-.delete-pending p {
-  margin: 0 0 1rem 0;
-  color: #856404;
-  font-weight: 500;
-}
-
-.pending-delete-admin-actions {
+.adm-tkt-delete-actions {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.approve-delete-btn {
-  padding: 0.75rem 1.5rem;
-  background: #28a745;
-  color: white;
+.adm-tkt-btn--approve {
+  background: #16a34a;
+  color: #fff;
+}
+
+.adm-tkt-btn--approve:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.adm-tkt-btn--reject {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.adm-tkt-btn--reject:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.adm-tkt-btn--delete {
+  background: #dc2626;
+  color: #fff;
+}
+
+.adm-tkt-btn--delete:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.adm-tkt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.45rem 1.1rem;
   border: none;
   border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.3s;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
 }
 
-.approve-delete-btn:hover:not(:disabled) {
-  background: #218838;
-}
-
-.approve-delete-btn:disabled {
+.adm-tkt-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.reject-delete-btn {
-  padding: 0.75rem 1.5rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.3s;
+.adm-tkt-btn--chat {
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
-.reject-delete-btn:hover:not(:disabled) {
-  background: #5a6268;
+.adm-tkt-btn--chat:hover:not(:disabled) {
+  background: rgba(79, 70, 229, 0.18);
 }
 
-.reject-delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Modal */
+.adm-tkt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
 }
 
-/* Responsive overrides (kept at end for precedence) */
-@media (max-width: 1024px) {
-  .admin-tickets-page {
-    padding: 1.25rem;
+.adm-tkt-modal {
+    width: 100%;
+  max-width: 480px;
+  padding: 1.5rem 1.75rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.adm-tkt-modal h2 {
+  margin: 0 0 0.65rem;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.adm-tkt-modal-text {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.adm-tkt-modal .adm-tkt-select {
+  width: 100%;
+  margin-bottom: 1.15rem;
+}
+
+.adm-tkt-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .adm-tkt-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
   }
 
-  .admin-tickets-header {
-    flex-wrap: wrap;
-    gap: 1rem;
+  .adm-tkt-page .page-header-actions {
+    margin-top: 0;
+    margin-inline-start: 0;
+    justify-content: flex-start;
+  }
+
+  .adm-tkt-header-filter {
     align-items: flex-start;
-  }
-
-  .filters-container {
-    gap: 1rem;
     width: 100%;
   }
 
-  .ticket-header {
-    gap: 0.9rem;
-  }
-
-  .pending-delete-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.9rem;
+  .adm-tkt-header-meta {
+    text-align: start;
   }
 }
 
 @media (max-width: 768px) {
-  .admin-tickets-page {
-    padding: 1rem;
-  }
-
-  .admin-tickets-header h1 {
-    font-size: 1.6rem;
-  }
-
-  .filters-container {
+  .adm-tkt-card-header {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .status-filter,
-  .assigned-filter {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  .adm-tkt-card-header-end {
+    justify-content: flex-start;
   }
 
-  .status-filter select,
-  .assigned-filter select {
+  .adm-tkt-pending-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adm-tkt-pending-actions,
+  .adm-tkt-delete-actions {
     width: 100%;
+    flex-direction: column;
+  }
+
+  .adm-tkt-pending-actions .adm-tkt-btn,
+  .adm-tkt-delete-actions .adm-tkt-btn,
+  .adm-tkt-btn--delete {
+    width: 100%;
+  }
+
+  .adm-tkt-filter-row {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .adm-tkt-filter-row .adm-tkt-select {
+    flex: 1;
     min-width: 0;
   }
-
-  .ticket-header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 1rem;
-  }
-
-  .ticket-header-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .ticket-meta {
-    word-break: break-word;
-  }
-
-  .ticket-details {
-    padding: 1rem;
-  }
-
-  .ticket-actions {
-    flex-direction: column;
-    gap: 0.9rem;
-    padding: 1rem;
-  }
-
-  .response-header {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .pending-deletes-section {
-    padding: 1rem;
-  }
-
-  .pending-delete-actions,
-  .pending-delete-admin-actions {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .approve-delete-btn,
-  .reject-delete-btn,
-  .delete-ticket-btn,
-  .submit-response-btn {
-    width: 100%;
-  }
 }
-
-@media (max-width: 480px) {
-  .admin-tickets-page {
-    padding: 0.75rem;
-  }
-
-  .admin-tickets-header h1 {
-    font-size: 1.35rem;
-  }
-
-  .ticket-header h3 {
-    font-size: 1.05rem;
-  }
-
-  .status-badge {
-    font-size: 0.78rem;
-    padding: 0.35rem 0.7rem;
-  }
-
-  .modal-content {
-    width: calc(100% - 1rem);
-    padding: 1rem;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
-  .modal-actions button {
-    width: 100%;
-  }
-}
-

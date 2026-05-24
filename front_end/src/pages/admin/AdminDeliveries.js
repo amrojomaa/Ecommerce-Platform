@@ -1,4 +1,6 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import { tUi } from '../../i18n/uiText';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
@@ -8,6 +10,8 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import OrderMapTracker from '../../components/OrderMapTracker';
+import { FaXmark } from 'react-icons/fa6';
+import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminDeliveries.css';
 
 const DELIVERY_STATUS_LABEL_KEYS = {
@@ -31,6 +35,7 @@ const ROLE_LABEL_KEYS = {
 };
 
 const AdminDeliveries = () => {
+  const { t } = useTranslation();
   const { formatCurrency } = useCurrency();
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
@@ -39,6 +44,7 @@ const AdminDeliveries = () => {
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedJobId, setExpandedJobId] = useState(null);
+  const [expandedJobTab, setExpandedJobTab] = useState('overview');
   const [showIssueOnly, setShowIssueOnly] = useState(false);
   const [showProofOnly, setShowProofOnly] = useState(false);
   const [issueMessages, setIssueMessages] = useState([]);
@@ -217,6 +223,8 @@ const AdminDeliveries = () => {
       return;
     }
 
+    setExpandedJobTab('overview');
+
     const job = allJobs.find((j) => j.id === expandedJobId);
     if (job?.issue_type) {
       fetchIssueMessages(expandedJobId);
@@ -244,167 +252,203 @@ const AdminDeliveries = () => {
     return normalized.replace(/_/g, ' ');
   };
 
-  if (loading) {
-    return (
-      <div className="page-loading admin-deliveries-loading">
-        <LoadingSpinner size="large" />
-      </div>);
-
-  }
-
-  const deliveryMgmtTitle = tUi("ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811");
+  const deliveryMgmtTitle = tUi('ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811');
+  const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
+  const jobCountLabel =
+    jobs.length === 1
+      ? tUi('ui.pages.admin.adminDeliveries.job_40eab796f5')
+      : tUi('ui.pages.admin.adminDeliveries.jobs_e4035b76af');
 
   return (
-    <div className="admin-page-shell admin-deliveries">
-      {issueCount > 0 &&
-      <div className="delivery-issue-notice" role="status" aria-live="polite">
-          <div className="notice-icon-wrap" aria-hidden="true">
-            <span className="notice-bell">🔔</span>
-            <span className="notice-count">{issueCount}</span>
-          </div>
-          <div className="notice-text">
-            <strong>{issueCount}</strong>{tUi("ui.pages.admin.adminDeliveries.delivery_8e33d75337")}{issueCount === 1 ? tUi("ui.pages.admin.adminDeliveries.issueReportNeeds_9d4a2961c3") : tUi("ui.pages.admin.adminDeliveries.issueReportsNeed_06c771831a")}{tUi("ui.pages.admin.adminDeliveries.adminAttention_5a79bc3bce")}
-        </div>
-          <button
-          type="button"
-          className="notice-action-btn"
-          onClick={() => {
-            setShowIssueOnly(true);
-            setShowProofOnly(false);
-            setStatusFilter("all");
-            setExpandedJobId(null);
-          }}>{tUi("ui.pages.admin.adminDeliveries.viewIssueOrders_863af5a2ad")}
-
-
-        </button>
-          {showIssueOnly &&
-        <button
-          type="button"
-          className="notice-clear-btn"
-          onClick={() => {
-            setShowIssueOnly(false);
-          }}>{tUi("ui.pages.admin.adminDeliveries.clear_9b77f46f9c")}
-
-
-        </button>
-        }
-        </div>
-      }
-
-      {proofPhotoCount > 0 &&
-      <div className="delivery-photo-notice" role="status" aria-live="polite">
-          <div className="notice-icon-wrap" aria-hidden="true">
-            <span className="notice-bell">📸</span>
-            <span className="notice-count">{proofPhotoCount}</span>
-          </div>
-          <div className="notice-text">
-            <strong>{proofPhotoCount}</strong>{tUi("ui.pages.admin.adminDeliveries.delivery_8e33d75337")}{proofPhotoCount === 1 ? tUi("ui.pages.admin.adminDeliveries.jobHas_b7c5f7c5de") : tUi("ui.pages.admin.adminDeliveries.jobsHave_aa577eee49")}{tUi("ui.pages.admin.adminDeliveries.proofPhotosUploadedByDrivers_6d35ed5c58")}
-        </div>
-          <button
-          type="button"
-          className="notice-action-btn"
-          onClick={() => {
-            setShowProofOnly(true);
-            setShowIssueOnly(false);
-            setStatusFilter("all");
-            setExpandedJobId(null);
-          }}>{tUi("ui.pages.admin.adminDeliveries.viewPhotoOrders_58b886c5cd")}
-
-
-        </button>
-          {showProofOnly &&
-        <button
-          type="button"
-          className="notice-clear-btn"
-          onClick={() => {
-            setShowProofOnly(false);
-          }}>{tUi("ui.pages.admin.adminDeliveries.clear_9b77f46f9c")}
-
-
-        </button>
-        }
-        </div>
-      }
-
+    <div className="admin-page-shell adm-page adm-del-page">
       <PageHeader
-        kicker={deliveryMgmtTitle}
+        kicker={panelKicker}
         title={deliveryMgmtTitle}
+        subtitle={tUi('ui.pages.admin.adminDeliveries.subtitle_1a2b3c4d5g')}
         actions={
-        <div className="deliveries-filter">
-          <label htmlFor="delivery-status-filter">{tUi("ui.pages.admin.adminDeliveries.filterByStatus_25f69a210d")}</label>
-          <select
-            id="delivery-status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="status-filter-select">
-            
-            {deliveryStatuses.map((status) =>
-            <option key={status} value={status}>
-                {status === "all" ? tUi("ui.pages.admin.adminDeliveries.all_37e6961373") : getStatusLabel(status)}
-              </option>
+          <div className="adm-del-header-filter">
+            <div className="adm-del-filter-row">
+              <label className="adm-del-filter-label" htmlFor="delivery-status-filter">
+                {tUi('ui.pages.admin.adminDeliveries.filterByStatus_25f69a210d')}
+              </label>
+              <select
+                id="delivery-status-filter"
+                className="adm-del-select"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {deliveryStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status === 'all'
+                      ? tUi('ui.pages.admin.adminDeliveries.all_37e6961373')
+                      : getStatusLabel(status)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="adm-del-header-meta" aria-live="polite">
+              <strong>{jobs.length}</strong> {jobCountLabel}
+            </p>
+            {(showIssueOnly || showProofOnly) && (
+              <div className="adm-del-filter-pills">
+                {showIssueOnly && (
+                  <span className="adm-del-filter-pill">
+                    {tUi('ui.pages.admin.adminDeliveries.issueReportsOnly_098fbc0bc3')}
+                  </span>
+                )}
+                {showProofOnly && (
+                  <span className="adm-del-filter-pill adm-del-filter-pill--photo">
+                    {tUi('ui.pages.admin.adminDeliveries.proofPhotosOnly_35ed213543')}
+                  </span>
+                )}
+              </div>
             )}
-          </select>
-          {statusFilter !== "all" &&
-          <span className="filter-count">
-              ({jobs.length} {jobs.length === 1 ? tUi("ui.pages.admin.adminDeliveries.job_40eab796f5") : tUi("ui.pages.admin.adminDeliveries.jobs_e4035b76af")})
-            </span>
-          }
-          {showIssueOnly &&
-          <span className="issue-only-pill">{tUi("ui.pages.admin.adminDeliveries.issueReportsOnly_098fbc0bc3")}</span>
-          }
-          {showProofOnly &&
-          <span className="issue-only-pill photo-only-pill">{tUi("ui.pages.admin.adminDeliveries.proofPhotosOnly_35ed213543")}</span>
-          }
-        </div>
+          </div>
         }
       />
 
-      {error ?
-      <motion.div
-        className="error-message"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          padding: '20px',
-          backgroundColor: '#ffebee',
-          color: '#c62828',
-          borderRadius: '8px',
-          margin: '20px 0'
-        }}>
-        
-          <p><strong>{tUi("ui.pages.admin.adminDeliveries.error_c7f47eee32")}</strong> {error}</p>
-          <button onClick={fetchJobs} className="retry-btn">{tUi("ui.pages.admin.adminDeliveries.retry_4ec5161833")}</button>
-        </motion.div> :
-      jobs.length === 0 ?
-      <motion.div
-        className="empty-deliveries"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}>
-        
-          <p>
-            {statusFilter === "all" ? tUi("ui.pages.admin.adminDeliveries.noDeliveryJobsFound_80dac255bf") : tUi("ui.pages.admin.adminDeliveries.noDeliveryJobsWithStatus_64e7ce84ea", { value0:
-
-            getStatusLabel(statusFilter) })}
-          </p>
-          {statusFilter !== "all" &&
-        <button onClick={() => setStatusFilter("all")} className="show-all-btn">{tUi("ui.pages.admin.adminDeliveries.showAllJobs_7eacebe8db")}
-
+      {(issueCount > 0 || proofPhotoCount > 0) && (
+        <div className="adm-del-notices">
+          {issueCount > 0 && (
+            <div className="adm-del-notice adm-del-notice--issue" role="status" aria-live="polite">
+              <div className="adm-del-notice-icon" aria-hidden="true">
+                <span className="adm-del-notice-bell">🔔</span>
+                <span className="adm-del-notice-count">{issueCount}</span>
+              </div>
+              <div className="adm-del-notice-text">
+                <strong>{issueCount}</strong>
+                {tUi('ui.pages.admin.adminDeliveries.delivery_8e33d75337')}
+                {issueCount === 1
+                  ? tUi('ui.pages.admin.adminDeliveries.issueReportNeeds_9d4a2961c3')
+                  : tUi('ui.pages.admin.adminDeliveries.issueReportsNeed_06c771831a')}
+                {tUi('ui.pages.admin.adminDeliveries.adminAttention_5a79bc3bce')}
+        </div>
+          <button
+          type="button"
+                className="adm-del-notice-btn"
+          onClick={() => {
+            setShowIssueOnly(true);
+            setShowProofOnly(false);
+                  setStatusFilter('all');
+            setExpandedJobId(null);
+                }}
+              >
+                {tUi('ui.pages.admin.adminDeliveries.viewIssueOrders_863af5a2ad')}
         </button>
-        }
-        </motion.div> :
+              {showIssueOnly && (
+        <button
+          type="button"
+                  className="adm-del-notice-btn adm-del-notice-btn--clear"
+                  onClick={() => setShowIssueOnly(false)}
+                >
+                  {tUi('ui.pages.admin.adminDeliveries.clear_9b77f46f9c')}
+        </button>
+              )}
+        </div>
+          )}
 
-      <div className="deliveries-table-container">
-          <table className="deliveries-table">
+          {proofPhotoCount > 0 && (
+            <div className="adm-del-notice adm-del-notice--photo" role="status" aria-live="polite">
+              <div className="adm-del-notice-icon" aria-hidden="true">
+                <span className="adm-del-notice-bell">📸</span>
+                <span className="adm-del-notice-count">{proofPhotoCount}</span>
+          </div>
+              <div className="adm-del-notice-text">
+                <strong>{proofPhotoCount}</strong>
+                {tUi('ui.pages.admin.adminDeliveries.delivery_8e33d75337')}
+                {proofPhotoCount === 1
+                  ? tUi('ui.pages.admin.adminDeliveries.jobHas_b7c5f7c5de')
+                  : tUi('ui.pages.admin.adminDeliveries.jobsHave_aa577eee49')}
+                {tUi('ui.pages.admin.adminDeliveries.proofPhotosUploadedByDrivers_6d35ed5c58')}
+        </div>
+          <button
+          type="button"
+                className="adm-del-notice-btn"
+          onClick={() => {
+            setShowProofOnly(true);
+            setShowIssueOnly(false);
+                  setStatusFilter('all');
+            setExpandedJobId(null);
+                }}
+              >
+                {tUi('ui.pages.admin.adminDeliveries.viewPhotoOrders_58b886c5cd')}
+        </button>
+              {showProofOnly && (
+        <button
+          type="button"
+                  className="adm-del-notice-btn adm-del-notice-btn--clear"
+                  onClick={() => setShowProofOnly(false)}
+                >
+                  {tUi('ui.pages.admin.adminDeliveries.clear_9b77f46f9c')}
+        </button>
+              )}
+        </div>
+          )}
+        </div>
+      )}
+
+      <section className="adm-del-section">
+        {loading ? (
+          <div className="adm-del-loading">
+            <LoadingSpinner size="large" />
+          </div>
+        ) : error ? (
+      <motion.div
+            className="adm-del-error"
+            initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+          >
+            <p>
+              <strong>{tUi('ui.pages.admin.adminDeliveries.error_c7f47eee32')}</strong> {error}
+            </p>
+            <button type="button" onClick={fetchJobs} className="adm-btn-primary">
+              {tUi('ui.pages.admin.adminDeliveries.retry_4ec5161833')}
+            </button>
+          </motion.div>
+        ) : jobs.length === 0 ? (
+          <motion.div className="adm-del-empty" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <p>
+              {statusFilter === 'all'
+                ? tUi('ui.pages.admin.adminDeliveries.noDeliveryJobsFound_80dac255bf')
+                : tUi('ui.pages.admin.adminDeliveries.noDeliveryJobsWithStatus_64e7ce84ea', {
+                    value0: getStatusLabel(statusFilter)
+                  })}
+            </p>
+            {statusFilter !== 'all' && (
+              <button type="button" onClick={() => setStatusFilter('all')} className="adm-btn-secondary">
+                {tUi('ui.pages.admin.adminDeliveries.showAllJobs_7eacebe8db')}
+        </button>
+            )}
+          </motion.div>
+        ) : (
+          <div className="adm-del-data-panel" role="region" aria-label={deliveryMgmtTitle}>
+            <table className="adm-del-table">
             <thead>
               <tr>
-                <th>{tUi("ui.pages.admin.adminDeliveries.jobId_e9870f1542")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.orderId_722c965e70")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.driver_98ea19431c")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.status_e033fc5e4f")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.pickup_b758cea6c8")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.delivery_e0a72301c9")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.payment_ca9b9e5f35")}</th>
-                <th>{tUi("ui.pages.admin.adminDeliveries.created_138ce7b7fa")}</th>
+                <th className="adm-del-col-id" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.jobId_e9870f1542')}
+                </th>
+                <th className="adm-del-col-order" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.orderId_722c965e70')}
+                </th>
+                <th className="adm-del-col-driver" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.driver_98ea19431c')}
+                </th>
+                <th className="adm-del-col-status" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.status_e033fc5e4f')}
+                </th>
+                <th className="adm-del-col-address" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.pickup_b758cea6c8')}
+                </th>
+                <th className="adm-del-col-address" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.delivery_e0a72301c9')}
+                </th>
+                <th className="adm-del-col-payment" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.payment_ca9b9e5f35')}
+                </th>
+                <th className="adm-del-col-date" scope="col">
+                  {tUi('ui.pages.admin.adminDeliveries.created_138ce7b7fa')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -427,260 +471,434 @@ const AdminDeliveries = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className={`delivery-row ${expandedJobId === job.id ? 'expanded' : ''}`}
+                    className={`adm-del-row ${expandedJobId === job.id ? 'is-expanded' : ''}`}
                     onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
-                    style={{ cursor: 'pointer' }}>
-                    
-                    <td data-label={tUi("ui.pages.admin.adminDeliveries.jobId_e9870f1542")}>#{job.id}</td>
-                    <td data-label={tUi("ui.pages.admin.adminDeliveries.orderId_722c965e70")}>#{job.order_id}</td>
-                    <td data-label={tUi("ui.pages.admin.adminDeliveries.driver_98ea19431c")}>{job.driver_name || <span className="no-driver">{tUi("ui.pages.admin.adminDeliveries.unassigned_28bca48db4")}</span>}</td>
-                    <td data-label={tUi("ui.pages.admin.adminDeliveries.status_e033fc5e4f")}>
-                      <span className={`delivery-status status-${job.status}`}>
+                  >
+                    <td className="adm-del-col-id adm-del-id" data-label={tUi('ui.pages.admin.adminDeliveries.jobId_e9870f1542')}>
+                      #{job.id}
+                    </td>
+                    <td className="adm-del-col-order" data-label={tUi('ui.pages.admin.adminDeliveries.orderId_722c965e70')}>
+                      #{job.order_id}
+                    </td>
+                    <td className="adm-del-col-driver" data-label={tUi('ui.pages.admin.adminDeliveries.driver_98ea19431c')}>
+                      {job.driver_name || (
+                        <span className="adm-del-muted">{tUi('ui.pages.admin.adminDeliveries.unassigned_28bca48db4')}</span>
+                      )}
+                    </td>
+                    <td className="adm-del-col-status" data-label={tUi('ui.pages.admin.adminDeliveries.status_e033fc5e4f')}>
+                      <span className={`adm-del-status adm-del-status--${normalizedStatus}`}>
                         {getStatusLabel(job.status)}
                       </span>
                     </td>
-                    <td className="address-cell" data-label={tUi("ui.pages.admin.adminDeliveries.pickup_b758cea6c8")}>{job.pickup_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</td>
-                    <td className="address-cell" data-label={tUi("ui.pages.admin.adminDeliveries.delivery_e0a72301c9")}>{job.delivery_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</td>
-                    <td className="payment-cell" data-label={tUi("ui.pages.admin.adminDeliveries.payment_ca9b9e5f35")}>{formatCurrency(job.payment_amount || 0)}</td>
-                    <td data-label={tUi("ui.pages.admin.adminDeliveries.created_138ce7b7fa")}>{formatDate(job.created_at)}</td>
+                    <td className="adm-del-col-address" data-label={tUi('ui.pages.admin.adminDeliveries.pickup_b758cea6c8')}>
+                      {job.pickup_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+                    </td>
+                    <td className="adm-del-col-address" data-label={tUi('ui.pages.admin.adminDeliveries.delivery_e0a72301c9')}>
+                      {job.delivery_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+                    </td>
+                    <td className="adm-del-col-payment" data-label={tUi('ui.pages.admin.adminDeliveries.payment_ca9b9e5f35')}>
+                      {formatCurrency(job.payment_amount || 0)}
+                    </td>
+                    <td className="adm-del-col-date" data-label={tUi('ui.pages.admin.adminDeliveries.created_138ce7b7fa')}>
+                      {formatDate(job.created_at)}
+                    </td>
                   </motion.tr>
-                  {expandedJobId === job.id &&
-                  <tr className="expanded-row">
+                  {expandedJobId === job.id && (
+                  <tr className="adm-del-expanded-row">
                       <td colSpan="8">
-                        <div className="job-expanded-details">
-                          <div className="tracking-map-section" style={{ marginBottom: '20px' }}>
-                            <OrderMapTracker deliveryJob={job} />
+                        <div
+                          className="adm-del-job-detail"
+                          onClick={(e) => e.stopPropagation()}
+                          role="region"
+                          aria-label={tUi('ui.pages.admin.adminDeliveries.jobDetails_7a8b9c0d1e', {
+                            value0: job.id
+                          })}
+                        >
+                          <header className="adm-del-job-header">
+                            <div className="adm-del-job-header-copy">
+                              <p className="adm-del-job-kicker">
+                                {tUi('ui.pages.admin.adminDeliveries.jobDetails_7a8b9c0d1e', { value0: job.id })}
+                              </p>
+                              <h3 className="adm-del-job-title">
+                                {tUi('ui.pages.admin.adminDeliveries.orderTitle_8e5d31f868', {
+                                  value0: job.order_id
+                                })}
+                              </h3>
+                            </div>
+                            <div className="adm-del-job-header-actions">
+                              <span className={`adm-del-status adm-del-status--${normalizedStatus}`}>
+                                {getStatusLabel(job.status)}
+                              </span>
+                              <button
+                                type="button"
+                                className="adm-del-close-btn"
+                                onClick={() => setExpandedJobId(null)}
+                                aria-label={tUi('ui.pages.admin.adminDeliveries.closeDetails_8b9c0d1e2f')}
+                              >
+                                <FaXmark aria-hidden />
+                              </button>
                           </div>
-                          <>
-                          <div className="expanded-grid">
-                            <div className="detail-card">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.pickup_d7b7e7a679")}</h4>
-                              <p>{job.pickup_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
-                              {job.pickup_latitude &&
-                              <p className="coords">({job.pickup_latitude?.toFixed(4)}, {job.pickup_longitude?.toFixed(4)})</p>
-                              }
-                            </div>
-                            <div className="detail-card">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.delivery_bf08aa740b")}</h4>
-                              <p>{job.delivery_address || tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
-                              {job.delivery_latitude &&
-                              <p className="coords">({job.delivery_latitude?.toFixed(4)}, {job.delivery_longitude?.toFixed(4)})</p>
-                              }
-                            </div>
-                            <div className="detail-card">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.customer_6ce1add7ce")}</h4>
-                              {job.customer ?
-                              <p>{job.customer.first_name} {job.customer.last_name}
-                                  {job.customer.phone && tUi("ui.pages.admin.adminDeliveries.value_9e10da0234", { value0: job.customer.phone })}
-                                </p> :
+                          </header>
 
-                              <p>{tUi("ui.pages.admin.adminDeliveries.nA_201b30d45e")}</p>
-                              }
+                          <div className="adm-del-job-meta">
+                            <div className="adm-del-job-meta-item">
+                              <span className="adm-del-job-meta-label">
+                                {tUi('ui.pages.admin.adminDeliveries.payment_ca9b9e5f35')}
+                              </span>
+                              <span className="adm-del-job-meta-value">
+                                {formatCurrency(job.payment_amount || 0)}
+                              </span>
                             </div>
-                            <div className="detail-card">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.driver_f405bc2809")}</h4>
-                              <p>{job.driver_name || tUi("ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1")}</p>
-                              {canAssignDriver &&
-                              <div
-                                className="assign-driver-controls"
-                                onClick={(e) => e.stopPropagation()}>
-                                
+                            <div className="adm-del-job-meta-item">
+                              <span className="adm-del-job-meta-label">
+                                {tUi('ui.pages.admin.adminDeliveries.driver_98ea19431c')}
+                              </span>
+                              <span className="adm-del-job-meta-value">
+                                {job.driver_name || tUi('ui.pages.admin.adminDeliveries.unassigned_28bca48db4')}
+                              </span>
+                            </div>
+                            <div className="adm-del-job-meta-item">
+                              <span className="adm-del-job-meta-label">
+                                {tUi('ui.pages.admin.adminDeliveries.created_138ce7b7fa')}
+                              </span>
+                              <span className="adm-del-job-meta-value">{formatDate(job.created_at)}</span>
+                            </div>
+                          </div>
+
+                          <div className="adm-del-job-tabs" role="tablist">
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={expandedJobTab === 'overview'}
+                              className={expandedJobTab === 'overview' ? 'is-active' : ''}
+                              onClick={() => setExpandedJobTab('overview')}
+                            >
+                              {tUi('ui.pages.admin.adminDeliveries.tabOverview_9c0d1e2f3a')}
+                            </button>
+                            <button
+                              type="button"
+                              role="tab"
+                              aria-selected={expandedJobTab === 'map'}
+                              className={expandedJobTab === 'map' ? 'is-active' : ''}
+                              onClick={() => setExpandedJobTab('map')}
+                            >
+                              {tUi('ui.pages.admin.adminDeliveries.tabTracking_0d1e2f3a4b')}
+                            </button>
+                            {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (
+                              <button
+                                type="button"
+                                role="tab"
+                                aria-selected={expandedJobTab === 'proof'}
+                                className={expandedJobTab === 'proof' ? 'is-active' : ''}
+                                onClick={() => setExpandedJobTab('proof')}
+                              >
+                                {tUi('ui.pages.admin.adminDeliveries.deliveryProofPhotos_2ec00d3e69')}
+                              </button>
+                            )}
+                            {job.issue_type && (
+                              <button
+                                type="button"
+                                role="tab"
+                                aria-selected={expandedJobTab === 'issue'}
+                                className={expandedJobTab === 'issue' ? 'is-active' : ''}
+                                onClick={() => setExpandedJobTab('issue')}
+                              >
+                                {tUi('ui.pages.admin.adminDeliveries.issueReported_44c3c7d44b')}
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="adm-del-job-tab-panel">
+                            {expandedJobTab === 'overview' && (
+                              <div className="adm-del-job-overview">
+                                <div className="adm-del-detail-grid">
+                                  <div className="adm-del-detail-card">
+                                    <h4>{tUi('ui.pages.admin.adminDeliveries.pickup_d7b7e7a679')}</h4>
+                                    <p>{job.pickup_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}</p>
+                                    {job.pickup_latitude && (
+                                      <p className="coords">
+                                        ({job.pickup_latitude?.toFixed(4)}, {job.pickup_longitude?.toFixed(4)})
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="adm-del-detail-card">
+                                    <h4>{tUi('ui.pages.admin.adminDeliveries.delivery_bf08aa740b')}</h4>
+                                    <p>{job.delivery_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}</p>
+                                    {job.delivery_latitude && (
+                                      <p className="coords">
+                                        ({job.delivery_latitude?.toFixed(4)}, {job.delivery_longitude?.toFixed(4)})
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="adm-del-detail-card">
+                                    <h4>{tUi('ui.pages.admin.adminDeliveries.customer_6ce1add7ce')}</h4>
+                                    {job.customer ? (
+                                      <p>
+                                        {job.customer.first_name} {job.customer.last_name}
+                                        {job.customer.phone &&
+                                          tUi('ui.pages.admin.adminDeliveries.value_9e10da0234', {
+                                            value0: job.customer.phone
+                                          })}
+                                      </p>
+                                    ) : (
+                                      <p>{tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}</p>
+                                    )}
+                                  </div>
+                                  <div className="adm-del-detail-card adm-del-detail-card--driver">
+                                    <h4>{tUi('ui.pages.admin.adminDeliveries.driver_f405bc2809')}</h4>
+                                    <p>{job.driver_name || tUi('ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1')}</p>
+                                    {canAssignDriver && (
+                                      <div className="adm-del-assign-controls">
                                   <select
-                                  value={selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : '')}
+                                          value={
+                                            selectedDriverByJob[job.id] ??
+                                            (job.driver_id ? String(job.driver_id) : '')
+                                          }
                                   onChange={(e) => {
                                     const value = e.target.value;
                                     setSelectedDriverByJob((prev) => ({ ...prev, [job.id]: value }));
-                                  }}>
-                                  
-                                    <option value="">{tUi("ui.pages.admin.adminDeliveries.selectDriver_a679aadb8d")}</option>
-                                    {drivers.map((driver) =>
+                                          }}
+                                        >
+                                          <option value="">
+                                            {tUi('ui.pages.admin.adminDeliveries.selectDriver_a679aadb8d')}
+                                          </option>
+                                          {drivers.map((driver) => (
                                   <option key={driver.id} value={String(driver.id)}>
                                         {driver.first_name} {driver.last_name} ({driver.email})
                                       </option>
-                                  )}
+                                          ))}
                                   </select>
                                   <button
                                   type="button"
-                                  className="assign-driver-btn"
+                                          className="adm-btn-primary adm-del-assign-btn"
                                   disabled={
                                   assigningDriverJobId === job.id ||
-                                  !(selectedDriverByJob[job.id] ?? (job.driver_id ? String(job.driver_id) : ''))
-                                  }
-                                  onClick={() => handleAssignDriver(job.id)}>
-                                  
-                                    {assigningDriverJobId === job.id ? tUi("ui.pages.admin.adminDeliveries.assigning_0faec53f0e") : tUi("ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a")}
+                                            !(selectedDriverByJob[job.id] ??
+                                              (job.driver_id ? String(job.driver_id) : ''))
+                                          }
+                                          onClick={() => handleAssignDriver(job.id)}
+                                        >
+                                          {assigningDriverJobId === job.id
+                                            ? tUi('ui.pages.admin.adminDeliveries.assigning_0faec53f0e')
+                                            : tUi('ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a')}
                                   </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              }
+
+                                {job.items && job.items.length > 0 && (
+                                  <section className="adm-del-items-section">
+                                    <h4 className="adm-del-section-title">
+                                      {tUi('ui.pages.admin.adminDeliveries.items_fa39ea7cbb')}
+                                    </h4>
+                                    <div className="adm-del-items-list">
+                                      {job.items.map((item, idx) => (
+                                        <span key={idx} className="adm-del-item-tag">
+                                          {item.product?.name} x{item.quantity}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </section>
+                                )}
                             </div>
+                            )}
+
+                            {expandedJobTab === 'map' && (
+                              <div className="adm-del-map-section">
+                                <OrderMapTracker deliveryJob={job} />
                           </div>
-                          {(pickupPhotos.length > 0 || deliveryPhotos.length > 0) &&
-                          <div className="proof-photos-section">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.deliveryProofPhotos_2ec00d3e69")}</h4>
-                              <div className="proof-photo-groups">
-                                {pickupPhotos.length > 0 &&
-                              <div className="proof-photo-group">
-                                    <div className="proof-photo-group-header">
-                                      <h5>{tUi("ui.pages.admin.adminDeliveries.pickedUp_519b67e151")}</h5>
+                            )}
+
+                            {expandedJobTab === 'proof' && (pickupPhotos.length > 0 || deliveryPhotos.length > 0) && (
+                              <section className="adm-del-proof-section">
+                                <div className="adm-del-proof-groups">
+                                  {pickupPhotos.length > 0 && (
+                                    <div className="adm-del-proof-group">
+                                      <div className="adm-del-proof-header">
+                                        <h5>{tUi('ui.pages.admin.adminDeliveries.pickedUp_519b67e151')}</h5>
                                       <button
                                     type="button"
-                                    className="proof-ok-btn"
-                                    disabled={job.pickup_photo_checked || reviewingPhotoType === `${job.id}-pickup`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleReviewPhotoType(job.id, "pickup");
-                                    }}>
-                                    
-                                        {job.pickup_photo_checked ? tUi("ui.pages.admin.adminDeliveries.checkedOk_c8b794882a") :
-
-                                    reviewingPhotoType === `${job.id}-pickup` ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markOk_245791044e")
-
-                                    }
+                                          className="adm-del-btn-ok"
+                                          disabled={
+                                            job.pickup_photo_checked ||
+                                            reviewingPhotoType === `${job.id}-pickup`
+                                          }
+                                          onClick={() => handleReviewPhotoType(job.id, 'pickup')}
+                                        >
+                                          {job.pickup_photo_checked
+                                            ? tUi('ui.pages.admin.adminDeliveries.checkedOk_c8b794882a')
+                                            : reviewingPhotoType === `${job.id}-pickup`
+                                              ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
+                                              : tUi('ui.pages.admin.adminDeliveries.markOk_245791044e')}
                                       </button>
                                     </div>
-                                    <div className="proof-photo-grid">
-                                      {pickupPhotos.map((photo) =>
-                                  <div className="proof-photo-card" key={`pickup-photo-${photo.id}`}>
+                                      <div className="adm-del-proof-grid">
+                                        {pickupPhotos.map((photo) => (
+                                          <div className="adm-del-proof-card" key={`pickup-photo-${photo.id}`}>
                                           <img
                                       src={getImageUrl(photo.image_path)}
-                                      alt={tUi("ui.pages.admin.adminDeliveries.pickupProof_de18bafb10")}
-                                      className="proof-preview-photo" />
-                                    
+                                              alt={tUi('ui.pages.admin.adminDeliveries.pickupProof_de18bafb10')}
+                                              className="adm-del-proof-img"
+                                            />
                                           <span>{formatDate(photo.created_at)}</span>
+                                        </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {deliveryPhotos.length > 0 && (
+                                    <div className="adm-del-proof-group">
+                                      <div className="adm-del-proof-header">
+                                        <h5>{tUi('ui.pages.admin.adminDeliveries.delivered_7131e29334')}</h5>
+                                      <button
+                                    type="button"
+                                          className="adm-del-btn-ok"
+                                          disabled={
+                                            job.delivery_photo_checked ||
+                                            reviewingPhotoType === `${job.id}-delivery`
+                                          }
+                                          onClick={() => handleReviewPhotoType(job.id, 'delivery')}
+                                        >
+                                          {job.delivery_photo_checked
+                                            ? tUi('ui.pages.admin.adminDeliveries.checkedOk_c8b794882a')
+                                            : reviewingPhotoType === `${job.id}-delivery`
+                                              ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
+                                              : tUi('ui.pages.admin.adminDeliveries.markOk_245791044e')}
+                                      </button>
+                                    </div>
+                                      <div className="adm-del-proof-grid">
+                                        {deliveryPhotos.map((photo) => (
+                                          <div className="adm-del-proof-card" key={`delivery-photo-${photo.id}`}>
+                                          <img
+                                      src={getImageUrl(photo.image_path)}
+                                              alt={tUi('ui.pages.admin.adminDeliveries.deliveryProof_8e26a61d41')}
+                                              className="adm-del-proof-img"
+                                            />
+                                          <span>{formatDate(photo.created_at)}</span>
+                                          </div>
+                                        ))}
+                                      </div>
                                         </div>
                                   )}
                                     </div>
-                                  </div>
-                              }
+                              </section>
+                            )}
 
-                                {deliveryPhotos.length > 0 &&
-                              <div className="proof-photo-group">
-                                    <div className="proof-photo-group-header">
-                                      <h5>{tUi("ui.pages.admin.adminDeliveries.delivered_7131e29334")}</h5>
-                                      <button
-                                    type="button"
-                                    className="proof-ok-btn"
-                                    disabled={job.delivery_photo_checked || reviewingPhotoType === `${job.id}-delivery`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleReviewPhotoType(job.id, "delivery");
-                                    }}>
-                                    
-                                        {job.delivery_photo_checked ? tUi("ui.pages.admin.adminDeliveries.checkedOk_c8b794882a") :
-
-                                    reviewingPhotoType === `${job.id}-delivery` ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markOk_245791044e")
-
-                                    }
-                                      </button>
-                                    </div>
-                                    <div className="proof-photo-grid">
-                                      {deliveryPhotos.map((photo) =>
-                                  <div className="proof-photo-card" key={`delivery-photo-${photo.id}`}>
-                                          <img
-                                      src={getImageUrl(photo.image_path)}
-                                      alt={tUi("ui.pages.admin.adminDeliveries.deliveryProof_8e26a61d41")}
-                                      className="proof-preview-photo" />
-                                    
-                                          <span>{formatDate(photo.created_at)}</span>
-                                        </div>
+                            {expandedJobTab === 'issue' && job.issue_type && (
+                              <section className="adm-del-issue-panel">
+                                <div className="adm-del-issue-alert">
+                                  <strong>{tUi('ui.pages.admin.adminDeliveries.issueReported_44c3c7d44b')}</strong>{' '}
+                                  {job.issue_type.replace(/_/g, ' ')}
+                                  {job.issue_resolved && (
+                                    <span className="adm-del-issue-solved">
+                                      {tUi('ui.pages.admin.adminDeliveries.solved_1bad684e4b')}
+                                    </span>
                                   )}
-                                    </div>
-                                  </div>
-                              }
-                              </div>
-                            </div>
-                          }
-
-                          {job.issue_type &&
-                          <div className="issue-alert">
-                              <strong>{tUi("ui.pages.admin.adminDeliveries.issueReported_44c3c7d44b")}</strong> {job.issue_type.replace(/_/g, ' ')}
-                              {job.issue_resolved &&
-                            <span className="issue-solved-pill">{tUi("ui.pages.admin.adminDeliveries.solved_1bad684e4b")}</span>
-                            }
                               {job.issue_description && <p>{job.issue_description}</p>}
-                              {issuePhotos.length > 0 &&
-                            <div className="issue-photo-strip">
-                                  {issuePhotos.map((photo) =>
+                                  {issuePhotos.length > 0 && (
+                                    <div className="adm-del-issue-photos">
+                                      {issuePhotos.map((photo) => (
                               <img
                                 key={`issue-photo-${photo.id}`}
                                 src={getImageUrl(photo.image_path)}
-                                alt={tUi("ui.pages.admin.adminDeliveries.issueReport_8c535704c0")}
-                                className="issue-preview-photo" />
-
+                                          alt={tUi('ui.pages.admin.adminDeliveries.issueReport_8c535704c0')}
+                                          className="adm-del-issue-img"
+                                        />
+                                      ))}
+                                    </div>
                               )}
                                 </div>
-                            }
 
-                              <div className="issue-thread-admin-box">
-                                <h5>{tUi("ui.pages.admin.adminDeliveries.issueDiscussionAdminDriver_e2c77dbbbc")}</h5>
-                                {issueChatLoading ?
-                              <p className="issue-thread-empty">{tUi("ui.pages.admin.adminDeliveries.loadingDiscussion_a617f0a9e2")}</p> :
-                              issueMessages.length === 0 ?
-                              <p className="issue-thread-empty">{tUi("ui.pages.admin.adminDeliveries.noMessagesYet_3b81b04428")}</p> :
-
-                              <div className="issue-thread-admin-list">
-                                    {issueMessages.map((msg) =>
-                                <div key={msg.id} className="issue-thread-admin-message">
-                                        <div className="issue-thread-admin-meta">
-                                          <strong>{msg.sender_name || tUi("ui.pages.admin.adminDeliveries.user_78896fd17c")}</strong>
-                                          <span>{msg.sender_role ? getRoleLabel(msg.sender_role) : tUi("ui.pages.admin.adminDeliveries.user_532f4a40ae")} • {formatDateTime(msg.created_at)}</span>
+                                <div className="adm-del-issue-thread">
+                                  <h5 className="adm-del-section-title">
+                                    {tUi('ui.pages.admin.adminDeliveries.issueDiscussionAdminDriver_e2c77dbbbc')}
+                                  </h5>
+                                  {issueChatLoading ? (
+                                    <p className="adm-del-thread-empty">
+                                      {tUi('ui.pages.admin.adminDeliveries.loadingDiscussion_a617f0a9e2')}
+                                    </p>
+                                  ) : issueMessages.length === 0 ? (
+                                    <p className="adm-del-thread-empty">
+                                      {tUi('ui.pages.admin.adminDeliveries.noMessagesYet_3b81b04428')}
+                                    </p>
+                                  ) : (
+                                    <div className="adm-del-thread-list">
+                                      {issueMessages.map((msg) => (
+                                        <div key={msg.id} className="adm-del-thread-message">
+                                          <div className="adm-del-thread-meta">
+                                            <strong>
+                                              {msg.sender_name ||
+                                                tUi('ui.pages.admin.adminDeliveries.user_78896fd17c')}
+                                            </strong>
+                                            <span>
+                                              {msg.sender_role
+                                                ? getRoleLabel(msg.sender_role)
+                                                : tUi('ui.pages.admin.adminDeliveries.user_532f4a40ae')}{' '}
+                                              • {formatDateTime(msg.created_at)}
+                                            </span>
                                         </div>
                                         <p>{msg.message}</p>
+                                        </div>
+                                      ))}
                                       </div>
                                 )}
-                                  </div>
-                              }
 
-                                {!job.issue_resolved ?
-                              <div className="issue-thread-admin-actions">
+                                  {!job.issue_resolved ? (
+                                    <div className="adm-del-thread-actions">
                                     <input
                                   type="text"
                                   value={issueMessageText}
                                   onChange={(e) => setIssueMessageText(e.target.value)}
-                                  placeholder={tUi("ui.pages.admin.adminDeliveries.replyToDriver_f3e492b4fe")} />
-                                
-                                    <button onClick={handleSendIssueMessage} disabled={issueSending || !issueMessageText.trim()}>
-                                      {issueSending ? tUi("ui.pages.admin.adminDeliveries.sending_c686f867c6") : tUi("ui.pages.admin.adminDeliveries.send_50281357f3")}
+                                        placeholder={tUi(
+                                          'ui.pages.admin.adminDeliveries.replyToDriver_f3e492b4fe'
+                                        )}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={handleSendIssueMessage}
+                                        disabled={issueSending || !issueMessageText.trim()}
+                                      >
+                                        {issueSending
+                                          ? tUi('ui.pages.admin.adminDeliveries.sending_c686f867c6')
+                                          : tUi('ui.pages.admin.adminDeliveries.send_50281357f3')}
                                     </button>
                                     <button
-                                  className="resolve-issue-btn"
+                                        type="button"
+                                        className="adm-del-btn-resolve"
                                   onClick={() => handleResolveIssue(job.id)}
-                                  disabled={resolvingIssue}>
-                                  
-                                      {resolvingIssue ? tUi("ui.pages.admin.adminDeliveries.saving_3400c1bb21") : tUi("ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7")}
+                                        disabled={resolvingIssue}
+                                      >
+                                        {resolvingIssue
+                                          ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
+                                          : tUi('ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7')}
                                     </button>
-                                  </div> :
-
-                              <p className="issue-thread-closed">{tUi("ui.pages.admin.adminDeliveries.issueClosedByAdmin_a88a36322d")}</p>
-                              }
                               </div>
-                            </div>
-                          }
-                          {job.items && job.items.length > 0 &&
-                          <div className="expanded-items">
-                              <h4>{tUi("ui.pages.admin.adminDeliveries.items_fa39ea7cbb")}</h4>
-                              <div className="items-list">
-                                {job.items.map((item, idx) =>
-                              <span key={idx} className="item-tag">
-                                    {item.product?.name} x{item.quantity}
-                                  </span>
+                                  ) : (
+                                    <p className="adm-del-thread-closed">
+                                      {tUi('ui.pages.admin.adminDeliveries.issueClosedByAdmin_a88a36322d')}
+                                    </p>
                               )}
                               </div>
+                              </section>
+                            )}
                             </div>
-                          }
-                          </>
                         </div>
                       </td>
                     </tr>
-                  }
-                </React.Fragment>);
+                  )}
+                </React.Fragment>
+              );
 
             })}
             </tbody>
           </table>
         </div>
-      }
-    </div>);
+        )}
+      </section>
+    </div>
+  );
 
 };
 

@@ -1,17 +1,22 @@
-import { tUi } from "../../i18n/uiText";import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
+import { FaStar } from 'react-icons/fa';
 import http from '../../services/http';
 import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, RATING_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, getImageUrl } from '../../utils/helpers';
+import { localizeProduct } from '../../utils/localizedContent';
+import { normalizeLanguageCode } from '../../i18n/constants';
+import { tUi } from '../../i18n/uiText';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import StarRating from '../../components/StarRating';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
-import { FaStar } from 'react-icons/fa';
 import '../../styles/pages/admin/AdminComments.css';
 
 const SENTIMENT_LABEL_KEYS = {
@@ -23,64 +28,69 @@ const SENTIMENT_LABEL_KEYS = {
 const AdminComments = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const [comments, setComments] = useState([]);
   const [filteredComments, setFilteredComments] = useState([]);
   const [products, setProducts] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState(productId ? parseInt(productId) : null);
+  const [selectedProductId, setSelectedProductId] = useState(productId ? parseInt(productId, 10) : null);
   const [productSearch, setProductSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [commentsLoading, setCommentsLoading] = useState(false);
   const [ratingSummary, setRatingSummary] = useState(null);
-  const [sentimentFilter, setSentimentFilter] = useState('all'); // 'all', 'positive', 'neutral', 'negative'
+  const [sentimentFilter, setSentimentFilter] = useState('all');
   const [deleting, setDeleting] = useState(null);
   const confirm = useConfirm();
   const { user } = useAuth();
   const { formatCurrency } = useCurrency();
   const commentsBasePath = user?.role === 'support_manager' ? '/support/comments' : '/admin/comments';
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedProductId) {
       fetchComments();
       fetchRatingSummary(selectedProductId);
     } else {
-      setLoading(false);
       setComments([]);
       setFilteredComments([]);
       setRatingSummary(null);
     }
-  }, [selectedProductId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProductId]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     filterComments();
-  }, [sentimentFilter, comments]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sentimentFilter, comments]);
 
   const fetchProducts = async () => {
+    setProductsLoading(true);
     try {
       const productsEndpoint =
-      user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
+        user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
       const response = await http.get(productsEndpoint);
       setProducts(response.data || []);
 
-      // If productId from URL, set it as selected
       if (productId) {
-        setSelectedProductId(parseInt(productId));
+        setSelectedProductId(parseInt(productId, 10));
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error(tUi("ui.pages.admin.adminComments.failedToFetchProducts_91dffdab28"));
+      toast.error(tUi('ui.pages.admin.adminComments.failedToFetchProducts_91dffdab28'));
+    } finally {
+      setProductsLoading(false);
     }
   };
 
   const fetchComments = async () => {
     if (!selectedProductId) return;
 
-    setLoading(true);
+    setCommentsLoading(true);
     try {
       const response = await http.get(
         buildUrl(COMMENT_ENDPOINTS.GET_PRODUCT, { product_id: selectedProductId }),
@@ -89,9 +99,9 @@ const AdminComments = () => {
       setComments(response.data || []);
     } catch (error) {
       console.error('Error fetching comments:', error);
-      toast.error(tUi("ui.pages.admin.adminComments.failedToFetchComments_a09ce4627e"));
+      toast.error(tUi('ui.pages.admin.adminComments.failedToFetchComments_a09ce4627e'));
     } finally {
-      setLoading(false);
+      setCommentsLoading(false);
     }
   };
 
@@ -107,27 +117,32 @@ const AdminComments = () => {
     }
   };
 
-  const handleProductSelect = (productId) => {
-    setSelectedProductId(productId);
-    navigate(`${commentsBasePath}/product/${productId}`, { replace: true });
+  const handleProductSelect = (nextProductId) => {
+    setSelectedProductId(nextProductId);
+    setSentimentFilter('all');
+    navigate(`${commentsBasePath}/product/${nextProductId}`, { replace: true });
+  };
+
+  const handleClearProduct = () => {
+    setSelectedProductId(null);
+    setSentimentFilter('all');
+    navigate(commentsBasePath, { replace: true });
   };
 
   const filterComments = () => {
     if (sentimentFilter === 'all') {
       setFilteredComments(comments);
     } else {
-      setFilteredComments(
-        comments.filter((comment) => comment.sentiment === sentimentFilter)
-      );
+      setFilteredComments(comments.filter((comment) => comment.sentiment === sentimentFilter));
     }
   };
 
   const handleDelete = async (commentId) => {
     const confirmed = await confirm({
-      title: tUi("ui.pages.admin.adminComments.deleteComment_d6666490e7"),
-      message: tUi("ui.pages.admin.adminComments.areYouSureYouWant_b3d0559f52"),
-      confirmText: tUi("ui.pages.admin.adminComments.delete_66f5dde37d"),
-      cancelText: tUi("ui.pages.admin.adminComments.cancel_117ba1126e")
+      title: tUi('ui.pages.admin.adminComments.deleteComment_d6666490e7'),
+      message: tUi('ui.pages.admin.adminComments.areYouSureYouWant_b3d0559f52'),
+      confirmText: tUi('ui.pages.admin.adminComments.delete_66f5dde37d'),
+      cancelText: tUi('ui.pages.admin.adminComments.cancel_117ba1126e'),
     });
     if (!confirmed) {
       return;
@@ -136,13 +151,14 @@ const AdminComments = () => {
     setDeleting(commentId);
     try {
       await http.delete(buildUrl(COMMENT_ENDPOINTS.DELETE, { comment_id: commentId }));
-      toast.success(tUi("ui.pages.admin.adminComments.commentDeletedSuccessfully_a8f689dd50"));
+      toast.success(tUi('ui.pages.admin.adminComments.commentDeletedSuccessfully_a8f689dd50'));
       if (selectedProductId) {
         await fetchComments();
         await fetchRatingSummary(selectedProductId);
+        await fetchProducts();
       }
     } catch (error) {
-      toast.error(tUi("ui.pages.admin.adminComments.failedToDeleteComment_1a364f7e19"));
+      toast.error(tUi('ui.pages.admin.adminComments.failedToDeleteComment_1a364f7e19'));
     } finally {
       setDeleting(null);
     }
@@ -170,59 +186,64 @@ const AdminComments = () => {
     return (
       <span className={`sentiment-badge ${badge.class}`}>
         {badge.icon} {badge.text}
-      </span>);
-
-  };
-
-  const getSentimentCounts = () => {
-    const counts = {
-      all: comments.length,
-      positive: comments.filter((c) => c.sentiment === 'positive').length,
-      neutral: comments.filter((c) => c.sentiment === 'neutral').length,
-      negative: comments.filter((c) => c.sentiment === 'negative').length
-    };
-    return counts;
-  };
-
-  const renderStars = (rating) => {
-    const safeRating = Number(rating) || 0;
-    return [1, 2, 3, 4, 5].map((value) =>
-    <FaStar
-      key={value}
-      className={value <= safeRating ? 'review-star filled' : 'review-star'} />
+      </span>
     );
   };
 
-  // Default profile image
+  const getSentimentCounts = () => ({
+    all: comments.length,
+    positive: comments.filter((c) => c.sentiment === 'positive').length,
+    neutral: comments.filter((c) => c.sentiment === 'neutral').length,
+    negative: comments.filter((c) => c.sentiment === 'negative').length,
+  });
+
+  const renderStars = (rating) => {
+    const safeRating = Number(rating) || 0;
+    return [1, 2, 3, 4, 5].map((value) => (
+      <FaStar
+        key={value}
+        className={value <= safeRating ? 'review-star filled' : 'review-star'}
+      />
+    ));
+  };
+
   const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSIjOUI5QkE1Ii8+CjxwYXRoIGQ9Ik0yMCA3NUMxNSA3NSAxMCA4MCAxMCA4NVY5MEg5MEw5MCA4NUM5MCA4MCA4NSA3NSA4MCA3NUgyMFoiIGZpbGw9IiM5QjlCQTUiLz4KPC9zdmc+';
 
   const getProfileImageUrl = (profileImage) => {
-    // Return default if profile image is null, undefined, or empty string
     if (!profileImage || (typeof profileImage === 'string' && profileImage.trim() === '')) {
       return defaultProfileImage;
     }
 
-    // Check if it's already a full URL (e.g., Google profile image)
     if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
       return profileImage;
     }
 
-    // Normalize path - remove leading slash if present to avoid double slashes
     const normalizedPath = profileImage.startsWith('/') ? profileImage.slice(1) : profileImage;
-    // Construct full URL for uploaded images
     return `${API_BASE_URL}/${normalizedPath}`;
   };
 
-  const getProductImageUrl = (product) => {
-    const firstImage = product?.images?.[0];
-    if (!firstImage || typeof firstImage !== 'string') {
-      return null;
-    }
-    if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
-      return firstImage;
-    }
-    const normalizedPath = firstImage.startsWith('/') ? firstImage.slice(1) : firstImage;
-    return `${API_BASE_URL}/${normalizedPath}`;
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category_name).filter(Boolean))].sort(),
+    [products]
+  );
+
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    return products.filter((product) => {
+      const localized = localizeProduct(product, languageCode);
+      const matchesSearch =
+        !query ||
+        localized.localized_name.toLowerCase().includes(query) ||
+        localized.localized_category_name.toLowerCase().includes(query);
+      const matchesCategory = !categoryFilter || product.category_name === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, productSearch, categoryFilter, languageCode]);
+
+  const getCategoryLabel = (categoryValue) => {
+    const matched = products.find((product) => product.category_name === categoryValue);
+    if (!matched) return categoryValue;
+    return localizeProduct(matched, languageCode).localized_category_name;
   };
 
   const counts = getSentimentCounts();
@@ -232,169 +253,226 @@ const AdminComments = () => {
     return value;
   };
 
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedProduct = products.find((product) => product.id === selectedProductId);
+  const selectedLocalizedProduct = selectedProduct
+    ? localizeProduct(selectedProduct, languageCode)
+    : null;
   const selectedAverageRating = Number(
     ratingSummary?.average_rating ?? selectedProduct?.average_rating ?? 0
   );
   const selectedTotalRatings = Number(
     ratingSummary?.total_ratings ?? selectedProduct?.total_ratings ?? 0
   );
-  const filteredProducts = products.filter((product) =>
-  product.name.toLowerCase().includes(productSearch.toLowerCase())
-  );
-  const visibleProducts = selectedProductId ?
-  products.filter((product) => product.id === selectedProductId) :
-  filteredProducts;
 
-  const manageReviewsTitle = tUi("ui.pages.admin.adminComments.manageReviews_9e45000031");
+  const manageReviewsTitle = tUi('ui.pages.admin.adminComments.manageReviews_9e45000031');
 
-  return (
-    <div className="admin-page-shell admin-comments">
-      <div className="admin-comments-header">
-        <PageHeader
-          kicker={manageReviewsTitle}
-          title={manageReviewsTitle}
-          actions={
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="product-selector">
-            <label htmlFor="product-search">{tUi("ui.pages.admin.adminComments.searchProduct_e0487af2dc")}</label>
-            <input
-              id="product-search"
-              type="text"
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              className="product-search-input"
-              placeholder={tUi("ui.pages.admin.adminComments.searchByProductName_7e4227491a")} />
-            
-          </div>
-          {selectedProductId &&
-          <button
-            className="clear-product-btn"
-            onClick={() => {
-              setSelectedProductId(null);
-              navigate(commentsBasePath, { replace: true });
-            }}>{tUi("ui.pages.admin.adminComments.clearProduct_e4db72bc41")}
+  const renderProductCard = (product, index, options = {}) => {
+    const { readonly = false } = options;
+    const localized = localizeProduct(product, languageCode);
+    const imageSrc =
+      product.images && product.images.length > 0
+        ? getImageUrl(product.images[0])
+        : getImageUrl('/images/placeholder.jpg');
+    const isSelected = selectedProductId === product.id;
+    const cardClassName = `adm-reviews-card ${isSelected ? 'is-selected' : ''} ${
+      readonly ? 'is-readonly' : ''
+    }`.trim();
 
-
-          </button>
-          }
-          {selectedProductId &&
-          <div className="sentiment-filters">
-              <button
-              className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
-              onClick={() => setSentimentFilter("all")}>{tUi("ui.pages.admin.adminComments.all_a69a334f44")}
-
-              {counts.all})
-              </button>
-              <button
-              className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
-              onClick={() => setSentimentFilter("positive")}>{tUi("ui.pages.admin.adminComments.positive_4bd9e10f4f")}
-
-              {counts.positive})
-              </button>
-              <button
-              className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
-              onClick={() => setSentimentFilter("neutral")}>{tUi("ui.pages.admin.adminComments.neutral_415b26d261")}
-
-              {counts.neutral})
-              </button>
-              <button
-              className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
-              onClick={() => setSentimentFilter("negative")}>{tUi("ui.pages.admin.adminComments.negative_5bd4ee87d5")}
-
-              {counts.negative})
-              </button>
-            </div>
-          }
+    const cardInner = (
+      <>
+        <div className="adm-reviews-card-media">
+          <span className="adm-reviews-card-category">{localized.localized_category_name}</span>
+          <img
+            src={imageSrc}
+            alt={localized.localized_name}
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+            }}
+          />
         </div>
-          }
-        />
-      </div>
-
-      <div className="products-grid">
-        {visibleProducts.map((product) =>
-        <button
-          key={product.id}
-          className={`product-card-btn ${selectedProductId === product.id ? 'selected' : ''}`}
-          onClick={() => handleProductSelect(product.id)}>
-          
-            <div className="product-card-image-wrap">
-              {getProductImageUrl(product) ?
-            <img
-              src={getProductImageUrl(product)}
-              alt={product.name}
-              className="product-card-image" /> :
-
-
-            <div className="product-card-image-placeholder">{tUi("ui.pages.admin.adminComments.noImage_8d9d7be0cc")}</div>
-            }
+        <div className="adm-reviews-card-body">
+          <h3 className="adm-reviews-card-title">{localized.localized_name}</h3>
+          {product.id && (
+            <div className="adm-reviews-card-rating">
+              <StarRating
+                productId={product.id}
+                showLabel={false}
+                interactive={false}
+                size="small"
+                initialAverageRating={product.average_rating}
+                initialTotalRatings={product.total_ratings}
+                fetchOnMount={false}
+              />
             </div>
-            <div className="product-card-title">{product.name}</div>
-            <div className="product-card-meta">
-              {formatCurrency(product.price || 0)}
-            </div>
+          )}
+          <div className="adm-reviews-card-footer">
+            {product.discount_enabled ? (
+              <div className="adm-reviews-card-pricing">
+                <span className="adm-reviews-card-price adm-reviews-card-price-sale">
+                  {formatCurrency(product.discounted_price ?? product.price)}
+                </span>
+                <span className="adm-reviews-card-price-before">{formatCurrency(product.price)}</span>
+              </div>
+            ) : (
+              <span className="adm-reviews-card-price">{formatCurrency(product.price)}</span>
+            )}
+          </div>
+        </div>
+      </>
+    );
+
+    return (
+      <motion.div
+        key={product.id}
+        className="adm-reviews-card-wrapper"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.03, duration: 0.35 }}
+      >
+        {readonly ? (
+          <div className={cardClassName} aria-current={isSelected ? 'true' : undefined}>
+            {cardInner}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={cardClassName}
+            onClick={() => handleProductSelect(product.id)}
+            aria-pressed={isSelected}
+          >
+            {cardInner}
           </button>
         )}
+      </motion.div>
+    );
+  };
+
+  const renderReviewsPanel = () => (
+    <>
+      <div className="adm-reviews-detail-header">
+        <div>
+          <span className="adm-reviews-detail-kicker">
+            {tUi('ui.pages.admin.adminComments.reviewsSection_g6h7i8j9k0')}
+          </span>
+          <h2 className="adm-reviews-detail-title">{selectedLocalizedProduct?.localized_name}</h2>
+        </div>
       </div>
 
-      {selectedProduct &&
-      <section className="selected-product-rating-summary">
-          <div>
-            <span className="rating-summary-label">{tUi("ui.pages.admin.adminComments.productAverageRating_85b4f2b45a")}</span>
+      <div className="adm-reviews-summary-bar">
+        <div className="adm-reviews-summary-rating">
+          <span className="rating-summary-label">
+            {tUi('ui.pages.admin.adminComments.productAverageRating_85b4f2b45a')}
+          </span>
+          <div className="adm-reviews-summary-rating-row">
             <strong className="rating-summary-value">{selectedAverageRating.toFixed(1)}</strong>
             <span className="rating-summary-count">
-              ({selectedTotalRatings} {selectedTotalRatings === 1 ? tUi("ui.components.starRating.rating_5bd901ae20") : tUi("ui.components.starRating.ratings_8aa35770e7")})
+              ({selectedTotalRatings}{' '}
+              {selectedTotalRatings === 1
+                ? tUi('ui.components.starRating.rating_5bd901ae20')
+                : tUi('ui.components.starRating.ratings_8aa35770e7')}
+              )
             </span>
+            <div
+              className="rating-summary-stars"
+              aria-label={tUi('ui.components.commentSection.ratingOutOfFive_302e4cfd67', {
+                value0: selectedAverageRating.toFixed(1),
+              })}
+            >
+              {renderStars(Math.round(selectedAverageRating))}
+            </div>
           </div>
-          <div className="rating-summary-stars" aria-label={tUi("ui.components.commentSection.ratingOutOfFive_302e4cfd67", { value0: selectedAverageRating.toFixed(1) })}>
-            {renderStars(Math.round(selectedAverageRating))}
-          </div>
-        </section>
-      }
+        </div>
 
-      {loading ?
-      <div className="page-loading loading-container">
+        <div className="adm-reviews-summary-filters">
+          <span className="adm-reviews-sentiment-label">
+            {tUi('ui.pages.admin.adminComments.filterBySentiment_c7d8e9f0a1')}
+          </span>
+          <div className="sentiment-filters">
+            <button
+              type="button"
+              className={`filter-btn ${sentimentFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter('all')}
+            >
+              {tUi('ui.pages.admin.adminComments.all_a69a334f44')}
+              {counts.all})
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${sentimentFilter === 'positive' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter('positive')}
+            >
+              {tUi('ui.pages.admin.adminComments.positive_4bd9e10f4f')}
+              {counts.positive})
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${sentimentFilter === 'neutral' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter('neutral')}
+            >
+              {tUi('ui.pages.admin.adminComments.neutral_415b26d261')}
+              {counts.neutral})
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${sentimentFilter === 'negative' ? 'active' : ''}`}
+              onClick={() => setSentimentFilter('negative')}
+            >
+              {tUi('ui.pages.admin.adminComments.negative_5bd4ee87d5')}
+              {counts.negative})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {commentsLoading ? (
+        <div className="page-loading loading-container">
           <LoadingSpinner />
-        </div> :
-      !selectedProductId ?
-      <div className="no-comments">
-          <p>{tUi("ui.pages.admin.adminComments.pleaseSelectAProductTo_d3bc28ed58")}</p>
-        </div> :
-      filteredComments.length === 0 ?
-      <div className="no-comments">
+        </div>
+      ) : filteredComments.length === 0 ? (
+        <div className="no-comments">
           <p>
-            {selectedProduct ? tUi("ui.pages.admin.adminComments.noReviewsFoundForValue_43ab341080", { value0: selectedProduct.name }) : tUi("ui.pages.admin.adminComments.noReviewsFound_6ae1b83edd")}
-            {sentimentFilter !== "all" ? tUi("ui.pages.admin.adminComments.withValueSentiment_41ae6e47d3", { value0: getSentimentLabel(sentimentFilter) }) : ''}.
+            {selectedProduct
+              ? tUi('ui.pages.admin.adminComments.noReviewsFoundForValue_43ab341080', {
+                  value0: selectedLocalizedProduct?.localized_name,
+                })
+              : tUi('ui.pages.admin.adminComments.noReviewsFound_6ae1b83edd')}
+            {sentimentFilter !== 'all'
+              ? tUi('ui.pages.admin.adminComments.withValueSentiment_41ae6e47d3', {
+                  value0: getSentimentLabel(sentimentFilter),
+                })
+              : ''}
+            .
           </p>
-        </div> :
-
-      <div className="comments-list">
-          {filteredComments.map((comment, index) =>
-        <motion.div
-          key={comment.id}
-          className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}>
-          
+        </div>
+      ) : (
+        <div className="comments-list">
+          {filteredComments.map((comment, index) => (
+            <motion.div
+              key={comment.id}
+              className={`comment-card ${comment.sentiment === 'negative' ? 'negative-review' : ''}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
               <div className="comment-header">
                 <div className="comment-user">
-                  {comment.user?.profile_image ?
-              <img
-                src={getProfileImageUrl(comment.user.profile_image)}
-                alt={comment.user.first_name}
-                className="user-avatar"
-                onError={(e) => {
-                  if (e.target.src !== defaultProfileImage) {
-                    e.target.src = defaultProfileImage;
-                  }
-                }} /> :
-
-
-              <div className="user-avatar-placeholder">
+                  {comment.user?.profile_image ? (
+                    <img
+                      src={getProfileImageUrl(comment.user.profile_image)}
+                      alt={comment.user.first_name}
+                      className="user-avatar"
+                      onError={(event) => {
+                        if (event.target.src !== defaultProfileImage) {
+                          event.target.src = defaultProfileImage;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="user-avatar-placeholder">
                       {comment.user?.first_name?.[0] || 'U'}
                     </div>
-              }
+                  )}
                   <div className="user-info">
                     <p className="user-name">
                       {comment.user?.first_name} {comment.user?.last_name}
@@ -403,44 +481,142 @@ const AdminComments = () => {
                   </div>
                 </div>
                 <div className="comment-actions">
-                  {comment.rating ?
-                  <span className="review-rating-badge" aria-label={tUi("ui.components.commentSection.ratingOutOfFive_302e4cfd67", { value0: comment.rating })}>
-                    <span className="review-rating-stars">{renderStars(comment.rating)}</span>
-                    <strong>{comment.rating}/5</strong>
-                  </span> :
-                  <span className="review-rating-badge review-rating-badge-empty">
-                    {tUi("ui.pages.admin.adminComments.noRating_2de474f2ce")}
-                  </span>
-                  }
+                  {comment.rating ? (
+                    <span
+                      className="review-rating-badge"
+                      aria-label={tUi('ui.components.commentSection.ratingOutOfFive_302e4cfd67', {
+                        value0: comment.rating,
+                      })}
+                    >
+                      <span className="review-rating-stars">{renderStars(comment.rating)}</span>
+                      <strong>{comment.rating}/5</strong>
+                    </span>
+                  ) : (
+                    <span className="review-rating-badge review-rating-badge-empty">
+                      {tUi('ui.pages.admin.adminComments.noRating_2de474f2ce')}
+                    </span>
+                  )}
                   {getSentimentBadge(comment.sentiment)}
                   <button
-                className="delete-comment-btn"
-                onClick={() => handleDelete(comment.id)}
-                disabled={deleting === comment.id}>
-                
-                    {deleting === comment.id ? <LoadingSpinner size="small" /> : tUi("ui.pages.admin.adminComments.delete_66f5dde37d")}
+                    type="button"
+                    className="delete-comment-btn"
+                    onClick={() => handleDelete(comment.id)}
+                    disabled={deleting === comment.id}
+                  >
+                    {deleting === comment.id ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      tUi('ui.pages.admin.adminComments.delete_66f5dde37d')
+                    )}
                   </button>
                 </div>
               </div>
               <div className="comment-content">
                 <p>{comment.content}</p>
-                {selectedProduct &&
-            <p className="product-info" style={{
-              marginTop: '0.5rem',
-              fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
-              fontStyle: 'italic'
-            }}>{tUi("ui.pages.admin.adminComments.product_7793c81682")}
-              {selectedProduct.name}
-                  </p>
-            }
               </div>
             </motion.div>
-        )}
+          ))}
         </div>
-      }
-    </div>);
+      )}
+    </>
+  );
 
+  return (
+    <div className="admin-page-shell adm-reviews-page">
+      <PageHeader
+        kicker={manageReviewsTitle}
+        title={manageReviewsTitle}
+        subtitle={tUi('ui.pages.admin.adminComments.subtitle_b4e8c1d2f3')}
+        actions={
+          <div className="adm-reviews-header-filters">
+            <div className="adm-reviews-header-filter">
+              <label htmlFor="adm-reviews-search">
+                {tUi('ui.pages.admin.adminComments.searchProduct_e0487af2dc')}
+              </label>
+              <input
+                id="adm-reviews-search"
+                type="text"
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+                placeholder={tUi('ui.pages.admin.adminComments.searchByProductName_7e4227491a')}
+              />
+            </div>
+            <div className="adm-reviews-header-filter">
+              <label htmlFor="adm-reviews-category">
+                {tUi('ui.pages.products.category_a6c5fd855e')}
+              </label>
+              <select
+                id="adm-reviews-category"
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+              >
+                <option value="">{tUi('ui.pages.products.allCategories_9fd1de45e8')}</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {getCategoryLabel(category)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        }
+      />
+
+      <main className="adm-reviews-main">
+        {selectedProduct ? (
+          <div className="adm-reviews-split">
+            <aside className="adm-reviews-product-panel" aria-label={selectedLocalizedProduct?.localized_name}>
+              <div className="adm-reviews-selected-slot">
+                {renderProductCard(selectedProduct, 0, { readonly: true })}
+              </div>
+              <button type="button" className="clear-product-btn adm-reviews-back-btn" onClick={handleClearProduct}>
+                {tUi('ui.pages.admin.adminComments.clearProduct_e4db72bc41')}
+              </button>
+            </aside>
+
+            <section className="adm-reviews-reviews-panel">
+              {renderReviewsPanel()}
+            </section>
+          </div>
+        ) : (
+          <>
+            <section className="adm-reviews-catalog">
+              <div className="adm-reviews-catalog-header">
+                <div>
+                  <span className="adm-reviews-catalog-kicker">
+                    {tUi('ui.pages.admin.adminComments.productCatalog_a2b3c4d5e6')}
+                  </span>
+                  <h2 className="adm-reviews-catalog-title">
+                    {tUi('ui.pages.admin.adminComments.productCatalog_a2b3c4d5e6')}
+                  </h2>
+                </div>
+                <p className="adm-reviews-count">
+                  {filteredProducts.length}
+                  {tUi('ui.pages.products.product_5919708d8b')}
+                  {filteredProducts.length !== 1 ? 's' : ''}
+                  {tUi('ui.pages.products.found_1816a1653a')}
+                </p>
+              </div>
+
+              {productsLoading ? (
+                <div className="page-loading loading-container">
+                  <LoadingSpinner />
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="no-comments">
+                  <p>{tUi('ui.pages.admin.adminComments.noProductsMatch_f1e2d3c4b5')}</p>
+                </div>
+              ) : (
+                <div className="adm-reviews-grid">
+                  {filteredProducts.map((product, index) => renderProductCard(product, index))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default AdminComments;

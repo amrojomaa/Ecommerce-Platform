@@ -71,13 +71,14 @@ Always prefer CSS variables from `App.css` — never hardcode when a token exist
 **Icon boxes:** 52×52px, `border-radius: 1rem`, tinted background at ~12% opacity, icon color matches semantic hue.
 
 ## Sidebar (panel navigation)
-Match `Sidebar.css` + `Sidebar.js` patterns:
+Match `Sidebar.css` + `Sidebar.js` + `SidebarMenuIcon.js`:
 - Fixed width **250px**, `var(--surface)` bg, `1px` border toward content edge
-- Title: Fraunces `1.25rem`; reorder hint in secondary `0.78rem`
-- Links: flex row, icon + label, `0.85rem 1.5rem` padding, pill radius on trailing edge (`border-radius: 0 999px 999px 0`)
+- **Brand header:** icon box (`SidebarPanelBrandIcon`) + panel title (`ui.sidebar.panel.*`) + reorder hint
+- **Menu icons:** Feather icons via `SidebarMenuIcon` — tinted boxes (`.sidebar-icon-box--{tone}`), not emoji
+- Links: drag handle + icon box + label (`.sidebar-link-label`), `0.85rem 1.5rem` padding, pill radius on trailing edge
 - **Active state:** `var(--background)` fill + **3px primary accent** on start edge (mirror for RTL)
-- Hover: background + primary text color; transition `0.3s ease`
-- Badges: small red pill, absolute top-right (mirror for RTL)
+- Hover: background + primary text color; icon box slight lift; transition `0.3s ease`
+- Badges: small red pill on tickets/deliveries (mirror for RTL)
 - **≤1024px:** horizontal scroll nav, bottom accent border on active item
 - Menu labels via i18n keys (`ui.sidebar.menu.*`, `ui.sidebar.panel.*`)
 

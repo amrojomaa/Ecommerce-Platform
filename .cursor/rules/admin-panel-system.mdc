@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Admin Panel System (Canonical Reference)
 
-Use this rule for all **Admin Panel** work (`/admin/*`). Admin UI mirrors the Warehouse Panel design language but uses the **`adm-*`** prefix and `AdminPanel.css`.
+Use for all **Admin Panel** work (`/admin/*`). Admin UI mirrors the Warehouse Panel design language but uses the **`adm-*`** prefix and `AdminPanel.css`.
 
 **Customer/storefront** → `.cursor/rules/home-design-system.mdc`  
 **Warehouse panel** → `.cursor/rules/dashboard-panel-design-system.mdc` (`wm-*`)  
@@ -17,6 +17,8 @@ Use this rule for all **Admin Panel** work (`/admin/*`). Admin UI mirrors the Wa
 |-------|------|
 | Layout shell | `front_end/src/layouts/AdminLayout.js`, `styles/layouts/AdminLayout.css` |
 | Sidebar | `front_end/src/layouts/Sidebar.js`, `styles/layouts/Sidebar.css` |
+| Sidebar icons | `front_end/src/components/SidebarMenuIcon.js` |
+| Navbar (panel mode) | `front_end/src/layouts/Navbar.js`, `styles/layouts/Navbar.css` |
 | Shared panel CSS | `front_end/src/styles/pages/admin/AdminPanel.css` |
 | Page header | `front_end/src/components/PageHeader.js`, `styles/shared/PageDesign.css` |
 | Global modal overlay | `styles/shared/AdminPageDesign.css` (via `App.css`) |
@@ -24,41 +26,52 @@ Use this rule for all **Admin Panel** work (`/admin/*`). Admin UI mirrors the Wa
 | Routes | `front_end/src/App.js` |
 | API config | `front_end/src/config/api.js` |
 | HTTP client | `front_end/src/services/http.js` |
-| i18n helper | `front_end/src/i18n/uiText.js` → `tUi(key)` |
+| i18n helpers | `i18n/uiText.js` → `tUi()`, `i18n/roles.js` → `getRoleLabel()` |
 | Locales | `front_end/src/locales/{en,ar,fr}/common.json` |
-| Backend auth | `app/routers/admin.py`, `app/routers/admin_settings.py` |
+| Helpers | `utils/helpers.js` (`formatDateTime`, `resolveProfileImageUrl`, `getImageUrl`) |
+| Backend auth | `app/routers/admin.py`, `app/routers/users.py`, `app/routers/admin_settings.py` |
 
 ## Architecture
 
 ### Layout DOM
 ```
 .admin-layout
-  Navbar
+  Navbar                    ← panel mode when isRestrictedArea
   .admin-container
-    aside.sidebar
-    main.admin-content  ← route outlet (margin-inline-start: 250px)
+    aside.sidebar             ← fixed 250px; Feather icons via SidebarMenuIcon
+    main.admin-content        ← <Outlet />; margin-inline-start: 250px
 ```
 
-- Sidebar fixed **250px**; content uses **logical** offset (`margin-inline-start`) for LTR + RTL.
+- Sidebar fixed **250px**; content uses **logical** offset for LTR + RTL.
 - **≤1024px:** sidebar → horizontal scroll nav; content full width.
-- **≤768px:** reduced content padding.
+- **≤768px:** reduced content padding (`1rem`).
+
+### Navbar panel mode (`Navbar.js`)
+When `isRestrictedArea` (admin, warehouse, support, driver, cashier, seller, etc.):
+- Class `navbar--panel` on `<nav>` (behavior is mostly **conditional rendering**, not CSS offset).
+- **Hide:** search, cart, wishlist, storefront links.
+- **Show:** role dashboard link, profile avatar dropdown, language icon (`LanguageSwitcher icon`), theme toggle.
+- Logo links to role dashboard via `getDashboardHomePath()`.
+- Profile routes are panel-scoped: `/admin/profile`, `/support/profile`, `/warehouse/profile`, etc.
+- Profile dropdown: **click to toggle** (no hover-open); menu must not be clipped (`overflow: visible` on desktop `.navbar-menu`).
+- Navbar container: full-width grid — logo left | search center (storefront only) | menu right.
 
 ### Routing & roles
 
-| Path | Guard | Notes |
-|------|-------|-------|
-| `/admin/*` | `requireAdmin` | `admin` **or** `operations_manager` |
-| `/support/*` | support manager | Same `AdminLayout`, different pages |
-| `/warehouse/*` | warehouse manager | Same layout, `wm-*` pages |
-| `/seller/*` | seller | Reuses some admin components (e.g. `AdminCategories`, `AdminPromotions`) |
+| Path | Guard | Layout / pages |
+|------|-------|----------------|
+| `/admin/*` | `requireAdmin` | `AdminLayout` + `pages/admin/*` |
+| `/support/*` | support manager | `AdminLayout` + `pages/support-manager/*` |
+| `/warehouse/*` | warehouse manager | `AdminLayout` + `pages/warehouse-manager/*` (`wm-*`) |
+| `/seller/*` | seller | Reuses `AdminCategories`, `AdminPromotions` |
 
-**Operations manager:** reduced sidebar (orders, installments, deliveries); dashboard hides catalog stats/actions (`AdminDashboard.js`).
+**Operations manager:** sidebar = orders, installments, deliveries only; dashboard hides catalog stats/actions; navbar label `navbar.operationsManager`; home `/admin/orders`.
 
-**Sidebar menus:** `ADMIN_MENU_ITEMS`, `OPERATIONS_MANAGER_MENU_ITEMS`, etc. in `Sidebar.js`. Labels via `ui.sidebar.menu.*`, panel title via `ui.sidebar.panel.*`. Drag-reorder persisted in `localStorage`.
+**Sidebar menus:** `ADMIN_MENU_ITEMS`, `OPERATIONS_MANAGER_MENU_ITEMS`, etc. in `Sidebar.js`. Icon keys map to `SidebarMenuIcon.js` (Feather `react-icons/fi`, tinted icon boxes). Panel brand icons: admin=`FiLayout`, operations=`FiActivity`, support=`FiHeadphones`, warehouse=`FiBox`. Drag-reorder persisted: `localStorage` key `admin-sidebar-order:{userId}`.
 
-### Backend role dependencies (`app/routers/admin.py`)
+### Backend role dependencies
 
-| Helper | Roles |
+| Helper (`admin.py`) | Roles |
 |--------|-------|
 | `require_admin` | admin |
 | `require_admin_or_operations_manager` | admin, operations_manager |
@@ -66,7 +79,9 @@ Use this rule for all **Admin Panel** work (`/admin/*`). Admin UI mirrors the Wa
 | `require_admin_or_warehouse_manager` | admin, warehouse_manager |
 | `require_seller_or_admin` | admin, seller, warehouse_manager |
 
-Settings: `/admin/settings` in `admin_settings.py` (low-stock threshold, warehouse address).
+**User rules (`users.py`):** admin cannot change own role; admin cannot delete self. Mirror in UI: hide Change Role / Block on own account in `AdminUserDetails.js` (`isSelf` check).
+
+Settings: `admin_settings.py` — low-stock threshold, warehouse address.
 
 ## Page shell & naming
 
@@ -84,7 +99,7 @@ Settings: `/admin/settings` in `admin_settings.py` (low-stock threshold, warehou
 ### CSS imports (modern pages)
 ```js
 import '../../styles/pages/admin/AdminPanel.css';  // always
-import '../../styles/pages/admin/Admin{Page}.css'; // page-specific
+import '../../styles/pages/admin/Admin{Page}.css'; // page-scoped adm-{short}-*
 ```
 
 ### Prefix rules
@@ -93,9 +108,9 @@ import '../../styles/pages/admin/Admin{Page}.css'; // page-specific
 |--------|-----|
 | `admin-page-shell` | Required wrapper on every panel page |
 | `adm-page` | Flex column shell, gap, max-width |
-| `adm-*` | Shared primitives in `AdminPanel.css` (stats, buttons, modals) |
-| `adm-{short}-*` | Page-scoped classes — **never** bare `.card`, `.stat-card` |
-| `admin-*` | **Legacy** — avoid for new work (`AdminPageDesign.css`) |
+| `adm-*` | Shared primitives in `AdminPanel.css` |
+| `adm-{short}-*` | Page-scoped — **never** bare `.card`, `.stat-card` |
+| `admin-*` | **Legacy** — avoid for new work |
 
 ### Page inventory
 
@@ -114,22 +129,32 @@ import '../../styles/pages/admin/Admin{Page}.css'; // page-specific
 | Tickets | `/admin/tickets` | `adm-tkt-page` | `adm-tkt-*` |
 | Reviews | `/admin/comments` | `adm-reviews-page` | `adm-reviews-*` |
 | Feedback | `/admin/feedback` | `admin-feedback` | `adm-fb-*` |
+| Profile | `/admin/profile` | `profile-page` (shared `Profile.js`) | `Profile.css` |
 
-**Legacy (do not copy):** `AdminPosAnalytics.js` — old `stats-grid` / no `AdminPanel.css`.
+**Legacy (do not copy):** `AdminPosAnalytics.js` — old `stats-grid`, no `AdminPanel.css`, hardcoded strings.
+
+**Partial legacy shells:** `AdminComments.js`, `AdminFeedback.js` — omit `adm-page` / `AdminPanel.css`; use page-local shell. Prefer migrating to canonical shell when editing.
 
 ## UI patterns — reuse before inventing
 
-| Pattern | Reference page |
-|---------|----------------|
+| Pattern | Reference |
+|---------|-----------|
 | Dashboard stats + quick actions | `AdminDashboard.js` |
 | PageHeader + header filters | `AdminOrders.js`, `AdminUsers.js` |
 | Toolbar + search + pill filters | `AdminProducts.js`, `AdminCategories.js` |
 | Data table in rounded panel | `AdminOrders.js` (`.adm-orders-data-panel`) |
-| Master–detail (catalog → detail) | `AdminComments.js`, `AdminFeedback.js` |
-| Expandable list cards | `AdminTickets.js` |
+| Master–detail | `AdminComments.js`, `AdminFeedback.js` |
+| Expandable list cards | `AdminTickets.js`, `AdminDeliveries.js` |
 | Inline create/edit + list | `AdminPromotions.js`, `AdminDiscounts.js` |
+| User list → detail actions | `AdminUsers.js` (list) + `AdminUserDetails.js` (actions) |
 | CRUD modal | `AdminProducts.js`, `AdminDashboard.js` (threshold) |
-| Confirm before delete | `AdminProducts.js`, `AdminCategories.js` |
+| Confirm before delete | `useConfirm` in Products, Categories, Users |
+
+### Manage Users conventions
+- **List (`AdminUsers.js`):** columns = user, email, role, created — **no Actions column**; row click → `/admin/users/:id`.
+- **Details (`AdminUserDetails.js`):** hero row = avatar + name + badges | action buttons (Change Role primary, Block, Delete). Hide Change Role + Block when `isSelf`. PageHeader subtitle = generic only (no name/email/id line).
+- **Role labels:** always `getRoleLabel()` from `i18n/roles.js` — keys `roles.{role}` in en/ar/fr.
+- **Avatars:** `resolveProfileImageUrl()` from `utils/helpers.js` + `referrerPolicy="no-referrer"`.
 
 ### PageHeader
 ```jsx
@@ -137,48 +162,61 @@ import '../../styles/pages/admin/Admin{Page}.css'; // page-specific
   kicker={t('ui.sidebar.panel.admin')}
   title={tUi('ui.pages.admin.adminOrders.title_...')}
   subtitle={tUi('ui.pages.admin.adminOrders.subtitle_...')}
-  actions={<>…</>}
+  actions={<motion.button className="adm-btn-primary">…</motion.button>}
 />
 ```
 
 ### Loading / empty
 ```jsx
 <div className="page-loading adm-page-loading"><LoadingSpinner size="large" /></div>
-<div className="adm-{page}-empty"><p>{tUi('...')}</p></div>  // dashed border, centered
+<div className="adm-{page}-empty"><p>{tUi('...')}</p></div>
 ```
 
 ### Header CTA buttons (match Add Product)
-- Class: `adm-btn-primary` / `adm-btn-secondary`
-- Use `motion.button` + `FaPlus` for create actions
-- Sizing: `.adm-page .page-header-actions .adm-btn-primary` in `AdminPanel.css` (`1rem` font, `0.65rem 1.5rem` padding, `min-height: 44px`)
+- `adm-btn-primary` / `adm-btn-secondary`
+- Create actions: `motion.button` + `FaPlus`
+- Sizing locked in `AdminPanel.css` under `.adm-page .page-header-actions` (`1rem` font, `0.65rem 1.5rem` padding, `min-height: 44px`)
 - Do **not** override with page-specific create-btn classes
 
 ### Modals
 - Overlay: `.admin-modal-overlay` → card: `.admin-modal`
 - Fields: `.adm-modal-field`, `.adm-modal-hint`, `.adm-modal-actions`
-- Product modal: `AdminProductsModal.css`
+- Product modal: `AdminProductsModal.css` (`.adm-product-modal`)
 
 ## Styling language
 
-Typography, colors, cards, motion — same as dashboard rule (Space Grotesk + Fraunces, CSS variables, soft `1.2rem` radius, `0.3s ease` hovers).
+Typography, colors, cards, motion — same as dashboard rule (Space Grotesk + Fraunces, CSS variables, `1.2rem` radius, `0.3s ease` hovers). See `.cursor/rules/dashboard-panel-design-system.mdc` for tokens.
 
 ### Admin-specific layout
 - Default max-width: **1200px** (`.adm-page`)
-- Catalog pages (dashboard, products, promotions, discounts, categories): **1400px** → **1600px** at `≥1600px`
-- Dashboard page gap: **2rem** (tighter); other pages: **4rem** (`2.5rem` mobile)
-- Stats grid: `repeat(auto-fill, minmax(220px, 1fr))`
-- Actions grid: `repeat(auto-fill, minmax(280px, 1fr))` — auto-fill on large screens, 1 col ≤768px
-- List grids: `repeat(auto-fill, minmax(300–340px, 1fr))` at `≥1280px` / `≥1600px`
+- Catalog pages: **1400px** → **1600px** at `≥1600px`
+- Dashboard gap: **2rem**; other pages: **4rem** (`2.5rem` mobile)
+- Stats: `repeat(auto-fill, minmax(220px, 1fr))`
+- Actions: `repeat(auto-fill, minmax(280px, 1fr))` — 1 col ≤768px
+- List grids: `minmax(300–340px, 1fr)` at `≥1280px` / `≥1600px`
 
 ### Buttons
-- **Primary:** `.adm-btn-primary` — pill, `var(--primary-color)`, hover lift
+- **Primary:** `.adm-btn-primary` — pill, primary fill, hover lift
 - **Secondary:** `.adm-btn-secondary` — pill, bordered surface
-- Card/row actions may use smaller overrides (e.g. `0.8rem`) — scoped to `.adm-*-card-actions`, not page headers
+- Row/card actions: smaller scoped overrides under `.adm-*-card-actions`, not page headers
+
+### Responsive breakpoints
+
+| Breakpoint | Where | Behavior |
+|------------|-------|----------|
+| **≥1600px** | `AdminPanel.css`, catalog pages | max-width 1600px; wider grids |
+| **≥1280px** | `AdminPanel.css`, products/categories | wider stat/action/list grids |
+| **≤1100px** | orders, users, tickets, deliveries | toolbar/table stacking |
+| **≤1024px** | `AdminLayout.css`, `Sidebar.css` | sidebar horizontal; content full width |
+| **≤900px** | deliveries | two-column detail reflow |
+| **≤768px** | `AdminPanel.css`, most pages | gap 2.5rem; single-column grids; stacked toolbars |
+| **≤560px** | products | extra compact |
+| **≤480px** | comments, navbar | mobile tweaks |
 
 ### RTL & dark mode
 - Logical properties: `margin-inline-start`, `inset-inline-*`, `text-align: start`
 - Mirror arrows: `html[dir='rtl'] .adm-action-card-arrow { transform: scaleX(-1); }`
-- Toast: RTL position in `App.js` (`top-left` when RTL)
+- Toast RTL position in `App.js`
 - Dark: override per page under `.dark`; never `var(--text-primary)` on light overlay pills
 
 ### CSS file layout
@@ -186,30 +224,37 @@ Typography, colors, cards, motion — same as dashboard rule (Space Grotesk + Fr
 styles/pages/admin/
   AdminPanel.css          ← shared adm-* primitives
   Admin{Page}.css         ← page-scoped adm-{short}-*
-  AdminProductsPage.css   ← products shell overrides only
+  AdminProductsPage.css   ← products shell only
   AdminProductsModal.css  ← product modal only
-  AdminPromotionsPage.css ← promotions shell overrides only
+  AdminPromotionsPage.css ← promotions shell only
 ```
 
 **Products note:** `AdminProducts.css` uses `font: inherit` on buttons **except** `.adm-btn-primary`/`.adm-btn-secondary`.
 
 ## Reusable components & hooks
 
-| Item | Path |
-|------|------|
-| `PageHeader` | `components/PageHeader.js` |
-| `LoadingSpinner` | `components/LoadingSpinner.js` |
-| `useConfirm` + `ConfirmDialog` | `hooks/useConfirm.js`, `context/ConfirmContext.js` |
-| `useAuth` | role checks |
-| `useCurrency` | price/revenue formatting |
-| `useUnreadTickets`, delivery count hooks | sidebar badges |
-| `ProductCardSkeleton` | `AdminProducts` loading |
+| Item | Path | Admin usage |
+|------|------|-------------|
+| `PageHeader` | `components/PageHeader.js` | All admin pages |
+| `LoadingSpinner` | `components/LoadingSpinner.js` | Loading states |
+| `SidebarMenuIcon` | `components/SidebarMenuIcon.js` | Sidebar nav + brand |
+| `useConfirm` + `ConfirmDialog` | `hooks/useConfirm.js`, `context/ConfirmContext.js` | Destructive actions |
+| `useAuth` | `hooks/useAuth.js` | Role checks, ops-manager branching |
+| `useCurrency` | `hooks/useCurrency.js` | Price/revenue |
+| `useUnreadTickets` | delivery/issue/photo count hooks | Sidebar + navbar badges |
+| `ProductCardSkeleton` | `components/Skeleton.js` | Products loading |
+| `OrderMapTracker` | `components/OrderMapTracker.js` | Orders/deliveries |
+| `SupportTicketChatModal` | `components/SupportTicketChatModal.js` | Tickets |
+| `TicketUserAvatar`, `StarRating` | components | Tickets, reviews, feedback |
+| `getRoleLabel` | `i18n/roles.js` | User tables/details |
+| `resolveProfileImageUrl` | `utils/helpers.js` | User avatars |
+| `localizeProduct` | `utils/localizedContent.js` | Localized product names |
 
 ## Business logic patterns
 
 ### Data fetch (typical CRUD)
 1. `useEffect` → `fetch*` on mount
-2. `setLoading(true)` → `http.get/post/put/delete` → update state
+2. `setLoading(true)` → `http.get/post/put/patch/delete`
 3. Success → `toast.success(tUi('ui.pages.admin.{page}.{key}'))`
 4. Failure → `toast.error(error.response?.data?.detail || error.message)`
 5. Destructive → `await confirm({ title, message, confirmText, cancelText })`
@@ -220,19 +265,22 @@ import http from '../../services/http';
 import { ORDER_ENDPOINTS, buildUrl } from '../../config/api';
 
 await http.get(ORDER_ENDPOINTS.ALL_ORDERS);
-await http.put(buildUrl(ORDER_ENDPOINTS.UPDATE_STATUS, { order_id: id }), { status });
+await http.patch(buildUrl(USER_ENDPOINTS.UPDATE_ROLE, { id }), { role });
 ```
 
 ### i18n
-- **Kicker / sidebar:** `t('ui.sidebar.panel.admin')` via `useTranslation()`
-- **Page copy, toasts, confirms:** `tUi('ui.pages.admin.{Component}.{semanticKey}_{hash}')`
-- Add keys to **en, ar, fr** `common.json` together
-- Interpolation: `tUi('...', { value0: label })`
+| API | When |
+|-----|------|
+| `t()` via `useTranslation()` | Kickers, sidebar, navbar, shared labels |
+| `tUi()` via `uiText.js` | Page copy, toasts, confirms, table labels |
+| `getRoleLabel(role)` | Display role names only (not route guards) |
 
-Key namespaces: `ui.pages.admin.*`, `ui.sidebar.*`, `ui.common.*`
+- Keys: `ui.pages.admin.{Component}.{semanticKey}_{hash}` (flat keys, `keySeparator: false`)
+- Also: `ui.sidebar.*`, `roles.*`, `ui.common.*`
+- Add **en, ar, fr** together; interpolation: `tUi('…', { value0: x })`
 
 ### Multi-route pages
-Promotions/Discounts: same component for list + create (`/admin/promotions` vs `/admin/promotions/create`). Derive `basePath` from `location.pathname`. Seller routes reuse components with different `basePath`.
+Promotions/Discounts/Products: derive `basePath` from `location.pathname` (admin vs seller vs warehouse). List vs create via pathname suffix `/create`.
 
 ## Admin vs Warehouse (`adm-*` vs `wm-*`)
 
@@ -241,19 +289,19 @@ Promotions/Discounts: same component for list + create (`/admin/promotions` vs `
 | Shared CSS | `AdminPanel.css` | `WarehousePanel.css` |
 | Page class | `adm-page` | `wm-page` |
 | Max width | 1200–1600px (catalog wider) | 1200px |
-| Data panel | Per-page (`.adm-orders-data-panel`) | Shared `.wm-data-panel` |
-| Pill tabs | Per-page | Shared `.wm-pill-tabs` |
-| Success CTA | Mostly `adm-btn-primary` | `.wm-btn-success` for approve |
+| Data panel | Per-page (`.adm-orders-data-panel`) | `.wm-data-panel` |
+| Pill tabs | Per-page | `.wm-pill-tabs` |
 
-Both share: `AdminLayout`, `Sidebar`, `PageHeader`, design tokens, motion style.
+Both share: `AdminLayout`, `Sidebar`, `PageHeader`, `Navbar`, design tokens, motion style.
 
 ## Checklist — new admin page
 
-1. Copy closest existing page structure (see pattern table)
+1. Copy closest existing page (see pattern table)
 2. Wrap in `admin-page-shell adm-page adm-{feature}-page`
 3. Import `AdminPanel.css` + page CSS with `adm-{short}-*` prefix
 4. Use `PageHeader` + i18n keys (en/ar/fr)
-5. Use `adm-btn-primary` header CTAs; `LoadingSpinner` + dashed empty state
-6. Use `useConfirm` for destructive actions; `toast` for feedback
+5. Header CTAs: `adm-btn-primary`; loading + dashed empty state
+6. `useConfirm` for destructive actions; `toast` for feedback
 7. Match responsive breakpoints; logical properties for RTL
-8. Wire backend with correct `require_*` dependency from `admin.py`
+8. Wire backend with correct `require_*` from `admin.py`
+9. Sidebar menu item: add to `ADMIN_MENU_ITEMS` in `Sidebar.js` with icon key in `SidebarMenuIcon.js`

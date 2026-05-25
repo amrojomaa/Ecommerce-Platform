@@ -48,13 +48,12 @@ const WAREHOUSE_MANAGER_MENU_ITEMS = [
 const SELLER_MENU_ITEMS = [
   { path: '/seller', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
   { path: '/seller/products', labelKey: 'ui.sidebar.menu.products', icon: 'products' },
-  { path: '/seller/categories', labelKey: 'ui.sidebar.menu.categories', icon: 'categories' },
-  { path: '/seller/promotions', labelKey: 'ui.sidebar.menu.promotions', icon: 'promotions' },
   { path: '/seller/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
 ];
 
 const WAREHOUSE_STAFF_MENU_ITEMS = [
   { path: '/warehouse-staff', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/warehouse-staff/products', labelKey: 'ui.sidebar.menu.products', icon: 'products' },
   { path: '/warehouse-staff/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
 ];
 

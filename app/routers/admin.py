@@ -141,6 +141,17 @@ def require_seller_or_admin(db: Session = Depends(get_db), current_user: int = D
     return user
 
 
+def require_product_catalog_viewer(db: Session = Depends(get_db), current_user: int = Depends(OAuth2.get_current_user)):
+    """Read-only catalog access for seller, warehouse staff, warehouse manager, and admin."""
+    user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
+    if user.role not in ["admin", "seller", "warehouse_manager", "warehouse_staff"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You're not authorized to view the product catalog.",
+        )
+    return user
+
+
 def require_warehouse_staff(db: Session = Depends(get_db), current_user: int = Depends(OAuth2.get_current_user)):
     user = db.query(models.DBUser).filter(models.DBUser.id == current_user.id).first()
     if user.role not in ["admin", "warehouse_staff", "warehouse_manager"]:

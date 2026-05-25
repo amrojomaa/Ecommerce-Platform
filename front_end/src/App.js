@@ -87,6 +87,7 @@ import SellerOrders from './pages/seller/SellerOrders';
 // Warehouse Staff
 import WarehouseStaffDashboard from './pages/warehouse-staff/WarehouseStaffDashboard';
 import WarehouseStaffOrders from './pages/warehouse-staff/WarehouseStaffOrders';
+import WarehouseStaffProducts from './pages/warehouse-staff/WarehouseStaffProducts';
 
 // Warehouse Manager
 import WarehouseManagerDashboard from './pages/warehouse-manager/WarehouseManagerDashboard';
@@ -220,14 +221,12 @@ function App() {
           <Route index element={<SellerDashboard />} />
           <Route path="products" element={<SellerProducts />} />
           <Route path="orders" element={<SellerOrders />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="promotions" element={<AdminPromotions />} />
-          <Route path="promotions/create" element={<AdminPromotions />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="/warehouse-staff" element={<ProtectedRoute requireWarehouseStaff={true}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<WarehouseStaffDashboard />} />
+          <Route path="products" element={<WarehouseStaffProducts />} />
           <Route path="orders" element={<WarehouseStaffOrders />} />
           <Route path="profile" element={<Profile />} />
         </Route>

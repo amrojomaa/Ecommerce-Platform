@@ -465,6 +465,7 @@ class Updateoutputcart(BaseModel):
 
 class Orderitemname(BaseModel):
     name: str
+    quantity: int = 0
     images: Optional[List[str]] = Field(default_factory=list)
     
     @field_validator('images', mode='before')
@@ -712,6 +713,7 @@ class POSLineItem(BaseModel):
 class POSCheckoutRequest(BaseModel):
     items: List[POSLineItem]
     payment_method: Literal["cash", "card"]
+    customer_name: Optional[str] = None
 
 
 class POSPromotionPreviewRequest(BaseModel):
@@ -749,6 +751,8 @@ class POSSaleSummaryRow(BaseModel):
     promotion_name: Optional[str] = None
     payment_method: Optional[str] = None
     status: str
+    customer_name: Optional[str] = None
+    cashier: Optional[OrderCashierInfo] = None
 
     class Config:
         from_attributes = True

@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertTriangle, FiPackage } from 'react-icons/fi';
+import { FiAlertTriangle, FiChevronDown, FiPackage, FiUser } from 'react-icons/fi';
 import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { WAREHOUSE_ENDPOINTS, buildUrl } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import { useCurrency } from '../../hooks/useCurrency';
 import { formatDateTime, getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminOrders.css';
@@ -33,7 +32,6 @@ const getOrderStatusLabel = (status) => {
 
 const WarehouseStaffOrders = () => {
   const { t } = useTranslation();
-  const { formatCurrency } = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
   const panelKicker = t('ui.sidebar.panel.warehouseStaff');
 
@@ -82,6 +80,7 @@ const WarehouseStaffOrders = () => {
 
   const handleFilterChange = (value) => {
     setActiveTab(value);
+    setExpandedOrder(null);
     if (value === 'preparing') {
       setSearchParams({}, { replace: true });
       return;
@@ -205,7 +204,7 @@ const WarehouseStaffOrders = () => {
   }
 
   return (
-    <div className="admin-page-shell adm-page wms-page wms-orders-page">
+    <div className="admin-page-shell adm-page wms-page wms-orders-page adm-orders-page">
       <PageHeader
         kicker={panelKicker}
         title={tUi('ui.pages.warehouseStaff.warehouseStaffOrders.title_n5o6p7q8r9')}
@@ -239,16 +238,19 @@ const WarehouseStaffOrders = () => {
       <section className="adm-section wms-orders-section">
         {displayOrders.length === 0 ? (
           <div className="adm-page-empty wms-orders-empty">
+            <FiPackage className="wms-orders-empty-icon" aria-hidden />
             <p>{emptyMessage}</p>
           </div>
         ) : (
-          <div className="wms-data-panel">
+          <div className="wms-orders-data-panel">
             <div className="wms-orders-list">
               <AnimatePresence>
-                {displayOrders.map((order) => {
+                {displayOrders.map((order, index) => {
                   const orderItems = order.items || order.orderitems || [];
                   const orderStatus = (order.status || 'preparing').toLowerCase();
                   const isExpanded = expandedOrder === order.id;
+                  const verifiedCount = getVerifiedCount(order.id, orderItems);
+                  const allVerified = orderItems.length > 0 && verifiedCount >= orderItems.length;
                   const hasOpenIssues =
                     Array.isArray(order.warehouse_issues) &&
                     order.warehouse_issues.some((issue) => issue.status === 'open');
@@ -256,10 +258,11 @@ const WarehouseStaffOrders = () => {
                   return (
                     <motion.article
                       key={order.id}
-                      className="wms-order-card"
+                      className={`wms-order-card${isExpanded ? ' wms-order-card--expanded' : ''}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
+                      transition={{ delay: index * 0.04 }}
                     >
                       <button
                         type="button"
@@ -284,114 +287,154 @@ const WarehouseStaffOrders = () => {
                           <span className={`adm-orders-status adm-orders-status--${orderStatus}`}>
                             {getOrderStatusLabel(order.status)}
                           </span>
+                          <FiChevronDown className={`wms-order-chevron${isExpanded ? ' wms-order-chevron--open' : ''}`} aria-hidden />
                         </div>
                       </button>
 
-                      {isExpanded && (
-                        <div className="wms-order-details">
-                          <div className="wms-verify-section">
-                            <h3>{tUi('ui.pages.warehouseStaff.warehouseStaffOrders.verifyTitle_m0n1o2p3q4')}</h3>
-                            {orderItems.map((item) => {
-                              const verified = isItemVerified(order.id, item.id);
-                              const imageSrc = item.product?.images?.[0]
-                                ? getImageUrl(item.product.images[0])
-                                : null;
-                              return (
-                                <div
-                                  key={item.id}
-                                  className={`wms-verify-item ${verified ? 'wms-verify-item--verified' : ''}`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="wms-verify-checkbox"
-                                    checked={verified}
-                                    onChange={(e) => handleVerifyItem(order.id, item.id, e.target.checked)}
-                                    disabled={order.status !== 'preparing'}
-                                    aria-label={item.product?.name || 'Product'}
-                                  />
-                                  {imageSrc ? (
-                                    <img
-                                      src={imageSrc}
-                                      alt={item.product?.name || ''}
-                                      className="wms-verify-thumb"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="wms-verify-thumb wms-verify-thumb--empty" aria-hidden>
-                                      <FiPackage />
-                                    </div>
-                                  )}
-                                  <div className="wms-verify-item-info">
-                                    <div className="wms-verify-item-name">
-                                      {item.product?.name || tUi('ui.pages.warehouseStaff.warehouseStaffOrders.productFallback_r5s6t7u8v9')}
-                                    </div>
-                                    <div className="wms-verify-item-meta">
-                                      {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.itemQtyLine_w0x1y2z3a4', {
-                                        value0: item.quantity,
-                                        value1: formatCurrency(item.price),
-                                      })}
-                                    </div>
-                                  </div>
-                                  {order.status === 'preparing' && (
-                                    <button
-                                      type="button"
-                                      className="wms-report-btn"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        openIssueModal(order.id, item.id, item.product?.name);
-                                      }}
-                                    >
-                                      {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.reportIssue_b5c6d7e8f9')}
-                                    </button>
-                                  )}
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            className="wms-order-details"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: 'easeInOut' }}
+                          >
+                            {order.user && (
+                              <div className="wms-customer-panel">
+                                <FiUser className="wms-customer-icon" aria-hidden />
+                                <div>
+                                  <strong>{tUi('ui.pages.warehouseStaff.warehouseStaffOrders.customer_a0b1c2d3e4')}</strong>
+                                  <span>
+                                    {[order.user.first_name, order.user.last_name].filter(Boolean).join(' ') ||
+                                      tUi('ui.pages.warehouseStaff.warehouseStaffOrders.customerNameFallback_a1b2c3d4e5')}
+                                  </span>
                                 </div>
-                              );
-                            })}
-                          </div>
-
-                          {order.status === 'preparing' && (
-                            <div className="wms-pack-section">
-                              <div className="wms-pack-row">
-                                <span className="wms-verify-progress">
-                                  {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.verifyProgress_g0h1i2j3k4', {
-                                    value0: getVerifiedCount(order.id, orderItems),
-                                    value1: orderItems.length,
-                                  })}
-                                </span>
-                                <button
-                                  type="button"
-                                  className="adm-btn-primary wms-pack-btn"
-                                  disabled={
-                                    getVerifiedCount(order.id, orderItems) < orderItems.length ||
-                                    packingOrderId === order.id ||
-                                    hasOpenIssues
-                                  }
-                                  onClick={() => handlePackOrder(order.id)}
-                                >
-                                  {packingOrderId === order.id
-                                    ? tUi('ui.pages.warehouseStaff.warehouseStaffOrders.packing_l5m6n7o8p9')
-                                    : tUi('ui.pages.warehouseStaff.warehouseStaffOrders.packOrder_q0r1s2t3u4')}
-                                </button>
                               </div>
-                              {hasOpenIssues && (
-                                <div className="wms-issue-banner" role="alert">
-                                  <FiAlertTriangle aria-hidden />{' '}
-                                  {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.openIssuesBlock_v5w6x7y8z9')}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                            )}
 
-                          {order.user && (
-                            <div className="wms-customer-panel">
-                              <strong>{tUi('ui.pages.warehouseStaff.warehouseStaffOrders.customer_a0b1c2d3e4')}:</strong>{' '}
-                              {[order.user.first_name, order.user.last_name].filter(Boolean).join(' ')} — {order.user.email}
+                            <div className="wms-verify-section">
+                              <div className="wms-verify-section-head">
+                                <h3>{tUi('ui.pages.warehouseStaff.warehouseStaffOrders.verifyTitle_m0n1o2p3q4')}</h3>
+                                {order.status === 'preparing' && orderItems.length > 0 && (
+                                  <span className={`wms-verify-badge${allVerified ? ' wms-verify-badge--complete' : ''}`}>
+                                    {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.verifyProgress_g0h1i2j3k4', {
+                                      value0: verifiedCount,
+                                      value1: orderItems.length,
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="wms-verify-items">
+                                {orderItems.map((item) => {
+                                  const verified = isItemVerified(order.id, item.id);
+                                  const stockOnHand = item.product?.quantity ?? 0;
+                                  const imageSrc = item.product?.images?.[0]
+                                    ? getImageUrl(item.product.images[0])
+                                    : null;
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className={`wms-verify-item${verified ? ' wms-verify-item--verified' : ''}`}
+                                    >
+                                      <label className="wms-verify-item-main">
+                                        <input
+                                          type="checkbox"
+                                          className="wms-verify-checkbox"
+                                          checked={verified}
+                                          onChange={(e) => handleVerifyItem(order.id, item.id, e.target.checked)}
+                                          disabled={order.status !== 'preparing'}
+                                          aria-label={item.product?.name || 'Product'}
+                                        />
+                                        {imageSrc ? (
+                                          <img
+                                            src={imageSrc}
+                                            alt={item.product?.name || ''}
+                                            className="wms-verify-thumb"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                            }}
+                                          />
+                                        ) : (
+                                          <div className="wms-verify-thumb wms-verify-thumb--empty" aria-hidden>
+                                            <FiPackage />
+                                          </div>
+                                        )}
+                                        <div className="wms-verify-item-info">
+                                          <div className="wms-verify-item-name">
+                                            {item.product?.name || tUi('ui.pages.warehouseStaff.warehouseStaffOrders.productFallback_r5s6t7u8v9')}
+                                          </div>
+                                          <div className="wms-verify-item-meta">
+                                            {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.itemStockLine_b6c7d8e9f0', {
+                                              value0: item.quantity,
+                                              value1: stockOnHand,
+                                            })}
+                                          </div>
+                                        </div>
+                                      </label>
+                                      {order.status === 'preparing' && (
+                                        <button
+                                          type="button"
+                                          className="wms-report-btn"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openIssueModal(order.id, item.id, item.product?.name);
+                                          }}
+                                        >
+                                          <FiAlertTriangle aria-hidden />
+                                          {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.reportIssue_b5c6d7e8f9')}
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+
+                            {order.status === 'preparing' && (
+                              <div className="wms-pack-section">
+                                {orderItems.length > 0 && (
+                                  <div className="wms-verify-progress-bar" role="progressbar" aria-valuenow={verifiedCount} aria-valuemin={0} aria-valuemax={orderItems.length}>
+                                    <div
+                                      className={`wms-verify-progress-fill${allVerified ? ' wms-verify-progress-fill--complete' : ''}`}
+                                      style={{ width: `${Math.round((verifiedCount / orderItems.length) * 100)}%` }}
+                                    />
+                                  </div>
+                                )}
+                                <div className="wms-pack-row">
+                                  <span className="wms-verify-progress">
+                                    {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.verifyProgress_g0h1i2j3k4', {
+                                      value0: verifiedCount,
+                                      value1: orderItems.length,
+                                    })}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="adm-btn-primary wms-pack-btn"
+                                    disabled={
+                                      verifiedCount < orderItems.length ||
+                                      packingOrderId === order.id ||
+                                      hasOpenIssues
+                                    }
+                                    onClick={() => handlePackOrder(order.id)}
+                                  >
+                                    {packingOrderId === order.id
+                                      ? tUi('ui.pages.warehouseStaff.warehouseStaffOrders.packing_l5m6n7o8p9')
+                                      : tUi('ui.pages.warehouseStaff.warehouseStaffOrders.packOrder_q0r1s2t3u4')}
+                                  </button>
+                                </div>
+                                {hasOpenIssues && (
+                                  <div className="wms-issue-banner" role="alert">
+                                    <FiAlertTriangle aria-hidden />
+                                    {tUi('ui.pages.warehouseStaff.warehouseStaffOrders.openIssuesBlock_v5w6x7y8z9')}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.article>
                   );
                 })}
@@ -404,7 +447,7 @@ const WarehouseStaffOrders = () => {
       {issueModal && (
         <div className="admin-modal-overlay" onClick={() => setIssueModal(null)} role="presentation">
           <div
-            className="admin-modal"
+            className="admin-modal wms-issue-modal"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

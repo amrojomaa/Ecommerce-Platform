@@ -3,13 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { FaArrowRight } from 'react-icons/fa';
-import { FiCheckCircle, FiClipboard, FiPackage } from 'react-icons/fi';
+import { FiCheckCircle, FiClipboard, FiPackage, FiTrendingDown, FiXCircle } from 'react-icons/fi';
 import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
-import { WAREHOUSE_ENDPOINTS } from '../../config/api';
+import { WAREHOUSE_ENDPOINTS, PRODUCT_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import { formatDateTime } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/warehouse-staff/WarehouseStaffPanel.css';
 import '../../styles/pages/warehouse-staff/WarehouseStaffDashboard.css';
@@ -19,25 +18,48 @@ const WarehouseStaffDashboard = () => {
   const navigate = useNavigate();
   const panelKicker = t('ui.sidebar.panel.warehouseStaff');
 
-  const [stats, setStats] = useState({ preparingCount: 0, packedCount: 0 });
-  const [preparingOrders, setPreparingOrders] = useState([]);
+  const [stats, setStats] = useState({
+    preparingCount: 0,
+    packedCount: 0,
+    totalProducts: 0,
+    lowStockProducts: 0,
+    outOfStockProducts: 0,
+  });
+  const [lowStockItems, setLowStockItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lowStockThreshold, setLowStockThreshold] = useState(10);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [prepRes, packedRes] = await Promise.all([
+      let threshold = 10;
+      try {
+        const threshRes = await http.get(ADMIN_SETTINGS_ENDPOINTS.GET_LOW_STOCK_THRESHOLD);
+        threshold = threshRes.data.threshold;
+        setLowStockThreshold(threshold);
+      } catch (e) {
+        /* use default */
+      }
+
+      const [prepRes, packedRes, productsRes] = await Promise.all([
         http.get(WAREHOUSE_ENDPOINTS.PREPARING_ORDERS),
         http.get(WAREHOUSE_ENDPOINTS.PACKED_ORDERS),
+        http.get(PRODUCT_ENDPOINTS.ALL_ADMIN),
       ]);
 
       const preparing = Array.isArray(prepRes.data) ? prepRes.data : [];
       const packed = Array.isArray(packedRes.data) ? packedRes.data : [];
+      const products = Array.isArray(productsRes.data) ? productsRes.data : [];
+      const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < threshold);
+      const outOfStock = products.filter((p) => p.quantity === 0);
 
-      setPreparingOrders(preparing.slice(0, 6));
+      setLowStockItems(lowStock.slice(0, 8));
       setStats({
         preparingCount: preparing.length,
         packedCount: packed.length,
+        totalProducts: products.length,
+        lowStockProducts: lowStock.length,
+        outOfStockProducts: outOfStock.length,
       });
     } catch (error) {
       console.error('Error fetching warehouse staff dashboard data:', error);
@@ -77,18 +99,52 @@ const WarehouseStaffDashboard = () => {
       path: '/warehouse-staff/orders',
       statusFilter: 'packed',
     },
+    {
+      key: 'totalProducts',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.statTotalProducts_a0b1c2d3e4'),
+      value: stats.totalProducts,
+      icon: FiPackage,
+      iconClass: 'adm-stat-icon--products',
+      path: '/warehouse-staff/products',
+    },
+    {
+      key: 'lowStock',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.statLowStock_f5g6h7i8j9'),
+      value: stats.lowStockProducts,
+      icon: FiTrendingDown,
+      iconClass: 'adm-stat-icon--low',
+      path: '/warehouse-staff/products',
+    },
+    {
+      key: 'outOfStock',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.statOutOfStock_k0l1m2n3o4'),
+      value: stats.outOfStockProducts,
+      icon: FiXCircle,
+      iconClass: 'adm-stat-icon--low',
+      path: '/warehouse-staff/products',
+    },
   ];
 
   const actionCards = [
     {
+      key: 'products',
+      path: '/warehouse-staff/products',
+      icon: FiPackage,
+      iconClass: 'adm-action-card-icon--products',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionProductsTitle_p5q6r7s8t9'),
+      desc: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionProductsDesc_u0v1w2x3y4'),
+    },
+    {
+      key: 'pack',
       path: '/warehouse-staff/orders',
       filter: 'preparing',
-      icon: FiPackage,
+      icon: FiClipboard,
       iconClass: 'adm-action-card-icon--orders',
       title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackTitle_k1l2m3n4o5'),
       desc: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackDesc_p5q6r7s8t9'),
     },
     {
+      key: 'packed',
       path: '/warehouse-staff/orders',
       filter: 'packed',
       icon: FiCheckCircle,
@@ -121,7 +177,11 @@ const WarehouseStaffDashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => navigate(`${stat.path}?filter=${stat.statusFilter}`)}
+                onClick={() =>
+                  navigate(
+                    stat.statusFilter ? `${stat.path}?filter=${stat.statusFilter}` : stat.path
+                  )
+                }
               >
                 <div className="stat-top">
                   <div className="stat-main">
@@ -149,7 +209,7 @@ const WarehouseStaffDashboard = () => {
             const to = action.filter ? `${action.path}?filter=${action.filter}` : action.path;
             return (
               <motion.div
-                key={action.title}
+                key={action.key}
                 className="adm-action-card-wrap"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -173,48 +233,47 @@ const WarehouseStaffDashboard = () => {
         </div>
       </section>
 
-      <section className="adm-section wms-queue-section">
-        <div className="adm-section-header">
-          <h2>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionQueue_d5e6f7g8h9')}</h2>
-        </div>
-        {preparingOrders.length === 0 ? (
-          <div className="adm-page-empty wms-queue-empty">
-            <p>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.queueEmpty_i0j1k2l3m4')}</p>
+      {(lowStockItems.length > 0 || stats.totalProducts > 0) && (
+        <section className="adm-section wms-alerts-section">
+          <div className="adm-section-header">
+            <h2>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionStockAlerts_z5a6b7c8d9')}</h2>
           </div>
-        ) : (
-          <div className="wms-queue-list">
-            {preparingOrders.map((order, index) => {
-              const orderItems = order.items || order.orderitems || [];
-              return (
-                <motion.button
-                  key={order.id}
+          {lowStockItems.length > 0 ? (
+            <div className="wms-alert-list">
+              {lowStockItems.map((item) => (
+                <button
+                  key={item.id}
                   type="button"
-                  className="wms-queue-card"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => navigate('/warehouse-staff/orders?filter=preparing')}
+                  className={`wms-alert-item ${item.quantity === 0 ? 'wms-alert-item--critical' : 'wms-alert-item--warn'}`}
+                  onClick={() => navigate('/warehouse-staff/products')}
                 >
-                  <div className="wms-queue-card-top">
-                    <span className="wms-queue-order-id">
-                      {tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.orderLabel_n5o6p7q8r9', {
-                        value0: order.id,
-                      })}
-                    </span>
-                    <span className="wms-queue-item-count">
-                      {tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.itemCount_s0t1u2v3w4', {
-                        value0: orderItems.length,
-                      })}
+                  <div className="wms-alert-copy">
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.quantity === 0
+                        ? tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.stockOutOfStock_e0f1g2h3i4')
+                        : tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.stockLowRemaining_j5k6l7m8n9', {
+                            value0: item.quantity,
+                          })}
                     </span>
                   </div>
-                  <span className="wms-queue-meta">{order.user?.email || '—'}</span>
-                  <span className="wms-queue-meta">{formatDateTime(order.created_at)}</span>
-                </motion.button>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="wms-alert-item wms-alert-item--ok">
+              <div className="wms-alert-copy">
+                <strong>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.stockAllGood_o0p1q2r3s4')}</strong>
+                <span>
+                  {tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.stockAllGoodDesc_t5u6v7w8x9', {
+                    value0: lowStockThreshold,
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };

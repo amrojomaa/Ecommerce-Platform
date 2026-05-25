@@ -1,13 +1,355 @@
+/* Warehouse Staff Orders — page-scoped (wms-orders-*, wms-order-*) */
+
+.wms-orders-page {
+  gap: 1.5rem;
+  max-width: 100%;
+}
+
+.wms-orders-page .page-header {
+  scroll-margin-top: 5rem;
+  padding-bottom: 0;
+}
+
+.wms-orders-page .page-header-actions {
+  margin-top: 1.85rem;
+}
+
+.wms-orders-select {
+  width: 16rem;
+  min-width: 16rem;
+  max-width: 16rem;
+}
+
 .wms-orders-section {
   gap: 1rem;
 }
 
-.wms-data-panel {
+/* Data panel + list */
+.wms-orders-data-panel {
+  width: 100%;
+  min-width: 0;
   padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
 }
 
 .wms-orders-list {
-  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Order cards */
+.wms-order-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.wms-order-card:hover:not(.wms-order-card--expanded) {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.wms-order-card--expanded {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: var(--shadow-md);
+}
+
+.wms-order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.15rem 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  flex-wrap: wrap;
+  transition: background 0.2s ease;
+}
+
+.wms-order-card-header:hover {
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.wms-order-card-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.wms-order-id {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.wms-order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.wms-order-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.wms-order-chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--text-secondary);
+  transition: transform 0.25s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.wms-order-chevron--open {
+  transform: rotate(180deg);
+  color: var(--primary-color);
+}
+
+/* Expanded details */
+.wms-order-details {
+  overflow: hidden;
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.wms-customer-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.wms-customer-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--primary-color);
+}
+
+.wms-customer-panel strong {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--text-primary);
+}
+
+.wms-customer-panel span {
+  display: block;
+  line-height: 1.45;
+}
+
+/* Verification */
+.wms-verify-section {
+  margin-top: 1rem;
+}
+
+.wms-verify-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.wms-verify-section h3 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.wms-verify-badge {
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.wms-verify-badge--complete {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.wms-verify-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wms-verify-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.wms-verify-item--verified {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.wms-verify-item-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.wms-verify-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  accent-color: #16a34a;
+  flex-shrink: 0;
+}
+
+.wms-verify-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+}
+
+.wms-verify-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.wms-verify-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.wms-verify-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.wms-verify-item-meta {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.wms-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wms-report-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.dark .wms-report-btn {
+  color: #f87171;
+}
+
+/* Pack section */
+.wms-pack-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.wms-verify-progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.wms-verify-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary-color);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.wms-verify-progress-fill--complete {
+  background: #16a34a;
+}
+
+.wms-pack-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wms-verify-progress {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.wms-verify-progress strong {
+  color: #16a34a;
+}
+
+.wms-pack-btn {
+  min-height: 44px;
 }
 
 .wms-issue-banner {
@@ -15,19 +357,119 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .wms-issue-banner svg {
   flex-shrink: 0;
 }
 
-.admin-modal .adm-modal-field select,
-.admin-modal .adm-modal-field textarea {
+.dark .wms-issue-banner {
+  color: #fca5a5;
+}
+
+/* Empty state */
+.wms-orders-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+}
+
+.wms-orders-empty-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* Issue modal */
+.wms-issue-modal .adm-modal-field select,
+.wms-issue-modal .adm-modal-field textarea {
   width: 100%;
   box-sizing: border-box;
 }
 
-.admin-modal .adm-modal-field textarea {
+.wms-issue-modal .adm-modal-field textarea {
   min-height: 96px;
   resize: vertical;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page-shell.adm-page.wms-orders-page {
+    gap: 2.5rem;
+  }
+
+  .wms-orders-page .page-header-actions {
+    width: 100%;
+    margin-inline-start: 0;
+    margin-top: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .wms-orders-header-filter {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .wms-orders-header-filter .adm-orders-header-meta {
+    text-align: start;
+  }
+
+  .wms-orders-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .wms-order-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wms-order-card-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .wms-verify-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wms-report-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wms-pack-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wms-pack-btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .wms-orders-page.adm-page.wms-page {
+    max-width: min(100%, 1400px);
+  }
+}
+
+@media (min-width: 1600px) {
+  .wms-orders-page.adm-page.wms-page {
+    max-width: min(100%, 1600px);
+  }
 }

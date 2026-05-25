@@ -4,7 +4,7 @@ from .. import OAuth2, models, schemas
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from .admin import require_admin_or_warehouse_manager, require_seller_or_admin
+from .admin import require_admin_or_warehouse_manager, require_seller_or_admin, require_product_catalog_viewer
 from ..database import get_db
 from typing import List, Dict
 
@@ -271,7 +271,7 @@ def get_all_products(db: Session = Depends (get_db)):
     return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
-def get_all_products(db: Session = Depends (get_db), admin_user = Depends(require_seller_or_admin)):
+def get_all_products_admin(db: Session = Depends (get_db), admin_user = Depends(require_product_catalog_viewer)):
     products = db.query(models.DBProduct).all()
     ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
     return [schemas.ProductBase(**get_product_with_images(p, ratings_map)) for p in products]

@@ -9,6 +9,7 @@ import { useUnreadTickets } from '../hooks/useUnreadTickets';
 import '../styles/layouts/Navbar.css';
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
+import { FiClock, FiSearch } from 'react-icons/fi';
 import API_BASE_URL from '../config/api';
 import { DEFAULT_PROFILE_IMAGE, resolveProfileImageUrl } from '../utils/helpers';
 import { getRoleDashboardPath } from '../utils/roleDashboard';
@@ -16,6 +17,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { tUi } from '../i18n/uiText';
+import { useCashierPos } from '../context/CashierPosContext';
 
 const Navbar = () => {
   const { t } = useTranslation();
@@ -31,6 +33,8 @@ const Navbar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef(null);
+  const ignoreOutsideClickRef = useRef(false);
+  const cashierPos = useCashierPos();
   const isAdminArea = location.pathname.startsWith('/admin');
   const isOperationsArea = location.pathname.startsWith('/operations');
   const isDriverArea = location.pathname.startsWith('/driver');
@@ -156,24 +160,33 @@ const Navbar = () => {
     });
 
   useEffect(() => {
+    if (!profileDropdownOpen) {
+      return undefined;
+    }
+
     const handleClickOutside = (event) => {
+      if (ignoreOutsideClickRef.current) {
+        return;
+      }
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
         setProfileDropdownOpen(false);
       }
     };
 
-    if (profileDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('click', handleClickOutside, true);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
     };
   }, [profileDropdownOpen]);
 
-
-  const toggleProfileDropdown = () => {
-    setProfileDropdownOpen(!profileDropdownOpen);
+  const toggleProfileDropdown = (event) => {
+    event.stopPropagation();
+    ignoreOutsideClickRef.current = true;
+    setProfileDropdownOpen((prev) => !prev);
+    window.requestAnimationFrame(() => {
+      ignoreOutsideClickRef.current = false;
+    });
   };
 
   const handleCurrencyChange = (event) => {
@@ -203,6 +216,19 @@ const Navbar = () => {
           
           <button type="submit">{t("navbar.searchButton")}</button>
         </form>
+        }
+
+        {isCashierArea && cashierPos &&
+        <div className="navbar-pos-search">
+          <FiSearch className="navbar-pos-search-icon" aria-hidden />
+          <input
+            type="search"
+            value={cashierPos.search}
+            onChange={(event) => cashierPos.setSearch(event.target.value)}
+            placeholder={tUi('ui.pages.cashier.posTerminal.searchByName_1a90c9550d')}
+            aria-label={tUi('ui.pages.cashier.posTerminal.searchProducts_ac70437f7f')}
+          />
+        </div>
         }
 
         <div className="navbar-menu">
@@ -337,11 +363,6 @@ const Navbar = () => {
                   <span>Support Manager Dashboard</span>
                 </Link>
               }
-              {(isCashierArea || (user?.role === 'cashier' && !isCashierArea)) &&
-              <Link to={cashierHomePath} className="navbar-link admin-link">
-                  <span>{t("navbar.cashier")} Dashboard</span>
-                </Link>
-              }
               {(isSellerArea || (user?.role === 'seller' && !isSellerArea)) &&
               <Link to={sellerHomePath} className="navbar-link admin-link">
                   <span>{t("navbar.sellerDashboard")}</span>
@@ -357,14 +378,25 @@ const Navbar = () => {
                   <span>{t("navbar.warehouseManager")}</span>
                 </Link>
               }
+              {isCashierArea && cashierPos &&
+              <button
+                type="button"
+                className="navbar-pos-history-btn"
+                onClick={cashierPos.openSalesHistory}
+              >
+                <FiClock aria-hidden />
+                <span>{tUi('ui.pages.cashier.posTerminal.mySalesToday_69ede91d75')}</span>
+              </button>
+              }
               <div className="navbar-user" ref={profileDropdownRef}>
                 <div
                   className="profile-image-wrapper"
                   onClick={toggleProfileDropdown}
+                  aria-label={tUi("ui.layouts.navbar.profile_553de13c4b")}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      toggleProfileDropdown();
+                      toggleProfileDropdown(event);
                     }
                   }}
                   role="button"
@@ -379,17 +411,19 @@ const Navbar = () => {
                   className="navbar-profile-image"
                   loading="eager"
                   decoding="async"
+                  draggable={false}
                   referrerPolicy="no-referrer"
                   onError={(e) => {
-                    // Always fallback to default image on error
                     if (e.target.src !== DEFAULT_PROFILE_IMAGE) {
                       e.target.src = DEFAULT_PROFILE_IMAGE;
                     }
                   }} />
                 
                 </div>
-                {profileDropdownOpen &&
-              <div className="profile-dropdown">
+                <div
+                  className={`profile-dropdown${profileDropdownOpen ? ' is-open' : ''}`}
+                  aria-hidden={!profileDropdownOpen}
+                >
                     <div className="dropdown-item email-item">
                       <span className="dropdown-label">{t("navbar.email")}:</span>
                       <span className="dropdown-value">{user?.email}</span>
@@ -427,7 +461,6 @@ const Navbar = () => {
                       {t("navbar.logout")}
                     </button>
                   </div>
-              }
               </div>
             </> :
 
@@ -524,11 +557,6 @@ const Navbar = () => {
               {isDriverArea &&
               <Link to={driverHomePath} onClick={() => setMobileMenuOpen(false)}>
                   {t("navbar.driver")}
-                </Link>
-              }
-              {isCashierArea &&
-              <Link to={cashierHomePath} onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.cashier")}
                 </Link>
               }
               {isSupportAgentArea &&

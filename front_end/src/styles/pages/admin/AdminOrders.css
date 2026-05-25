@@ -306,7 +306,7 @@
   border-radius: 999px;
   font-size: 0.82rem;
   font-weight: 700;
-  text-transform: capitalize;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -325,6 +325,33 @@
 .adm-orders-status--paid {
   background: rgba(22, 163, 74, 0.15);
   color: #16a34a;
+}
+
+.adm-orders-status--preparing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.adm-orders-status--packed {
+  background: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
+}
+
+.adm-orders-status--ready_for_pickup {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0284c7;
+}
+
+.dark .adm-orders-status--preparing {
+  color: #fbbf24;
+}
+
+.dark .adm-orders-status--packed {
+  color: #a5b4fc;
+}
+
+.dark .adm-orders-status--ready_for_pickup {
+  color: #38bdf8;
 }
 
 .adm-orders-status--shipped,
@@ -355,6 +382,15 @@
 .dark .adm-orders-status--failed,
 .dark .adm-orders-status--refunded {
   color: #f87171;
+}
+
+.dark .adm-orders-status--delivered,
+.dark .adm-orders-status--delivering {
+  color: #22d3ee;
+}
+
+.dark .adm-orders-status--paid {
+  color: #4ade80;
 }
 
 .adm-orders-muted {

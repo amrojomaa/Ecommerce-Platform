@@ -81,7 +81,6 @@ import CashierLayout from './layouts/CashierLayout';
 import PosTerminal from './pages/cashier/PosTerminal';
 
 // Seller
-import SellerLayout from './layouts/SellerLayout';
 import SellerDashboard from './pages/seller/SellerDashboard';
 import SellerProducts from './pages/seller/SellerProducts';
 import SellerOrders from './pages/seller/SellerOrders';
@@ -212,7 +211,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        <Route path="/seller" element={<ProtectedRoute requireSeller={true}><SellerLayout /></ProtectedRoute>}>
+        <Route path="/seller" element={<ProtectedRoute requireSeller={true}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<SellerDashboard />} />
           <Route path="products" element={<SellerProducts />} />
           <Route path="orders" element={<SellerOrders />} />

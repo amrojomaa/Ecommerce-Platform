@@ -44,6 +44,14 @@ const WAREHOUSE_MANAGER_MENU_ITEMS = [
   { path: '/warehouse/issues', labelKey: 'ui.sidebar.menu.warehouseIssues', icon: 'warehouseIssues' },
 ];
 
+const SELLER_MENU_ITEMS = [
+  { path: '/seller', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/seller/products', labelKey: 'ui.sidebar.menu.products', icon: 'products' },
+  { path: '/seller/categories', labelKey: 'ui.sidebar.menu.categories', icon: 'categories' },
+  { path: '/seller/promotions', labelKey: 'ui.sidebar.menu.promotions', icon: 'promotions' },
+  { path: '/seller/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
+];
+
 
 const getStorageKey = (userId) => `admin-sidebar-order:${userId || 'default'}`;
 
@@ -73,6 +81,7 @@ const Sidebar = () => {
       if (user?.role === 'operations_manager') return OPERATIONS_MANAGER_MENU_ITEMS;
       if (user?.role === 'support_manager') return SUPPORT_MANAGER_MENU_ITEMS;
       if (user?.role === 'warehouse_manager') return WAREHOUSE_MANAGER_MENU_ITEMS;
+      if (user?.role === 'seller') return SELLER_MENU_ITEMS;
       return ADMIN_MENU_ITEMS;
     },
     [user?.role]
@@ -127,6 +136,7 @@ const Sidebar = () => {
     if (user?.role === 'operations_manager') return 'ui.sidebar.panel.operations';
     if (user?.role === 'support_manager') return 'ui.sidebar.panel.support';
     if (user?.role === 'warehouse_manager') return 'ui.sidebar.panel.warehouse';
+    if (user?.role === 'seller') return 'ui.sidebar.panel.seller';
     return 'ui.sidebar.panel.admin';
   }, [user?.role]);
 
@@ -134,6 +144,7 @@ const Sidebar = () => {
     if (user?.role === 'operations_manager') return 'operations';
     if (user?.role === 'support_manager') return 'support';
     if (user?.role === 'warehouse_manager') return 'warehouse';
+    if (user?.role === 'seller') return 'seller';
     return 'admin';
   }, [user?.role]);
 

@@ -1,281 +1,209 @@
-.seller-orders {
-  max-width: 1200px;
-  margin: 0 auto;
+.slr-orders-page {
+  gap: 1.5rem;
+  max-width: 100%;
 }
 
-.seller-orders h1 {
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-size: clamp(1.75rem, 3vw, 2.2rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
+.slr-orders-page.adm-page.slr-page {
+  max-width: 100%;
 }
 
-/* Filter tabs */
-.seller-orders-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--border-color);
-  padding-bottom: 0;
+.slr-orders-page .page-header-actions {
+  margin-top: 1.85rem;
 }
 
-.seller-orders-tabs button {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.2s ease, border-color 0.2s ease;
-  border-radius: 0;
+.slr-orders-select {
+  width: 16rem;
+  min-width: 16rem;
+  max-width: 16rem;
 }
 
-.seller-orders-tabs button:hover {
-  color: var(--primary-color);
+.slr-orders-section {
+  gap: 1rem;
 }
 
-.seller-orders-tabs button.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-.seller-orders-tabs .tab-count {
-  background: color-mix(in srgb, var(--primary-color) 16%, var(--surface));
-  color: var(--primary-color);
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
-  font-weight: 700;
-}
-
-/* Orders table */
-.seller-orders-table {
+.slr-orders-table {
+  table-layout: fixed;
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--surface);
-  border-radius: 1.2rem;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border-color);
+  min-width: 920px;
 }
 
-.seller-orders-table thead th {
-  background: var(--background);
-  padding: 0.875rem 1rem;
-  text-align: left;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+.slr-orders-table col.slr-col-order {
+  width: 10%;
 }
 
-.seller-orders-table tbody td {
+.slr-orders-table col.slr-col-date {
+  width: 14%;
+}
+
+.slr-orders-table col.slr-col-customer {
+  width: 22%;
+}
+
+.slr-orders-table col.slr-col-items {
+  width: 10%;
+}
+
+.slr-orders-table col.slr-col-total {
+  width: 12%;
+}
+
+.slr-orders-table col.slr-col-status {
+  width: 14%;
+}
+
+.slr-orders-table col.slr-col-action {
+  width: 18%;
+}
+
+.slr-orders-table thead th,
+.slr-orders-table tbody td {
   padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 0.9rem;
-  color: var(--text-primary);
   vertical-align: middle;
+  text-align: start;
 }
 
-.seller-orders-table tbody tr:hover {
-  background: color-mix(in srgb, var(--primary-color) 5%, var(--background));
+.slr-orders-table .slr-col-items {
+  text-align: center;
 }
 
-.seller-orders-table tbody tr:last-child td {
-  border-bottom: none;
+.slr-orders-table .slr-col-total {
+  text-align: end;
+  white-space: nowrap;
 }
 
-.seller-orders-table tbody tr.expanded {
-  background: color-mix(in srgb, var(--primary-color) 8%, var(--background));
+.slr-orders-table .slr-col-status {
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* Status badges */
-.seller-status-badge {
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  display: inline-block;
-  text-transform: capitalize;
+.slr-orders-table .slr-col-action {
+  text-align: center;
+  white-space: nowrap;
 }
 
-.seller-status-badge.paid {
-  background: color-mix(in srgb, var(--success-color) 16%, var(--surface));
-  color: var(--success-color);
+.slr-orders-table .slr-col-action .slr-prepare-btn,
+.slr-orders-table .slr-col-action .slr-in-progress-label {
+  margin-inline: auto;
 }
 
-.seller-status-badge.preparing {
-  background: color-mix(in srgb, var(--warning-color) 18%, var(--surface));
-  color: var(--warning-color);
+.slr-orders-table .slr-col-action .slr-prepare-btn {
+  display: inline-flex;
+  justify-content: center;
+  max-width: 100%;
 }
 
-.seller-status-badge.packed {
-  background: color-mix(in srgb, var(--primary-color) 14%, var(--surface));
-  color: var(--primary-color);
+.slr-orders-table .adm-orders-customer {
+  min-width: 0;
 }
 
-.seller-status-badge.shipped,
-.seller-status-badge.ready_for_pickup {
-  background: color-mix(in srgb, var(--primary-color) 12%, var(--surface));
-  color: var(--primary-hover);
+.slr-orders-table .adm-orders-customer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.seller-status-badge.delivered {
-  background: color-mix(in srgb, var(--success-color) 18%, var(--surface));
-  color: var(--success-color);
-}
-
-.seller-status-badge.cancelled {
-  background: color-mix(in srgb, var(--error-color) 14%, var(--surface));
-  color: var(--error-color);
-}
-
-/* Action buttons */
-.seller-prepare-btn {
-  padding: 0.45rem 1rem;
-  background: var(--warning-color);
-  color: var(--background);
-  border: none;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.8rem;
+.slr-orders-table tbody tr.slr-orders-row {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.seller-prepare-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+.slr-orders-table tbody tr.slr-orders-row:focus-visible td {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
 }
 
-.seller-prepare-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Expandable order details */
-.seller-order-details {
+.slr-order-details-row td {
   background: var(--background);
-  border-top: 1px solid var(--border-color);
+  padding: 0 !important;
 }
 
-.seller-order-details td {
-  padding: 1.25rem !important;
+.slr-order-details {
+  padding: 1rem 1.25rem 1.25rem;
 }
 
-.seller-order-items-list {
+.slr-order-items-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.seller-order-item {
-  display: flex;
+.slr-order-item {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 0.85rem;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
+  padding: 0.75rem 0.85rem;
   background: var(--surface);
-  border-radius: 1rem;
   border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.seller-order-item:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
-
-.seller-order-item img {
-  width: 48px;
-  height: 48px;
   border-radius: 1rem;
+}
+
+.slr-order-item-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.slr-order-item-thumb img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
-.seller-order-item-info {
-  flex: 1;
-}
-
-.seller-order-item-name {
-  font-family: 'Fraunces', 'Space Grotesk', serif;
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
-
-.seller-order-item-meta {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: 0.15rem;
-}
-
-.seller-order-customer {
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: var(--surface);
-  border-radius: 1rem;
-  border: 1px solid var(--border-color);
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  box-shadow: var(--shadow);
-}
-
-.seller-order-customer strong {
-  color: var(--text-primary);
-}
-
-/* Expand toggle */
-.seller-expand-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.25rem;
-  padding: 0.25rem;
-  transition: transform 0.2s ease;
-  color: var(--text-secondary);
-}
-
-.seller-expand-btn.expanded {
-  transform: rotate(180deg);
-}
-
-/* Empty state */
-.seller-orders-empty {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-secondary);
-  background: var(--surface);
-  border: 1px dashed var(--border-color);
-  border-radius: 1.2rem;
-}
-
-.seller-orders-empty .empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-}
-
-.seller-orders-loading {
+.slr-order-item-copy {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
-@media (max-width: 768px) {
-  .seller-orders-table {
-    display: block;
-    overflow-x: auto;
+.slr-order-item-copy strong {
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.slr-order-item-copy span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+@media (min-width: 1200px) {
+  .slr-orders-table col.slr-col-order,
+  .slr-orders-table col.slr-col-date,
+  .slr-orders-table col.slr-col-customer,
+  .slr-orders-table col.slr-col-items,
+  .slr-orders-table col.slr-col-total,
+  .slr-orders-table col.slr-col-status,
+  .slr-orders-table col.slr-col-action {
+    width: calc(100% / 7);
+  }
+
+  .slr-orders-table thead th,
+  .slr-orders-table tbody td {
+    padding: 1rem 1.5rem;
+  }
+
+  .slr-orders-table .slr-col-order,
+  .slr-orders-table .slr-col-items,
+  .slr-orders-table .slr-col-status,
+  .slr-orders-table .slr-col-action {
+    text-align: center;
+  }
+
+  .slr-orders-table .slr-col-total {
+    text-align: end;
+  }
+
+  .slr-orders-table .slr-col-date,
+  .slr-orders-table .slr-col-customer {
+    text-align: start;
+  }
+}
+
+@media (min-width: 1600px) {
+  .slr-orders-table thead th,
+  .slr-orders-table tbody td {
+    padding: 1rem 1.75rem;
   }
 }

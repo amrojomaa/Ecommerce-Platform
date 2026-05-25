@@ -42,6 +42,7 @@ import Installments from './pages/Installments';
 
 //Pages - Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
+import OperationsManagerDashboard from './pages/admin/OperationsManagerDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -58,9 +59,7 @@ import AdminPosAnalytics from './pages/admin/AdminPosAnalytics';
 
 //Pages - Support Manager
 import SupportManagerDashboard from './pages/support-manager/SupportManagerDashboard';
-import SupportManagerTickets from './pages/support-manager/SupportManagerTickets';
 import SupportManagerComments from './pages/support-manager/SupportManagerComments';
-import SupportManagerFeedback from './pages/support-manager/SupportManagerFeedback';
 
 //Pages - Support Agent
 import SupportAgentLayout from './layouts/SupportAgentLayout';
@@ -86,9 +85,9 @@ import SellerProducts from './pages/seller/SellerProducts';
 import SellerOrders from './pages/seller/SellerOrders';
 
 // Warehouse Staff
-import WarehouseStaffLayout from './layouts/WarehouseStaffLayout';
 import WarehouseStaffDashboard from './pages/warehouse-staff/WarehouseStaffDashboard';
 import WarehouseStaffOrders from './pages/warehouse-staff/WarehouseStaffOrders';
+import WarehouseStaffProducts from './pages/warehouse-staff/WarehouseStaffProducts';
 
 // Warehouse Manager
 import WarehouseManagerDashboard from './pages/warehouse-manager/WarehouseManagerDashboard';
@@ -176,11 +175,18 @@ function App() {
                     <Route path="pos-analytics" element={<AdminPosAnalytics />} />
                     <Route path="profile" element={<Profile />} />
         </Route>
+        <Route path="/operations" element={<ProtectedRoute requireOperationsManager={true}><AdminLayout /></ProtectedRoute>}>
+                    <Route index element={<OperationsManagerDashboard />} />
+                    <Route path="orders" element={<AdminOrders />} />
+                    <Route path="installments" element={<AdminInstallments />} />
+                    <Route path="deliveries" element={<AdminDeliveries />} />
+                    <Route path="profile" element={<Profile />} />
+        </Route>
         <Route path="/support" element={<ProtectedRoute requireSupportManager={true}><AdminLayout /></ProtectedRoute>}>
                     <Route index element={<SupportManagerDashboard />} />
-                    <Route path="tickets" element={<SupportManagerTickets />} />
+                    <Route path="tickets" element={<AdminTickets />} />
                     <Route path="comments" element={<SupportManagerComments />} />
-                    <Route path="feedback" element={<SupportManagerFeedback />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
                     <Route path="profile" element={<Profile />} />
         </Route>
         <Route path="/warehouse" element={<ProtectedRoute requireWarehouseManager={true}><AdminLayout /></ProtectedRoute>}>
@@ -215,14 +221,12 @@ function App() {
           <Route index element={<SellerDashboard />} />
           <Route path="products" element={<SellerProducts />} />
           <Route path="orders" element={<SellerOrders />} />
-          <Route path="categories" element={<AdminCategories />} />
-          <Route path="promotions" element={<AdminPromotions />} />
-          <Route path="promotions/create" element={<AdminPromotions />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 
-        <Route path="/warehouse-staff" element={<ProtectedRoute requireWarehouseStaff={true}><WarehouseStaffLayout /></ProtectedRoute>}>
+        <Route path="/warehouse-staff" element={<ProtectedRoute requireWarehouseStaff={true}><AdminLayout /></ProtectedRoute>}>
           <Route index element={<WarehouseStaffDashboard />} />
+          <Route path="products" element={<WarehouseStaffProducts />} />
           <Route path="orders" element={<WarehouseStaffOrders />} />
           <Route path="profile" element={<Profile />} />
         </Route>

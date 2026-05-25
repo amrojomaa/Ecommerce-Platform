@@ -1,0 +1,248 @@
+/* Warehouse Staff Products — page-scoped (wms-products-*, wms-product-*) */
+
+.wms-products-page {
+  max-width: 100%;
+  gap: 1.5rem;
+}
+
+.wms-products-page .page-header {
+  padding-bottom: 0;
+  scroll-margin-top: 5rem;
+}
+
+.wms-products-page .page-header-top {
+  width: 100%;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.wms-products-page .page-header-copy {
+  flex: 1;
+  min-width: 200px;
+}
+
+.wms-products-page .page-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  margin-inline-start: auto;
+  margin-top: 1.85rem;
+  padding-bottom: 0;
+}
+
+.wms-products-category-select {
+  width: min(100%, 16rem);
+  min-width: 16rem;
+  min-height: 44px;
+  height: 44px;
+}
+
+.wms-products-section {
+  gap: 1rem;
+}
+
+.wms-products-toolbar {
+  justify-content: flex-start;
+  margin-top: 0;
+}
+
+.wms-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: min(100%, 260px);
+  max-width: 480px;
+}
+
+.wms-search-icon {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.wms-search-input {
+  width: 100%;
+  height: 42px;
+  padding-inline: 2.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--text-primary);
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.wms-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}
+
+.wms-products-data-panel {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.wms-table-scroll {
+  overflow-x: auto;
+}
+
+.wms-products-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wms-products-table thead th {
+  padding: 0.85rem 1rem;
+  text-align: start;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.wms-products-table tbody td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+
+.wms-products-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wms-product-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+}
+
+.wms-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wms-product-name {
+  font-weight: 600;
+  max-width: 220px;
+}
+
+.wms-price-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wms-price-old {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-size: 0.85rem;
+}
+
+.wms-price-sale {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.dark .wms-price-sale {
+  color: #f87171;
+}
+
+.wms-discount-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dark .wms-discount-badge {
+  color: #f87171;
+}
+
+.wms-stock-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.wms-stock-badge--ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.wms-stock-badge--low {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.wms-stock-badge--out {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .wms-products-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+  }
+
+  .wms-products-page .page-header-actions {
+    width: 100%;
+    margin-inline-start: 0;
+    margin-top: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .wms-products-category-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .wms-search-wrap {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .wms-products-page.adm-page.wms-page {
+    max-width: min(100%, 1400px);
+  }
+
+  .wms-search-wrap {
+    max-width: 560px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .wms-products-page.adm-page.wms-page {
+    max-width: min(100%, 1600px);
+  }
+}
+
+.dark .wms-search-input {
+  background: var(--surface);
+}

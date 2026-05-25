@@ -3,51 +3,84 @@
   display: flex;
   flex-direction: column;
   padding-top: var(--navbar-height);
-}
-
-.cashier-container {
-  display: flex;
-  flex: 1;
-  min-height: calc(100vh - var(--navbar-height));
+  background: var(--background);
+  overflow-x: hidden;
 }
 
 .cashier-content {
   flex: 1;
-  padding: 1.25rem;
-  overflow-y: auto;
+  min-height: 0;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
   background: var(--background);
-  margin-left: 250px;
-  min-height: calc(100vh - var(--navbar-height));
-  scroll-margin-top: 5rem;
-}
-
-html[dir='rtl'] .cashier-content {
-  margin-left: 0;
-  margin-right: 250px;
 }
 
 @media (max-width: 1024px) {
   .cashier-content {
-    margin-left: 0;
-  }
-
-  html[dir='rtl'] .cashier-content {
-    margin-right: 0;
+    height: auto;
+    min-height: calc(100vh - var(--navbar-height));
+    overflow: visible;
   }
 }
 
-@media (max-width: 768px) {
-  .cashier-container {
-    flex-direction: column;
+/* Cashier profile — narrower centered column */
+.cashier-content:has(.profile-page) {
+  height: auto;
+  min-height: calc(100vh - var(--navbar-height));
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.cashier-content .profile-page {
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  gap: 2.5rem;
+}
+
+.cashier-content .profile-page .profile-content-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.cashier-content .profile-page .profile-section--feedback {
+  position: static;
+}
+
+@media (min-width: 768px) {
+  .cashier-content:has(.profile-page) {
+    padding-inline: 1.5rem;
   }
 
-  .cashier-content {
-    padding: 1rem;
-    margin-left: 0;
-    min-height: auto;
+  .cashier-content .profile-page {
+    max-width: 880px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .cashier-content .profile-page {
+    max-width: 960px;
   }
 
-  html[dir='rtl'] .cashier-content {
-    margin-right: 0;
+  .cashier-content .profile-page .profile-content-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .cashier-content:has(.profile-page) {
+    padding: 1rem 0.75rem 1.5rem;
+  }
+
+  .cashier-content .profile-page {
+    max-width: 100%;
+    gap: 2rem;
   }
 }

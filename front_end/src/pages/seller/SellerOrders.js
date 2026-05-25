@@ -32,20 +32,9 @@ const ORDER_STATUS_LABEL_KEYS = {
   refunded: 'ui.pages.orders.status.refunded',
 };
 
-const ORDER_STATUS_FILTERS = [
-  'all',
-  'created',
-  'paid',
-  'preparing',
-  'packed',
-  'ready_for_pickup',
-  'assigned',
-  'picked_up',
-  'delivering',
-  'shipped',
-  'delivered',
-  'cancelled',
-];
+const SELLER_VISIBLE_STATUSES = new Set(['paid', 'preparing']);
+
+const ORDER_STATUS_FILTERS = ['all', 'paid', 'preparing'];
 
 const getOrderStatusLabel = (status) => {
   const normalized = String(status || 'created').toLowerCase();
@@ -64,7 +53,7 @@ const SellerOrders = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(() => {
     const filter = searchParams.get('filter');
-    return ORDER_STATUS_FILTERS.includes(filter) ? filter : 'paid';
+    return ORDER_STATUS_FILTERS.includes(filter) ? filter : 'all';
   });
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
@@ -90,20 +79,24 @@ const SellerOrders = () => {
     if (ORDER_STATUS_FILTERS.includes(filter)) {
       setActiveTab(filter);
     } else if (!filter) {
-      setActiveTab('paid');
+      setActiveTab('all');
     }
   }, [searchParams]);
 
   const handleStatusFilterChange = (value) => {
     setActiveTab(value);
-    if (value === 'paid') {
+    if (value === 'all') {
       setSearchParams({}, { replace: true });
       return;
     }
     setSearchParams({ filter: value }, { replace: true });
   };
 
-  const filteredOrders = orders.filter((order) => {
+  const sellerOrders = orders.filter((order) =>
+    SELLER_VISIBLE_STATUSES.has(String(order.status || '').toLowerCase())
+  );
+
+  const filteredOrders = sellerOrders.filter((order) => {
     if (activeTab === 'all') return true;
     return String(order.status || '').toLowerCase() === activeTab;
   });

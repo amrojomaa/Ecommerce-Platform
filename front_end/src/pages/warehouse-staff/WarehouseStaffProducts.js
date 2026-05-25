@@ -11,13 +11,13 @@ import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import { getImageUrl } from '../../utils/helpers';
 import '../../styles/pages/admin/AdminPanel.css';
-import '../../styles/pages/seller/SellerPanel.css';
-import '../../styles/pages/seller/SellerProducts.css';
+import '../../styles/pages/warehouse-staff/WarehouseStaffPanel.css';
+import '../../styles/pages/warehouse-staff/WarehouseStaffProducts.css';
 
-const SellerProducts = () => {
+const WarehouseStaffProducts = () => {
   const { t } = useTranslation();
   const { formatCurrency } = useCurrency();
-  const panelKicker = t('ui.sidebar.panel.seller');
+  const panelKicker = t('ui.sidebar.panel.warehouseStaff');
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -31,7 +31,7 @@ const SellerProducts = () => {
       setProducts(res.data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
-      toast.error(tUi('ui.pages.seller.sellerProducts.loadFailed_b1c2d3e4f5'));
+      toast.error(tUi('ui.pages.warehouseStaff.warehouseStaffProducts.loadFailed_a1b2c3d4e5'));
     } finally {
       setLoading(false);
     }
@@ -73,20 +73,20 @@ const SellerProducts = () => {
   }
 
   return (
-    <div className="admin-page-shell adm-page slr-page slr-products-page">
+    <div className="admin-page-shell adm-page wms-page wms-products-page">
       <PageHeader
         kicker={panelKicker}
-        title={tUi('ui.pages.seller.sellerProducts.title_j1k2l3m4n5')}
-        subtitle={tUi('ui.pages.seller.sellerProducts.subtitleViewOnly_a9b8c7d6e5')}
+        title={tUi('ui.pages.warehouseStaff.warehouseStaffProducts.title_f6g7h8i9j0')}
+        subtitle={tUi('ui.pages.warehouseStaff.warehouseStaffProducts.subtitle_k1l2m3n4o5')}
         actions={
           <select
-            id="slr-products-category-filter"
-            className="adm-orders-select slr-products-category-select"
+            id="wms-products-category-filter"
+            className="adm-orders-select wms-products-category-select"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            aria-label={tUi('ui.pages.seller.sellerProducts.allCategories_d1e2f3g4h5')}
+            aria-label={tUi('ui.pages.warehouseStaff.warehouseStaffProducts.allCategories_p5q6r7s8t9')}
           >
-            <option value="">{tUi('ui.pages.seller.sellerProducts.allCategories_d1e2f3g4h5')}</option>
+            <option value="">{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.allCategories_p5q6r7s8t9')}</option>
             {categories.map((c) => (
               <option key={c.name} value={c.name}>
                 {c.name}
@@ -96,14 +96,14 @@ const SellerProducts = () => {
         }
       />
 
-      <section className="adm-section slr-products-section">
-        <div className="slr-toolbar slr-products-toolbar">
-          <div className="slr-search-wrap">
-            <FaMagnifyingGlass className="slr-search-icon" aria-hidden />
+      <section className="adm-section wms-products-section">
+        <div className="wms-toolbar wms-products-toolbar">
+          <div className="wms-search-wrap">
+            <FaMagnifyingGlass className="wms-search-icon" aria-hidden />
             <input
               type="search"
-              className="slr-search-input"
-              placeholder={tUi('ui.pages.seller.sellerProducts.searchPlaceholder_y6z7a8b9c0')}
+              className="wms-search-input"
+              placeholder={tUi('ui.pages.warehouseStaff.warehouseStaffProducts.searchPlaceholder_u0v1w2x3y4')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -111,25 +111,25 @@ const SellerProducts = () => {
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="adm-page-empty slr-products-empty">
+          <div className="adm-page-empty wms-products-empty">
             <p>
               {products.length === 0
-                ? tUi('ui.pages.seller.sellerProducts.emptyNoProducts_i6j7k8l9m0')
-                : tUi('ui.pages.seller.sellerProducts.emptyNoMatch_n1o2p3q4r5')}
+                ? tUi('ui.pages.warehouseStaff.warehouseStaffProducts.emptyNoProducts_z5a6b7c8d9')
+                : tUi('ui.pages.warehouseStaff.warehouseStaffProducts.emptyNoMatch_e0f1g2h3i4')}
             </p>
           </div>
         ) : (
-          <div className="slr-data-panel">
-            <div className="slr-table-scroll">
-              <table className="slr-products-table">
+          <div className="wms-products-data-panel">
+            <div className="wms-table-scroll">
+              <table className="wms-products-table">
                 <thead>
                   <tr>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colImage_s6t7u8v9w0')}</th>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colProduct_x1y2z3a4b5')}</th>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colCategory_c6d7e8f9g0')}</th>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colPrice_h1i2j3k4l5')}</th>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colDiscount_m6n7o8p9q0')}</th>
-                    <th>{tUi('ui.pages.seller.sellerProducts.colStock_r1s2t3u4v5')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colImage_j5k6l7m8n9')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colProduct_o0p1q2r3s4')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colCategory_t5u6v7w8x9')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colPrice_y0z1a2b3c4')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colDiscount_d5e6f7g8h9')}</th>
+                    <th>{tUi('ui.pages.warehouseStaff.warehouseStaffProducts.colStock_i0j1k2l3m4')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,7 +141,7 @@ const SellerProducts = () => {
                       transition={{ delay: index * 0.02 }}
                     >
                       <td>
-                        <div className="slr-product-thumb">
+                        <div className="wms-product-thumb">
                           <img
                             src={
                               product.images?.length
@@ -156,13 +156,13 @@ const SellerProducts = () => {
                           />
                         </div>
                       </td>
-                      <td className="slr-product-name">{product.name}</td>
+                      <td className="wms-product-name">{product.name}</td>
                       <td>{product.category_name}</td>
                       <td>
                         {product.discount_enabled && product.discounted_price < product.price ? (
-                          <span className="slr-price-stack">
-                            <span className="slr-price-old">{formatCurrency(product.price)}</span>
-                            <span className="slr-price-sale">{formatCurrency(product.discounted_price)}</span>
+                          <span className="wms-price-stack">
+                            <span className="wms-price-old">{formatCurrency(product.price)}</span>
+                            <span className="wms-price-sale">{formatCurrency(product.discounted_price)}</span>
                           </span>
                         ) : (
                           formatCurrency(product.price)
@@ -170,7 +170,7 @@ const SellerProducts = () => {
                       </td>
                       <td>
                         {product.discount_enabled ? (
-                          <span className="slr-discount-badge">
+                          <span className="wms-discount-badge">
                             {product.discount_type === 'percentage'
                               ? `${product.discount_value}%`
                               : formatCurrency(product.discount_value)}
@@ -180,9 +180,9 @@ const SellerProducts = () => {
                         )}
                       </td>
                       <td>
-                        <span className={`slr-stock-badge slr-stock-badge--${getStockStatus(product.quantity)}`}>
+                        <span className={`wms-stock-badge wms-stock-badge--${getStockStatus(product.quantity)}`}>
                           {product.quantity === 0
-                            ? tUi('ui.pages.seller.sellerProducts.stockOut_b1c2d3e4f5')
+                            ? tUi('ui.pages.warehouseStaff.warehouseStaffProducts.stockOut_n5o6p7q8r9')
                             : product.quantity}
                         </span>
                       </td>
@@ -198,4 +198,4 @@ const SellerProducts = () => {
   );
 };
 
-export default SellerProducts;
+export default WarehouseStaffProducts;

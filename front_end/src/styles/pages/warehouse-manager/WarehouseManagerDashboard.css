@@ -1,0 +1,133 @@
+/* Warehouse Manager Dashboard — same shell + responsive grids as adm-dashboard / slr-dashboard */
+
+.wm-dashboard.adm-dashboard {
+  width: 100%;
+  max-width: min(100%, 1400px);
+}
+
+.admin-page-shell.adm-page.adm-dashboard.wm-dashboard {
+  gap: 2rem;
+}
+
+.wm-dashboard .page-header {
+  scroll-margin-top: 5rem;
+  padding-bottom: 0;
+}
+
+.wm-dashboard .page-header-copy {
+  gap: 0.5rem;
+}
+
+.wm-alerts-section {
+  width: 100%;
+}
+
+.wm-alert-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 0.75rem;
+}
+
+.wm-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+}
+
+.wm-alert-item:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.wm-alert-item--warn {
+  border-inline-start: 3px solid #d97706;
+}
+
+.wm-alert-item--critical {
+  border-inline-start: 3px solid #dc2626;
+}
+
+.wm-alert-item--ok {
+  border-inline-start: 3px solid var(--primary-color);
+  cursor: default;
+}
+
+.wm-alert-item--ok:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+  border-color: var(--border-color);
+}
+
+.wm-alert-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.wm-alert-copy strong {
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 0.98rem;
+  color: var(--text-primary);
+}
+
+.wm-alert-copy span {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+@media (min-width: 1280px) {
+  .wm-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .wm-dashboard .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  .wm-alert-list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .wm-dashboard.adm-dashboard,
+  .admin-page-shell.adm-page.adm-dashboard.wm-dashboard {
+    max-width: min(100%, 1600px);
+  }
+
+  .wm-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  .wm-dashboard .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  .wm-alert-list {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-page-shell.adm-page.adm-dashboard.wm-dashboard {
+    gap: 2.5rem;
+  }
+
+  .wm-alert-list {
+    grid-template-columns: 1fr;
+  }
+}

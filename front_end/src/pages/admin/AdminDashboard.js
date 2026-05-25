@@ -24,19 +24,14 @@ import {
 } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import { useAuth } from '../../hooks/useAuth';
 import { useCurrency } from '../../hooks/useCurrency';
 import '../../styles/pages/admin/AdminPanel.css';
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { formatCurrency } = useCurrency();
-  const isOperationsManager = user?.role === 'operations_manager';
-  const panelKicker = isOperationsManager
-    ? t('ui.sidebar.panel.operations')
-    : t('ui.sidebar.panel.admin');
+  const panelKicker = t('ui.sidebar.panel.admin');
 
   const [stats, setStats] = useState({
     totalProducts: 0,
@@ -76,15 +71,13 @@ const AdminDashboard = () => {
       try {
         let totalProductsCount = 0;
         let lowStock = 0;
-        if (!isOperationsManager) {
-          try {
-            const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-            const products = productsResponse.data || [];
-            totalProductsCount = products.length;
-            lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
-          } catch (productError) {
-            console.error('Error fetching products:', productError);
-          }
+        try {
+          const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+          const products = productsResponse.data || [];
+          totalProductsCount = products.length;
+          lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+        } catch (productError) {
+          console.error('Error fetching products:', productError);
         }
 
         let totalOrders = 0;
@@ -135,7 +128,7 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     },
-    [lowStockThreshold, isOperationsManager]
+    [lowStockThreshold]
   );
 
   useEffect(() => {
@@ -144,7 +137,7 @@ const AdminDashboard = () => {
       await fetchStats(threshold);
     };
     initializeData();
-  }, [isOperationsManager, fetchLowStockThreshold, fetchStats]);
+  }, [fetchLowStockThreshold, fetchStats]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -154,7 +147,7 @@ const AdminDashboard = () => {
     if (lowStockThreshold > 0) {
       fetchStats();
     }
-  }, [isOperationsManager, lowStockThreshold, fetchStats]);
+  }, [lowStockThreshold, fetchStats]);
 
   const handleUpdateThreshold = async () => {
     const newThreshold = parseInt(thresholdInput, 10);
@@ -196,7 +189,6 @@ const AdminDashboard = () => {
       icon: FiPackage,
       iconClass: 'adm-stat-icon--products',
       path: '/admin/products',
-      hideForOps: true,
     },
     {
       key: 'totalOrders',
@@ -222,7 +214,6 @@ const AdminDashboard = () => {
       iconClass: 'adm-stat-icon--low',
       path: '/admin/products?filter=lowstock',
       threshold: lowStockThreshold,
-      hideForOps: true,
     },
     {
       key: 'activeDeliveries',
@@ -232,7 +223,7 @@ const AdminDashboard = () => {
       iconClass: 'adm-stat-icon--deliveries',
       path: '/admin/deliveries',
     },
-  ].filter((card) => !(isOperationsManager && card.hideForOps));
+  ];
 
   const actionCards = [
     {
@@ -241,7 +232,6 @@ const AdminDashboard = () => {
       iconClass: '',
       title: t('ui.pages.admin.adminDashboard.manageProducts_f61663679a'),
       desc: t('ui.pages.admin.adminDashboard.addEditOrDeleteProducts_e0122eec91'),
-      hideForOps: true,
     },
     {
       path: '/admin/promotions',
@@ -249,7 +239,6 @@ const AdminDashboard = () => {
       iconClass: 'adm-action-card-icon--promotions',
       title: t('ui.pages.admin.adminDashboard.managePromotions_48a31a922f'),
       desc: t('ui.pages.admin.adminDashboard.createRuleBasedCartAnd_1861c140e1'),
-      hideForOps: true,
     },
     {
       path: '/admin/categories',
@@ -257,7 +246,6 @@ const AdminDashboard = () => {
       iconClass: 'adm-action-card-icon--categories',
       title: t('ui.pages.admin.adminDashboard.manageCategories_ca9b3bad2a'),
       desc: t('ui.pages.admin.adminDashboard.organizeYourProductCategories_4e86f7c153'),
-      hideForOps: true,
     },
     {
       path: '/admin/orders',
@@ -280,7 +268,7 @@ const AdminDashboard = () => {
       title: t('ui.pages.admin.adminDashboard.action.posAnalytics.title'),
       desc: t('ui.pages.admin.adminDashboard.action.posAnalytics.desc'),
     },
-  ].filter((card) => !(isOperationsManager && card.hideForOps));
+  ];
 
   return (
     <div className="admin-page-shell adm-page adm-dashboard">
@@ -444,3 +432,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

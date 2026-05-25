@@ -6,20 +6,20 @@ import ChatWidget from '../components/ChatWidget';
 import CustomerFeedbackPopup from '../components/CustomerFeedbackPopup';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
+import { getRoleDashboardPath } from '../utils/roleDashboard';
 import '../styles/layouts/MainLayout.css';
 
 const MainLayout = () => {
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isDriver, isWarehouseManager, loading, user } = useAuth();
-  
-  // Hide AI assistant on login, signup, and auth-related pages
+  const { isAuthenticated, loading, user } = useAuth();
+
   const hideChatWidget = [
     '/login',
     '/signup',
     '/verify-email',
     '/forgot-password',
     '/verify-reset-code',
-    '/reset-password'
+    '/reset-password',
   ].includes(location.pathname);
 
   if (loading) {
@@ -31,21 +31,10 @@ const MainLayout = () => {
   }
 
   const isProfilePage = location.pathname === '/profile';
+  const dashboardPath = getRoleDashboardPath(user?.role);
 
-  if (!isProfilePage && isAuthenticated && user?.role === 'cashier') {
-    return <Navigate to="/cashier" replace />;
-  }
-
-  if (!isProfilePage && isAuthenticated && isAdmin && typeof isAdmin === 'function' && isAdmin()) {
-    return <Navigate to="/admin" replace />;
-  }
-
-  if (!isProfilePage && isAuthenticated && isDriver && typeof isDriver === 'function' && isDriver()) {
-    return <Navigate to="/driver" replace />;
-  }
-
-  if (!isProfilePage && isAuthenticated && isWarehouseManager && typeof isWarehouseManager === 'function' && isWarehouseManager()) {
-    return <Navigate to="/warehouse" replace />;
+  if (!isProfilePage && isAuthenticated && dashboardPath) {
+    return <Navigate to={dashboardPath} replace />;
   }
 
   return (

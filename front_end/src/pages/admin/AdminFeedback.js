@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import http from '../../services/http';
 import { FEEDBACK_ENDPOINTS } from '../../config/api';
@@ -8,7 +9,10 @@ import { tUi } from '../../i18n/uiText';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import TicketUserAvatar from '../../components/TicketUserAvatar';
+import { useAuth } from '../../hooks/useAuth';
+import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminFeedback.css';
+import '../../styles/pages/support-manager/SupportPanel.css';
 
 const SENTIMENT_LABEL_KEYS = {
   positive: 'ui.pages.admin.adminComments.sentimentPositive_70da220f7a',
@@ -24,6 +28,9 @@ const renderStars = (rating) => {
 };
 
 const AdminFeedback = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSupportManagerPanel = user?.role === 'support_manager';
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonthKey, setSelectedMonthKey] = useState(null);
@@ -170,6 +177,9 @@ const AdminFeedback = () => {
   };
 
   const customerFeedbackTitle = tUi('ui.pages.admin.adminFeedback.customerFeedback_4fd4bfed76');
+  const panelKicker = isSupportManagerPanel
+    ? t('ui.sidebar.panel.support')
+    : customerFeedbackTitle;
 
   const renderMonthCard = (group, index, options = {}) => {
     const { readonly = false } = options;
@@ -398,9 +408,13 @@ const AdminFeedback = () => {
   };
 
   return (
-    <div className="admin-page-shell admin-feedback">
+    <div
+      className={`admin-page-shell admin-feedback adm-page${
+        isSupportManagerPanel ? ' spm-page spm-fb-page' : ''
+      }`}
+    >
       <PageHeader
-        kicker={customerFeedbackTitle}
+        kicker={panelKicker}
         title={customerFeedbackTitle}
         subtitle={tUi('ui.pages.admin.adminFeedback.ratingsAndComments_9672ebdf0c')}
       />

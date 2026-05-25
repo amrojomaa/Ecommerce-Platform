@@ -9,6 +9,7 @@ import { CATEGORY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useConfirm } from '../../hooks/useConfirm';
+import { localizeCategoryDescription, localizeCategoryName } from '../../utils/localizedContent';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminCategories.css';
 
@@ -22,7 +23,8 @@ const emptyForm = {
 };
 
 const AdminCategories = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const languageCode = i18n.language;
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -130,8 +132,10 @@ const AdminCategories = () => {
             category.name_ar?.toLowerCase().includes(term) ||
             category.name_fr?.toLowerCase().includes(term)
         );
-    return matched.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [categories, term]);
+    return matched.sort((a, b) =>
+      localizeCategoryName(a, languageCode).localeCompare(localizeCategoryName(b, languageCode))
+    );
+  }, [categories, term, languageCode]);
 
   const categoriesTitle = tUi('ui.pages.admin.adminCategories.manageCategories_0cb9f43ae9');
   const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
@@ -212,7 +216,9 @@ const AdminCategories = () => {
           </div>
         ) : (
           <div className="adm-cat-list">
-            {filteredCategories.map((category, index) => (
+            {filteredCategories.map((category, index) => {
+              const localizedDescription = localizeCategoryDescription(category, languageCode);
+              return (
               <motion.article
                 key={category.id}
                 className="adm-cat-card"
@@ -225,16 +231,11 @@ const AdminCategories = () => {
                 </div>
                 <div className="adm-cat-card-body">
                   <div className="adm-cat-card-top">
-                    <h3>{category.name}</h3>
+                    <h3>{localizeCategoryName(category, languageCode)}</h3>
                   </div>
-                  {(category.name_ar || category.name_fr) && (
-                    <p className="adm-cat-card-meta">
-                      {category.name_ar && <span>{category.name_ar}</span>}
-                      {category.name_ar && category.name_fr && <span> · </span>}
-                      {category.name_fr && <span>{category.name_fr}</span>}
-                    </p>
-                  )}
-                  <p className="adm-cat-card-desc">{category.description}</p>
+                  {localizedDescription ? (
+                    <p className="adm-cat-card-desc">{localizedDescription}</p>
+                  ) : null}
                   <div className="adm-cat-card-actions">
                     <button type="button" className="adm-btn-primary" onClick={() => handleEdit(category)}>
                       {tUi('ui.pages.admin.adminCategories.edit_36f0067e76')}
@@ -245,7 +246,8 @@ const AdminCategories = () => {
                   </div>
                 </div>
               </motion.article>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

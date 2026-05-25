@@ -1,20 +1,19 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
-import CashierSidebar from './CashierSidebar';
+import { CashierPosProvider } from '../context/CashierPosContext';
 import '../styles/layouts/CashierLayout.css';
 
 const CashierLayout = () => {
   return (
-    <div className="cashier-layout">
-      <Navbar />
-      <div className="cashier-container">
-        <CashierSidebar />
+    <CashierPosProvider>
+      <div className="cashier-layout">
+        <Navbar />
         <main className="cashier-content">
           <Outlet />
         </main>
       </div>
-    </div>
+    </CashierPosProvider>
   );
 };
 

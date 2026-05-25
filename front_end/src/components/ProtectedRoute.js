@@ -13,11 +13,13 @@ const ProtectedRoute = ({
   requireWarehouseManager = false,
   requireSeller = false,
   requireWarehouseStaff = false,
+  requireOperationsManager = false,
 }) => {
   const {
     isAuthenticated,
     loading,
     isAdmin,
+    isOperationsManager,
     isSupportAgent,
     isDriver,
     isCashier,
@@ -40,6 +42,21 @@ const ProtectedRoute = ({
   }
 
   if (requireAdmin && isAdmin && typeof isAdmin === 'function' && !isAdmin()) {
+    if (isOperationsManager && typeof isOperationsManager === 'function' && isOperationsManager()) {
+      return <Navigate to="/operations" replace />;
+    }
+    return <Navigate to="/" replace />;
+  }
+
+  if (
+    requireOperationsManager &&
+    isOperationsManager &&
+    typeof isOperationsManager === 'function' &&
+    !isOperationsManager()
+  ) {
+    if (isAdmin && typeof isAdmin === 'function' && isAdmin()) {
+      return <Navigate to="/admin" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

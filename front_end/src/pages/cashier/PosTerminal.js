@@ -8,7 +8,7 @@ import API_BASE_URL from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { localizeCategoryName } from '../../utils/localizedContent';
+import { localizeCategoryName, localizeProduct } from '../../utils/localizedContent';
 import { useCashierPos } from '../../context/CashierPosContext';
 import '../../styles/pages/cashier/PosTerminal.css';
 
@@ -42,6 +42,23 @@ const PosTerminal = () => {
     applied_promotion: null,
   });
 
+  const resolveProductName = useCallback(
+    (productId, fallbackName = '') => {
+      const product = catalog.find((item) => item.id === productId);
+      if (product) {
+        return localizeProduct(product, i18n.language).localized_name || fallbackName;
+      }
+      return fallbackName;
+    },
+    [catalog, i18n.language]
+  );
+
+  const formatPaymentMethod = (method) => {
+    if (method === 'cash') return tUi('ui.pages.cashier.posTerminal.cash_3c02cb4939');
+    if (method === 'card') return tUi('ui.pages.cashier.posTerminal.card_b06f050926');
+    return method || '—';
+  };
+
   const fetchCatalog = useCallback(async () => {
     setLoadingCatalog(true);
     try {
@@ -50,7 +67,7 @@ const PosTerminal = () => {
       });
       setCatalog(Array.isArray(data) ? data : []);
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Could not load products');
+      toast.error(e.response?.data?.detail || tUi('ui.pages.cashier.posTerminal.couldNotLoadProducts_f1a2b3c4d5'));
       setCatalog([]);
     } finally {
       setLoadingCatalog(false);
@@ -122,13 +139,27 @@ const PosTerminal = () => {
         const next = [...prev];
         const row = next[i];
         if (row.quantity + 1 > p.quantity) {
-          toast.warn(`Only ${p.quantity} in stock for ${p.name}`);
+          toast.warn(
+            tUi('ui.pages.cashier.posTerminal.stockLimitedForProduct_f1a2b3c4d6', {
+              value0: p.quantity,
+              value1: resolveProductName(p.id, p.name),
+            })
+          );
           return prev;
         }
         next[i] = { ...row, quantity: row.quantity + 1 };
         return next;
       }
-      return [...prev, { product_id: p.id, name: p.name, unit: p.discounted_price, maxStock: p.quantity, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          product_id: p.id,
+          name: localizeProduct(p, i18n.language).localized_name || p.name,
+          unit: p.discounted_price,
+          maxStock: p.quantity,
+          quantity: 1,
+        },
+      ];
     });
   };
 
@@ -139,7 +170,12 @@ const PosTerminal = () => {
         let newQty = row.quantity + delta;
         if (newQty < 1) newQty = 1;
         if (newQty > row.maxStock) {
-          toast.warn(`Quantity capped at ${row.maxStock} for ${row.name}`);
+          toast.warn(
+            tUi('ui.pages.cashier.posTerminal.quantityCappedForProduct_f1a2b3c4d7', {
+              value0: row.maxStock,
+              value1: resolveProductName(row.product_id, row.name),
+            })
+          );
           newQty = row.maxStock;
         }
         return { ...row, quantity: newQty };
@@ -200,7 +236,11 @@ const PosTerminal = () => {
       });
       const saved = Number(data?.promotion_discount || 0);
       if (saved > 0) {
-        toast.success(`Sale completed. Promotion saved ${formatCurrency(saved)}.`);
+        toast.success(
+          tUi('ui.pages.cashier.posTerminal.promotionSavedAmount_f1a2b3c4d8', {
+            value0: formatCurrency(saved),
+          })
+        );
       } else {
         toast.success(tUi('ui.pages.cashier.posTerminal.saleCompleted_09843ea178'));
       }
@@ -210,7 +250,7 @@ const PosTerminal = () => {
       fetchToday();
       fetchCatalog();
     } catch (e) {
-      toast.error(e.response?.data?.detail || 'Sale failed');
+      toast.error(e.response?.data?.detail || tUi('ui.pages.cashier.posTerminal.saleFailed_f1a2b3c4d9'));
     } finally {
       setSubmitting(false);
     }
@@ -286,7 +326,9 @@ const PosTerminal = () => {
             </div>
           ) : (
             <div className="pos-product-grid">
-              {catalog.map((p) => (
+              {catalog.map((p) => {
+                const localizedProduct = localizeProduct(p, i18n.language);
+                return (
                 <button
                   key={p.id}
                   type="button"
@@ -305,7 +347,7 @@ const PosTerminal = () => {
                     )}
                   </div>
                   <div className="pos-product-meta">
-                    <span className="pos-product-name">{p.name}</span>
+                    <span className="pos-product-name">{localizedProduct.localized_name}</span>
                     <div className="pos-product-footer">
                       <span className="pos-product-price">{formatCurrency(p.discounted_price)}</span>
                       <span className="pos-product-stock">
@@ -315,7 +357,8 @@ const PosTerminal = () => {
                     </div>
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           )}
         </section>
@@ -348,7 +391,7 @@ const PosTerminal = () => {
                 <li key={row.product_id} className="pos-line">
                   <div className="pos-line-top">
                     <div className="pos-line-info">
-                      <span className="pos-line-name">{row.name}</span>
+                      <span className="pos-line-name">{resolveProductName(row.product_id, row.name)}</span>
                       <span className="pos-line-unit">
                         {formatCurrency(row.unit)}
                         {tUi('ui.pages.cashier.posTerminal.each_6bbbc233de')}
@@ -446,7 +489,12 @@ const PosTerminal = () => {
           >
             <div className="pos-modal-header">
               <h2 id="pos-history-title">{tUi('ui.pages.cashier.posTerminal.mySalesToday_69ede91d75')}</h2>
-              <button type="button" className="pos-modal-close" onClick={() => setShowHistoryModal(false)} aria-label="Close">
+              <button
+                type="button"
+                className="pos-modal-close"
+                onClick={() => setShowHistoryModal(false)}
+                aria-label={tUi('ui.components.commentSection.close_2bcc546846')}
+              >
                 <FiX aria-hidden />
               </button>
             </div>
@@ -477,7 +525,7 @@ const PosTerminal = () => {
                           <td>{new Date(s.created_at).toLocaleTimeString()}</td>
                           <td>{s.customer_name || tUi('ui.pages.cashier.posTerminal.walkIn_c0d1e2f3a4')}</td>
                           <td>{formatCurrency(s.total_amount)}</td>
-                          <td className="pos-method-cell">{s.payment_method || '—'}</td>
+                          <td className="pos-method-cell">{formatPaymentMethod(s.payment_method)}</td>
                         </tr>
                       ))}
                     </tbody>

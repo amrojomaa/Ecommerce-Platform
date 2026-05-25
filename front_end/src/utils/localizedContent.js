@@ -13,6 +13,17 @@ export const localizeCategoryName = (category, languageCode) => {
   return pickLocalized(category.name, category.name_ar, category.name_fr, languageCode);
 };
 
+export const localizeCategoryDescription = (category, languageCode) => {
+  if (!category) return '';
+  if (typeof category === 'string') return category;
+  return pickLocalized(
+    category.description,
+    category.description_ar,
+    category.description_fr,
+    languageCode
+  );
+};
+
 export const localizeProduct = (product, languageCode) => {
   if (!product) return product;
   return {

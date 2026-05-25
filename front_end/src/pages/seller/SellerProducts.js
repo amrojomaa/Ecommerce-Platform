@@ -173,7 +173,7 @@ const SellerProducts = () => {
             </motion.button>
             <select
               id="slr-products-category-filter"
-              className="slr-products-category-select"
+              className="adm-orders-select slr-products-category-select"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               aria-label={tUi('ui.pages.seller.sellerProducts.allCategories_d1e2f3g4h5')}

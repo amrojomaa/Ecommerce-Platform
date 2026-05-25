@@ -295,7 +295,7 @@ const Navbar = () => {
               }
                 {user?.role === "seller" &&
               <Link to="/seller" className="navbar-link">
-                    <span>Seller Panel</span>
+                    <span>{t("navbar.sellerPanel")}</span>
                   </Link>
               }
                 {user?.role === "warehouse_staff" &&
@@ -337,7 +337,7 @@ const Navbar = () => {
               }
               {(isSellerArea || (user?.role === 'seller' && !isSellerArea)) &&
               <Link to={sellerHomePath} className="navbar-link admin-link">
-                  <span>Seller Dashboard</span>
+                  <span>{t("navbar.sellerDashboard")}</span>
                 </Link>
               }
               {(isWarehouseStaffArea || (user?.role === 'warehouse_staff' && !isWarehouseStaffArea)) &&

@@ -75,7 +75,7 @@ def checkout(checkout_data: schemas.CheckoutRequest = None, db: Session = Depend
     )
     
     # Create new order
-    shipping_fee = checkout_data.shipping_fee if checkout_data and checkout_data.shipping_fee else 0.0
+    shipping_fee = float(checkout_data.shipping_fee or 0.0) if checkout_data else 0.0
     new_order = models.DBOrder(
         user_id=current_user.id,
         total_amount=float(promotion_summary["grand_total"]) + shipping_fee,

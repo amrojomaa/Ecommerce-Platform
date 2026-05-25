@@ -539,7 +539,7 @@ const Installments = () => {
 
   if (loadingOrders || loadingRequests || loadingProfile) {
     return (
-      <div className="page-shell installments-page">
+      <div className="page-shell page-shell--storefront installments-page">
         <div className="page-loading">
           <LoadingSpinner size="large" />
         </div>
@@ -548,7 +548,7 @@ const Installments = () => {
   }
 
   return (
-    <div className="page-shell installments-page">
+    <div className="page-shell page-shell--storefront installments-page">
       <PageHeader
         kicker={tUi("ui.pages.installments.installmentPayments_2b8fec206d")}
         title={tUi("ui.pages.installments.installmentPayments_2b8fec206d")}
@@ -559,7 +559,7 @@ const Installments = () => {
       <div className="installment-create-toggle">
         <button
           type="button"
-          className="primary-btn page-btn-primary installments-main-toggle-btn"
+          className="page-btn-primary installments-main-toggle-btn"
           disabled={hasPendingOrApprovedRequest && !editingRequestId}
           onClick={() => setIsCreateFormOpen((prev) => !prev)}>
           
@@ -874,7 +874,7 @@ const Installments = () => {
               </div>
 
               <div className="request-actions-row">
-                <button type="submit" className="primary-btn page-btn-primary installments-submit-btn" disabled={submitting}>
+                <button type="submit" className="page-btn-primary installments-submit-btn" disabled={submitting}>
                   {submitting ?
               editingRequestId ? tUi("ui.pages.installments.saving_c071a70304") : tUi("ui.pages.installments.submitting_3eccdd056d") :
               editingRequestId ? tUi("ui.pages.installments.saveRequest_b99556ff31") : tUi("ui.pages.installments.submitRequest_60d31e50ea")}

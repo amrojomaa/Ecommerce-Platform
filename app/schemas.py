@@ -531,6 +531,8 @@ class CheckoutRequest(BaseModel):
     zipCode: Optional[str] = None
     country: Optional[str] = None
     phone: Optional[str] = None
+    shipping_region: Optional[str] = None
+    shipping_fee: Optional[float] = 0.0
 
 
 class OrderUserInfo(BaseModel):

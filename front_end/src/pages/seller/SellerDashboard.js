@@ -1,16 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { FaArrowRight } from 'react-icons/fa';
+import {
+  FiClipboard,
+  FiClock,
+  FiPackage,
+  FiTag,
+  FiTrendingDown,
+  FiXCircle,
+} from 'react-icons/fi';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, SELLER_ENDPOINTS, ADMIN_SETTINGS_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import '../../styles/pages/admin/AdminPanel.css';
+import '../../styles/pages/seller/SellerPanel.css';
 import '../../styles/pages/seller/SellerDashboard.css';
 
-const SELLER_DASH_TITLE = 'Seller Dashboard';
-
 const SellerDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const panelKicker = t('ui.sidebar.panel.seller');
+
   const [stats, setStats] = useState({
     totalProducts: 0,
     discountedProducts: 0,
@@ -26,25 +40,23 @@ const SellerDashboard = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch threshold
       let threshold = 10;
       try {
         const threshRes = await http.get(ADMIN_SETTINGS_ENDPOINTS.GET_LOW_STOCK_THRESHOLD);
         threshold = threshRes.data.threshold;
         setLowStockThreshold(threshold);
-      } catch (e) { /* use default */ }
+      } catch (e) {
+        /* use default */
+      }
 
-      // Fetch products
       const productsRes = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-      const products = productsRes.data;
-
+      const products = productsRes.data || [];
       const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < threshold);
       const outOfStock = products.filter((p) => p.quantity === 0);
       const discounted = products.filter((p) => p.discount_enabled);
 
       setLowStockItems(lowStock.slice(0, 8));
 
-      // Fetch seller orders
       let incomingOrders = 0;
       let preparingOrders = 0;
       try {
@@ -52,7 +64,9 @@ const SellerDashboard = () => {
         const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
         incomingOrders = orders.filter((o) => o.status === 'paid').length;
         preparingOrders = orders.filter((o) => o.status === 'preparing').length;
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
 
       setStats({
         totalProducts: products.length,
@@ -75,92 +89,207 @@ const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="page-loading seller-dashboard-loading">
+      <div className="page-loading adm-page-loading">
         <LoadingSpinner size="large" />
       </div>
     );
   }
 
   const statCards = [
-    { title: 'Total Products', value: stats.totalProducts, icon: '📦', color: '#6366f1', path: '/seller/products' },
-    { title: 'Active Discounts', value: stats.discountedProducts, icon: '🏷️', color: '#8b5cf6', path: '/seller/products' },
-    { title: 'Incoming Orders', value: stats.incomingOrders, icon: '🔔', color: '#f59e0b', path: '/seller/orders' },
-    { title: 'Preparing', value: stats.preparingOrders, icon: '⏳', color: '#3b82f6', path: '/seller/orders' },
-    { title: 'Low Stock', value: stats.lowStockProducts, icon: '⚠️', color: '#ef4444', path: '/seller/products' },
-    { title: 'Out of Stock', value: stats.outOfStockProducts, icon: '🚫', color: '#dc2626', path: '/seller/products' },
+    {
+      key: 'totalProducts',
+      title: tUi('ui.pages.seller.sellerDashboard.statTotalProducts_a1b2c3d4e5'),
+      value: stats.totalProducts,
+      icon: FiPackage,
+      iconClass: 'adm-stat-icon--products',
+      path: '/seller/products',
+    },
+    {
+      key: 'discounted',
+      title: tUi('ui.pages.seller.sellerDashboard.statActiveDiscounts_f6g7h8i9j0'),
+      value: stats.discountedProducts,
+      icon: FiTag,
+      iconClass: 'adm-action-card-icon--promotions',
+      path: '/seller/products',
+    },
+    {
+      key: 'incoming',
+      title: tUi('ui.pages.seller.sellerDashboard.statIncomingOrders_k1l2m3n4o5'),
+      value: stats.incomingOrders,
+      icon: FiClipboard,
+      iconClass: 'adm-stat-icon--orders',
+      path: '/seller/orders',
+      statusFilter: 'paid',
+    },
+    {
+      key: 'preparing',
+      title: tUi('ui.pages.seller.sellerDashboard.statPreparing_p5q6r7s8t9'),
+      value: stats.preparingOrders,
+      icon: FiClock,
+      iconClass: 'adm-stat-icon--deliveries',
+      path: '/seller/orders',
+      statusFilter: 'preparing',
+    },
+    {
+      key: 'lowStock',
+      title: tUi('ui.pages.seller.sellerDashboard.statLowStock_u1v2w3x4y5'),
+      value: stats.lowStockProducts,
+      icon: FiTrendingDown,
+      iconClass: 'adm-stat-icon--low',
+      path: '/seller/products',
+      threshold: lowStockThreshold,
+    },
+    {
+      key: 'outOfStock',
+      title: tUi('ui.pages.seller.sellerDashboard.statOutOfStock_z6a7b8c9d0'),
+      value: stats.outOfStockProducts,
+      icon: FiXCircle,
+      iconClass: 'adm-stat-icon--low',
+      path: '/seller/products',
+    },
+  ];
+
+  const actionCards = [
+    {
+      path: '/seller/products',
+      icon: FiPackage,
+      iconClass: '',
+      title: tUi('ui.pages.seller.sellerDashboard.actionProductsTitle_e1f2g3h4i5'),
+      desc: tUi('ui.pages.seller.sellerDashboard.actionProductsDesc_j6k7l8m9n0'),
+    },
+    {
+      path: '/seller/orders',
+      icon: FiClipboard,
+      iconClass: 'adm-action-card-icon--orders',
+      title: tUi('ui.pages.seller.sellerDashboard.actionOrdersTitle_o1p2q3r4s5'),
+      desc: tUi('ui.pages.seller.sellerDashboard.actionOrdersDesc_t6u7v8w9x0'),
+    },
   ];
 
   return (
-    <div className="admin-page-shell seller-dashboard">
-      <PageHeader kicker={SELLER_DASH_TITLE} title={SELLER_DASH_TITLE} />
+    <div className="admin-page-shell adm-page adm-dashboard slr-dashboard">
+      <PageHeader
+        kicker={panelKicker}
+        title={tUi('ui.pages.seller.sellerDashboard.title_y1z2a3b4c5')}
+        subtitle={tUi('ui.pages.seller.sellerDashboard.subtitle_d5e6f7g8h9')}
+      />
 
-      <div className="seller-stats-grid">
-        {statCards.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            className="seller-stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08 }}
-            whileHover={{ scale: 1.03 }}
-            onClick={() => navigate(stat.path)}
-          >
-            <div className="stat-icon" style={{ backgroundColor: `${stat.color}18` }}>
-              <span>{stat.icon}</span>
-            </div>
-            <div className="stat-value">{stat.value}</div>
-            <div className="stat-label">{stat.title}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="seller-actions-grid">
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link to="/seller/products" className="seller-action-card">
-            <h3>📦 Manage Products</h3>
-            <p>Add, edit, or remove products from your catalog</p>
-          </Link>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Link to="/seller/orders" className="seller-action-card">
-            <h3>📋 View Orders</h3>
-            <p>Check incoming paid orders and start preparation</p>
-          </Link>
-        </motion.div>
-      </div>
-
-      {/* Low Stock Alerts */}
-      {lowStockItems.length > 0 && (
-        <div className="seller-notifications">
-          <h2>⚠️ Low Stock Alerts (below {lowStockThreshold} units)</h2>
-          {lowStockItems.map((item) => (
-            <div key={item.id} className={`seller-notification-item ${item.quantity === 0 ? 'warning' : 'info'}`}>
-              <span className="notif-icon">{item.quantity === 0 ? '🚫' : '⚠️'}</span>
-              <div className="notif-content">
-                <div className="notif-title">{item.name}</div>
-                <div className="notif-desc">
-                  {item.quantity === 0
-                    ? 'Out of stock — contact warehouse manager'
-                    : `Only ${item.quantity} unit${item.quantity !== 1 ? 's' : ''} remaining`
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{tUi('ui.pages.seller.sellerDashboard.sectionOverview_i0j1k2l3m4')}</h2>
+        </div>
+        <div className="adm-stats-grid">
+          {statCards.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.key}
+                className="adm-stat-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => {
+                  if (!stat.path) return;
+                  if (stat.statusFilter) {
+                    navigate(`${stat.path}?filter=${stat.statusFilter}`);
+                    return;
                   }
+                  navigate(stat.path);
+                }}
+              >
+                <div className="stat-top">
+                  <div className="stat-main">
+                    <div className="stat-value">{stat.value}</div>
+                    <div className="stat-label">{stat.title}</div>
+                    {stat.threshold != null && (
+                      <p className="adm-stat-meta">
+                        {tUi('ui.pages.seller.sellerDashboard.thresholdLabel_n5o6p7q8r9')} {'<'} {stat.threshold}
+                      </p>
+                    )}
+                  </div>
+                  <div className={`stat-icon ${stat.iconClass}`}>
+                    <Icon aria-hidden />
+                  </div>
                 </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{tUi('ui.pages.seller.sellerDashboard.sectionQuickActions_s0t1u2v3w4')}</h2>
+          <p>{tUi('ui.pages.seller.sellerDashboard.sectionQuickActionsDesc_x5y6z7a8b9')}</p>
+        </div>
+        <div className="adm-actions-grid">
+          {actionCards.map((action, i) => {
+            const Icon = action.icon;
+            return (
+              <motion.div
+                key={action.path}
+                className="adm-action-card-wrap"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.08 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Link to={action.path} className="adm-action-card">
+                  <div className={`adm-action-card-icon ${action.iconClass}`.trim()}>
+                    <Icon aria-hidden />
+                  </div>
+                  <div className="adm-action-card-body">
+                    <h3>{action.title}</h3>
+                    <p>{action.desc}</p>
+                  </div>
+                  <FaArrowRight className="adm-action-card-arrow" aria-hidden />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {(lowStockItems.length > 0 || stats.totalProducts > 0) && (
+        <section className="adm-section slr-alerts-section">
+          <div className="adm-section-header">
+            <h2>{tUi('ui.pages.seller.sellerDashboard.sectionStockAlerts_c0d1e2f3g4')}</h2>
+          </div>
+          {lowStockItems.length > 0 ? (
+            <div className="slr-alert-list">
+              {lowStockItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`slr-alert-item ${item.quantity === 0 ? 'slr-alert-item--critical' : 'slr-alert-item--warn'}`}
+                >
+                  <div className="slr-alert-copy">
+                    <strong>{item.name}</strong>
+                    <span>
+                      {item.quantity === 0
+                        ? tUi('ui.pages.seller.sellerDashboard.stockOutOfStock_h5i6j7k8l9')
+                        : tUi('ui.pages.seller.sellerDashboard.stockLowRemaining_m0n1o2p3q4', {
+                            value0: item.quantity,
+                          })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="slr-alert-item slr-alert-item--ok">
+              <div className="slr-alert-copy">
+                <strong>{tUi('ui.pages.seller.sellerDashboard.stockAllGood_r5s6t7u8v9')}</strong>
+                <span>
+                  {tUi('ui.pages.seller.sellerDashboard.stockAllGoodDesc_w0x1y2z3a4', {
+                    value0: lowStockThreshold,
+                  })}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {lowStockItems.length === 0 && stats.totalProducts > 0 && (
-        <div className="seller-notifications">
-          <h2>✅ Stock Status</h2>
-          <div className="seller-notification-item info">
-            <span className="notif-icon">👍</span>
-            <div className="notif-content">
-              <div className="notif-title">All products are well stocked</div>
-              <div className="notif-desc">No products below the {lowStockThreshold}-unit threshold</div>
-            </div>
-          </div>
-        </div>
+          )}
+        </section>
       )}
     </div>
   );

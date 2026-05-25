@@ -25,9 +25,10 @@ const ADMIN_MENU_ITEMS = [
 ];
 
 const OPERATIONS_MANAGER_MENU_ITEMS = [
-  { path: '/admin/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
-  { path: '/admin/installments', labelKey: 'ui.sidebar.menu.installments', icon: 'installments' },
-  { path: '/admin/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: 'deliveries' },
+  { path: '/operations', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/operations/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
+  { path: '/operations/installments', labelKey: 'ui.sidebar.menu.installments', icon: 'installments' },
+  { path: '/operations/deliveries', labelKey: 'ui.sidebar.menu.deliveries', icon: 'deliveries' },
 ];
 
 const SUPPORT_MANAGER_MENU_ITEMS = [
@@ -50,6 +51,11 @@ const SELLER_MENU_ITEMS = [
   { path: '/seller/categories', labelKey: 'ui.sidebar.menu.categories', icon: 'categories' },
   { path: '/seller/promotions', labelKey: 'ui.sidebar.menu.promotions', icon: 'promotions' },
   { path: '/seller/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
+];
+
+const WAREHOUSE_STAFF_MENU_ITEMS = [
+  { path: '/warehouse-staff', labelKey: 'ui.sidebar.menu.dashboard', icon: 'dashboard' },
+  { path: '/warehouse-staff/orders', labelKey: 'ui.sidebar.menu.orders', icon: 'orders' },
 ];
 
 
@@ -81,6 +87,7 @@ const Sidebar = () => {
       if (user?.role === 'operations_manager') return OPERATIONS_MANAGER_MENU_ITEMS;
       if (user?.role === 'support_manager') return SUPPORT_MANAGER_MENU_ITEMS;
       if (user?.role === 'warehouse_manager') return WAREHOUSE_MANAGER_MENU_ITEMS;
+      if (user?.role === 'warehouse_staff') return WAREHOUSE_STAFF_MENU_ITEMS;
       if (user?.role === 'seller') return SELLER_MENU_ITEMS;
       return ADMIN_MENU_ITEMS;
     },
@@ -136,6 +143,7 @@ const Sidebar = () => {
     if (user?.role === 'operations_manager') return 'ui.sidebar.panel.operations';
     if (user?.role === 'support_manager') return 'ui.sidebar.panel.support';
     if (user?.role === 'warehouse_manager') return 'ui.sidebar.panel.warehouse';
+    if (user?.role === 'warehouse_staff') return 'ui.sidebar.panel.warehouseStaff';
     if (user?.role === 'seller') return 'ui.sidebar.panel.seller';
     return 'ui.sidebar.panel.admin';
   }, [user?.role]);
@@ -144,6 +152,7 @@ const Sidebar = () => {
     if (user?.role === 'operations_manager') return 'operations';
     if (user?.role === 'support_manager') return 'support';
     if (user?.role === 'warehouse_manager') return 'warehouse';
+    if (user?.role === 'warehouse_staff') return 'warehouseStaff';
     if (user?.role === 'seller') return 'seller';
     return 'admin';
   }, [user?.role]);
@@ -195,7 +204,7 @@ const Sidebar = () => {
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const isTickets = item.path === '/admin/tickets' || item.path === '/support/tickets';
-          const isDeliveries = item.path === '/admin/deliveries';
+          const isDeliveries = item.path === '/admin/deliveries' || item.path === '/operations/deliveries';
           const isDragging = draggedPath === item.path;
           const isDragOver = dragOverPath === item.path && draggedPath !== item.path;
           return (

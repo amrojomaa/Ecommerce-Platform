@@ -11,6 +11,7 @@ import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { FaShoppingCart, FaSignOutAlt, FaHeart } from "react-icons/fa";
 import API_BASE_URL from '../config/api';
 import { DEFAULT_PROFILE_IMAGE, resolveProfileImageUrl } from '../utils/helpers';
+import { getRoleDashboardPath } from '../utils/roleDashboard';
 import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -18,7 +19,7 @@ import { tUi } from '../i18n/uiText';
 
 const Navbar = () => {
   const { t } = useTranslation();
-  const { isAuthenticated, user, logout, isAdmin, isSupportManager, isWarehouseManager } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin, isOperationsManager, isSupportManager, isWarehouseManager } = useAuth();
   const { getCartItemCount } = useCart();
   const { getWishlistItemCount } = useWishlist();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -31,6 +32,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const profileDropdownRef = useRef(null);
   const isAdminArea = location.pathname.startsWith('/admin');
+  const isOperationsArea = location.pathname.startsWith('/operations');
   const isDriverArea = location.pathname.startsWith('/driver');
   const isCashierArea = location.pathname.startsWith('/cashier');
   const isSupportAgentArea = location.pathname.startsWith('/support-agent');
@@ -39,7 +41,7 @@ const Navbar = () => {
   const isWarehouseStaffArea = location.pathname.startsWith('/warehouse-staff');
   const isWarehouseManagerArea = location.pathname.startsWith('/warehouse') && !location.pathname.startsWith('/warehouse-staff');
   const isUserRestrictedByRole = user && (user.role === 'seller' || user.role === 'warehouse_staff' || user.role === 'warehouse_manager' || user.role === 'cashier' || user.role === 'driver' || user.role === 'support_agent' || user.role === 'support_manager');
-  const isRestrictedArea = isAdminArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
+  const isRestrictedArea = isAdminArea || isOperationsArea || isDriverArea || isCashierArea || isSupportAgentArea || isSupportManagerArea || isSellerArea || isWarehouseStaffArea || isWarehouseManagerArea || isUserRestrictedByRole;
 
   const handleLogout = () => {
     logout();
@@ -49,13 +51,13 @@ const Navbar = () => {
   const cartItemCount = getCartItemCount();
   const wishlistItemCount = getWishlistItemCount();
   const currencyOptions = Object.values(supportedCurrencies || {});
-  const isOperationsManager = user?.role === 'operations_manager';
   const isRealAdmin = user?.role === 'admin';
-  const adminPanelPath = user?.role === 'operations_manager' ? '/admin/orders' : '/admin';
-  const adminPanelLabel = isOperationsManager ? t('navbar.operationsManager') : t('navbar.admin');
-  const adminNavDashboardLabel = isOperationsManager
-    ? t('navbar.operationsManager')
-    : t('ui.pages.admin.adminDashboard.adminDashboard_16654f6473');
+  const adminPanelPath = '/admin';
+  const adminPanelLabel = t('navbar.admin');
+  const adminNavDashboardLabel = t('ui.pages.admin.adminDashboard.adminDashboard_16654f6473');
+  const operationsPanelPath = '/operations';
+  const operationsHomePath = '/operations';
+  const operationsNavDashboardLabel = t('ui.pages.admin.operationsManagerDashboard.title');
   const supportPanelPath = '/support';
   const warehouseManagerHomePath = '/warehouse';
   const adminHomePath = '/admin';
@@ -65,22 +67,12 @@ const Navbar = () => {
   const supportManagerHomePath = '/support';
   const sellerHomePath = '/seller';
 
-  const getDashboardHomePath = () => {
-    if (!user) return '/';
-    if (user.role === 'admin' || user.role === 'operations_manager') return adminHomePath;
-    if (user.role === 'driver') return driverHomePath;
-    if (user.role === 'cashier') return cashierHomePath;
-    if (user.role === 'support_agent') return supportAgentHomePath;
-    if (user.role === 'support_manager') return supportManagerHomePath;
-    if (user.role === 'warehouse_manager') return warehouseManagerHomePath;
-    if (user.role === 'seller') return sellerHomePath;
-    if (user.role === 'warehouse_staff') return '/warehouse-staff';
-    return '/';
-  };
+  const getDashboardHomePath = () => getRoleDashboardPath(user?.role) || '/';
 
   const getProfilePath = () => {
     const path = location.pathname;
     if (path.startsWith('/admin')) return '/admin/profile';
+    if (path.startsWith('/operations')) return '/operations/profile';
     if (path.startsWith('/support-agent')) return '/support-agent/profile';
     if (path.startsWith('/support')) return '/support/profile';
     if (path.startsWith('/warehouse-staff')) return '/warehouse-staff/profile';
@@ -88,7 +80,8 @@ const Navbar = () => {
     if (path.startsWith('/driver')) return '/driver/profile';
     if (path.startsWith('/cashier')) return '/cashier/profile';
     if (path.startsWith('/seller')) return '/seller/profile';
-    if (user?.role === 'admin' || user?.role === 'operations_manager') return '/admin/profile';
+    if (user?.role === 'admin') return '/admin/profile';
+    if (user?.role === 'operations_manager') return '/operations/profile';
     if (user?.role === 'support_manager') return '/support/profile';
     if (user?.role === 'support_agent') return '/support-agent/profile';
     if (user?.role === 'warehouse_manager') return '/warehouse/profile';
@@ -142,6 +135,10 @@ const Navbar = () => {
   // Safety check for isAdmin
   const checkIsAdmin = () => {
     return isAdmin && typeof isAdmin === 'function' ? isAdmin() : false;
+  };
+
+  const checkIsOperationsManager = () => {
+    return isOperationsManager && typeof isOperationsManager === 'function' ? isOperationsManager() : false;
   };
 
   const checkIsSupportManager = () => {
@@ -262,6 +259,11 @@ const Navbar = () => {
                 }
                   </Link>
               }
+                {checkIsOperationsManager() &&
+              <Link to={operationsPanelPath} className="navbar-link admin-link">
+                    <span>{t('navbar.operationsManager')}</span>
+                  </Link>
+              }
                 {checkIsSupportManager() &&
               <Link to={supportPanelPath} className="navbar-link admin-link">
                     <span>{t("navbar.supportManager")}</span>
@@ -300,7 +302,7 @@ const Navbar = () => {
               }
                 {user?.role === "warehouse_staff" &&
               <Link to="/warehouse-staff" className="navbar-link">
-                    <span>Warehouse</span>
+                    <span>{t("navbar.warehouseStaffPanel")}</span>
                   </Link>
               }
                 {isRealAdmin &&
@@ -313,6 +315,11 @@ const Navbar = () => {
               {isAdminArea &&
               <Link to={adminHomePath} className="navbar-link admin-link">
                   <span>{adminNavDashboardLabel}</span>
+                </Link>
+              }
+              {isOperationsArea &&
+              <Link to={operationsHomePath} className="navbar-link admin-link">
+                  <span>{operationsNavDashboardLabel}</span>
                 </Link>
               }
               {(isDriverArea || (user?.role === 'driver' && !isDriverArea)) &&
@@ -342,7 +349,7 @@ const Navbar = () => {
               }
               {(isWarehouseStaffArea || (user?.role === 'warehouse_staff' && !isWarehouseStaffArea)) &&
               <Link to="/warehouse-staff" className="navbar-link admin-link">
-                  <span>Warehouse Dashboard</span>
+                  <span>{t("navbar.warehouseStaffDashboard")}</span>
                 </Link>
               }
               {(isWarehouseManagerArea || (user?.role === 'warehouse_manager' && !isWarehouseManagerArea)) &&
@@ -509,6 +516,11 @@ const Navbar = () => {
                   {adminNavDashboardLabel}
                 </Link>
               }
+              {isOperationsArea &&
+              <Link to={operationsHomePath} onClick={() => setMobileMenuOpen(false)}>
+                  {operationsNavDashboardLabel}
+                </Link>
+              }
               {isDriverArea &&
               <Link to={driverHomePath} onClick={() => setMobileMenuOpen(false)}>
                   {t("navbar.driver")}
@@ -557,6 +569,11 @@ const Navbar = () => {
               {checkIsAdmin() &&
           <Link to={adminPanelPath} onClick={() => setMobileMenuOpen(false)}>
                   {adminPanelLabel} {unreadTicketsCount > 0 && tUi("ui.layouts.navbar.value_e8ebc826e7", { value0: unreadTicketsCount })}
+                </Link>
+          }
+              {checkIsOperationsManager() &&
+          <Link to={operationsPanelPath} onClick={() => setMobileMenuOpen(false)}>
+                  {t('navbar.operationsManager')}
                 </Link>
           }
               {checkIsSupportManager() &&

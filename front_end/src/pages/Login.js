@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { getRoleDashboardPath } from '../utils/roleDashboard';
 import '../styles/pages/Auth.css';
 import PageHeader from '../components/PageHeader';
 
@@ -26,18 +27,8 @@ const Login = () => {
       return;
     }
 
-    const roleHomePaths = {
-      cashier: '/cashier',
-      seller: '/seller',
-      warehouse_staff: '/warehouse-staff',
-      warehouse_manager: '/warehouse',
-      support_manager: '/support',
-      support_agent: '/support-agent',
-      admin: '/admin',
-      operations_manager: '/admin',
-    };
-
-    navigate(roleHomePaths[user.role] || '/', { replace: true });
+    const homePath = getRoleDashboardPath(user.role) || '/';
+    navigate(homePath, { replace: true });
   }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {

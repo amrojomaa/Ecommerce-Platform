@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { FaArrowRight } from 'react-icons/fa';
+import { FiCheckCircle, FiClipboard, FiPackage } from 'react-icons/fi';
+import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { WAREHOUSE_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
+import { formatDateTime } from '../../utils/helpers';
+import '../../styles/pages/admin/AdminPanel.css';
+import '../../styles/pages/warehouse-staff/WarehouseStaffPanel.css';
 import '../../styles/pages/warehouse-staff/WarehouseStaffDashboard.css';
 
 const WarehouseStaffDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const panelKicker = t('ui.sidebar.panel.warehouseStaff');
+
   const [stats, setStats] = useState({ preparingCount: 0, packedCount: 0 });
   const [preparingOrders, setPreparingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +40,7 @@ const WarehouseStaffDashboard = () => {
         packedCount: packed.length,
       });
     } catch (error) {
-      console.error('Error fetching warehouse dashboard data:', error);
+      console.error('Error fetching warehouse staff dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -41,77 +51,170 @@ const WarehouseStaffDashboard = () => {
   }, [fetchData]);
 
   if (loading) {
-    return <div className="page-loading ws-dashboard-loading"><LoadingSpinner size="large" /></div>;
+    return (
+      <div className="page-loading adm-page-loading">
+        <LoadingSpinner size="large" />
+      </div>
+    );
   }
 
-  const wsDashTitle = 'Warehouse Dashboard';
   const statCards = [
-    { title: 'Orders to Pack', value: stats.preparingCount, icon: '📋', color: '#f59e0b' },
-    { title: 'Packed / Done', value: stats.packedCount, icon: '✅', color: '#16a34a' },
+    {
+      key: 'preparing',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.statToPack_a1b2c3d4e5'),
+      value: stats.preparingCount,
+      icon: FiClipboard,
+      iconClass: 'adm-stat-icon--deliveries',
+      path: '/warehouse-staff/orders',
+      statusFilter: 'preparing',
+    },
+    {
+      key: 'packed',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.statPacked_f6g7h8i9j0'),
+      value: stats.packedCount,
+      icon: FiCheckCircle,
+      iconClass: 'adm-stat-icon--orders',
+      path: '/warehouse-staff/orders',
+      statusFilter: 'packed',
+    },
   ];
 
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  };
+  const actionCards = [
+    {
+      path: '/warehouse-staff/orders',
+      filter: 'preparing',
+      icon: FiPackage,
+      iconClass: 'adm-action-card-icon--orders',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackTitle_k1l2m3n4o5'),
+      desc: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackDesc_p5q6r7s8t9'),
+    },
+    {
+      path: '/warehouse-staff/orders',
+      filter: 'packed',
+      icon: FiCheckCircle,
+      iconClass: 'adm-action-card-icon--deliveries',
+      title: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackedTitle_u1v2w3x4y5'),
+      desc: tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.actionPackedDesc_z6a7b8c9d0'),
+    },
+  ];
 
   return (
-    <div className="admin-page-shell ws-dashboard">
-      <PageHeader kicker={wsDashTitle} title={wsDashTitle} />
+    <div className="admin-page-shell adm-page adm-dashboard wms-dashboard">
+      <PageHeader
+        kicker={panelKicker}
+        title={tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.title_e1f2g3h4i5')}
+        subtitle={tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.subtitle_j6k7l8m9n0')}
+      />
 
-      <div className="ws-stats-grid">
-        {statCards.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            className="ws-stat-card"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.03 }}
-            onClick={() => navigate('/warehouse-staff/orders')}
-          >
-            <div className="stat-icon" style={{ backgroundColor: `${stat.color}18` }}>
-              <span>{stat.icon}</span>
-            </div>
-            <div className="stat-value">{stat.value}</div>
-            <div className="stat-label">{stat.title}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="ws-queue-section">
-        <h2>📋 Packing Queue</h2>
-        {preparingOrders.length === 0 ? (
-          <div className="ws-empty-state">
-            <div className="empty-icon">✅</div>
-            <p>No orders waiting to be packed</p>
-          </div>
-        ) : (
-          <div className="ws-queue-cards">
-            {preparingOrders.map((order, index) => (
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionOverview_o1p2q3r4s5')}</h2>
+        </div>
+        <div className="adm-stats-grid">
+          {statCards.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
               <motion.div
-                key={order.id}
-                className="ws-queue-card"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => navigate('/warehouse-staff/orders')}
+                key={stat.key}
+                className="adm-stat-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => navigate(`${stat.path}?filter=${stat.statusFilter}`)}
               >
-                <div className="ws-queue-card-header">
-                  <span className="order-id">Order #{order.id}</span>
-                  <span className="item-count">{order.items?.length || 0} items</span>
-                </div>
-                <div className="ws-queue-card-info">
-                  {order.user?.email || 'Customer'}
-                </div>
-                <div className="ws-queue-card-info">
-                  {formatDate(order.created_at)}
+                <div className="stat-top">
+                  <div className="stat-main">
+                    <div className="stat-value">{stat.value}</div>
+                    <div className="stat-label">{stat.title}</div>
+                  </div>
+                  <div className={`stat-icon ${stat.iconClass}`}>
+                    <Icon aria-hidden />
+                  </div>
                 </div>
               </motion.div>
-            ))}
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionQuickActions_t6u7v8w9x0')}</h2>
+          <p>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionQuickActionsDesc_y1z2a3b4c5')}</p>
+        </div>
+        <div className="adm-actions-grid">
+          {actionCards.map((action, i) => {
+            const Icon = action.icon;
+            const to = action.filter ? `${action.path}?filter=${action.filter}` : action.path;
+            return (
+              <motion.div
+                key={action.title}
+                className="adm-action-card-wrap"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.08 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Link to={to} className="adm-action-card">
+                  <div className={`adm-action-card-icon ${action.iconClass}`.trim()}>
+                    <Icon aria-hidden />
+                  </div>
+                  <div className="adm-action-card-body">
+                    <h3>{action.title}</h3>
+                    <p>{action.desc}</p>
+                  </div>
+                  <FaArrowRight className="adm-action-card-arrow" aria-hidden />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="adm-section wms-queue-section">
+        <div className="adm-section-header">
+          <h2>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.sectionQueue_d5e6f7g8h9')}</h2>
+        </div>
+        {preparingOrders.length === 0 ? (
+          <div className="adm-page-empty wms-queue-empty">
+            <p>{tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.queueEmpty_i0j1k2l3m4')}</p>
+          </div>
+        ) : (
+          <div className="wms-queue-list">
+            {preparingOrders.map((order, index) => {
+              const orderItems = order.items || order.orderitems || [];
+              return (
+                <motion.button
+                  key={order.id}
+                  type="button"
+                  className="wms-queue-card"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => navigate('/warehouse-staff/orders?filter=preparing')}
+                >
+                  <div className="wms-queue-card-top">
+                    <span className="wms-queue-order-id">
+                      {tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.orderLabel_n5o6p7q8r9', {
+                        value0: order.id,
+                      })}
+                    </span>
+                    <span className="wms-queue-item-count">
+                      {tUi('ui.pages.warehouseStaff.warehouseStaffDashboard.itemCount_s0t1u2v3w4', {
+                        value0: orderItems.length,
+                      })}
+                    </span>
+                  </div>
+                  <span className="wms-queue-meta">{order.user?.email || '—'}</span>
+                  <span className="wms-queue-meta">{formatDateTime(order.created_at)}</span>
+                </motion.button>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };

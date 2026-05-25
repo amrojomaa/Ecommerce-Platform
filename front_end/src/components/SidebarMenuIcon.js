@@ -19,6 +19,7 @@ import {
   FiTruck,
   FiUsers,
   FiShoppingBag,
+  FiArchive,
 } from 'react-icons/fi';
 
 const SIDEBAR_ICON_CONFIG = {
@@ -44,6 +45,7 @@ const PANEL_BRAND_CONFIG = {
   operations: { Icon: FiActivity, tone: 'amber' },
   support: { Icon: FiHeadphones, tone: 'primary' },
   warehouse: { Icon: FiBox, tone: 'green' },
+  warehouseStaff: { Icon: FiArchive, tone: 'primary' },
   seller: { Icon: FiShoppingBag, tone: 'amber' },
 };
 

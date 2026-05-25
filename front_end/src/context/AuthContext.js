@@ -594,7 +594,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return user?.role === 'admin' || user?.role === 'operations_manager';
+    return user?.role === 'admin';
   };
 
   const isOperationsManager = () => {

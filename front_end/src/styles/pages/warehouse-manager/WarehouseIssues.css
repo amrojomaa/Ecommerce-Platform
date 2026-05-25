@@ -1,3 +1,26 @@
+.wm-issues-page {
+  gap: 1.5rem;
+  max-width: 100%;
+}
+
+.wm-issues-page .page-header-actions {
+  margin-top: 1.85rem;
+}
+
+.wm-issues-section {
+  gap: 1rem;
+}
+
+.wm-issues-select {
+  width: 16rem;
+  min-width: 16rem;
+  max-width: 16rem;
+}
+
+.wm-issues-data-panel {
+  padding: 1rem;
+}
+
 .wm-issues-list {
   display: flex;
   flex-direction: column;
@@ -7,14 +30,14 @@
 .wm-issue-card {
   background: var(--surface);
   border-radius: 1.2rem;
-  padding: 1.35rem 1.5rem;
+  padding: 1.25rem 1.35rem;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .wm-issue-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
   border-color: rgba(37, 99, 235, 0.2);
 }
@@ -29,7 +52,8 @@
 }
 
 .wm-issue-type {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 0.25rem 0.7rem;
   border-radius: 999px;
   font-size: 0.72rem;
@@ -48,11 +72,7 @@
   color: #d97706;
 }
 
-.wm-issue-type.wrong_item {
-  background: rgba(99, 102, 241, 0.12);
-  color: #4338ca;
-}
-
+.wm-issue-type.wrong_item,
 .wm-issue-type.other {
   background: rgba(99, 102, 241, 0.12);
   color: #4338ca;
@@ -63,8 +83,8 @@
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .wm-issue-status.open {
@@ -131,6 +151,7 @@
   color: var(--text-primary);
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .wm-resolve-form textarea:focus {
@@ -139,17 +160,13 @@
   box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
 }
 
-.dark .wm-issue-card {
-  background: var(--surface);
-  border-color: var(--border-color);
+.wm-resolve-btn {
+  background: #16a34a;
+  min-height: 44px;
 }
 
-.dark .wm-issue-desc {
-  color: var(--text-primary);
-}
-
-.dark .wm-issue-order strong {
-  color: var(--text-primary);
+.wm-resolve-btn:hover:not(:disabled) {
+  background: #15803d;
 }
 
 .dark .wm-issue-resolution {
@@ -158,24 +175,43 @@
   border-color: rgba(74, 222, 128, 0.25);
 }
 
-.dark .wm-resolve-form textarea {
-  background: var(--background);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
+@media (max-width: 768px) {
+  .wm-issues-page .page-header-actions {
+    width: 100%;
+    margin-inline-start: 0;
+    margin-top: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
 
-@media (max-width: 640px) {
-  .wm-issues .page-header-top {
+  .wm-issues-header-filter {
+    width: 100%;
+  }
+
+  .wm-issues-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .wm-resolve-form {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .wm-issues .page-header-actions {
+  .wm-resolve-btn {
     width: 100%;
   }
+}
 
-  .wm-issues .wm-pill-tabs {
-    width: 100%;
-    justify-content: center;
+@media (min-width: 1280px) {
+  .wm-issues-page.adm-page.wm-page {
+    max-width: min(100%, 1400px);
+  }
+}
+
+@media (min-width: 1600px) {
+  .wm-issues-page.adm-page.wm-page {
+    max-width: min(100%, 1600px);
   }
 }

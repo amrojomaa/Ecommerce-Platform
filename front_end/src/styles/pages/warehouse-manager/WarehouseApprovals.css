@@ -1,3 +1,24 @@
+.wm-approvals-page {
+  gap: 1.5rem;
+  max-width: 100%;
+}
+
+.wm-approvals-page .page-header-actions {
+  margin-top: 1.85rem;
+}
+
+.wm-approvals-header-meta {
+  margin: 0;
+}
+
+.wm-approvals-section {
+  gap: 1rem;
+}
+
+.wm-approvals-data-panel {
+  padding: 1rem;
+}
+
 .wm-approvals-list {
   display: flex;
   flex-direction: column;
@@ -9,12 +30,12 @@
   border-radius: 1.2rem;
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .wm-approval-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
   border-color: rgba(37, 99, 235, 0.2);
 }
@@ -24,9 +45,16 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem 1.5rem;
+  width: 100%;
+  padding: 1.15rem 1.25rem;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
   flex-wrap: wrap;
+  transition: background 0.2s ease;
 }
 
 .wm-approval-header:hover {
@@ -58,6 +86,7 @@
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .wm-approval-total {
@@ -67,20 +96,23 @@
   color: var(--text-primary);
 }
 
-.wm-approval-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--background);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+.wm-approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 1.25rem 1rem;
+}
+
+.wm-approve-btn {
+  background: #16a34a;
+  min-height: 44px;
+}
+
+.wm-approve-btn:hover:not(:disabled) {
+  background: #15803d;
 }
 
 .wm-approval-details {
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 1.25rem 1.25rem;
   border-top: 1px solid var(--border-color);
 }
 
@@ -112,13 +144,14 @@
 .wm-approval-item-placeholder {
   width: 44px;
   height: 44px;
-  background: var(--surface);
-  border-radius: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--surface);
+  border-radius: 0.75rem;
   flex-shrink: 0;
   border: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .wm-approval-item-name {
@@ -147,32 +180,41 @@
   color: var(--text-primary);
 }
 
-.dark .wm-approval-card {
-  background: var(--surface);
-  border-color: var(--border-color);
-}
+@media (max-width: 768px) {
+  .wm-approvals-page .page-header-actions {
+    width: 100%;
+    margin-inline-start: 0;
+    margin-top: 0;
+    justify-content: flex-start;
+  }
 
-.dark .wm-approval-header:hover {
-  background: rgba(96, 165, 250, 0.08);
-}
-
-.dark .wm-approval-item,
-.dark .wm-approval-customer {
-  background: var(--background);
-  border-color: var(--border-color);
-}
-
-.dark .wm-approval-details {
-  border-color: var(--border-color);
-}
-
-@media (max-width: 640px) {
   .wm-approval-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .wm-approval-header-right {
+    width: 100%;
     justify-content: space-between;
+  }
+
+  .wm-approval-actions {
+    padding-top: 0;
+  }
+
+  .wm-approve-btn {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1280px) {
+  .wm-approvals-page.adm-page.wm-page {
+    max-width: min(100%, 1400px);
+  }
+}
+
+@media (min-width: 1600px) {
+  .wm-approvals-page.adm-page.wm-page {
+    max-width: min(100%, 1600px);
   }
 }

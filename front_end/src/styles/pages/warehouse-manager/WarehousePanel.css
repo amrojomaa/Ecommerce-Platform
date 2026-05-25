@@ -286,6 +286,66 @@ html[dir='rtl'] .wm-action-card-arrow {
   transform: scaleX(-1);
 }
 
+/* Search (inventory + shared) */
+.wm-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: min(100%, 260px);
+  max-width: 420px;
+}
+
+.wm-search-icon {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.wm-search-input {
+  width: 100%;
+  height: 42px;
+  padding-inline: 2.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.wm-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring);
+}
+
+.adm-page-empty.wm-page-empty {
+  border: 1px dashed var(--border-color);
+  border-radius: 1.2rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+.adm-page-empty.wm-page-empty p {
+  margin: 0;
+  font-size: 1rem;
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+.wm-inventory-page .page-header,
+.wm-approvals-page .page-header,
+.wm-issues-page .page-header {
+  scroll-margin-top: 5rem;
+  padding-bottom: 0;
+}
+
 /* Toolbar / filters */
 .wm-toolbar {
   display: flex;

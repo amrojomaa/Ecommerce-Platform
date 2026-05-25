@@ -15,6 +15,7 @@ import TicketUserAvatar from '../../components/TicketUserAvatar';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminTickets.css';
+import '../../styles/pages/support-manager/SupportPanel.css';
 
 const TICKET_STATUS_LABEL_KEYS = {
   open: 'ui.pages.tickets.statusOpen_a1b2c3d4e1',
@@ -63,6 +64,7 @@ const AdminTickets = () => {
   const { markAsViewed } = useUnreadTickets();
   const { user: currentUser } = useAuth();
   const confirm = useConfirm();
+  const isSupportManagerPanel = currentUser?.role === 'support_manager';
 
   useEffect(() => {
     fetchTickets();
@@ -303,7 +305,9 @@ const AdminTickets = () => {
   };
 
   const allTicketsTitle = tUi('ui.pages.admin.adminTickets.allTickets_10363e2701');
-  const panelKicker = t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
+  const panelKicker = isSupportManagerPanel
+    ? t('ui.sidebar.panel.support')
+    : t('ui.sidebar.panel.admin', { defaultValue: 'Admin' });
   const ticketCountLabel =
     filteredTickets.length === 1
       ? tUi('ui.pages.admin.adminTickets.ticket_6f5e4d3c2b')
@@ -319,7 +323,7 @@ const AdminTickets = () => {
   };
 
   return (
-    <div className="admin-page-shell adm-page adm-tkt-page">
+    <div className={`admin-page-shell adm-page adm-tkt-page${isSupportManagerPanel ? ' spm-page spm-tkt-page' : ''}`}>
       <PageHeader
         kicker={panelKicker}
         title={allTicketsTitle}

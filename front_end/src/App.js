@@ -73,7 +73,6 @@ import DriverDashboard from './pages/driver/DriverDashboard';
 import DriverMap from './pages/driver/DriverMap';
 import DriverActiveJob from './pages/driver/DriverActiveJob';
 import DriverJobHistory from './pages/driver/DriverJobHistory';
-import DriverEarnings from './pages/driver/DriverEarnings';
 
 // Cashier / POS
 import CashierLayout from './layouts/CashierLayout';
@@ -208,7 +207,6 @@ function App() {
                     <Route path="map" element={<DriverMap />} />
                     <Route path="active" element={<DriverActiveJob />} />
                     <Route path="history" element={<DriverJobHistory />} />
-                    <Route path="earnings" element={<DriverEarnings />} />
                     <Route path="profile" element={<Profile />} />
         </Route>
 

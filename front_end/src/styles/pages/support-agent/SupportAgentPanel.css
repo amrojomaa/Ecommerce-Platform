@@ -1,0 +1,149 @@
+/* Support Agent Panel — spa-* prefix (AdminPanel + spm-* patterns) */
+
+.spa-page {
+  width: 100%;
+  max-width: min(100%, 1200px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.admin-page-shell.spa-page {
+  gap: 4rem;
+}
+
+.spa-page .page-header {
+  scroll-margin-top: 5rem;
+}
+
+.spa-page.adm-dashboard,
+.admin-page-shell.spa-page.adm-dashboard {
+  gap: 2rem;
+}
+
+.spa-dashboard.adm-dashboard {
+  width: 100%;
+  max-width: min(100%, 1400px);
+}
+
+.spa-tkt-page.adm-tkt-page,
+.admin-page-shell.adm-page.spa-tkt-page {
+  max-width: min(100%, 1400px);
+  width: 100%;
+}
+
+.spa-page .page-header-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  max-width: 100%;
+}
+
+.spa-header-tabs {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+@media (min-width: 1280px) {
+  .spa-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .spa-dashboard .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .spa-page,
+  .spa-dashboard.adm-dashboard,
+  .admin-page-shell.spa-page.adm-dashboard {
+    max-width: min(100%, 1600px);
+  }
+
+  .spa-tkt-page.adm-tkt-page,
+  .admin-page-shell.adm-page.spa-tkt-page {
+    max-width: min(100%, 1600px);
+  }
+
+  .spa-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .spa-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .spa-page .page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  .spa-header-tabs {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .spa-page,
+  .admin-page-shell.spa-page {
+    gap: 2.5rem;
+  }
+
+  .spa-page .spm-pill-tabs {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+.adm-tkt-btn--claim {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.adm-tkt-btn--claim:hover:not(:disabled) {
+  background: var(--primary-hover, #1d4ed8);
+}
+
+.adm-tkt-delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.85rem 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.adm-tkt-delivery-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.adm-tkt-delivery-alert {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  font-size: 0.875rem;
+}
+
+.adm-tkt-delivery-alert p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+}

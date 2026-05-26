@@ -204,21 +204,6 @@ def accept_job(
         loaded = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
         return _job_to_response(loaded)
 
-    # Check if driver already has an active delivery job
-    active_job = (
-        db.query(models.DBDeliveryJob)
-        .filter(
-            models.DBDeliveryJob.driver_id == current_user.id,
-            models.DBDeliveryJob.status.in_(["assigned", "picked_up", "delivering"])
-        )
-        .first()
-    )
-    if active_job:
-        raise HTTPException(
-            status_code=400,
-            detail="You already have an active delivery job. Complete or decline it first."
-        )
-
     if job.status != "available":
         raise HTTPException(status_code=400, detail=f"Job is no longer available (current status: {job.status})")
 
@@ -384,6 +369,55 @@ def upload_photo(
     db.commit()
 
     return {"message": "Photo uploaded", "image_path": filepath}
+
+
+@router.delete("/jobs/{job_id}/photo")
+def delete_photo(
+    job_id: int,
+    photo_type: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_driver),
+):
+    if photo_type not in ("pickup", "delivery"):
+        raise HTTPException(status_code=400, detail="photo_type must be 'pickup' or 'delivery'")
+
+    job = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.driver_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not your job")
+
+    if _job_photo_type_checked(job, photo_type):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{photo_type.capitalize()} photo already reviewed by admin and cannot be deleted",
+        )
+
+    photo = (
+        db.query(models.DBDeliveryPhoto)
+        .filter(
+            models.DBDeliveryPhoto.delivery_job_id == job_id,
+            models.DBDeliveryPhoto.photo_type == photo_type,
+        )
+        .first()
+    )
+    if not photo:
+        raise HTTPException(status_code=404, detail=f"No {photo_type} photo found")
+
+    image_path = photo.image_path
+    db.delete(photo)
+    db.commit()
+
+    if image_path:
+        has_other_reference = (
+            db.query(models.DBDeliveryPhoto.id)
+            .filter(models.DBDeliveryPhoto.image_path == image_path)
+            .first()
+        )
+        if not has_other_reference:
+            delete_local_image(image_path)
+
+    return {"message": "Photo deleted"}
 
 
 @router.post("/jobs/{job_id}/photo-review", response_model=schemas.AdminDeliveryJobResponse)

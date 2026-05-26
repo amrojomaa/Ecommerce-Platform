@@ -6,10 +6,12 @@ import {
   FiBox,
   FiCheckCircle,
   FiClipboard,
+  FiClock,
   FiCreditCard,
   FiGrid,
   FiHeadphones,
   FiLayout,
+  FiMapPin,
   FiMessageSquare,
   FiPackage,
   FiPercent,
@@ -38,6 +40,9 @@ const SIDEBAR_ICON_CONFIG = {
   warehouseInventory: { Icon: FiPackage, tone: 'primary' },
   warehouseApprovals: { Icon: FiCheckCircle, tone: 'green' },
   warehouseIssues: { Icon: FiAlertTriangle, tone: 'amber' },
+  findJobs: { Icon: FiMapPin, tone: 'primary' },
+  activeJob: { Icon: FiTruck, tone: 'purple' },
+  history: { Icon: FiClock, tone: 'amber' },
 };
 
 const PANEL_BRAND_CONFIG = {
@@ -47,6 +52,8 @@ const PANEL_BRAND_CONFIG = {
   warehouse: { Icon: FiBox, tone: 'green' },
   warehouseStaff: { Icon: FiArchive, tone: 'primary' },
   seller: { Icon: FiShoppingBag, tone: 'amber' },
+  supportAgent: { Icon: FiHeadphones, tone: 'primary' },
+  driver: { Icon: FiTruck, tone: 'purple' },
 };
 
 export const SidebarMenuIcon = ({ name, className = '' }) => {

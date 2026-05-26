@@ -1,127 +1,173 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { FaArrowRight } from 'react-icons/fa';
+import { FiClipboard, FiMapPin, FiPackage, FiTruck } from 'react-icons/fi';
 import { tUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS } from '../../config/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
-import { useCurrency } from '../../hooks/useCurrency';
+import '../../styles/pages/admin/AdminPanel.css';
+import '../../styles/pages/driver/DriverPanel.css';
 import '../../styles/pages/driver/DriverDashboard.css';
 
 const DriverDashboard = () => {
-  const { formatCurrency } = useCurrency();
-  const [earnings, setEarnings] = useState(null);
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const panelKicker = t('ui.sidebar.panel.driver');
+
   const [activeJobs, setActiveJobs] = useState([]);
   const [availableCount, setAvailableCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [earningsRes, activeRes, availableRes] = await Promise.all([
-        http.get(DELIVERY_ENDPOINTS.EARNINGS),
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [activeRes, availableRes] = await Promise.all([
         http.get(DELIVERY_ENDPOINTS.ACTIVE_JOBS),
-        http.get(DELIVERY_ENDPOINTS.AVAILABLE_JOBS)]
-        );
-        setEarnings(earningsRes.data);
-        setActiveJobs(activeRes.data);
-        setAvailableCount(availableRes.data.length);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+        http.get(DELIVERY_ENDPOINTS.AVAILABLE_JOBS),
+      ]);
+      setActiveJobs(activeRes.data || []);
+      setAvailableCount((availableRes.data || []).length);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) {
     return (
-      <div className="page-loading">
+      <div className="page-loading adm-page-loading">
         <LoadingSpinner size="large" />
       </div>
     );
   }
 
-  const dashboardTitle = tUi('ui.pages.driver.driverDashboard.driverDashboard_6764ab49f0');
+  const statCards = [
+    {
+      key: 'active',
+      title: tUi('ui.pages.driver.driverDashboard.activeDeliveries_b212236f76'),
+      value: activeJobs.length,
+      icon: FiTruck,
+      iconClass: 'adm-stat-icon--orders',
+      path: '/driver/active',
+    },
+    {
+      key: 'available',
+      title: tUi('ui.pages.driver.driverDashboard.availableJobs_cc23afe56a'),
+      value: availableCount,
+      icon: FiPackage,
+      iconClass: 'adm-stat-icon--low',
+      path: '/driver/map',
+    },
+  ];
+
+  const actionCards = [
+    {
+      path: '/driver/map',
+      icon: FiMapPin,
+      iconClass: 'adm-action-card-icon--orders',
+      title: tUi('ui.pages.driver.driverDashboard.findJobs_d0c3b5a149'),
+      desc: tUi('ui.pages.driver.driverDashboard.viewAvailableDeliveryRequestsOn_aa9ad5470b'),
+    },
+    {
+      path: '/driver/active',
+      icon: FiTruck,
+      iconClass: 'adm-action-card-icon--deliveries',
+      title: tUi('ui.pages.driver.driverDashboard.activeDelivery_dbf7ad5b46'),
+      desc: tUi('ui.pages.driver.driverDashboard.trackAndManageYourCurrent_e78d8342ac'),
+    },
+    {
+      path: '/driver/history',
+      icon: FiClipboard,
+      iconClass: 'adm-action-card-icon--categories',
+      title: tUi('ui.pages.driver.driverDashboard.deliveryHistory_853624d313'),
+      desc: tUi('ui.pages.driver.driverDashboard.viewYourCompletedDeliveries_5595c582d7'),
+    },
+  ];
 
   return (
-    <div className="page-shell driver-dashboard">
-      <PageHeader kicker={dashboardTitle} title={dashboardTitle} />
-      
-      <div className="dashboard-stats">
-        <div className="stat-card earnings-card">
-          <div className="stat-icon">💰</div>
-          <div className="stat-info">
-            <span className="stat-value">{formatCurrency(earnings?.today || 0)}</span>
-            <span className="stat-label">{tUi("ui.pages.driver.driverDashboard.todaySEarnings_6557872ed4")}</span>
-          </div>
-        </div>
-        <div className="stat-card active-card">
-          <div className="stat-icon">🚚</div>
-          <div className="stat-info">
-            <span className="stat-value">{activeJobs.length}</span>
-            <span className="stat-label">{tUi("ui.pages.driver.driverDashboard.activeDeliveries_b212236f76")}</span>
-          </div>
-        </div>
-        <div className="stat-card available-card">
-          <div className="stat-icon">📦</div>
-          <div className="stat-info">
-            <span className="stat-value">{availableCount}</span>
-            <span className="stat-label">{tUi("ui.pages.driver.driverDashboard.availableJobs_cc23afe56a")}</span>
-          </div>
-        </div>
-        <div className="stat-card total-card">
-          <div className="stat-icon">📈</div>
-          <div className="stat-info">
-            <span className="stat-value">{formatCurrency(earnings?.this_month || 0)}</span>
-            <span className="stat-label">{tUi("ui.pages.driver.driverDashboard.thisMonth_3801c1bfca")}</span>
-          </div>
-        </div>
-      </div>
+    <div className="admin-page-shell adm-page drv-page drv-dashboard adm-dashboard">
+      <PageHeader
+        kicker={panelKicker}
+        title={tUi('ui.pages.driver.driverDashboard.driverDashboard_6764ab49f0')}
+        subtitle={t('ui.pages.driver.dashboard.subtitle')}
+      />
 
-      <div className="dashboard-cards">
-        <Link to="/driver/map" className="dashboard-card">
-          <div className="card-icon">🗺️</div>
-          <h2>{tUi("ui.pages.driver.driverDashboard.findJobs_d0c3b5a149")}</h2>
-          <p>{tUi("ui.pages.driver.driverDashboard.viewAvailableDeliveryRequestsOn_aa9ad5470b")}</p>
-        </Link>
-        <Link to="/driver/active" className="dashboard-card">
-          <div className="card-icon">🚚</div>
-          <h2>{tUi("ui.pages.driver.driverDashboard.activeDelivery_dbf7ad5b46")}</h2>
-          <p>{tUi("ui.pages.driver.driverDashboard.trackAndManageYourCurrent_e78d8342ac")}</p>
-        </Link>
-        <Link to="/driver/history" className="dashboard-card">
-          <div className="card-icon">📋</div>
-          <h2>{tUi("ui.pages.driver.driverDashboard.deliveryHistory_853624d313")}</h2>
-          <p>{tUi("ui.pages.driver.driverDashboard.viewYourCompletedDeliveries_5595c582d7")}</p>
-        </Link>
-        <Link to="/driver/earnings" className="dashboard-card">
-          <div className="card-icon">💰</div>
-          <h2>{tUi("ui.pages.driver.driverDashboard.earnings_5bb4b61373")}</h2>
-          <p>{tUi("ui.pages.driver.driverDashboard.trackEarningsAndRequestPayouts_695783d44b")}</p>
-        </Link>
-      </div>
-
-      {activeJobs.length > 0 &&
-      <div className="active-deliveries-section">
-          <h2>{tUi("ui.pages.driver.driverDashboard.currentDeliveries_54f80c8ed4")}</h2>
-          <div className="active-jobs-list">
-            {activeJobs.map((job) =>
-          <Link to="/driver/active" key={job.id} className="active-job-card">
-                <div className="job-status-badge">{job.status.replace('_', ' ')}</div>
-                <div className="job-details">
-                  <span className="job-id">{tUi("ui.pages.driver.driverDashboard.order_de54b2e674")}{job.order_id}</span>
-                  <span className="job-address">{job.delivery_address || tUi("ui.pages.driver.driverDashboard.nA_b209613603")}</span>
-                  <span className="job-amount">{formatCurrency(job.payment_amount || 0)}</span>
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{t('ui.pages.driver.dashboard.section.overview')}</h2>
+        </div>
+        <div className="adm-stats-grid">
+          {statCards.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={stat.key}
+                className="adm-stat-card"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.06 }}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => navigate(stat.path)}
+              >
+                <div className="stat-top">
+                  <div className="stat-main">
+                    <div className="stat-value">{stat.value}</div>
+                    <div className="stat-label">{stat.title}</div>
+                  </div>
+                  <div className={`stat-icon ${stat.iconClass}`}>
+                    <Icon aria-hidden />
+                  </div>
                 </div>
-              </Link>
-          )}
-          </div>
+              </motion.div>
+            );
+          })}
         </div>
-      }
-    </div>);
+      </section>
 
+      <section className="adm-section">
+        <div className="adm-section-header">
+          <h2>{t('ui.pages.driver.dashboard.section.quickActions')}</h2>
+          <p>{t('ui.pages.driver.dashboard.section.quickActionsDesc')}</p>
+        </div>
+        <div className="adm-actions-grid">
+          {actionCards.map((action, index) => {
+            const Icon = action.icon;
+            return (
+              <motion.div
+                key={action.path}
+                className="adm-action-card-wrap"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + index * 0.08 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Link to={action.path} className="adm-action-card">
+                  <div className={`adm-action-card-icon ${action.iconClass}`.trim()}>
+                    <Icon aria-hidden />
+                  </div>
+                  <div className="adm-action-card-body">
+                    <h3>{action.title}</h3>
+                    <p>{action.desc}</p>
+                  </div>
+                  <FaArrowRight className="adm-action-card-arrow" aria-hidden />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
 };
 
 export default DriverDashboard;

@@ -14,11 +14,18 @@
 .SupportAgent-content {
   flex: 1;
   padding: 2rem;
-  overflow-y: hidden;
+  overflow-y: auto;
   background: var(--background);
-  margin-left: 250px; /* Account for fixed sidebar width */
+  margin-inline-start: 250px;
   min-height: calc(100vh - var(--navbar-height));
   scroll-margin-top: 5rem;
+}
+
+@media (max-width: 1024px) {
+  .SupportAgent-content {
+    margin-inline-start: 0;
+    padding: 1.25rem 1rem 2rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -28,8 +35,6 @@
 
   .SupportAgent-content {
     padding: 1rem;
-    margin-left: 0;
     min-height: auto;
-    max-height: none;
   }
 }

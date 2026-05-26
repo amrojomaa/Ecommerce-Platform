@@ -204,21 +204,6 @@ def accept_job(
         loaded = _load_job_query(db).filter(models.DBDeliveryJob.id == job_id).first()
         return _job_to_response(loaded)
 
-    # Check if driver already has an active delivery job
-    active_job = (
-        db.query(models.DBDeliveryJob)
-        .filter(
-            models.DBDeliveryJob.driver_id == current_user.id,
-            models.DBDeliveryJob.status.in_(["assigned", "picked_up", "delivering"])
-        )
-        .first()
-    )
-    if active_job:
-        raise HTTPException(
-            status_code=400,
-            detail="You already have an active delivery job. Complete or decline it first."
-        )
-
     if job.status != "available":
         raise HTTPException(status_code=400, detail=f"Job is no longer available (current status: {job.status})")
 

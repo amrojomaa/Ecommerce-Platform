@@ -784,3 +784,42 @@ html[dir='rtl'] .back-button svg {
     display: none;
   }
 }
+
+.pd-related-section {
+  margin-top: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.pd-related-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: start;
+}
+
+.pd-related-title {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.pd-related-subtitle {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.pd-related-loading {
+  min-height: 220px;
+}
+
+.pd-related-grid {
+  margin-top: 0.25rem;
+}

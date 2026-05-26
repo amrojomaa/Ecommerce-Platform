@@ -2,6 +2,7 @@ import { tUi } from '../i18n/uiText';
 import { getRoleLabel } from '../i18n/roles';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import http from '../services/http';
 import API_BASE_URL, { USER_ENDPOINTS, FEEDBACK_ENDPOINTS } from '../config/api';
@@ -19,6 +20,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import PageHeader from '../components/PageHeader';
 import { useConfirm } from '../hooks/useConfirm';
 import { FaStar } from 'react-icons/fa';
+import { FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import '../styles/pages/Profile.css';
 
 const getCurrentMonthKey = () => {
@@ -34,8 +36,10 @@ const getMonthKeyFromDate = (value) => {
 };
 
 const Profile = () => {
-  const { user, fetchUserInfo } = useAuth();
+  const navigate = useNavigate();
+  const { user, fetchUserInfo, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
@@ -320,6 +324,31 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const confirmed = await confirm({
+      title: tUi('ui.pages.profile.deleteAccountTitle_b4e8a1c2dc'),
+      message: tUi('ui.pages.profile.deleteAccountMessage_b4e8a1c2dd'),
+      confirmText: tUi('ui.pages.profile.deleteAccountConfirm_b4e8a1c2de'),
+      cancelText: tUi('ui.pages.profile.cancel_1ce51b317b'),
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteAccountLoading(true);
+    try {
+      await http.delete(USER_ENDPOINTS.DELETE_ME);
+      toast.success(tUi('ui.pages.profile.accountDeletedSuccess_b4e8a1c2df'));
+      logout();
+      navigate('/');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || error.message || tUi('ui.pages.profile.failedToDeleteAccount_b4e8a1c2e0'));
+    } finally {
+      setDeleteAccountLoading(false);
+    }
+  };
+
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
 
@@ -478,6 +507,47 @@ const Profile = () => {
           </div>
         )}
       </section>
+
+      {user?.role === 'customer' && (
+        <section className="profile-delete-zone" aria-labelledby="profile-delete-zone-title">
+          <div className="profile-delete-zone-card">
+            <div className="profile-delete-zone-icon" aria-hidden="true">
+              <FiAlertTriangle />
+            </div>
+            <div className="profile-delete-zone-body">
+              <span className="profile-delete-zone-kicker">
+                {tUi('ui.pages.profile.deleteAccountKicker_c8f1a2b3d8')}
+              </span>
+              <h2 id="profile-delete-zone-title">{tUi('ui.pages.profile.deleteAccountTitle_b4e8a1c2dc')}</h2>
+              <p>{tUi('ui.pages.profile.deleteAccountHint_b4e8a1c2e1')}</p>
+              <ul className="profile-delete-zone-list">
+                <li>{tUi('ui.pages.profile.deleteAccountBullet1_c8f1a2b3d9')}</li>
+                <li>{tUi('ui.pages.profile.deleteAccountBullet2_c8f1a2b3da')}</li>
+              </ul>
+            </div>
+            <div className="profile-delete-zone-action">
+              <button
+                type="button"
+                className="profile-delete-zone-btn"
+                onClick={handleDeleteAccount}
+                disabled={deleteAccountLoading}
+              >
+                {deleteAccountLoading ? (
+                  <>
+                    <LoadingSpinner size="small" />
+                    {tUi('ui.pages.profile.deletingAccount_b4e8a1c2e2')}
+                  </>
+                ) : (
+                  <>
+                    <FiTrash2 aria-hidden="true" />
+                    {tUi('ui.pages.profile.deleteAccountConfirm_b4e8a1c2de')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {isUpdateProfileOpen && (
         <motion.section

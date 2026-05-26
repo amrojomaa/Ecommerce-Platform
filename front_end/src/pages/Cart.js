@@ -2,7 +2,8 @@ import { tUi } from '../i18n/uiText';
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaShieldAlt, FaTag, FaTruck } from 'react-icons/fa';
+import { FaArrowRight, FaShieldAlt, FaShoppingCart, FaTag, FaTruck } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useCart } from '../hooks/useCart';
 import { useConfirm } from '../hooks/useConfirm';
@@ -27,53 +28,55 @@ const Cart = () => {
     grandTotal,
     loading,
     updateCartItem,
-    removeCartItem
+    removeCartItem,
   } = useCart();
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
   const totalQuantity = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
-  // useEffect(() => {
-  //   fetchCart();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  const getHeaderSubtitle = () => {
+    if (cartItems.length === 0) {
+      return tUi('ui.pages.cart.subtitleEmpty_a3f8c2d1e7');
+    }
+
+    return tUi('ui.pages.cart.subtitleWithItems_a3f8c2d1e6', { count: cartItems.length });
+  };
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (!itemId) {
-      toast.error(tUi("ui.pages.cart.invalidItemId_4c478f106a"));
+      toast.error(tUi('ui.pages.cart.invalidItemId_4c478f106a'));
       return;
     }
 
-    // Ensure minimum quantity is 1
     if (newQuantity < 1) {
       newQuantity = 1;
     }
 
     const result = await updateCartItem(itemId, newQuantity);
     if (result.success) {
-      toast.success(tUi("ui.pages.cart.cartUpdated_fb3514f71d"));
+      toast.success(tUi('ui.pages.cart.cartUpdated_fb3514f71d'));
     } else {
-      toast.error(result.error || 'Failed to update cart');
+      toast.error(result.error || tUi('ui.pages.cart.failedToUpdate_a3f8c2d1e8'));
     }
   };
 
   const handleRemoveItem = async (itemId) => {
     if (!itemId) {
-      toast.error(tUi("ui.pages.cart.invalidItemId_4c478f106a"));
+      toast.error(tUi('ui.pages.cart.invalidItemId_4c478f106a'));
       return;
     }
 
     const result = await removeCartItem(itemId);
     if (result.success) {
-      toast.success(tUi("ui.pages.cart.itemRemovedFromCart_b8877d495a"));
+      toast.success(tUi('ui.pages.cart.itemRemovedFromCart_b8877d495a'));
     } else {
-      toast.error(result.error || 'Failed to remove item');
+      toast.error(result.error || tUi('ui.pages.cart.failedToRemove_a3f8c2d1e9'));
     }
   };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      toast.error(tUi("ui.pages.cart.yourCartIsEmpty_977a093fcf"));
+      toast.error(tUi('ui.pages.cart.yourCartIsEmpty_977a093fcf'));
       return;
     }
     navigate('/checkout');
@@ -85,182 +88,187 @@ const Cart = () => {
     }
 
     const confirmed = await confirm({
-      title: tUi("ui.pages.cart.deleteAllItems_461a578884"),
-      message: tUi("ui.pages.cart.areYouSureYouWant_9221b8ce13"),
-      confirmText: tUi("ui.pages.cart.deleteAll_077da7e3f2"),
-      cancelText: tUi("ui.pages.cart.cancel_74261aa62c")
+      title: tUi('ui.pages.cart.deleteAllItems_461a578884'),
+      message: tUi('ui.pages.cart.areYouSureYouWant_9221b8ce13'),
+      confirmText: tUi('ui.pages.cart.deleteAll_077da7e3f2'),
+      cancelText: tUi('ui.pages.cart.cancel_74261aa62c'),
     });
     if (!confirmed) {
       return;
     }
 
-    const results = await Promise.all(
-      cartItems.map((item) => removeCartItem(item.id))
-    );
+    const results = await Promise.all(cartItems.map((item) => removeCartItem(item.id)));
     const failed = results.some((result) => !result.success);
 
     if (failed) {
-      toast.error(tUi("ui.pages.cart.someItemsCouldNotBe_ba1660dea1"));
+      toast.error(tUi('ui.pages.cart.someItemsCouldNotBe_ba1660dea1'));
       return;
     }
 
-    toast.success(tUi("ui.pages.cart.allItemsDeletedFromCart_c9752caafe"));
+    toast.success(tUi('ui.pages.cart.allItemsDeletedFromCart_c9752caafe'));
   };
 
   if (loading) {
     return (
-      <div className="page-loading">
+      <div className="page-loading cart-page-loading">
         <LoadingSpinner size="large" />
-      </div>);
-
+      </div>
+    );
   }
 
   return (
     <div className="page-shell page-shell--storefront cart-page">
       <PageHeader
-        kicker={tUi("ui.pages.cart.shoppingCart_7367ced874")}
-        title={tUi("ui.pages.cart.shoppingCart_7367ced874")}
-        subtitle={cartItems.length > 0
-          ? `${cartItems.length} ${cartItems.length === 1 ? 'item' : 'items'}`
-          : tUi("ui.pages.cart.yourCartIsEmpty_977a093fcf")}
-      />
-      
-      {cartItems.length === 0 ?
-      <motion.div
-        className="page-empty empty-cart"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}>
-        
-          <p>{tUi("ui.pages.cart.yourCartIsEmpty_977a093fcf")}</p>
-          <Link to="/products" className="page-btn-primary continue-shopping-btn">{tUi("ui.pages.cart.continueShopping_5009154016")}
-
-        </Link>
-        </motion.div> :
-
-      <div className="cart-container">
-          <div className="cart-items">
-            <div className="cart-items-actions">
-              <button
+        kicker={tUi('ui.pages.cart.kicker_a3f8c2d1e5')}
+        title={tUi('ui.pages.cart.shoppingCart_7367ced874')}
+        subtitle={getHeaderSubtitle()}
+        actions={
+          cartItems.length > 0 ? (
+            <motion.button
               type="button"
-              className="page-btn-danger delete-all-btn"
+              className="cart-delete-all-btn"
               onClick={handleDeleteAll}
-              disabled={loading || cartItems.length === 0}>{tUi("ui.pages.cart.deleteAll_077da7e3f2")}
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FiTrash2 aria-hidden="true" />
+              {tUi('ui.pages.cart.deleteAll_077da7e3f2')}
+            </motion.button>
+          ) : null
+        }
+      />
 
-
-            </button>
-            </div>
-            {cartItems.map((item, index) =>
-          <motion.div
-            key={item.id || index}
-            className="cart-item"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}>
-            
-                <div className="cart-item-image">
-                  <img
-                src={item.product?.images && item.product.images.length > 0 ?
-                getImageUrl(item.product.images[0]) :
-                getImageUrl('/images/placeholder.jpg')}
-                alt={localizeProduct(item.product || {}, languageCode).localized_name || tUi("ui.pages.cart.product_d44e1d3515")}
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
-                }} />
-              
-                </div>
-                
-                <div className="cart-item-info">
-                  {(() => {
+      {cartItems.length === 0 ? (
+        <motion.section
+          className="cart-empty"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          aria-label={tUi('ui.pages.cart.yourCartIsEmpty_977a093fcf')}
+        >
+          <FaShoppingCart className="cart-empty-icon" aria-hidden="true" />
+          <h2>{tUi('ui.pages.cart.emptyTitle_a3f8c2d1ea')}</h2>
+          <p>{tUi('ui.pages.cart.emptyHint_a3f8c2d1eb')}</p>
+          <Link to="/products" className="page-btn-primary cart-empty-cta">
+            {tUi('ui.pages.cart.continueShopping_5009154016')}
+            <FaArrowRight aria-hidden="true" />
+          </Link>
+        </motion.section>
+      ) : (
+        <div className="cart-layout">
+          <section className="cart-section cart-items-section" aria-label={tUi('ui.pages.cart.shoppingCart_7367ced874')}>
+            <div className="cart-items-list">
+              {cartItems.map((item, index) => {
                 const localizedItem = localizeProduct(item.product || {}, languageCode);
                 const originalPrice = Number(item.product?.original_price ?? item.product?.price ?? 0);
                 const discountedPrice = Number(item.product?.discounted_price ?? item.product?.price ?? 0);
-                const hasDiscount = Boolean(item.product?.has_discount) || discountedPrice < originalPrice;
+                const hasDiscount =
+                  Boolean(item.product?.has_discount) || discountedPrice < originalPrice;
+                const productName = localizedItem.localized_name || tUi('ui.pages.cart.product_d44e1d3515');
+
                 return (
-                  <>
-                  <h3>
-                    <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
-                      {localizedItem.localized_name || tUi("ui.pages.cart.product_d44e1d3515")}
+                  <motion.article
+                    key={item.id || index}
+                    className="cart-item-card"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.06 }}
+                  >
+                    <Link
+                      to={`/products/${encodeURIComponent(item.product?.name || '')}`}
+                      className="cart-item-thumb"
+                    >
+                      <img
+                        src={
+                          item.product?.images?.length
+                            ? getImageUrl(item.product.images[0])
+                            : getImageUrl('/images/placeholder.jpg')
+                        }
+                        alt={productName}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                        }}
+                      />
                     </Link>
-                  </h3>
-                  <p className="cart-item-price">
-                    {hasDiscount ?
-                      <span className="cart-discount-price-block">
-                        <span className="cart-old-price">
-                          {formatCurrency(originalPrice)}
-                        </span>
-                        <span className="cart-new-price">
-                          {formatCurrency(discountedPrice)}
-                        </span>
-                      </span> :
 
-                      formatCurrency(item.product?.price || 0)
-                      }
-                  </p>
-                      </>);
+                    <div className="cart-item-body">
+                      <div className="cart-item-copy">
+                        <h3 className="cart-item-name">
+                          <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
+                            {productName}
+                          </Link>
+                        </h3>
+                        <p className="cart-item-price">
+                          {hasDiscount ? (
+                            <span className="cart-item-price-discount">
+                              <span className="cart-item-price-old">{formatCurrency(originalPrice)}</span>
+                              <span className="cart-item-price-sale">{formatCurrency(discountedPrice)}</span>
+                            </span>
+                          ) : (
+                            formatCurrency(item.product?.price || 0)
+                          )}
+                        </p>
+                      </div>
 
-              })()}
-                </div>
+                      <div className="cart-item-actions">
+                        <div className="cart-item-quantity">
+                          <span className="cart-item-quantity-label">
+                            {tUi('ui.pages.cart.quantityLabel_a3f8c2d1ee')}
+                          </span>
+                          <div className="cart-quantity-controls">
+                            <button
+                              type="button"
+                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
+                              className="cart-quantity-btn"
+                              disabled={loading || (item.quantity || 1) <= 1}
+                              aria-label={tUi('ui.pages.cart.decreaseQuantity_a3f8c2d1ef')}
+                            >
+                              −
+                            </button>
+                            <span className="cart-quantity-value">{item.quantity || 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
+                              className="cart-quantity-btn"
+                              disabled={loading}
+                              aria-label={tUi('ui.pages.cart.increaseQuantity_a3f8c2d1f0')}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
 
-                <div className="cart-item-quantity">
-                  <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const currentQuantity = item.quantity || 1;
-                  if (currentQuantity > 1) {
-                    handleQuantityChange(item.id, currentQuantity - 1);
-                  }
-                }}
-                className="quantity-btn"
-                disabled={loading || (item.quantity || 1) <= 1}>
-                
-                    -
-                  </button>
-                  <span className="quantity-value">{item.quantity || 1}</span>
-                  <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleQuantityChange(item.id, (item.quantity || 1) + 1);
-                }}
-                className="quantity-btn"
-                disabled={loading}>
-                
-                    +
-                  </button>
-                </div>
+                        <div className="cart-item-line-total">
+                          <span className="cart-item-line-total-label">
+                            {tUi('ui.pages.cart.lineTotal_a3f8c2d1f1')}
+                          </span>
+                          <strong>{formatCurrency(item.total || 0)}</strong>
+                        </div>
 
-                <div className="cart-item-total">
-                  <p className="item-total">
-                    {formatCurrency(item.total || 0)}
-                  </p>
-                </div>
-
-                <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleRemoveItem(item.id);
-              }}
-              className="remove-item-btn"
-              aria-label={tUi("ui.pages.cart.removeItem_0cc61ca1e3")}
-              disabled={loading}>
-              
-                  ├ù
-                </button>
-              </motion.div>
-          )}
-          </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="cart-remove-btn"
+                          aria-label={tUi('ui.pages.cart.removeItem_0cc61ca1e3')}
+                          disabled={loading}
+                        >
+                          <FiTrash2 aria-hidden="true" />
+                          <span>{tUi('ui.pages.cart.removeItem_0cc61ca1e3')}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </div>
+          </section>
 
           <motion.aside
             className="cart-order-summary page-summary-card page-card--static"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.15 }}
             aria-label={tUi('ui.pages.cart.orderSummary_97f6cd5623')}
           >
             <header className="cart-summary-header">
@@ -381,9 +389,9 @@ const Cart = () => {
             </Link>
           </motion.aside>
         </div>
-      }
-    </div>);
-
+      )}
+    </div>
+  );
 };
 
 export default Cart;

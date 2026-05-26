@@ -476,3 +476,56 @@ html[dir='rtl'] .password-toggle {
 .verification-input {
   border-radius: 0.75rem !important;
 }
+
+/* --- Reset password page --- */
+.reset-password-page .auth-reset-panel {
+  max-width: 520px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  overflow: visible;
+}
+
+.reset-password-page .auth-reset-header.page-header {
+  margin-bottom: 0.25rem;
+}
+
+.reset-password-page .auth-reset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.reset-password-page .auth-reset-form .form-group {
+  margin-bottom: 0;
+}
+
+.reset-password-page .auth-reset-form .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.reset-password-page .auth-reset-form input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+.reset-password-page .auth-reset-form .password-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+.reset-password-page .auth-reset-form .password-input-wrapper input {
+  padding: 0.75rem 2.75rem 0.75rem 0.875rem;
+}
+
+html[dir='rtl'] .reset-password-page .auth-reset-form .password-input-wrapper input {
+  padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+}

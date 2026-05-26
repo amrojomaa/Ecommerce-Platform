@@ -176,6 +176,14 @@ const Products = () => {
         return sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
       case 'price-high':
         return sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+      case 'rating':
+        return sorted.sort((a, b) => {
+          const ratingDiff = (Number(b.average_rating) || 0) - (Number(a.average_rating) || 0);
+          if (ratingDiff !== 0) {
+            return ratingDiff;
+          }
+          return a.localized_name.localeCompare(b.localized_name);
+        });
       case 'name':
       default:
         return sorted.sort((a, b) => a.localized_name.localeCompare(b.localized_name));
@@ -483,7 +491,8 @@ const Products = () => {
             <div className="products-sort">
               <label htmlFor="products-sort">{tUi('ui.pages.products.sortBy_9713293ec0')}</label>
               <select id="products-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="name">{tUi('ui.pages.products.name_53f551ed5a')}</option>
+                <option value="name">{tUi('ui.pages.products.sortAlphabetical_b4e8a1c2d3')}</option>
+                <option value="rating">{tUi('ui.pages.products.sortByRating_b4e8a1c2d4')}</option>
                 <option value="price-low">{tUi('ui.pages.products.priceLowToHigh_5592424a7e')}</option>
                 <option value="price-high">{tUi('ui.pages.products.priceHighToLow_63247b2840')}</option>
               </select>

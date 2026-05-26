@@ -1,6 +1,6 @@
 import { tUi } from "../i18n/uiText";
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import http from '../services/http';
@@ -12,8 +12,9 @@ import { useCurrency } from '../hooks/useCurrency';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CommentSection from '../components/CommentSection';
 import StarRating from '../components/StarRating';
-import { FaHeart, FaRegHeart, FaArrowLeft } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaArrowLeft, FaShoppingCart } from 'react-icons/fa';
 import '../styles/pages/ProductDetails.css';
+import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
 import { getImageUrl } from '../utils/helpers';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +38,8 @@ const ProductDetails = () => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [starRatingKey, setStarRatingKey] = useState(0);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
   const viewTrackedRef = useRef(null);
 
   useEffect(() => {
@@ -63,6 +66,35 @@ const ProductDetails = () => {
     viewTrackedRef.current = product.id;
     trackRecommendationEvent({ event_type: 'view', product_id: product.id });
   }, [product, isAuthenticated]);
+
+  useEffect(() => {
+    if (!product?.category_name) {
+      setRelatedProducts([]);
+      return;
+    }
+
+    fetchRelatedProducts(product.category_name, product.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.category_name, product?.name, isAuthenticated, languageCode]);
+
+  const fetchRelatedProducts = async (categoryName, currentProductName) => {
+    setRelatedLoading(true);
+    try {
+      const endpoint = isAuthenticated ? PRODUCT_ENDPOINTS.FILTER_USER : PRODUCT_ENDPOINTS.FILTER;
+      const response = await http.get(endpoint, {
+        params: { category: categoryName },
+      });
+      const items = (response.data || [])
+        .filter((item) => item.name !== currentProductName)
+        .slice(0, 4);
+      setRelatedProducts(items);
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      setRelatedProducts([]);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
 
   const fetchProduct = async () => {
     setLoading(true);
@@ -375,6 +407,106 @@ const ProductDetails = () => {
           }
           </div>
         }
+
+        {(relatedLoading || relatedProducts.length > 0) && (
+          <section className="pd-related-section">
+            <div className="pd-related-header">
+              <span className="page-kicker">{localizedProduct.localized_category_name}</span>
+              <h2 className="pd-related-title">{tUi('ui.pages.productDetails.sameCategoryTitle_b4e8a1c2d5')}</h2>
+              <p className="pd-related-subtitle">{tUi('ui.pages.productDetails.sameCategorySubtitle_b4e8a1c2d6')}</p>
+            </div>
+
+            {relatedLoading ? (
+              <div className="page-loading pd-related-loading">
+                <LoadingSpinner size="large" />
+              </div>
+            ) : (
+              <div className="products-grid pd-related-grid">
+                {relatedProducts.map((relatedProduct, index) => {
+                  const localizedRelated = localizeProduct(relatedProduct, languageCode);
+                  return (
+                    <motion.div
+                      key={relatedProduct.name}
+                      className="products-card-wrapper"
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.05, duration: 0.4 }}
+                      whileHover={{ y: -5 }}
+                    >
+                      <Link to={`/products/${encodeURIComponent(relatedProduct.name)}`} className="products-card">
+                        <div className="products-card-media">
+                          <span className="products-card-media-category">{localizedRelated.localized_category_name}</span>
+                          <img
+                            src={
+                              relatedProduct.images?.length
+                                ? getImageUrl(relatedProduct.images[0])
+                                : getImageUrl('/images/placeholder.jpg')
+                            }
+                            alt={localizedRelated.localized_name}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                            }}
+                          />
+                        </div>
+                        <div className="products-card-body">
+                          <h3 className="products-card-title">{localizedRelated.localized_name}</h3>
+                          {relatedProduct.id && (
+                            <div className="products-card-rating">
+                              <StarRating
+                                productId={relatedProduct.id}
+                                showLabel={false}
+                                interactive={false}
+                                size="small"
+                                initialAverageRating={relatedProduct.average_rating}
+                                initialTotalRatings={relatedProduct.total_ratings}
+                                fetchOnMount={!Number.isFinite(Number(relatedProduct.average_rating))}
+                              />
+                            </div>
+                          )}
+                          <div className="products-card-footer">
+                            <div className="products-card-pricing">
+                              {relatedProduct.discount_enabled ? (
+                                <>
+                                  <span className="products-card-price products-card-price-sale">
+                                    {formatCurrency(relatedProduct.discounted_price ?? relatedProduct.price)}
+                                  </span>
+                                  <span className="products-card-price-before">{formatCurrency(relatedProduct.price)}</span>
+                                </>
+                              ) : (
+                                <span className="products-card-price">{formatCurrency(relatedProduct.price)}</span>
+                              )}
+                            </div>
+                            {isAuthenticated && (
+                              <button
+                                type="button"
+                                className="products-card-cart-btn"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const result = await addToCart(relatedProduct.name, 1);
+                                  if (result.success) {
+                                    toast.success(tUi('ui.pages.products.productAddedToCart_577eece582'));
+                                  } else {
+                                    toast.error(result.error || tUi('ui.pages.productDetails.failedToAddToCart_b4e8a1c2d7'));
+                                  }
+                                }}
+                                title={tUi('ui.pages.products.addToCart_0ebb524946')}
+                              >
+                                <FaShoppingCart />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
       </motion.div>
     </div>);
 

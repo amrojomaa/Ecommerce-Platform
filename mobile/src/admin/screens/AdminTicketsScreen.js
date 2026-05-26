@@ -30,6 +30,30 @@ const AdminTicketsScreen = () => {
   const [assignModalTicket, setAssignModalTicket] = useState(null);
   const [selectedAgentId, setSelectedAgentId] = useState('');
 
+  const selectedResponses = useMemo(() => {
+    if (!selectedTicket?.responses) return [];
+    return selectedTicket.responses.filter((response) => !response.is_chat);
+  }, [selectedTicket]);
+
+  const getResponseAuthor = (response) => {
+    const user = response?.user;
+    if (!user) return 'Unknown';
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    return name || user.email || 'Unknown';
+  };
+
+  const fetchTicketDetails = useCallback(async (ticketId) => {
+    try {
+      const response = await http.get(buildUrl(TICKET_ENDPOINTS.BY_ID, { ticket_id: ticketId }));
+      if (response.data?.id) {
+        setSelectedTicket(response.data);
+        setTickets((prev) =>
+          prev.map((ticket) => (ticket.id === response.data.id ? response.data : ticket))
+        );
+      }
+    } catch (_) {}
+  }, []);
+
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
@@ -89,6 +113,7 @@ const AdminTicketsScreen = () => {
 
   const handleUpdateStatus = async (ticketId, status) => {
     await http.patch(buildUrl(TICKET_ENDPOINTS.UPDATE_STATUS, { ticket_id: ticketId }), { status });
+    setSelectedTicket((prev) => (prev && prev.id === ticketId ? { ...prev, status } : prev));
     fetchTickets();
   };
 
@@ -98,7 +123,16 @@ const AdminTicketsScreen = () => {
       message: responseMessage.trim(),
     });
     setResponseMessage('');
+    fetchTicketDetails(ticketId);
   };
+
+  const handleSelectTicket = useCallback(
+    (ticket) => {
+      setSelectedTicket(ticket);
+      fetchTicketDetails(ticket.id);
+    },
+    [fetchTicketDetails]
+  );
 
   const handleDelete = async (ticketId) => {
     const ok = await confirmAction('Delete ticket', 'Delete this ticket?');
@@ -212,7 +246,7 @@ const AdminTicketsScreen = () => {
               )}`}
               status={ticket.status}
               statusTone={ticket.status === 'Resolved' ? 'success' : 'warning'}
-              onPress={() => setSelectedTicket(ticket)}
+              onPress={() => handleSelectTicket(ticket)}
               right={
                 <Pressable onPress={() => setAssignModalTicket(ticket)}>
                   <Text style={styles.inlineButton}>Assign</Text>
@@ -244,6 +278,24 @@ const AdminTicketsScreen = () => {
                 <Text style={styles.statusChipText}>{status}</Text>
               </Pressable>
             ))}
+          </View>
+          <View style={styles.responsesSection}>
+            <Text style={styles.responsesTitle}>
+              {`Responses (${selectedResponses.length})`}
+            </Text>
+            {selectedResponses.length ? (
+              selectedResponses.map((response) => (
+                <View key={response.id} style={styles.responseItem}>
+                  <View style={styles.responseHeader}>
+                    <Text style={styles.responseAuthor}>{getResponseAuthor(response)}</Text>
+                    <Text style={styles.responseDate}>{formatDateTime(response.created_at)}</Text>
+                  </View>
+                  <Text style={styles.responseMessage}>{response.message}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.responsesEmpty}>No responses yet.</Text>
+            )}
           </View>
           <TextInput
             style={styles.responseInput}
@@ -409,6 +461,48 @@ const styles = StyleSheet.create({
   statusChipText: {
     fontSize: 12,
     color: colors.text,
+  },
+  responsesSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  responsesTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  responseItem: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  responseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  responseAuthor: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  responseDate: {
+    fontSize: 11,
+    color: colors.muted,
+  },
+  responseMessage: {
+    fontSize: 12,
+    color: colors.text,
+  },
+  responsesEmpty: {
+    marginTop: 8,
+    fontSize: 12,
+    color: colors.muted,
   },
   responseInput: {
     marginTop: 12,

@@ -66,6 +66,7 @@ const Navbar = () => {
   const warehouseManagerHomePath = '/warehouse';
   const adminHomePath = '/admin';
   const driverHomePath = '/driver';
+  const driverNavDashboardLabel = t('navbar.driverDashboard');
   const cashierHomePath = '/cashier';
   const supportAgentHomePath = '/support-agent';
   const supportManagerHomePath = '/support';
@@ -350,7 +351,7 @@ const Navbar = () => {
               }
               {(isDriverArea || (user?.role === 'driver' && !isDriverArea)) &&
               <Link to={driverHomePath} className="navbar-link admin-link">
-                  <span>{t("navbar.driver")} Dashboard</span>
+                  <span>{driverNavDashboardLabel}</span>
                 </Link>
               }
               {(isSupportAgentArea || (user?.role === 'support_agent' && !isSupportAgentArea)) &&
@@ -556,7 +557,7 @@ const Navbar = () => {
               }
               {isDriverArea &&
               <Link to={driverHomePath} onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.driver")}
+                  {driverNavDashboardLabel}
                 </Link>
               }
               {isSupportAgentArea &&

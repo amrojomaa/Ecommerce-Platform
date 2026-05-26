@@ -98,6 +98,11 @@ const DriverMap = () => {
   }
 
   const mapJobsTitle = tUi('ui.pages.driver.driverMap.findDeliveryJobs_cfe3d4c660');
+  const orderColumnLabel = tUi('ui.pages.driver.driverMap.order_78ea594e7c').replace('#', '').trim();
+  const pickupColumnLabel = tUi('ui.pages.driver.driverMap.pickup_d73f705138');
+  const deliveryColumnLabel = tUi('ui.pages.driver.driverMap.delivery_08ebebf690');
+  const customerColumnLabel = tUi('ui.pages.driver.driverMap.customer_d9db49ed61').replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  const statusColumnLabel = t('ui.pages.driver.list.status');
 
   return (
     <div className="admin-page-shell adm-page drv-page drv-del-page drv-map-page">
@@ -127,19 +132,19 @@ const DriverMap = () => {
                     {t('ui.pages.driver.list.jobId')}
                   </th>
                   <th className="drv-del-col-order" scope="col">
-                    {tUi('ui.pages.driver.driverMap.order_78ea594e7c').replace('#', '').trim() || 'Order'}
+                    {orderColumnLabel}
                   </th>
                   <th className="drv-del-col-status" scope="col">
-                    {t('ui.pages.driver.list.status')}
+                    {statusColumnLabel}
                   </th>
                   <th className="drv-del-col-address" scope="col">
-                    {tUi('ui.pages.driver.driverMap.pickup_d73f705138')}
+                    {pickupColumnLabel}
                   </th>
                   <th className="drv-del-col-address" scope="col">
-                    {tUi('ui.pages.driver.driverMap.delivery_08ebebf690')}
+                    {deliveryColumnLabel}
                   </th>
                   <th className="drv-del-col-customer" scope="col">
-                    {tUi('ui.pages.driver.driverMap.customer_d9db49ed61')}
+                    {customerColumnLabel}
                   </th>
                 </tr>
               </thead>
@@ -162,21 +167,21 @@ const DriverMap = () => {
                         <td className="drv-del-col-id drv-del-id" data-label={t('ui.pages.driver.list.jobId')}>
                           #{job.id}
                         </td>
-                        <td className="drv-del-col-order" data-label="Order">
+                        <td className="drv-del-col-order" data-label={orderColumnLabel}>
                           #{job.order_id}
                         </td>
-                        <td className="drv-del-col-status" data-label={t('ui.pages.driver.list.status')}>
+                        <td className="drv-del-col-status" data-label={statusColumnLabel}>
                           <span className={getDeliveryStatusClass(job.status)}>
                             {getDeliveryStatusLabel(job.status, t)}
                           </span>
                         </td>
-                        <td className="drv-del-col-address" data-label="Pickup">
+                        <td className="drv-del-col-address" data-label={pickupColumnLabel}>
                           {job.pickup_address || tUi('ui.pages.driver.driverMap.nA_de3570823c')}
                         </td>
-                        <td className="drv-del-col-address" data-label="Delivery">
+                        <td className="drv-del-col-address" data-label={deliveryColumnLabel}>
                           {job.delivery_address || tUi('ui.pages.driver.driverMap.nA_de3570823c')}
                         </td>
-                        <td className="drv-del-col-customer" data-label="Customer">
+                        <td className="drv-del-col-customer" data-label={customerColumnLabel}>
                           {customerName || <span className="drv-del-muted">{tUi('ui.pages.driver.driverMap.nA_de3570823c')}</span>}
                         </td>
                       </motion.tr>

@@ -1,4 +1,5 @@
 export const DELIVERY_STATUS_LABEL_KEYS = {
+  available: 'ui.pages.driver.status.available',
   assigned: 'ui.pages.driver.status.assigned',
   picked_up: 'ui.pages.driver.status.pickedUp',
   delivering: 'ui.pages.driver.status.delivering',

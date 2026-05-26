@@ -5,11 +5,14 @@ import { motion } from 'framer-motion';
 import { FaXmark } from 'react-icons/fa6';
 import {
   FiAlertTriangle,
+  FiCamera,
   FiCheck,
   FiMapPin,
   FiMessageCircle,
   FiPackage,
+  FiTrash2,
   FiTruck,
+  FiUploadCloud,
   FiUser,
 } from 'react-icons/fi';
 import { tUi } from '../../i18n/uiText';
@@ -20,6 +23,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import DeliveryChatModal from '../../components/DeliveryChatModal';
 import OrderMapTracker from '../../components/OrderMapTracker';
+import { useConfirm } from '../../hooks/useConfirm';
 import { formatDateTime, getImageUrl } from '../../utils/helpers';
 import {
   getDeliveryStatusClass,
@@ -39,14 +43,9 @@ const ISSUE_TYPES = [
 
 const STATUS_STEP_KEYS = ['assigned', 'picked_up', 'delivering', 'delivered'];
 
-const getPhotoPillClass = (photoCount, checked) => {
-  if (photoCount === 0) return 'waiting';
-  if (checked) return 'approved';
-  return 'pending';
-};
-
 const DriverActiveJob = () => {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const panelKicker = t('ui.sidebar.panel.driver');
   const [jobs, setJobs] = useState([]);
   const [expandedJobId, setExpandedJobId] = useState(null);
@@ -63,6 +62,7 @@ const DriverActiveJob = () => {
   const [deliveryPhotoFile, setDeliveryPhotoFile] = useState(null);
   const [deliveryPhotoPreview, setDeliveryPhotoPreview] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deletingPhotoType, setDeletingPhotoType] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [issueMessages, setIssueMessages] = useState([]);
   const [issueMessageText, setIssueMessageText] = useState('');
@@ -228,7 +228,11 @@ const DriverActiveJob = () => {
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-      toast.success(`${type === 'pickup' ? 'Pickup' : 'Delivery'} photo uploaded!`);
+      toast.success(
+        type === 'pickup'
+          ? tUi('ui.pages.driver.driverActiveJob.pickupPhotoUploaded_a3f8c2d901')
+          : tUi('ui.pages.driver.driverActiveJob.deliveryPhotoUploaded_b4e9d3e012')
+      );
       if (type === 'pickup') {
         setPickupPhotoFile(null);
       } else {
@@ -236,9 +240,48 @@ const DriverActiveJob = () => {
       }
       fetchActiveJobs();
     } catch (error) {
-      toast.error(error.message || 'Failed to upload photo');
+      toast.error(error?.response?.data?.detail || error.message || 'Failed to upload photo');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const clearPhotoSelection = (type) => {
+    if (type === 'pickup') {
+      setPickupPhotoFile(null);
+      return;
+    }
+    setDeliveryPhotoFile(null);
+  };
+
+  const handlePhotoDelete = async (type) => {
+    if (!activeJob) return;
+
+    const proofLabel =
+      type === 'pickup'
+        ? tUi('ui.pages.driver.driverActiveJob.pickupProof_d91ee33534')
+        : tUi('ui.pages.driver.driverActiveJob.deliveryProof_554ad921e3');
+
+    const confirmed = await confirm({
+      title: tUi('ui.pages.driver.driverActiveJob.deletePhotoTitle_c8a1f3e902'),
+      message: tUi('ui.pages.driver.driverActiveJob.deletePhotoMessage_d9b2e4f103', { value0: proofLabel }),
+      confirmText: tUi('ui.pages.driver.driverActiveJob.deletePhoto_c7d8e9f012'),
+      cancelText: tUi('ui.pages.driver.driverActiveJob.cancelPhotoDelete_e5f6a7b890'),
+    });
+    if (!confirmed) return;
+
+    setDeletingPhotoType(type);
+    try {
+      await http.delete(
+        buildUrl(DELIVERY_ENDPOINTS.DELETE_PHOTO, { job_id: activeJob.id }) + `?photo_type=${type}`
+      );
+      toast.success(tUi('ui.pages.driver.driverActiveJob.photoDeleted_e1f2a3b456'));
+      clearPhotoSelection(type);
+      fetchActiveJobs();
+    } catch (error) {
+      toast.error(error?.response?.data?.detail || error.message || 'Failed to delete photo');
+    } finally {
+      setDeletingPhotoType(null);
     }
   };
 
@@ -344,9 +387,135 @@ const DriverActiveJob = () => {
       deliveryChecked;
     const canUploadDeliveryProof = job.status === 'picked_up' || job.status === 'delivering';
 
+    const renderProofSlot = ({
+      type,
+      titleKey,
+      Icon,
+      photos,
+      checked,
+      pendingPreview,
+      canUpload,
+      lockedMessageKey,
+    }) => {
+      const uploadedPhoto = photos[0] || null;
+      const status = photos.length === 0 ? 'waiting' : checked ? 'approved' : 'pending';
+      const canDelete = Boolean(uploadedPhoto) && !checked;
+      const isDeleting = deletingPhotoType === type;
+      const statusLabel =
+        status === 'waiting'
+          ? tUi('ui.pages.driver.driverActiveJob.noPhotoYet_3c57d3e62c')
+          : status === 'approved'
+            ? tUi('ui.pages.driver.driverActiveJob.markedOk_ed9c22f906')
+            : tUi('ui.pages.driver.driverActiveJob.pendingAdminCheck_370751e858');
+      const inputId = `drv-proof-input-${type}-${job.id}`;
+
+      return (
+        <div className={`drv-proof-slot drv-proof-slot--${type} drv-proof-slot--${status}`}>
+          <div className="drv-proof-slot-header">
+            <div className="drv-proof-slot-title">
+              <span className="drv-proof-slot-icon" aria-hidden>
+                <Icon />
+              </span>
+              <h4>{tUi(titleKey)}</h4>
+            </div>
+            <span className={`drv-proof-status drv-proof-status--${status}`}>{statusLabel}</span>
+          </div>
+
+          {uploadedPhoto ? (
+            <div className="drv-proof-uploaded">
+              <div className="drv-proof-image-frame">
+                <img
+                  src={getImageUrl(uploadedPhoto.image_path)}
+                  alt={tUi(titleKey)}
+                  className="drv-proof-uploaded-img"
+                />
+              </div>
+              {canDelete && (
+                <div className="drv-proof-uploaded-actions">
+                  <button
+                    type="button"
+                    className="drv-proof-delete-btn"
+                    onClick={() => handlePhotoDelete(type)}
+                    disabled={isDeleting}
+                  >
+                    <FiTrash2 aria-hidden />
+                    {isDeleting
+                      ? tUi('ui.pages.driver.driverActiveJob.deletingPhoto_f6a7b8c901')
+                      : tUi('ui.pages.driver.driverActiveJob.deletePhoto_c7d8e9f012')}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : pendingPreview ? (
+            <div className="drv-proof-staging">
+              <div className="drv-proof-image-frame">
+                <img src={pendingPreview} alt={tUi(titleKey)} className="drv-proof-staging-img" />
+              </div>
+              <div className="drv-proof-staging-actions">
+                <button
+                  type="button"
+                  className="drv-btn-secondary"
+                  onClick={() => clearPhotoSelection(type)}
+                  disabled={uploading}
+                >
+                  {tUi('ui.pages.driver.driverActiveJob.cancelPhotoDelete_e5f6a7b890')}
+                </button>
+                <button
+                  type="button"
+                  className="drv-btn-primary"
+                  onClick={() => handlePhotoUpload(type)}
+                  disabled={uploading}
+                >
+                  <FiUploadCloud aria-hidden />
+                  {uploading
+                    ? tUi('ui.pages.driver.driverActiveJob.uploadingPhoto_g7h8i9j012')
+                    : tUi('ui.pages.driver.driverActiveJob.confirmUpload_h8i9j0k123')}
+                </button>
+              </div>
+            </div>
+          ) : canUpload ? (
+            <label htmlFor={inputId} className="drv-proof-upload-zone">
+              <FiCamera aria-hidden />
+              <span className="drv-proof-upload-zone-title">
+                {tUi('ui.pages.driver.driverActiveJob.choosePhoto_i9j0k1l234')}
+              </span>
+              <span className="drv-proof-upload-zone-hint">
+                {tUi('ui.pages.driver.driverActiveJob.choosePhotoHint_j0k1l2m345')}
+              </span>
+              <input
+                id={inputId}
+                type="file"
+                accept="image/*"
+                className="drv-proof-input-hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (type === 'pickup') {
+                    setPickupPhotoFile(file);
+                  } else {
+                    setDeliveryPhotoFile(file);
+                  }
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          ) : (
+            <div className="drv-proof-upload-zone drv-proof-upload-zone--locked">
+              <FiCamera aria-hidden />
+              <span className="drv-proof-upload-zone-title">
+                {tUi('ui.pages.driver.driverActiveJob.uploadLocked_k1l2m3n456')}
+              </span>
+              <span className="drv-proof-upload-zone-hint">
+                {tUi(lockedMessageKey)}
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    };
+
     return (
       <div className="drv-del-job-detail" onClick={(e) => e.stopPropagation()} role="region">
-        <header className="drv-del-job-header">
+        <header className="drv-del-job-header drv-del-job-header--with-stepper">
           <div className="drv-del-job-header-copy">
             <p className="drv-del-job-kicker">{t('ui.pages.driver.list.jobDetails', { id: job.id })}</p>
             <h3 className="drv-del-job-title">
@@ -354,7 +523,41 @@ const DriverActiveJob = () => {
               {job.order_id}
             </h3>
           </div>
+          <div className="drv-active-stepper drv-active-stepper--header" aria-label={t('ui.pages.driver.list.status')}>
+            {statusSteps.map((step, idx) => (
+              <div
+                key={step.key}
+                className={`drv-active-step ${step.completed ? 'completed' : ''} ${step.current ? 'current' : ''}`}
+              >
+                <div className="drv-active-step-circle">
+                  {step.completed ? <FiCheck aria-hidden /> : idx + 1}
+                </div>
+                <span className="drv-active-step-label">{step.label}</span>
+                {idx < statusSteps.length - 1 && <div className="drv-active-step-connector" />}
+              </div>
+            ))}
+          </div>
           <div className="drv-del-job-header-actions">
+            <div className="drv-del-job-tabs drv-del-job-tabs--header" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={expandedJobTab === 'overview'}
+                className={expandedJobTab === 'overview' ? 'is-active' : ''}
+                onClick={() => setExpandedJobTab('overview')}
+              >
+                {t('ui.pages.driver.list.tabManage')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={expandedJobTab === 'map'}
+                className={expandedJobTab === 'map' ? 'is-active' : ''}
+                onClick={() => setExpandedJobTab('map')}
+              >
+                {t('ui.pages.driver.list.tabMap')}
+              </button>
+            </div>
             <span className={getDeliveryStatusClass(job.status)}>
               {getDeliveryStatusLabel(job.status, t)}
             </span>
@@ -369,182 +572,87 @@ const DriverActiveJob = () => {
           </div>
         </header>
 
-        <div className="drv-del-job-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={expandedJobTab === 'overview'}
-            className={expandedJobTab === 'overview' ? 'is-active' : ''}
-            onClick={() => setExpandedJobTab('overview')}
-          >
-            {t('ui.pages.driver.list.tabManage')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={expandedJobTab === 'map'}
-            className={expandedJobTab === 'map' ? 'is-active' : ''}
-            onClick={() => setExpandedJobTab('map')}
-          >
-            {t('ui.pages.driver.list.tabMap')}
-          </button>
-        </div>
-
         {expandedJobTab === 'map' ? (
           <div className="drv-del-job-tab-panel drv-del-map-section">
             <OrderMapTracker deliveryJob={job} />
           </div>
         ) : (
           <div className="drv-del-job-tab-panel">
-            <div className="drv-active-stepper">
-              {statusSteps.map((step, idx) => (
-                <div
-                  key={step.key}
-                  className={`drv-active-step ${step.completed ? 'completed' : ''} ${step.current ? 'current' : ''}`}
-                >
-                  <div className="drv-active-step-circle">
-                    {step.completed ? <FiCheck aria-hidden /> : idx + 1}
-                  </div>
-                  <span className="drv-active-step-label">{step.label}</span>
-                  {idx < statusSteps.length - 1 && <div className="drv-active-step-connector" />}
-                </div>
-              ))}
-            </div>
-
             <aside className="drv-active-sidebar drv-active-sidebar--expanded">
-              <div className="drv-active-card drv-active-route">
-                <h3>
-                  {tUi('ui.pages.driver.driverActiveJob.order_4b245b25fc')}
-                  {job.order_id}
-                </h3>
-                <div className="drv-active-route-point drv-active-route-point--pickup">
-                  <FiPackage className="drv-active-route-icon" aria-hidden />
-                  <div>
-                    <span className="drv-active-route-label">
-                      {tUi('ui.pages.driver.driverActiveJob.pickup_8822545cf7')}
-                    </span>
-                    <p>{job.pickup_address || tUi('ui.pages.driver.driverActiveJob.nA_db8e99dc32')}</p>
-                  </div>
-                </div>
-                <div className="drv-active-route-line" />
-                <div className="drv-active-route-point drv-active-route-point--delivery">
-                  <FiMapPin className="drv-active-route-icon" aria-hidden />
-                  <div>
-                    <span className="drv-active-route-label">
-                      {tUi('ui.pages.driver.driverActiveJob.delivery_6992613df3')}
-                    </span>
-                    <p>{job.delivery_address || tUi('ui.pages.driver.driverActiveJob.nA_db8e99dc32')}</p>
-                    {job.customer && (
-                      <p className="drv-active-customer">
-                        <FiUser aria-hidden />
-                        {job.customer.first_name} {job.customer.last_name}
-                        {job.customer.phone &&
-                          tUi('ui.pages.driver.driverActiveJob.value_0fb34ea1e8', {
-                            value0: job.customer.phone,
-                          })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {job.items?.length > 0 && (
-                  <div className="drv-active-route-items">
-                    <span className="drv-active-route-items-label">
-                      {tUi('ui.pages.driver.driverActiveJob.items_34f553ea91')}
-                    </span>
-                    <div className="drv-active-tags">
-                      {job.items.map((item, idx) => (
-                        <span key={idx} className="drv-tag">
-                          {item.product?.name} x{item.quantity}
-                        </span>
-                      ))}
+              <div className="drv-active-order-proof-grid">
+                <div className="drv-active-card drv-active-route">
+                  <h3>
+                    {tUi('ui.pages.driver.driverActiveJob.order_4b245b25fc')}
+                    {job.order_id}
+                  </h3>
+                  <div className="drv-active-route-point drv-active-route-point--pickup">
+                    <FiPackage className="drv-active-route-icon" aria-hidden />
+                    <div>
+                      <span className="drv-active-route-label">
+                        {tUi('ui.pages.driver.driverActiveJob.pickup_8822545cf7')}
+                      </span>
+                      <p>{job.pickup_address || tUi('ui.pages.driver.driverActiveJob.nA_db8e99dc32')}</p>
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="drv-active-route-line" />
+                  <div className="drv-active-route-point drv-active-route-point--delivery">
+                    <FiMapPin className="drv-active-route-icon" aria-hidden />
+                    <div>
+                      <span className="drv-active-route-label">
+                        {tUi('ui.pages.driver.driverActiveJob.delivery_6992613df3')}
+                      </span>
+                      <p>{job.delivery_address || tUi('ui.pages.driver.driverActiveJob.nA_db8e99dc32')}</p>
+                      {job.customer && (
+                        <p className="drv-active-customer">
+                          <FiUser aria-hidden />
+                          {job.customer.first_name} {job.customer.last_name}
+                          {job.customer.phone &&
+                            tUi('ui.pages.driver.driverActiveJob.value_0fb34ea1e8', {
+                              value0: job.customer.phone,
+                            })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {job.items?.length > 0 && (
+                    <div className="drv-active-route-items">
+                      <span className="drv-active-route-items-label">
+                        {tUi('ui.pages.driver.driverActiveJob.items_34f553ea91')}
+                      </span>
+                      <div className="drv-active-tags">
+                        {job.items.map((item, idx) => (
+                          <span key={idx} className="drv-tag">
+                            {item.product?.name} x{item.quantity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-              <div className="drv-active-card drv-active-proof">
-                <h3>{tUi('ui.pages.driver.driverActiveJob.uploadPhoto_b55433437d')}</h3>
-                <div className="drv-photo-pills">
-                  <div className={`drv-photo-pill drv-photo-pill--${getPhotoPillClass(pickupPhotos.length, pickupChecked)}`}>
-                    {tUi('ui.pages.driver.driverActiveJob.pickup_3633344126')}
-                    {pickupPhotos.length === 0
-                      ? tUi('ui.pages.driver.driverActiveJob.noPhotoYet_3c57d3e62c')
-                      : pickupChecked
-                        ? tUi('ui.pages.driver.driverActiveJob.markedOk_ed9c22f906')
-                        : tUi('ui.pages.driver.driverActiveJob.pendingAdminCheck_370751e858')}
+                <div className="drv-active-card drv-active-proof">
+                  <div className="drv-proof-slots">
+                    {renderProofSlot({
+                      type: 'pickup',
+                      titleKey: 'ui.pages.driver.driverActiveJob.pickupProof_d91ee33534',
+                      Icon: FiPackage,
+                      photos: pickupPhotos,
+                      checked: pickupChecked,
+                      pendingPreview: pickupPhotoPreview,
+                      canUpload: pickupPhotos.length === 0,
+                      lockedMessageKey: 'ui.pages.driver.driverActiveJob.pickupAlreadyUploaded_71dfe59cdc',
+                    })}
+                    {renderProofSlot({
+                      type: 'delivery',
+                      titleKey: 'ui.pages.driver.driverActiveJob.deliveryProof_554ad921e3',
+                      Icon: FiMapPin,
+                      photos: deliveryPhotos,
+                      checked: deliveryChecked,
+                      pendingPreview: deliveryPhotoPreview,
+                      canUpload: deliveryPhotos.length === 0 && canUploadDeliveryProof,
+                      lockedMessageKey: 'ui.pages.driver.driverActiveJob.finishPickupFirst_40d56dd056',
+                    })}
                   </div>
-                  <div className={`drv-photo-pill drv-photo-pill--${getPhotoPillClass(deliveryPhotos.length, deliveryChecked)}`}>
-                    {tUi('ui.pages.driver.driverActiveJob.delivery_e16a033b49')}
-                    {deliveryPhotos.length === 0
-                      ? tUi('ui.pages.driver.driverActiveJob.noPhotoYet_3c57d3e62c')
-                      : deliveryChecked
-                        ? tUi('ui.pages.driver.driverActiveJob.markedOk_ed9c22f906')
-                        : tUi('ui.pages.driver.driverActiveJob.pendingAdminCheck_370751e858')}
-                  </div>
-                </div>
-                <div className="drv-proof-block">
-                  <h4>{tUi('ui.pages.driver.driverActiveJob.pickupProof_d91ee33534')}</h4>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setPickupPhotoFile(e.target.files?.[0] || null)}
-                    className="drv-proof-input"
-                    disabled={pickupPhotos.length > 0}
-                  />
-                  {pickupPhotoPreview && (
-                    <div className="drv-proof-preview">
-                      <img src={pickupPhotoPreview} alt={tUi('ui.pages.driver.driverActiveJob.pickupSelectedUpload_de7d5a40fa')} />
-                    </div>
-                  )}
-                  {pickupPhotoFile && (
-                    <div className="drv-proof-actions">
-                      <button
-                        type="button"
-                        onClick={() => handlePhotoUpload('pickup')}
-                        disabled={uploading || pickupPhotos.length > 0}
-                        className="drv-btn-secondary"
-                      >
-                        {pickupPhotos.length > 0
-                          ? tUi('ui.pages.driver.driverActiveJob.pickupAlreadyUploaded_71dfe59cdc')
-                          : uploading
-                            ? '...'
-                            : tUi('ui.pages.driver.driverActiveJob.uploadPickupProof_bef4425b25')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <div className="drv-proof-block">
-                  <h4>{tUi('ui.pages.driver.driverActiveJob.deliveryProof_554ad921e3')}</h4>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setDeliveryPhotoFile(e.target.files?.[0] || null)}
-                    className="drv-proof-input"
-                    disabled={deliveryPhotos.length > 0 || !canUploadDeliveryProof}
-                  />
-                  {deliveryPhotoPreview && (
-                    <div className="drv-proof-preview">
-                      <img src={deliveryPhotoPreview} alt={tUi('ui.pages.driver.driverActiveJob.deliverySelectedUpload_4fd02d557d')} />
-                    </div>
-                  )}
-                  {deliveryPhotoFile && (
-                    <div className="drv-proof-actions">
-                      <button
-                        type="button"
-                        onClick={() => handlePhotoUpload('delivery')}
-                        disabled={uploading || deliveryPhotos.length > 0 || !canUploadDeliveryProof}
-                        className="drv-btn-secondary"
-                      >
-                        {!canUploadDeliveryProof
-                          ? tUi('ui.pages.driver.driverActiveJob.finishPickupFirst_40d56dd056')
-                          : deliveryPhotos.length > 0
-                            ? tUi('ui.pages.driver.driverActiveJob.deliveryAlreadyUploaded_4286214dd6')
-                            : uploading
-                              ? '...'
-                              : tUi('ui.pages.driver.driverActiveJob.uploadDeliveryProof_87ad06b40c')}
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -620,29 +728,63 @@ const DriverActiveJob = () => {
               )}
 
               <div className="drv-active-actions">
-                <button type="button" onClick={() => setShowChat(true)} className="drv-btn-success">
-                  <FiMessageCircle aria-hidden />
-                  {tUi('ui.pages.driver.driverActiveJob.chatWithCustomer_f2dc21eb4f')}
+                <button
+                  type="button"
+                  onClick={() => setShowChat(true)}
+                  className="drv-active-action-btn drv-active-action-btn--chat"
+                >
+                  <span className="drv-active-action-icon" aria-hidden>
+                    <FiMessageCircle />
+                  </span>
+                  <span className="drv-active-action-label">
+                    {tUi('ui.pages.driver.driverActiveJob.chatWithCustomer_f2dc21eb4f')}
+                  </span>
                 </button>
                 {job.status === 'assigned' && (
-                  <button type="button" onClick={handlePickup} disabled={updating || !canMarkPickup} className="drv-btn-primary">
-                    <FiPackage aria-hidden />
-                    {updating
-                      ? tUi('ui.pages.driver.driverActiveJob.updating_aef6cc41f2')
-                      : tUi('ui.pages.driver.driverActiveJob.markAsPickedUp_a0c8f3df13')}
+                  <button
+                    type="button"
+                    onClick={handlePickup}
+                    disabled={updating || !canMarkPickup}
+                    className={`drv-active-action-btn drv-active-action-btn--pickup${canMarkPickup && !updating ? ' is-emphasis' : ''}`}
+                  >
+                    <span className="drv-active-action-icon" aria-hidden>
+                      <FiPackage />
+                    </span>
+                    <span className="drv-active-action-label">
+                      {updating
+                        ? tUi('ui.pages.driver.driverActiveJob.updating_aef6cc41f2')
+                        : tUi('ui.pages.driver.driverActiveJob.markAsPickedUp_a0c8f3df13')}
+                    </span>
                   </button>
                 )}
                 {(job.status === 'picked_up' || job.status === 'delivering') && (
-                  <button type="button" onClick={handleDeliver} disabled={updating || !canMarkDelivered} className="drv-btn-success">
-                    <FiTruck aria-hidden />
-                    {updating
-                      ? tUi('ui.pages.driver.driverActiveJob.updating_aef6cc41f2')
-                      : tUi('ui.pages.driver.driverActiveJob.markAsDelivered_0559504313')}
+                  <button
+                    type="button"
+                    onClick={handleDeliver}
+                    disabled={updating || !canMarkDelivered}
+                    className={`drv-active-action-btn drv-active-action-btn--deliver${canMarkDelivered && !updating ? ' is-emphasis' : ''}`}
+                  >
+                    <span className="drv-active-action-icon" aria-hidden>
+                      <FiTruck />
+                    </span>
+                    <span className="drv-active-action-label">
+                      {updating
+                        ? tUi('ui.pages.driver.driverActiveJob.updating_aef6cc41f2')
+                        : tUi('ui.pages.driver.driverActiveJob.markAsDelivered_0559504313')}
+                    </span>
                   </button>
                 )}
-                <button type="button" onClick={() => setShowIssueModal(true)} className="drv-btn-danger">
-                  <FiAlertTriangle aria-hidden />
-                  {tUi('ui.pages.driver.driverActiveJob.reportIssue_fc5eeeabe9')}
+                <button
+                  type="button"
+                  onClick={() => setShowIssueModal(true)}
+                  className="drv-active-action-btn drv-active-action-btn--issue"
+                >
+                  <span className="drv-active-action-icon" aria-hidden>
+                    <FiAlertTriangle />
+                  </span>
+                  <span className="drv-active-action-label">
+                    {tUi('ui.pages.driver.driverActiveJob.reportIssue_fc5eeeabe9')}
+                  </span>
                 </button>
               </div>
             </aside>

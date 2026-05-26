@@ -195,6 +195,26 @@
   flex-wrap: wrap;
 }
 
+.drv-del-job-header--with-stepper {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem 1.25rem;
+}
+
+.drv-del-job-header--with-stepper .drv-del-job-header-copy {
+  flex-shrink: 0;
+}
+
+.drv-del-job-header--with-stepper .drv-del-job-header-actions {
+  justify-self: end;
+  justify-content: flex-end;
+}
+
+.drv-del-job-tabs--header {
+  flex-shrink: 0;
+}
+
 .drv-del-close-btn {
   display: inline-flex;
   align-items: center;
@@ -329,6 +349,29 @@
   color: #16a34a;
 }
 
+@media (max-width: 1024px) {
+  .drv-del-job-header--with-stepper {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'copy actions'
+      'stepper stepper';
+  }
+
+  .drv-del-job-header--with-stepper .drv-del-job-header-copy {
+    grid-area: copy;
+  }
+
+  .drv-del-job-header--with-stepper .drv-active-stepper--header {
+    grid-area: stepper;
+    justify-self: stretch;
+    justify-content: center;
+  }
+
+  .drv-del-job-header--with-stepper .drv-del-job-header-actions {
+    grid-area: actions;
+  }
+}
+
 @media (max-width: 768px) {
   .drv-del-table {
     min-width: 36rem;
@@ -339,14 +382,18 @@
     padding: 1rem;
   }
 
-  .drv-del-job-tabs {
-    width: 100%;
+  .drv-del-job-header--with-stepper .drv-active-stepper--header {
+    justify-content: flex-start;
     border-radius: 1rem;
   }
 
-  .drv-del-job-tabs button {
-    flex: 1;
-    text-align: center;
+  .drv-del-job-header-actions .drv-del-job-tabs--header {
+    width: auto;
+  }
+
+  .drv-del-job-header-actions .drv-del-job-tabs--header button {
+    flex: 0 1 auto;
+    padding: 0.4rem 0.75rem;
   }
 
   .drv-del-detail-grid {

@@ -802,3 +802,7 @@ html[dir='rtl'] .admin-badge {
 html[dir='rtl'] .navbar-link::after {
   transform-origin: center;
 }
+
+html[dir='rtl'] .navbar-link.admin-link {
+  text-align: start;
+}

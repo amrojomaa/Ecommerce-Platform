@@ -1,4 +1,8 @@
-/* Driver Dashboard — page-specific overrides */
+/* Driver Dashboard — mirrors adm-dashboard responsive layout */
+
+.admin-page-shell.adm-page.adm-dashboard.drv-dashboard {
+  width: 100%;
+}
 
 .drv-dashboard.adm-dashboard {
   width: 100%;
@@ -7,20 +11,6 @@
 
 .drv-dashboard .page-header {
   scroll-margin-top: 5rem;
-}
-
-.drv-dashboard .adm-stats-grid {
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-
-.drv-dashboard .adm-actions-grid {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-}
-
-@media (max-width: 1024px) {
-  .drv-dashboard.adm-dashboard {
-    max-width: 100%;
-  }
 }
 
 @media (max-width: 768px) {
@@ -48,5 +38,30 @@
 
   .drv-dashboard .adm-action-card {
     min-height: 120px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .drv-dashboard .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  .drv-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .drv-dashboard.adm-dashboard,
+  .drv-dashboard.adm-page {
+    max-width: min(100%, 1600px);
+  }
+
+  .drv-dashboard .adm-actions-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+
+  .drv-dashboard .adm-stats-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
 }

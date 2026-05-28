@@ -1,10 +1,78 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import http from '../services/http';
-import { WISHLIST_ENDPOINTS } from '../config/api';
+import { WISHLIST_ENDPOINTS, PRODUCT_ENDPOINTS } from '../config/api';
 import { trackRecommendationEvent } from '../services/recommendations';
 
 export const WishlistContext = createContext();
+
+const mapWishlistItem = (item) => ({
+  id: item.id,
+  product_id: item.product_id ?? item.product?.id ?? null,
+  name: item.product.name,
+  name_ar: item.product.name_ar || '',
+  name_fr: item.product.name_fr || '',
+  price: item.product.price,
+  original_price: item.product.original_price ?? item.product.price,
+  discounted_price: item.product.discounted_price ?? item.product.price,
+  discount_enabled: Boolean(item.product.discount_enabled),
+  has_discount:
+    Boolean(item.product.has_discount) ||
+    (item.product.discounted_price ?? item.product.price) <
+      (item.product.original_price ?? item.product.price),
+  category_name: item.product.category_name || '',
+  category_name_ar: item.product.category_name_ar || '',
+  category_name_fr: item.product.category_name_fr || '',
+  images: item.product.images || [],
+  description: item.product.description || '',
+  description_ar: item.product.description_ar || '',
+  description_fr: item.product.description_fr || '',
+  average_rating: item.product.average_rating ?? 0,
+  total_ratings: item.product.total_ratings ?? 0,
+  product: item.product,
+});
+
+const enrichWishlistItems = async (items) => {
+  if (!items.some((item) => !item.product_id)) {
+    return items;
+  }
+
+  try {
+    const response = await http.get(PRODUCT_ENDPOINTS.ALL);
+    const catalogByName = new Map((response.data || []).map((product) => [product.name, product]));
+
+    return items.map((item) => {
+      if (item.product_id) {
+        return item;
+      }
+
+      const match = catalogByName.get(item.name);
+      if (!match) {
+        return item;
+      }
+
+      return {
+        ...item,
+        product_id: match.id,
+        average_rating: Number.isFinite(Number(item.average_rating))
+          ? item.average_rating
+          : match.average_rating ?? 0,
+        total_ratings: Number.isFinite(Number(item.total_ratings))
+          ? item.total_ratings
+          : match.total_ratings ?? 0,
+        product: {
+          ...item.product,
+          id: match.id,
+          average_rating: item.product?.average_rating ?? match.average_rating ?? 0,
+          total_ratings: item.product?.total_ratings ?? match.total_ratings ?? 0,
+        },
+      };
+    });
+  } catch (error) {
+    console.error('Error enriching wishlist items:', error);
+    return items;
+  }
+};
 
 export const WishlistProvider = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -89,7 +157,7 @@ export const WishlistProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     if (!isAuthenticated()) return;
     
     setLoading(true);
@@ -98,26 +166,9 @@ export const WishlistProvider = ({ children }) => {
       const wishlistData = response.data;
       
       if (wishlistData.items && Array.isArray(wishlistData.items)) {
-        // Transform API response to match frontend format
-        const transformedItems = wishlistData.items.map(item => ({
-          id: item.id,
-          name: item.product.name,
-          name_ar: item.product.name_ar || '',
-          name_fr: item.product.name_fr || '',
-          price: item.product.price,
-          original_price: item.product.original_price ?? item.product.price,
-          discounted_price: item.product.discounted_price ?? item.product.price,
-          discount_enabled: Boolean(item.product.discount_enabled),
-          has_discount: Boolean(item.product.has_discount) || (item.product.discounted_price ?? item.product.price) < (item.product.original_price ?? item.product.price),
-          category_name: item.product.category_name || '',
-          category_name_ar: item.product.category_name_ar || '',
-          category_name_fr: item.product.category_name_fr || '',
-          images: item.product.images || [],
-          description: item.product.description || '',
-          description_ar: item.product.description_ar || '',
-          description_fr: item.product.description_fr || '',
-          product: item.product
-        }));
+        const transformedItems = await enrichWishlistItems(
+          wishlistData.items.map(mapWishlistItem)
+        );
         setWishlistItems(transformedItems);
       } else {
         setWishlistItems([]);
@@ -132,7 +183,7 @@ export const WishlistProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const addToWishlist = async (product) => {
     if (!isAuthenticated()) {
@@ -141,7 +192,8 @@ export const WishlistProvider = ({ children }) => {
 
     // Optimistically add to local state first
     const productData = {
-      id: Date.now(), // Temporary ID
+      id: Date.now(), // Temporary wishlist item ID
+      product_id: product.id,
       name: product.name,
       name_ar: product.name_ar || '',
       name_fr: product.name_fr || '',
@@ -157,7 +209,10 @@ export const WishlistProvider = ({ children }) => {
       description: product.description,
       description_ar: product.description_ar || '',
       description_fr: product.description_fr || '',
+      average_rating: product.average_rating ?? 0,
+      total_ratings: product.total_ratings ?? 0,
       product: {
+        id: product.id,
         name: product.name,
         name_ar: product.name_ar || '',
         name_fr: product.name_fr || '',
@@ -172,7 +227,9 @@ export const WishlistProvider = ({ children }) => {
         description: product.description || '',
         description_ar: product.description_ar || '',
         description_fr: product.description_fr || '',
-        images: product.images || []
+        images: product.images || [],
+        average_rating: product.average_rating ?? 0,
+        total_ratings: product.total_ratings ?? 0,
       }
     };
 
@@ -191,25 +248,7 @@ export const WishlistProvider = ({ children }) => {
       });
       
       // Update with server response
-      const newItem = {
-        id: response.data.id,
-        name: response.data.product.name,
-        name_ar: response.data.product.name_ar || '',
-        name_fr: response.data.product.name_fr || '',
-        price: response.data.product.price,
-        original_price: response.data.product.original_price ?? response.data.product.price,
-        discounted_price: response.data.product.discounted_price ?? response.data.product.price,
-        discount_enabled: Boolean(response.data.product.discount_enabled),
-        has_discount: Boolean(response.data.product.has_discount) || (response.data.product.discounted_price ?? response.data.product.price) < (response.data.product.original_price ?? response.data.product.price),
-        category_name: response.data.product.category_name || '',
-        category_name_ar: response.data.product.category_name_ar || '',
-        category_name_fr: response.data.product.category_name_fr || '',
-        description: response.data.product.description || '',
-        description_ar: response.data.product.description_ar || '',
-        description_fr: response.data.product.description_fr || '',
-        images: response.data.product.images || [],
-        product: response.data.product
-      };
+      const newItem = mapWishlistItem(response.data);
       
       setWishlistItems(prevItems => 
         prevItems.map(item => 

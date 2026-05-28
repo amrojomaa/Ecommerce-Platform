@@ -940,8 +940,8 @@ def internal_create_delivery_job(
 
     # Determine delivery details from order shipping metadata or customer profile
     if not delivery_address:
-        if order.metadata and isinstance(order.metadata, dict) and "shipping_address" in order.metadata:
-            ship = order.metadata["shipping_address"]
+        if getattr(order, "order_metadata", None) and isinstance(order.order_metadata, dict) and "shipping_address" in order.order_metadata:
+            ship = order.order_metadata["shipping_address"]
             address_parts = [part for part in [ship.get("address"), ship.get("city"), ship.get("country")] if part]
             delivery_address = ", ".join(address_parts)
         elif order.user:

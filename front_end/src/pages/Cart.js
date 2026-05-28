@@ -2,7 +2,7 @@ import { tUi } from '../i18n/uiText';
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaShieldAlt, FaShoppingCart, FaTag, FaTruck } from 'react-icons/fa';
+import { FaArrowRight, FaShoppingCart, FaTag } from 'react-icons/fa';
 import { FiTrash2 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useCart } from '../hooks/useCart';
@@ -33,14 +33,6 @@ const Cart = () => {
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
   const totalQuantity = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-
-  const getHeaderSubtitle = () => {
-    if (cartItems.length === 0) {
-      return tUi('ui.pages.cart.subtitleEmpty_a3f8c2d1e7');
-    }
-
-    return tUi('ui.pages.cart.subtitleWithItems_a3f8c2d1e6', { count: cartItems.length });
-  };
 
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (!itemId) {
@@ -119,9 +111,7 @@ const Cart = () => {
   return (
     <div className="page-shell page-shell--storefront cart-page">
       <PageHeader
-        kicker={tUi('ui.pages.cart.kicker_a3f8c2d1e5')}
         title={tUi('ui.pages.cart.shoppingCart_7367ced874')}
-        subtitle={getHeaderSubtitle()}
         actions={
           cartItems.length > 0 ? (
             <motion.button
@@ -192,72 +182,59 @@ const Cart = () => {
                       />
                     </Link>
 
-                    <div className="cart-item-body">
-                      <div className="cart-item-copy">
-                        <h3 className="cart-item-name">
-                          <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
-                            {productName}
-                          </Link>
-                        </h3>
-                        <p className="cart-item-price">
-                          {hasDiscount ? (
-                            <span className="cart-item-price-discount">
-                              <span className="cart-item-price-old">{formatCurrency(originalPrice)}</span>
-                              <span className="cart-item-price-sale">{formatCurrency(discountedPrice)}</span>
-                            </span>
-                          ) : (
-                            formatCurrency(item.product?.price || 0)
-                          )}
-                        </p>
-                      </div>
-
-                      <div className="cart-item-actions">
-                        <div className="cart-item-quantity">
-                          <span className="cart-item-quantity-label">
-                            {tUi('ui.pages.cart.quantityLabel_a3f8c2d1ee')}
+                    <div className="cart-item-info">
+                      <h3 className="cart-item-name">
+                        <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
+                          {productName}
+                        </Link>
+                      </h3>
+                      <p className="cart-item-price">
+                        {hasDiscount ? (
+                          <span className="cart-item-price-discount">
+                            <span className="cart-item-price-old">{formatCurrency(originalPrice)}</span>
+                            <span className="cart-item-price-sale">{formatCurrency(discountedPrice)}</span>
                           </span>
-                          <div className="cart-quantity-controls">
-                            <button
-                              type="button"
-                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
-                              className="cart-quantity-btn"
-                              disabled={loading || (item.quantity || 1) <= 1}
-                              aria-label={tUi('ui.pages.cart.decreaseQuantity_a3f8c2d1ef')}
-                            >
-                              −
-                            </button>
-                            <span className="cart-quantity-value">{item.quantity || 1}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
-                              className="cart-quantity-btn"
-                              disabled={loading}
-                              aria-label={tUi('ui.pages.cart.increaseQuantity_a3f8c2d1f0')}
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="cart-item-line-total">
-                          <span className="cart-item-line-total-label">
-                            {tUi('ui.pages.cart.lineTotal_a3f8c2d1f1')}
-                          </span>
-                          <strong>{formatCurrency(item.total || 0)}</strong>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="cart-remove-btn"
-                          aria-label={tUi('ui.pages.cart.removeItem_0cc61ca1e3')}
-                          disabled={loading}
-                        >
-                          <FiTrash2 aria-hidden="true" />
-                          <span>{tUi('ui.pages.cart.removeItem_0cc61ca1e3')}</span>
-                        </button>
-                      </div>
+                        ) : (
+                          formatCurrency(item.product?.price || 0)
+                        )}
+                      </p>
                     </div>
+
+                    <div className="cart-item-quantity">
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
+                        className="cart-quantity-btn"
+                        disabled={loading || (item.quantity || 1) <= 1}
+                        aria-label={tUi('ui.pages.cart.decreaseQuantity_a3f8c2d1ef')}
+                      >
+                        −
+                      </button>
+                      <span className="cart-quantity-value">{item.quantity || 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
+                        className="cart-quantity-btn"
+                        disabled={loading}
+                        aria-label={tUi('ui.pages.cart.increaseQuantity_a3f8c2d1f0')}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="cart-item-total">
+                      <p className="cart-item-total-value">{formatCurrency(item.total || 0)}</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="cart-remove-btn cart-remove-btn--compact"
+                      aria-label={tUi('ui.pages.cart.removeItem_0cc61ca1e3')}
+                      disabled={loading}
+                    >
+                      ×
+                    </button>
                   </motion.article>
                 );
               })}
@@ -272,7 +249,6 @@ const Cart = () => {
             aria-label={tUi('ui.pages.cart.orderSummary_97f6cd5623')}
           >
             <header className="cart-summary-header">
-              <span className="page-kicker">{tUi('ui.pages.cart.summaryKicker_b8e4f2a1c3')}</span>
               <div className="cart-summary-title-row">
                 <h2 className="page-section-title">{tUi('ui.pages.cart.orderSummary_97f6cd5623')}</h2>
                 <span className="cart-summary-count">
@@ -303,22 +279,9 @@ const Cart = () => {
               {cartItems.map((item) => {
                 const localizedItem = localizeProduct(item.product || {}, languageCode);
                 const productName = localizedItem.localized_name || tUi('ui.pages.cart.product_d44e1d3515');
-                const imageSrc = item.product?.images?.length
-                  ? getImageUrl(item.product.images[0])
-                  : getImageUrl('/images/placeholder.jpg');
 
                 return (
                   <li key={item.id} className="cart-summary-item">
-                    <div className="cart-summary-item-thumb">
-                      <img
-                        src={imageSrc}
-                        alt=""
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
-                        }}
-                      />
-                    </div>
                     <div className="cart-summary-item-copy">
                       <p className="cart-summary-item-name">{productName}</p>
                       <p className="cart-summary-item-meta">
@@ -356,23 +319,11 @@ const Cart = () => {
                   {tUi('ui.pages.cart.shippingCalculatedAtCheckout_f3a9c1e7b2')}
                 </span>
               </div>
+              <div className="cart-summary-total">
+                <span className="cart-summary-total-label">{tUi('ui.pages.cart.total_cf0b507074')}</span>
+                <span className="cart-summary-total-amount">{formatCurrency(grandTotal)}</span>
+              </div>
             </div>
-
-            <div className="cart-summary-grand-total">
-              <span>{tUi('ui.pages.cart.total_cf0b507074')}</span>
-              <span className="cart-summary-grand-amount">{formatCurrency(grandTotal)}</span>
-            </div>
-
-            <ul className="cart-summary-trust">
-              <li>
-                <FaShieldAlt aria-hidden="true" />
-                <span>{tUi('ui.pages.cart.secureCheckout_a7d2e4f9c1')}</span>
-              </li>
-              <li>
-                <FaTruck aria-hidden="true" />
-                <span>{tUi('ui.pages.cart.freeShippingEligible_b5c8d1e6f3')}</span>
-              </li>
-            </ul>
 
             <motion.button
               type="button"

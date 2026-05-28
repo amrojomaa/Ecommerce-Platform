@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -15,6 +15,7 @@ import { DEFAULT_PROFILE_IMAGE, resolveProfileImageUrl } from '../utils/helpers'
 import { getRoleDashboardPath } from '../utils/roleDashboard';
 import { useWishlist } from '../hooks/useWishlist';
 import { trackRecommendationEvent } from '../services/recommendations';
+import { addRecentSearch, filterRecentSearches } from '../utils/recentSearches';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { tUi } from '../i18n/uiText';
 import { useCashierPos } from '../context/CashierPosContext';
@@ -32,7 +33,11 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestionsOpen, setSearchSuggestionsOpen] = useState(false);
+  const [recentSearchRevision, setRecentSearchRevision] = useState(0);
   const profileDropdownRef = useRef(null);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
   const ignoreOutsideClickRef = useRef(false);
   const cashierPos = useCashierPos();
   const isAdminArea = location.pathname.startsWith('/admin');
@@ -123,18 +128,83 @@ const Navbar = () => {
     setSearchQuery('');
   }, [location.pathname, location.search]);
 
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-    const trimmedQuery = searchQuery.trim();
+  const filteredRecentSearches = useMemo(() => {
+    if (!isAuthenticated) {
+      return [];
+    }
+    return filterRecentSearches(searchQuery, user?.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, searchQuery, user?.id, recentSearchRevision]);
+
+  const showSearchSuggestions = isAuthenticated
+    && searchSuggestionsOpen
+    && filteredRecentSearches.length > 0;
+
+  const runProductSearch = (query) => {
+    const trimmedQuery = query.trim();
     const params = new URLSearchParams();
     if (trimmedQuery) {
       params.set('search', trimmedQuery);
       if (isAuthenticated) {
+        addRecentSearch(trimmedQuery, user?.id);
+        setRecentSearchRevision((prev) => prev + 1);
         trackRecommendationEvent({ event_type: 'search', query_text: trimmedQuery });
       }
     }
+    setSearchQuery(trimmedQuery);
+    setSearchSuggestionsOpen(false);
     navigate(`/products${params.toString() ? `?${params.toString()}` : ''}`);
     setMobileMenuOpen(false);
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    runProductSearch(searchQuery);
+  };
+
+  const handleRecentSearchSelect = (query) => {
+    runProductSearch(query);
+  };
+
+  const handleSearchFocus = () => {
+    if (isAuthenticated) {
+      setSearchSuggestionsOpen(true);
+    }
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+    if (isAuthenticated) {
+      setSearchSuggestionsOpen(true);
+    }
+  };
+
+  const renderSearchSuggestions = (listClassName) => {
+    if (!showSearchSuggestions) {
+      return null;
+    }
+
+    return (
+      <div className={`navbar-search-suggestions ${listClassName || ''}`} role="listbox" aria-label={t('navbar.recentSearches')}>
+        <p className="navbar-search-suggestions-title">{t('navbar.recentSearches')}</p>
+        <ul className="navbar-search-suggestions-list">
+          {filteredRecentSearches.map((term) => (
+            <li key={term}>
+              <button
+                type="button"
+                className="navbar-search-suggestion-item"
+                role="option"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => handleRecentSearchSelect(term)}
+              >
+                <FiClock className="navbar-search-suggestion-icon" aria-hidden />
+                <span className="navbar-search-suggestion-text">{term}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
   };
 
   // Safety check for isAdmin
@@ -181,6 +251,34 @@ const Navbar = () => {
     };
   }, [profileDropdownOpen]);
 
+  useEffect(() => {
+    if (!searchSuggestionsOpen) {
+      return undefined;
+    }
+
+    const handleClickOutside = (event) => {
+      const inDesktop = desktopSearchRef.current?.contains(event.target);
+      const inMobile = mobileSearchRef.current?.contains(event.target);
+      if (!inDesktop && !inMobile) {
+        setSearchSuggestionsOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSearchSuggestionsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [searchSuggestionsOpen]);
+
   const toggleProfileDropdown = (event) => {
     event.stopPropagation();
     ignoreOutsideClickRef.current = true;
@@ -207,14 +305,21 @@ const Navbar = () => {
         </Link>
 
         {!isRestrictedArea &&
-        <form className="navbar-search" onSubmit={handleSearchSubmit}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("navbar.searchPlaceholder")}
-            aria-label={t("navbar.searchAria")} />
-          
+        <form className="navbar-search" ref={desktopSearchRef} onSubmit={handleSearchSubmit}>
+          <div className="navbar-search-field">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={handleSearchFocus}
+              placeholder={t("navbar.searchPlaceholder")}
+              aria-label={t("navbar.searchAria")}
+              aria-expanded={showSearchSuggestions}
+              aria-autocomplete="list"
+              autoComplete="off"
+            />
+            {renderSearchSuggestions()}
+          </div>
           <button type="submit">{t("navbar.searchButton")}</button>
         </form>
         }
@@ -502,14 +607,21 @@ const Navbar = () => {
       <div className="mobile-menu">
           {!isRestrictedArea &&
           <>
-            <form className="mobile-search" onSubmit={handleSearchSubmit}>
-              <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t("navbar.searchPlaceholder")}
-              aria-label={t("navbar.searchAria")} />
-            
+            <form className="mobile-search navbar-search-mobile" ref={mobileSearchRef} onSubmit={handleSearchSubmit}>
+              <div className="navbar-search-field">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  placeholder={t("navbar.searchPlaceholder")}
+                  aria-label={t("navbar.searchAria")}
+                  aria-expanded={showSearchSuggestions}
+                  aria-autocomplete="list"
+                  autoComplete="off"
+                />
+                {renderSearchSuggestions('navbar-search-suggestions--mobile')}
+              </div>
               <button type="submit">{t("navbar.searchButton")}</button>
             </form>
             <Link to="/products" onClick={() => setMobileMenuOpen(false)}>

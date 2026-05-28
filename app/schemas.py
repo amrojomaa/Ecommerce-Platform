@@ -520,6 +520,8 @@ class OrderResponse(BaseModel):
     promotion_discount: float = 0
     promotion_name: Optional[str] = None
     status: str
+    delivery_address: Optional[str] = None
+    merged: bool = False
     items: List[OrderItemResponse] = Field(alias="orderitems")
 
     class Config:
@@ -779,6 +781,7 @@ class AddWishlist(BaseModel):
 
 
 class WishlistProductOut(BaseModel):
+    id: int
     name: str
     name_ar: Optional[str] = None
     name_fr: Optional[str] = None
@@ -794,10 +797,13 @@ class WishlistProductOut(BaseModel):
     description_ar: Optional[str] = None
     description_fr: Optional[str] = None
     images: Optional[List[str]] = []
+    average_rating: float = 0.0
+    total_ratings: int = 0
 
 
 class WishlistItemOut(BaseModel):
     id: int
+    product_id: int
     product: WishlistProductOut
 
     class Config:

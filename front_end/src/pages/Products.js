@@ -15,6 +15,7 @@ import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
+import { addRecentSearch } from '../utils/recentSearches';
 import { getImageUrl } from '../utils/helpers';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
@@ -64,7 +65,7 @@ const getDiscountPercent = (product) => {
 const Products = () => {
   const { i18n } = useTranslation();
   const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { formatCurrency } = useCurrency();
@@ -165,6 +166,7 @@ const Products = () => {
     setCurrentPage(1);
     const qt = searchTerm.trim();
     if (isAuthenticated && qt) {
+      addRecentSearch(qt, user?.id);
       trackRecommendationEvent({ event_type: 'search', query_text: qt });
     }
   };

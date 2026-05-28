@@ -233,11 +233,10 @@ function App() {
 
       </Routes>
       <ToastContainer
-                      position={isRtl ? "top-left" : "top-right"}
-                      autoClose={3000}
-                      rtl={isRtl}
-                      style={{ top: '85px' }} />
-                    
+        position={isRtl ? 'top-left' : 'top-right'}
+        autoClose={3000}
+        rtl={isRtl}
+      />
     </Router>
     </ConfirmProvider>
     </WishlistProvider>

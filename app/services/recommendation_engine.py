@@ -4,7 +4,8 @@ Hybrid recommendations: weighted interaction affinity + content similarity + opt
 Content-based: TF–IDF over category + name + description blended with scaled log(price).
 Behavioral: exponentially decayed event weights `{view:1, search:2, wishlist:3, add_to_cart:5, purchase:10}`.
 Collaborative-lite: PMI-style lift edges from products bought in the same order.
-Empty state: returns no items until the user actually interacts (view / search / wishlist / add_to_cart / purchase)."""
+Empty state: returns no items until the user actually interacts (view / search / wishlist / add_to_cart / purchase).
+When the catalog is small or the user has seen every product, falls back to affinity revisit and buy-again picks."""
 from __future__ import annotations
 
 import hashlib
@@ -415,6 +416,30 @@ def _cold_start_fallback(
     return picked[:limit]
 
 
+def _affinity_revisit_fallback(
+    affinity: Mapping[int, float],
+    exclude: set[int],
+    limit: int,
+) -> list[tuple[int, float, list[str]]]:
+    """When every unseen neighbor is exhausted, resurface engaged products (except purchases)."""
+    out: list[tuple[int, float, list[str]]] = []
+    for pid, aff in sorted(affinity.items(), key=lambda kv: (-float(kv[1]), int(kv[0]))):
+        if int(pid) in exclude:
+            continue
+        out.append((int(pid), float(aff), ["affinity_revisit"]))
+        if len(out) >= limit:
+            break
+    if out:
+        return out
+
+    # User already purchased or exhausted every candidate — allow buy-again picks.
+    for pid, aff in sorted(affinity.items(), key=lambda kv: (-float(kv[1]), int(kv[0]))):
+        out.append((int(pid), float(aff) * 0.35, ["buy_again"]))
+        if len(out) >= limit:
+            break
+    return out
+
+
 def recommend_hybrid_for_user(
     db: Session,
     user_id: int,
@@ -546,14 +571,32 @@ def recommend_hybrid_for_user(
 
     scored_candidates.sort(key=lambda t: (-t[1], t[0]))
     hydrated = scored_candidates[:limit]
+    strategy = "hybrid_content_co_purchase"
+
+    if not hydrated:
+        hydrated = _affinity_revisit_fallback(affinity, exclude, limit)
+        if hydrated:
+            strategy = "affinity_revisit_fallback"
+
+    if not hydrated:
+        hydrated = _cold_start_fallback(
+            db,
+            exclude,
+            limit,
+            user_id=user_id,
+            prefer_categories=preferred_touch_cats,
+        )
+        if hydrated:
+            strategy = "cold_start_fallback"
 
     meta = {
-        "cold_start": False,
+        "cold_start": strategy == "cold_start_fallback",
         "total_behavioral_affinity_touch": float(sum(touch_only_affinity.values())),
         "interaction_rows": len(interactions),
+        "distinct_touched_products": len(touch_only_affinity),
         "preferred_touch_categories": sorted(preferred_touch_cats),
         "coherent_seeds_used": seeds,
-        "strategy": "hybrid_content_co_purchase_no_cold_fill",
+        "strategy": strategy,
     }
     return hydrated[:limit], meta
 

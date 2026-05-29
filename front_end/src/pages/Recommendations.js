@@ -35,7 +35,6 @@ import '../styles/pages/Recommendations.css';
 
 const Recommendations = () => {
   const confirm = useConfirm();
-  const { t } = useTranslation();
   const { i18n } = useTranslation();
   const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const { isAuthenticated } = useAuth();
@@ -68,7 +67,7 @@ const Recommendations = () => {
     if (forceRefresh) {
       setRefreshingBatch(true);
     } else {
-      setLoadingBatch(true);
+    setLoadingBatch(true);
     }
     try {
       const { data } = await fetchBatchRecommendations(15, forceRefresh);
@@ -285,17 +284,16 @@ const Recommendations = () => {
 
   return (
     <div className="page-shell page-shell--storefront reco-page">
-      <PageHeader
-        kicker={t('navbar.forYou')}
+        <PageHeader
         title={tUi('ui.pages.recommendations.recommendedForYou_33db7a2db1')}
         subtitle={tUi('ui.pages.recommendations.usesYourViewsSearchesWishlist_7518b14b04')}
         animate={false}
-        actions={
+          actions={
           <motion.button
-            type="button"
+              type="button"
             className="reco-reset-btn"
-            onClick={handleResetRecommendations}
-            disabled={resetting}
+              onClick={handleResetRecommendations}
+              disabled={resetting}
             title={tUi('ui.pages.recommendations.clearRecommendationHistoryDoesNot_d511c61ddd')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -322,11 +320,7 @@ const Recommendations = () => {
       <section className="reco-section" aria-label={tUi('ui.pages.recommendations.realtime_37d7df59d7')}>
         <div className="reco-section-header">
           <div className="reco-section-header-copy">
-            <span className="page-kicker">{tUi('ui.pages.recommendations.realtimeKicker_b4e8c2d415')}</span>
             <h2 className="reco-section-title">{tUi('ui.pages.recommendations.realtime_37d7df59d7')}</h2>
-            <p className="reco-section-subtitle">
-              {tUi('ui.pages.recommendations.realtimeSubtitle_b4e8c2d402')}
-            </p>
           </div>
           <motion.button
             type="button"
@@ -352,17 +346,16 @@ const Recommendations = () => {
           loadingRt,
           tUi('ui.pages.recommendations.nothingYetViewAProduct_7f253a9a74')
         )}
-      </section>
+        </section>
 
       <section className="reco-section" aria-label={tUi('ui.pages.recommendations.batchCached_5246e3e266')}>
         <div className="reco-section-header">
           <div className="reco-section-header-copy">
-            <span className="page-kicker">{tUi('ui.pages.recommendations.batchKicker_b4e8c2d416')}</span>
             <h2 className="reco-section-title">{tUi('ui.pages.recommendations.batchCached_5246e3e266')}</h2>
             <p className="reco-section-subtitle">
               {tUi('ui.pages.recommendations.batchSubtitle_b4e8c2d403')}
             </p>
-          </div>
+            </div>
           <div className="reco-section-actions">
             <motion.button
               type="button"
@@ -394,8 +387,8 @@ const Recommendations = () => {
           loadingBatch,
           tUi('ui.pages.recommendations.noBatchResultsYetView_1937d58ec4')
         )}
-      </section>
-    </div>
+        </section>
+      </div>
   );
 };
 

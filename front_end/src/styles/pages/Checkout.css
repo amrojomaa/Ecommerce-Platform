@@ -435,7 +435,7 @@ html[dir='rtl'] .checkout-submit-btn:hover svg {
   .checkout-order-summary {
     position: static;
   }
-}
+  }
 
 @media (max-width: 640px) {
   .checkout-form-grid {

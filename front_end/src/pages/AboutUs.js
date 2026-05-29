@@ -28,9 +28,6 @@ const AboutUs = () => {
           >
             {tUi('ui.pages.home.valuePropsTitle_f8f0c4ad1a')}
           </motion.h2>
-          <p className="about-section-subtitle">
-            {tUi('ui.pages.home.valuePropsSubtitle_0aa1c14a1b')}
-          </p>
         </div>
         <div className="about-value-props-grid">
           <motion.article

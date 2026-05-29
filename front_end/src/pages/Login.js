@@ -130,49 +130,49 @@ const Login = () => {
       <form onSubmit={handleSubmit} className="auth-split-form">
         <div className="auth-split-field">
           <label htmlFor="email">{tUi('ui.pages.login.email_2f2d1d3b03')}</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
             placeholder={tUi('ui.pages.login.enterYourEmail_94997e7f2c')}
             className="auth-split-input"
             autoComplete="email"
           />
-        </div>
+          </div>
 
         <AuthPasswordField
-          id="password"
-          name="password"
+                id="password"
+                name="password"
           label={tUi('ui.pages.login.password_c9fb7b6316')}
           labelExtra={
             <Link to="/forgot-password" className="auth-split-inline-link">
               {tUi('ui.pages.login.forgotYourPassword_7484c9cd8e')}
             </Link>
           }
-          value={formData.password}
-          onChange={handleChange}
+                value={formData.password}
+                onChange={handleChange}
           showPassword={showPassword}
           onTogglePassword={() => setShowPassword((prev) => !prev)}
           placeholder={tUi('ui.pages.login.enterYourPassword_4257b32a43')}
-          required
+                required
         />
 
         <label className="auth-split-checkbox" htmlFor="rememberMe">
-          <input
-            type="checkbox"
-            id="rememberMe"
-            name="rememberMe"
-            checked={formData.rememberMe}
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+                checked={formData.rememberMe}
             onChange={handleChange}
           />
           <span>{tUi('ui.pages.login.rememberMe_399aa1dfc4')}</span>
-        </label>
+            </label>
 
         <motion.button
-          type="submit"
+              type="submit"
           className="page-btn-primary auth-split-submit"
           disabled={loading || googleLoading}
           whileHover={{ scale: 1.02 }}

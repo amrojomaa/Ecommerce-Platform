@@ -12,6 +12,7 @@ import { useCart } from '../hooks/useCart';
 import { useCurrency } from '../hooks/useCurrency';
 import StarRating from '../components/StarRating';
 import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
+import { FiFilter, FiX } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
@@ -81,6 +82,7 @@ const Products = () => {
   const [maxPrice, setMaxPrice] = useState(searchParams.get('max_price') || '');
   const [sortBy, setSortBy] = useState('name');
   const [currentPage, setCurrentPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -99,6 +101,24 @@ const Products = () => {
   useEffect(() => {
     fetchActivePromotionMessage();
   }, []);
+
+  useEffect(() => {
+    if (!filtersOpen) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setFiltersOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [filtersOpen]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -164,12 +184,31 @@ const Products = () => {
     if (maxPrice) params.set('max_price', maxPrice);
     setSearchParams(params);
     setCurrentPage(1);
+    setFiltersOpen(false);
     const qt = searchTerm.trim();
     if (isAuthenticated && qt) {
       addRecentSearch(qt, user?.id);
       trackRecommendationEvent({ event_type: 'search', query_text: qt });
     }
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSearchParams(new URLSearchParams());
+    setCurrentPage(1);
+  };
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchParams.get('search')) count += 1;
+    if (searchParams.get('category')) count += 1;
+    if (searchParams.get('min_price')) count += 1;
+    if (searchParams.get('max_price')) count += 1;
+    return count;
+  }, [searchParams]);
 
   const sortedProducts = useMemo(() => {
     const sorted = [...products.map((product) => localizeProduct(product, languageCode))];
@@ -427,12 +466,45 @@ const Products = () => {
         </div>
       </header>
 
-      <div className="products-layout">
-        <aside className="products-filters">
-          <span className="products-filters-kicker">{tUi('ui.pages.products.filters_d9c87b2abe')}</span>
-          <h2 className="products-filters-title">{tUi('ui.pages.products.filters_d9c87b2abe')}</h2>
+      {!filtersOpen &&
+        <button
+          type="button"
+          className="products-filters-sticky"
+          onClick={() => setFiltersOpen(true)}
+          aria-expanded={filtersOpen}
+          aria-controls="products-filters-drawer"
+        >
+          <FiFilter aria-hidden="true" />
+          <span>{tUi('ui.pages.products.filters_d9c87b2abe')}</span>
+          {activeFilterCount > 0 &&
+            <span className="products-filters-badge">{activeFilterCount}</span>
+          }
+        </button>
+      }
 
-          <div className="products-filter-group">
+      <aside
+        id="products-filters-drawer"
+        className={`products-filters-drawer ${filtersOpen ? 'is-open' : ''}`}
+        aria-label={tUi('ui.pages.products.filters_d9c87b2abe')}
+        aria-hidden={!filtersOpen}
+      >
+        <div className="products-filters-drawer-header">
+          <div className="products-filters-drawer-heading">
+            <span className="products-filters-kicker">{tUi('ui.pages.products.filters_d9c87b2abe')}</span>
+            <h2 className="products-filters-title">{tUi('ui.pages.products.filters_d9c87b2abe')}</h2>
+          </div>
+          <button
+            type="button"
+            className="products-filters-close-btn"
+            onClick={() => setFiltersOpen(false)}
+            aria-label={tUi('ui.pages.products.closeFilters_b4e8a1c2e1')}
+          >
+            <FiX aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="products-filters-drawer-body">
+          <div className="products-filter-group products-filter-group--search">
             <label htmlFor="products-search">{tUi('ui.pages.products.search_1af3c5afd2')}</label>
             <input
               id="products-search"
@@ -444,7 +516,7 @@ const Products = () => {
             />
           </div>
 
-          <div className="products-filter-group">
+          <div className="products-filter-group products-filter-group--category">
             <label htmlFor="products-category">{tUi('ui.pages.products.category_a6c5fd855e')}</label>
             <select
               id="products-category"
@@ -460,10 +532,21 @@ const Products = () => {
             </select>
           </div>
 
-          <div className="products-filter-group">
-            <label>{tUi('ui.pages.products.priceRange_2f572dca61')}</label>
+          <div className="products-filter-group products-filter-group--sort">
+            <label htmlFor="products-sort">{tUi('ui.pages.products.sortBy_9713293ec0')}</label>
+            <select id="products-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="name">{tUi('ui.pages.products.sortAlphabetical_b4e8a1c2d3')}</option>
+              <option value="rating">{tUi('ui.pages.products.sortByRating_b4e8a1c2d4')}</option>
+              <option value="price-low">{tUi('ui.pages.products.priceLowToHigh_5592424a7e')}</option>
+              <option value="price-high">{tUi('ui.pages.products.priceHighToLow_63247b2840')}</option>
+            </select>
+          </div>
+
+          <div className="products-filter-group products-filter-group--price">
+            <label htmlFor="products-min-price">{tUi('ui.pages.products.priceRange_2f572dca61')}</label>
             <div className="products-price-inputs">
               <input
+                id="products-min-price"
                 type="number"
                 placeholder={tUi('ui.pages.products.min_811224441b')}
                 value={minPrice}
@@ -471,6 +554,7 @@ const Products = () => {
               />
               <span>-</span>
               <input
+                id="products-max-price"
                 type="number"
                 placeholder={tUi('ui.pages.products.max_efa3dd52b2')}
                 value={maxPrice}
@@ -478,31 +562,23 @@ const Products = () => {
               />
             </div>
           </div>
+        </div>
 
+        <div className="products-filters-drawer-footer">
+          {activeFilterCount > 0 &&
+            <button type="button" onClick={clearFilters} className="products-clear-btn">
+              {tUi('ui.pages.products.clearFilters_b4e8a1c2e2')}
+            </button>
+          }
           <button type="button" onClick={applyFilters} className="products-apply-btn">
             {tUi('ui.pages.products.applyFilters_6e513a0be6')}
           </button>
-        </aside>
+        </div>
+      </aside>
 
-        <main className="products-main">
-          <div className="products-toolbar">
-            <p className="products-count">
-              {sortedProducts.length}{tUi('ui.pages.products.product_5919708d8b')}
-              {sortedProducts.length !== 1 ? 's' : ''}{tUi('ui.pages.products.found_1816a1653a')}
-            </p>
-            <div className="products-sort">
-              <label htmlFor="products-sort">{tUi('ui.pages.products.sortBy_9713293ec0')}</label>
-              <select id="products-sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="name">{tUi('ui.pages.products.sortAlphabetical_b4e8a1c2d3')}</option>
-                <option value="rating">{tUi('ui.pages.products.sortByRating_b4e8a1c2d4')}</option>
-                <option value="price-low">{tUi('ui.pages.products.priceLowToHigh_5592424a7e')}</option>
-                <option value="price-high">{tUi('ui.pages.products.priceHighToLow_63247b2840')}</option>
-              </select>
-            </div>
-          </div>
-
-          {discountedProducts.length > 0 &&
-            <section className="products-discounts-section">
+      <main className="products-main">
+        {discountedProducts.length > 0 &&
+          <section className="products-discounts-section">
               <div className="products-section-header">
                 <span className="products-discounts-kicker">{tUi('ui.pages.products.discounts_6c46dcf595')}</span>
                 <h2>{tUi('ui.pages.products.discounts_6c46dcf595')}</h2>
@@ -512,6 +588,14 @@ const Products = () => {
               </div>
             </section>
           }
+
+        <div className="products-toolbar">
+          <p className="products-count">
+            {sortedProducts.length === 1
+              ? tUi('ui.pages.products.productFoundCount_b4e8a1c2e3', { value0: sortedProducts.length })
+              : tUi('ui.pages.products.productsFoundCount_b4e8a1c2e4', { value0: sortedProducts.length })}
+          </p>
+        </div>
 
           {loading ?
             <div className="products-grid">
@@ -571,8 +655,7 @@ const Products = () => {
                 }
               </>
           }
-        </main>
-      </div>
+      </main>
     </div>
   );
 };

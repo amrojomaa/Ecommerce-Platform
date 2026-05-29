@@ -17,6 +17,7 @@
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   padding: 0;
+  overflow-x: clip;
   transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
@@ -35,6 +36,7 @@
   align-items: center;
   column-gap: clamp(1rem, 2vw, 2rem);
   height: 100%;
+  min-width: 0;
 }
 
 .navbar-logo {
@@ -888,28 +890,68 @@ html:not(.dark) .navbar-search-suggestion-item:focus-visible .navbar-search-sugg
   .navbar-menu {
     gap: var(--space-4);
   }
+
+  .navbar--panel .navbar-language-switcher {
+    display: none;
+  }
+
+  .navbar--panel .navbar-link {
+    max-width: min(220px, 28vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navbar--panel .navbar-pos-history-btn {
+    max-width: min(220px, 34vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 1100px) {
+  .navbar:not(.navbar--panel) .navbar-search {
+    display: none;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-link,
+  .navbar:not(.navbar--panel) .navbar-user,
+  .navbar:not(.navbar--panel) .navbar-language-switcher {
+    display: none;
+  }
+
+  .navbar:not(.navbar--panel) .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .navbar:not(.navbar--panel) .mobile-menu {
+    display: flex;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-logo {
+    font-size: 1.15rem;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-menu {
+    gap: var(--space-3);
+    overflow: visible;
+  }
 }
 
 @media (max-width: 768px) {
-  .navbar-search {
+  .navbar-search,
+  .navbar-pos-search {
     display: none;
   }
 
   .navbar-menu {
     gap: var(--space-3);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .navbar-menu::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
   }
 
   .navbar-link,
   .navbar-user,
-  .navbar-language-switcher {
+  .navbar-language-switcher,
+  .navbar-pos-history-btn {
     display: none;
   }
 
@@ -919,6 +961,13 @@ html:not(.dark) .navbar-search-suggestion-item:focus-visible .navbar-search-sugg
 
   .mobile-menu {
     display: flex;
+  }
+
+  .navbar-logo {
+    font-size: 1.1rem;
+    max-width: min(220px, 52vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

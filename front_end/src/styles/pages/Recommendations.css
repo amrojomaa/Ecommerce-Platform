@@ -56,6 +56,10 @@
   scroll-margin-top: 5rem;
 }
 
+.reco-page > .reco-section:first-of-type {
+  margin-top: -2rem;
+}
+
 .reco-section-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -192,6 +196,10 @@ html[dir='rtl'] .reco-empty-cta svg {
 @media (max-width: 768px) {
   .reco-page {
     gap: 2.5rem;
+  }
+
+  .reco-page > .reco-section:first-of-type {
+    margin-top: -1rem;
   }
 
   .reco-cleared-banner {

@@ -128,6 +128,28 @@ const Navbar = () => {
     setSearchQuery('');
   }, [location.pathname, location.search]);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setProfileDropdownOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const closeMenuIfDesktop = () => {
+      const shouldUseMobileMenu = isRestrictedArea
+        ? window.innerWidth <= 768
+        : window.innerWidth <= 1100;
+
+      if (!shouldUseMobileMenu) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    closeMenuIfDesktop();
+    window.addEventListener('resize', closeMenuIfDesktop);
+
+    return () => window.removeEventListener('resize', closeMenuIfDesktop);
+  }, [isRestrictedArea]);
+
   const filteredRecentSearches = useMemo(() => {
     if (!isAuthenticated) {
       return [];

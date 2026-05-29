@@ -600,7 +600,7 @@ html[dir='rtl'] .orders-page .delivery-tracking-heading {
   .orders-card-actions {
     flex-direction: column;
   }
-
+  
   .orders-btn {
     width: 100%;
   }

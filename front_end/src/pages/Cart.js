@@ -186,59 +186,59 @@ const Cart = () => {
                       <h3 className="cart-item-name">
                         <Link to={`/products/${encodeURIComponent(item.product?.name || '')}`}>
                           {productName}
-                        </Link>
-                      </h3>
-                      <p className="cart-item-price">
+                    </Link>
+                  </h3>
+                  <p className="cart-item-price">
                         {hasDiscount ? (
                           <span className="cart-item-price-discount">
                             <span className="cart-item-price-old">{formatCurrency(originalPrice)}</span>
                             <span className="cart-item-price-sale">{formatCurrency(discountedPrice)}</span>
-                          </span>
+                        </span>
                         ) : (
-                          formatCurrency(item.product?.price || 0)
+                      formatCurrency(item.product?.price || 0)
                         )}
-                      </p>
-                    </div>
+                  </p>
+                </div>
 
-                    <div className="cart-item-quantity">
-                      <button
-                        type="button"
+                <div className="cart-item-quantity">
+                  <button
+                type="button"
                         onClick={() => handleQuantityChange(item.id, (item.quantity || 1) - 1)}
                         className="cart-quantity-btn"
                         disabled={loading || (item.quantity || 1) <= 1}
                         aria-label={tUi('ui.pages.cart.decreaseQuantity_a3f8c2d1ef')}
                       >
                         −
-                      </button>
+                  </button>
                       <span className="cart-quantity-value">{item.quantity || 1}</span>
-                      <button
-                        type="button"
+                  <button
+                type="button"
                         onClick={() => handleQuantityChange(item.id, (item.quantity || 1) + 1)}
                         className="cart-quantity-btn"
                         disabled={loading}
                         aria-label={tUi('ui.pages.cart.increaseQuantity_a3f8c2d1f0')}
                       >
-                        +
-                      </button>
-                    </div>
+                    +
+                  </button>
+                </div>
 
-                    <div className="cart-item-total">
+                <div className="cart-item-total">
                       <p className="cart-item-total-value">{formatCurrency(item.total || 0)}</p>
-                    </div>
+                </div>
 
-                    <button
-                      type="button"
+                <button
+              type="button"
                       onClick={() => handleRemoveItem(item.id)}
                       className="cart-remove-btn cart-remove-btn--compact"
                       aria-label={tUi('ui.pages.cart.removeItem_0cc61ca1e3')}
                       disabled={loading}
                     >
                       ×
-                    </button>
+                </button>
                   </motion.article>
                 );
               })}
-            </div>
+          </div>
           </section>
 
           <motion.aside
@@ -322,7 +322,7 @@ const Cart = () => {
               <div className="cart-summary-total">
                 <span className="cart-summary-total-label">{tUi('ui.pages.cart.total_cf0b507074')}</span>
                 <span className="cart-summary-total-amount">{formatCurrency(grandTotal)}</span>
-              </div>
+            </div>
             </div>
 
             <motion.button

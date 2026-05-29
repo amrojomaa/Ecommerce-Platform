@@ -220,7 +220,6 @@ const Home = () => {
       <section className="categories-section" id="categories">
           <div className="categories-band">
             <div className="section-header">
-              <span className="categories-kicker">{tUi("legacy.Categories")}</span>
               <motion.h2
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
@@ -267,7 +266,6 @@ const Home = () => {
           <div className="discounts-band">
             <div className="discounts-band-header">
               <div className="section-header">
-                <span className="discounts-kicker">{tUi("ui.pages.home.discounts_7c50f5ea26")}</span>
                 <motion.h2
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
@@ -365,7 +363,6 @@ const Home = () => {
         <div className="featured-band">
           <div className="featured-band-header">
             <div className="section-header">
-              <span className="featured-kicker">{tUi("ui.pages.home.featuredProducts_666a6cab05")}</span>
               <motion.h2
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}

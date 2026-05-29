@@ -33,16 +33,6 @@ import { localizeProduct } from '../utils/localizedContent';
 import '../styles/pages/Products.css';
 import '../styles/pages/Recommendations.css';
 
-const getDiscountPercent = (product) => {
-  if (!product?.discount_enabled || !product.price || !product.discounted_price) {
-    return 0;
-  }
-  if (product.discounted_price >= product.price) {
-    return 0;
-  }
-  return Math.round((1 - product.discounted_price / product.price) * 100);
-};
-
 const Recommendations = () => {
   const confirm = useConfirm();
   const { t } = useTranslation();
@@ -169,7 +159,6 @@ const Recommendations = () => {
     const originalPrice = Number(product.original_price ?? product.price ?? 0);
     const discountedPrice = Number(product.discounted_price ?? product.price ?? 0);
     const hasDiscount = Boolean(product.discount_enabled) || discountedPrice < originalPrice;
-    const discountPercent = getDiscountPercent(product);
     const productId = product.id ?? null;
     const inWishlist = isInWishlist(product.name);
 
@@ -185,9 +174,6 @@ const Recommendations = () => {
         <Link to={`/products/${encodeURIComponent(product.name)}`} className="products-card">
           <div className="products-card-media">
             <span className="products-card-media-category">{localized.localized_category_name}</span>
-            {discountPercent > 0 && (
-              <span className="reco-discount-badge">-{discountPercent}%</span>
-            )}
             <img
               src={
                 product.images?.length

@@ -138,25 +138,6 @@
   width: 100%;
 }
 
-.reco-discount-badge {
-  position: absolute;
-  top: 0.75rem;
-  inset-inline-end: 0.75rem;
-  z-index: 2;
-  padding: 0.28rem 0.55rem;
-  border-radius: 999px;
-  background: #dc2626;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.dark .reco-discount-badge {
-  background: #f87171;
-  color: #0f172a;
-}
-
 .reco-empty {
   text-align: center;
   padding: 4rem 2rem;

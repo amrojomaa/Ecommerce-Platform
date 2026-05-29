@@ -339,9 +339,14 @@ const Navbar = () => {
 
         <div className="navbar-menu">
           {!isRestrictedArea &&
-          <Link to="/products" className="navbar-link">
-            {t("navbar.products")}
-          </Link>
+          <>
+            <Link to="/products" className="navbar-link">
+              {t("navbar.products")}
+            </Link>
+            <Link to="/about" className="navbar-link">
+              {t("navbar.aboutUs")}
+            </Link>
+          </>
           }
           
           {isAuthenticated ?
@@ -626,6 +631,9 @@ const Navbar = () => {
             </form>
             <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
               {t("navbar.products")}
+            </Link>
+            <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
+              {t("navbar.aboutUs")}
             </Link>
           </>
           }

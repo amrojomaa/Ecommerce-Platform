@@ -26,7 +26,7 @@ When building or updating UI, match the Home page design language in `front_end/
 - **Header pattern:** kicker → Fraunces title → subtitle; optional pill CTA aligned right on desktop (grid areas: kicker / title+cta / subtitle)
 - **Content sections** (Categories, Discounts, Featured): no band backgrounds — sit on page background
 - **Promo band** may keep subtle gradient; hero keeps full gradient treatment
-- **Products page promo:** top row opposite page title — `products-promo-band` with kicker (e.g. “Promotion available”) + message body; match Home `.promo-band` gradient, radius `1.5rem`, border + shadow. Full Products layout/filters/RTL: `.cursor/rules/products-page-design-system.mdc`
+- **Products page promo:** top row opposite page title — `products-promo-band` with kicker (e.g. “Promotion available”) + message body; match Home `.promo-band` gradient, radius `1.5rem`, border + shadow
 - Section anchors: `scroll-margin-top: 5rem`
 
 ## Cards & grids

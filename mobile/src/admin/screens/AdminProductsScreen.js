@@ -15,7 +15,10 @@ import Toast from 'react-native-toast-message';
 import { Feather } from '@expo/vector-icons';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors, shadow } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTUi } from '../../i18n/uiText';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
 import http from '../../services/http';
 import {
   ADMIN_SETTINGS_ENDPOINTS,
@@ -62,6 +65,12 @@ const normalizeProductImages = (product) => {
 };
 
 const AdminProductsScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { isRtl, textAlign, row } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
   const { formatCurrency } = useCurrency();
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -212,13 +221,13 @@ const AdminProductsScreen = () => {
 
   const handlePickImages = async () => {
     if (images.length >= 3) {
-      Toast.show({ type: 'error', text1: 'Maximum 3 images allowed' });
+      Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.maximum3ImagesAllowed_071181eac3') });
       return;
     }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Toast.show({ type: 'error', text1: 'Photo permission is required' });
+      Toast.show({ type: 'error', text1: tUi('ui.mobile.adminProducts.photoPermission') });
       return;
     }
 
@@ -233,7 +242,7 @@ const AdminProductsScreen = () => {
 
     const assets = result.assets || [];
     if (images.length + assets.length > 3) {
-      Toast.show({ type: 'error', text1: 'Maximum 3 images allowed' });
+      Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.maximum3ImagesAllowed_071181eac3') });
       return;
     }
 
@@ -241,9 +250,9 @@ const AdminProductsScreen = () => {
     try {
       const uploadedImages = await Promise.all(assets.map(uploadPickedImage));
       setImages((prev) => [...prev, ...uploadedImages]);
-      Toast.show({ type: 'success', text1: 'Images uploaded' });
+      Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminProducts.imagesUploadedSuccessfully_fee7383b18') });
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to upload images' });
+      Toast.show({ type: 'error', text1: error.message || tUi('ui.pages.admin.adminProducts.failedToUploadImages_f707ddb8e2') });
     } finally {
       setUploading(false);
     }
@@ -259,36 +268,36 @@ const AdminProductsScreen = () => {
     const discountValue = Number.parseFloat(form.discount_value);
 
     if (!form.name.trim() || !form.description.trim() || !form.category_name.trim()) {
-      Toast.show({ type: 'error', text1: 'Name, description, and category are required' });
+      Toast.show({ type: 'error', text1: tUi('ui.mobile.adminProducts.validationRequiredFields') });
       return false;
     }
     if (Number.isNaN(price) || price <= 0) {
-      Toast.show({ type: 'error', text1: 'Price must be greater than zero' });
+      Toast.show({ type: 'error', text1: tUi('ui.mobile.adminProducts.validationPrice') });
       return false;
     }
     if (Number.isNaN(quantity) || quantity < 0) {
-      Toast.show({ type: 'error', text1: 'Quantity must be zero or greater' });
+      Toast.show({ type: 'error', text1: tUi('ui.mobile.adminProducts.validationQuantity') });
       return false;
     }
     if (images.length < 1 || images.length > 3) {
-      Toast.show({ type: 'error', text1: 'Add 1 to 3 product images' });
+      Toast.show({ type: 'error', text1: tUi('ui.mobile.adminProducts.validationImages') });
       return false;
     }
     if (form.discount_enabled) {
       if (!['percentage', 'fixed'].includes(form.discount_type)) {
-        Toast.show({ type: 'error', text1: 'Select a valid discount type' });
+        Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.pleaseSelectAValidDiscount_b85b304c81') });
         return false;
       }
       if (Number.isNaN(discountValue) || discountValue <= 0) {
-        Toast.show({ type: 'error', text1: 'Discount value must be greater than zero' });
+        Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.discountValueIsRequiredWhen_7037da0d1a') });
         return false;
       }
       if (form.discount_type === 'percentage' && discountValue > 100) {
-        Toast.show({ type: 'error', text1: 'Percentage discount cannot exceed 100' });
+        Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.percentageDiscountCannotBeMore_fa2e324b58') });
         return false;
       }
       if (form.discount_type === 'fixed' && discountValue > price) {
-        Toast.show({ type: 'error', text1: 'Fixed discount cannot exceed price' });
+        Toast.show({ type: 'error', text1: tUi('ui.pages.admin.adminProducts.fixedDiscountCannotExceedThe_499b7ac30a') });
         return false;
       }
     }
@@ -312,30 +321,35 @@ const AdminProductsScreen = () => {
     try {
       if (editingProduct) {
         await http.put(buildUrl(PRODUCT_ENDPOINTS.UPDATE, { id: editingProduct.id }), payload);
-        Toast.show({ type: 'success', text1: 'Product updated' });
+        Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminProducts.productUpdatedSuccessfully_32fdf252d5') });
       } else {
         await http.post(PRODUCT_ENDPOINTS.CREATE, payload);
-        Toast.show({ type: 'success', text1: 'Product created' });
+        Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminProducts.productCreatedSuccessfully_132827050a') });
       }
       resetForm();
       await fetchProducts();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to save product' });
+      Toast.show({ type: 'error', text1: error.message || tUi('ui.toast.operationFailed') });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (product) => {
-    const ok = await confirmAction('Delete product', `Delete ${product.name}?`);
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminProducts.deleteProduct_5d6cc29a29'),
+      tUi('ui.pages.admin.adminProducts.areYouSureYouWant_4733cf098f'),
+      tUi('ui.pages.admin.adminProducts.deleteProduct_5d6cc29a29'),
+      tUi('ui.pages.admin.adminProducts.cancel_bf8eef7581')
+    );
     if (!ok) return;
     try {
       await http.delete(buildUrl(PRODUCT_ENDPOINTS.DELETE, { id: product.id }));
-      Toast.show({ type: 'success', text1: 'Product deleted' });
+      Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminProducts.productDeletedSuccessfully_f5f852a577') });
       setExpandedProductId(null);
       await fetchProducts();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to delete product' });
+      Toast.show({ type: 'error', text1: error.message || tUi('ui.mobile.adminProducts.failedDelete') });
     }
   };
 
@@ -355,38 +369,40 @@ const AdminProductsScreen = () => {
     const analytics = sentimentAnalytics[productId] || DEFAULT_ANALYTICS;
     const total = analytics.total_reviews || 0;
     const positiveRate = total > 0 ? Math.round((analytics.positive_count / total) * 100) : 0;
-    return { ...analytics, positiveRate };
+    return { ...analytics, positiveRate, total_reviews: total };
   };
+
+  const selectedSentiment = selectedProduct ? getSentimentSummary(selectedProduct.id) : null;
 
   return (
     <AdminScreen
-      title="Products"
-      subtitle="Manage product catalog, stock, images, and discounts."
+      title={tUi('ui.pages.admin.adminProducts.manageProducts_273cb9a998')}
+      subtitle={tUi('ui.pages.admin.adminProducts.trackInventoryUpdateDetailsAnd_86a8fb17ed')}
       action={
-        <Pressable style={styles.primaryButton} onPress={openCreate}>
+        <Pressable style={[styles.primaryButton, { flexDirection: row }]} onPress={openCreate}>
           <Feather name="plus" size={16} color={colors.surface} />
-          <Text style={styles.primaryButtonText}>Add Product</Text>
+          <Text style={styles.primaryButtonText}>{tUi('ui.pages.admin.adminProducts.addProduct_2792a039d2')}</Text>
         </Pressable>
       }
     >
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, { flexDirection: row }]}>
         <Feather name="search" size={16} color={colors.muted} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search products"
+          style={[styles.searchInput, inputRtlStyle]}
+          placeholder={tUi('ui.pages.admin.adminProducts.searchProducts_ab5d94763a')}
           placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
-      <View style={styles.filterRow}>
+      <View style={[styles.filterRow, { flexDirection: row }]}>
         <Pressable
           style={[styles.filterChip, filters.lowStock && styles.filterChipActive]}
           onPress={() => setFilters((prev) => ({ ...prev, lowStock: !prev.lowStock }))}
         >
           <Text style={[styles.filterText, filters.lowStock && styles.filterTextActive]}>
-            Low stock
+            {tUi('ui.mobile.adminProducts.lowStock')}
           </Text>
         </Pressable>
         <Pressable
@@ -394,7 +410,7 @@ const AdminProductsScreen = () => {
           onPress={() => setFilters((prev) => ({ ...prev, discounted: !prev.discounted }))}
         >
           <Text style={[styles.filterText, filters.discounted && styles.filterTextActive]}>
-            Discounted
+            {tUi('ui.mobile.adminProducts.discounted')}
           </Text>
         </Pressable>
       </View>
@@ -406,66 +422,75 @@ const AdminProductsScreen = () => {
       ) : (
         <View>
           {products.map((product) => {
-            const stockLabel = Number(product.quantity || 0) < lowStockThreshold ? 'Low stock' : 'In stock';
+            const stockLabel = Number(product.quantity || 0) < lowStockThreshold
+              ? tUi('ui.mobile.adminProducts.lowStock')
+              : tUi('ui.mobile.adminProducts.inStock');
             const statusTone = Number(product.quantity || 0) < lowStockThreshold ? 'warning' : 'success';
             const imagePath = getFirstImage(product);
+            const categoryLabel = product.category_name || tUi('ui.mobile.adminProducts.uncategorized');
+            const stockMeta = `${product.quantity || 0} ${tUi('ui.mobile.adminProducts.units')}`;
             return (
               <AdminListItem
                 key={product.id}
                 title={product.name}
                 subtitle={product.description}
-                meta={`${formatCurrency(calculateDiscountedPrice(product))} | ${product.category_name || 'Uncategorized'} | ${product.quantity || 0} units`}
+                meta={`${formatCurrency(calculateDiscountedPrice(product))} | ${categoryLabel} | ${stockMeta}`}
                 status={stockLabel}
                 statusTone={statusTone}
                 onPress={() => setExpandedProductId((prev) => (prev === product.id ? null : product.id))}
                 right={
                   <View style={styles.productRight}>
                     {imagePath ? <Image source={{ uri: buildImageUrl(imagePath) }} style={styles.thumbnail} /> : null}
-                    {product.discount_enabled ? <Text style={styles.discountPill}>Sale</Text> : null}
+                    {product.discount_enabled ? <Text style={styles.discountPill}>{tUi('ui.mobile.adminProducts.sale')}</Text> : null}
                   </View>
                 }
               />
             );
           })}
-          {!products.length ? <Text style={styles.emptyText}>No products match your filters.</Text> : null}
+          {!products.length ? (
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminProducts.noProductsFound_3cff798862')}</Text>
+          ) : null}
         </View>
       )}
 
-      {selectedProduct ? (
+      {selectedProduct && selectedSentiment ? (
         <View style={styles.detailCard}>
-          <View style={styles.detailHeader}>
+          <View style={[styles.detailHeader, { flexDirection: row }]}>
             <Text style={styles.detailTitle}>{selectedProduct.name}</Text>
             <Text style={styles.detailMeta}>#{selectedProduct.id}</Text>
           </View>
-          <View style={styles.imageStrip}>
+          <View style={[styles.imageStrip, { flexDirection: row }]}>
             {normalizeProductImages(selectedProduct).map((image, index) => (
               <Image key={`${image}-${index}`} source={{ uri: buildImageUrl(image) }} style={styles.detailImage} />
             ))}
           </View>
-          <View style={styles.detailGrid}>
+          <View style={[styles.detailGrid, { flexDirection: row }]}>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Price</Text>
+              <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.price_e83d5427d6')}</Text>
               <Text style={styles.detailValue}>{formatCurrency(selectedProduct.price || 0)}</Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Final</Text>
+              <Text style={styles.detailLabel}>{tUi('ui.mobile.adminProducts.labelFinal')}</Text>
               <Text style={styles.detailValue}>{formatCurrency(calculateDiscountedPrice(selectedProduct))}</Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Stock</Text>
+              <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.stock_04fad4218b')}</Text>
               <Text style={styles.detailValue}>{selectedProduct.quantity || 0}</Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Positive</Text>
-              <Text style={styles.detailValue}>{getSentimentSummary(selectedProduct.id).positiveRate}%</Text>
+              <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.reviewSentiment_ab05791b1b')}</Text>
+              <Text style={styles.detailValue}>
+                {selectedSentiment.positiveRate}% {tUi('ui.mobile.adminProducts.labelPositive')} ·{' '}
+                {tUi('ui.mobile.adminProducts.ratingsSummary', { value0: selectedSentiment.total_reviews || 0 })}
+              </Text>
             </View>
           </View>
-          <View style={styles.actionRow}>
+          <View style={[styles.actionRow, { flexDirection: row }]}>
             <Pressable style={styles.secondaryButton} onPress={() => openEdit(selectedProduct)}>
-              <Text style={styles.secondaryButtonText}>Edit</Text>
+              <Text style={styles.secondaryButtonText}>{tUi('ui.pages.admin.adminProducts.edit_6b4f086241')}</Text>
             </Pressable>
             <Pressable style={styles.deleteButton} onPress={() => handleDelete(selectedProduct)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText}>{tUi('ui.pages.admin.adminProducts.delete_d93e34aa58')}</Text>
             </Pressable>
           </View>
         </View>
@@ -475,31 +500,68 @@ const AdminProductsScreen = () => {
         <Pressable style={styles.modalOverlay} onPress={resetForm}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>{editingProduct ? 'Edit Product' : 'Add Product'}</Text>
+              <Text style={styles.modalTitle}>
+                {editingProduct
+                  ? tUi('ui.pages.admin.adminProducts.editProduct_e63de796e6')
+                  : tUi('ui.pages.admin.adminProducts.addNewProduct_109f983c59')}
+              </Text>
 
-              <Text style={styles.label}>Name</Text>
-              <TextInput style={styles.input} value={form.name} onChangeText={(value) => updateForm('name', value)} />
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.productName_f2fbd60c6e')}</Text>
+              <TextInput
+                style={[styles.input, inputRtlStyle]}
+                value={form.name}
+                onChangeText={(value) => updateForm('name', value)}
+              />
 
-              <View style={styles.formRow}>
+              <View style={[styles.formRow, { flexDirection: row }]}>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>Arabic name</Text>
-                  <TextInput style={styles.input} value={form.name_ar} onChangeText={(value) => updateForm('name_ar', value)} />
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.nameArabic')}</Text>
+                  <TextInput
+                    style={[styles.input, inputRtlStyle]}
+                    value={form.name_ar}
+                    onChangeText={(value) => updateForm('name_ar', value)}
+                  />
                 </View>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>French name</Text>
-                  <TextInput style={styles.input} value={form.name_fr} onChangeText={(value) => updateForm('name_fr', value)} />
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.nameFrench')}</Text>
+                  <TextInput
+                    style={[styles.input, inputRtlStyle]}
+                    value={form.name_fr}
+                    onChangeText={(value) => updateForm('name_fr', value)}
+                  />
                 </View>
               </View>
 
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.description_92d5f9f27a')}</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, inputRtlStyle]}
                 value={form.description}
                 onChangeText={(value) => updateForm('description', value)}
                 multiline
               />
 
-              <Text style={styles.label}>Category</Text>
+              <View style={[styles.formRow, { flexDirection: row }]}>
+                <View style={styles.formColumn}>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.descriptionArabic')}</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea, inputRtlStyle]}
+                    value={form.description_ar}
+                    onChangeText={(value) => updateForm('description_ar', value)}
+                    multiline
+                  />
+                </View>
+                <View style={styles.formColumn}>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.descriptionFrench')}</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea, inputRtlStyle]}
+                    value={form.description_fr}
+                    onChangeText={(value) => updateForm('description_fr', value)}
+                    multiline
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.categoryName_d2ea6c7aa6')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroller}>
                 {categories.map((category) => (
                   <Pressable
@@ -522,20 +584,20 @@ const AdminProductsScreen = () => {
                 ))}
               </ScrollView>
 
-              <View style={styles.formRow}>
+              <View style={[styles.formRow, { flexDirection: row }]}>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>Price</Text>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.price_e83d5427d6')}</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputRtlStyle]}
                     value={form.price}
                     onChangeText={(value) => updateForm('price', value)}
                     keyboardType="decimal-pad"
                   />
                 </View>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>Quantity</Text>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.quantity_05a793b136')}</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputRtlStyle]}
                     value={form.quantity}
                     onChangeText={(value) => updateForm('quantity', value)}
                     keyboardType="number-pad"
@@ -543,23 +605,23 @@ const AdminProductsScreen = () => {
                 </View>
               </View>
 
-              <View style={styles.discountHeader}>
-                <Text style={styles.label}>Discount</Text>
+              <View style={[styles.discountHeader, { flexDirection: row }]}>
+                <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.enableDiscount_6f1ae41f4b')}</Text>
                 <Pressable
                   style={[styles.toggleButton, form.discount_enabled && styles.toggleButtonActive]}
                   onPress={() => updateForm('discount_enabled', !form.discount_enabled)}
                 >
                   <Text style={[styles.toggleText, form.discount_enabled && styles.toggleTextActive]}>
-                    {form.discount_enabled ? 'On' : 'Off'}
+                    {form.discount_enabled ? tUi('ui.mobile.adminProducts.on') : tUi('ui.mobile.adminProducts.off')}
                   </Text>
                 </Pressable>
               </View>
 
               {form.discount_enabled ? (
-                <View style={styles.formRow}>
+                <View style={[styles.formRow, { flexDirection: row }]}>
                   <View style={styles.formColumn}>
-                    <Text style={styles.label}>Type</Text>
-                    <View style={styles.segmentRow}>
+                    <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.discountType_290629062f')}</Text>
+                    <View style={[styles.segmentRow, { flexDirection: row }]}>
                       {['percentage', 'fixed'].map((type) => (
                         <Pressable
                           key={type}
@@ -567,16 +629,18 @@ const AdminProductsScreen = () => {
                           onPress={() => updateForm('discount_type', type)}
                         >
                           <Text style={[styles.segmentText, form.discount_type === type && styles.segmentTextActive]}>
-                            {type === 'percentage' ? '%' : '$'}
+                            {type === 'percentage'
+                              ? tUi('ui.pages.admin.adminProducts.percentage_a8cb8ffe45')
+                              : tUi('ui.pages.admin.adminProducts.fixedAmount_3189e1492d')}
                           </Text>
                         </Pressable>
                       ))}
                     </View>
                   </View>
                   <View style={styles.formColumn}>
-                    <Text style={styles.label}>Value</Text>
+                    <Text style={styles.label}>{tUi('ui.pages.admin.adminProducts.discountValue_e3feb63e4a')}</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, inputRtlStyle]}
                       value={form.discount_value}
                       onChangeText={(value) => updateForm('discount_value', value)}
                       keyboardType="decimal-pad"
@@ -585,14 +649,23 @@ const AdminProductsScreen = () => {
                 </View>
               ) : null}
 
-              <View style={styles.imagesHeader}>
-                <Text style={styles.label}>Images ({images.length}/3)</Text>
-                <Pressable style={styles.pickButton} onPress={handlePickImages} disabled={uploading}>
+              <View style={[styles.imagesHeader, { flexDirection: row }]}>
+                <View style={styles.imagesHeaderText}>
+                  <Text style={styles.label}>
+                    {tUi('ui.pages.admin.adminProducts.productImages13Images_b802fc6b5e')}
+                  </Text>
+                  <Text style={styles.imagesCountText}>
+                    {tUi('ui.pages.admin.adminProducts.value3ImagesSelected_586058179b', { value0: images.length })}
+                  </Text>
+                </View>
+                <Pressable style={[styles.pickButton, { flexDirection: row }]} onPress={handlePickImages} disabled={uploading}>
                   <Feather name="image" size={14} color={colors.primary} />
-                  <Text style={styles.pickButtonText}>{uploading ? 'Uploading...' : 'Add'}</Text>
+                  <Text style={styles.pickButtonText}>
+                    {uploading ? tUi('ui.mobile.adminProducts.uploading') : tUi('ui.mobile.adminProducts.addImage')}
+                  </Text>
                 </Pressable>
               </View>
-              <View style={styles.previewRow}>
+              <View style={[styles.previewRow, { flexDirection: row }]}>
                 {images.map((image, index) => (
                   <View key={`${image}-${index}`} style={styles.previewWrap}>
                     <Image source={{ uri: buildImageUrl(image) }} style={styles.previewImage} />
@@ -603,12 +676,14 @@ const AdminProductsScreen = () => {
                 ))}
               </View>
 
-              <View style={styles.formActions}>
+              <View style={[styles.formActions, { flexDirection: row }]}>
                 <Pressable style={styles.secondaryButton} onPress={resetForm}>
-                  <Text style={styles.secondaryButtonText}>Cancel</Text>
+                  <Text style={styles.secondaryButtonText}>{tUi('ui.mobile.common.cancel')}</Text>
                 </Pressable>
                 <Pressable style={[styles.primaryActionButton, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
-                  <Text style={styles.primaryActionText}>{saving ? 'Saving...' : 'Save'}</Text>
+                  <Text style={styles.primaryActionText}>
+                    {saving ? tUi('ui.mobile.common.saving') : tUi('ui.mobile.common.save')}
+                  </Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -619,7 +694,7 @@ const AdminProductsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -787,7 +862,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 16,
   },
@@ -909,6 +984,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
+  },
+  imagesHeaderText: {
+    flex: 1,
+    marginRight: 8,
+  },
+  imagesCountText: {
+    color: colors.muted,
+    fontSize: 11,
+    marginTop: 2,
   },
   pickButton: {
     flexDirection: 'row',

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Modal,
@@ -10,15 +11,53 @@ import {
 } from 'react-native';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { TICKET_ENDPOINTS, USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { confirmAction } from '../utils/confirm';
 import { formatDateTime } from '../utils/format';
+import { useUnreadTickets } from '../../hooks/useUnreadTickets';
+import { usePanelRole } from '../hooks/usePanelRole';
 
 const STATUS_OPTIONS = ['Open', 'In Progress', 'Resolved', 'Closed'];
 
+const TICKET_STATUS_LABEL_KEYS = {
+  Open: 'ui.pages.tickets.statusOpen_a1b2c3d4e1',
+  'In Progress': 'ui.pages.admin.adminTickets.inProgress_18e19f0fd6',
+  Resolved: 'ui.pages.admin.adminTickets.resolved_696eb2f977',
+  Closed: 'ui.pages.admin.adminTickets.closed_5b72d42e4a',
+};
+
 const AdminTicketsScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { panelKicker } = usePanelRole();
+  const { markAsViewed } = useUnreadTickets();
+  const { isRtl, textAlign } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
+  const getTicketStatusLabel = useCallback(
+    (status) => {
+      const key = TICKET_STATUS_LABEL_KEYS[status];
+      return key ? tUi(key) : status;
+    },
+    [tUi]
+  );
+
+  const getStatusFilterLabel = useCallback(
+    (status) => {
+      if (status === 'all') {
+        return tUi('ui.pages.admin.adminTickets.all_89e88f8e70');
+      }
+      return getTicketStatusLabel(status);
+    },
+    [getTicketStatusLabel, tUi]
+  );
+
   const [tickets, setTickets] = useState([]);
   const [supportAgents, setSupportAgents] = useState([]);
   const [pendingDeletes, setPendingDeletes] = useState([]);
@@ -37,9 +76,9 @@ const AdminTicketsScreen = () => {
 
   const getResponseAuthor = (response) => {
     const user = response?.user;
-    if (!user) return 'Unknown';
+    if (!user) return tUi('ui.mobile.adminInstallments.unknownUser');
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    return name || user.email || 'Unknown';
+    return name || user.email || tUi('ui.mobile.adminInstallments.unknownUser');
   };
 
   const fetchTicketDetails = useCallback(async (ticketId) => {
@@ -88,6 +127,12 @@ const AdminTicketsScreen = () => {
     fetchPendingDeletes();
   }, [fetchPendingDeletes, fetchSupportAgents, fetchTickets]);
 
+  useFocusEffect(
+    useCallback(() => {
+      markAsViewed();
+    }, [markAsViewed])
+  );
+
   const filtered = useMemo(() => {
     let list = [...tickets];
     if (statusFilter !== 'all') {
@@ -135,7 +180,12 @@ const AdminTicketsScreen = () => {
   );
 
   const handleDelete = async (ticketId) => {
-    const ok = await confirmAction('Delete ticket', 'Delete this ticket?');
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminTickets.deleteTicket_737e638768'),
+      tUi('ui.pages.admin.adminTickets.areYouSureYouWant_59d1414125'),
+      tUi('ui.pages.admin.adminTickets.delete_96591806d8'),
+      tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29')
+    );
     if (!ok) return;
     await http.delete(buildUrl(TICKET_ENDPOINTS.DELETE, { ticket_id: ticketId }));
     fetchTickets();
@@ -143,6 +193,13 @@ const AdminTicketsScreen = () => {
   };
 
   const handleApproveDelete = async (ticketId) => {
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminTickets.approveDeleteRequest_b023259325'),
+      tUi('ui.pages.admin.adminTickets.approveAndDeleteThisTicket_93b6b71614'),
+      tUi('ui.pages.admin.adminTickets.approveDelete_4efd775c5f'),
+      tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29')
+    );
+    if (!ok) return;
     await http.post(buildUrl(TICKET_ENDPOINTS.APPROVE_DELETE, { ticket_id: ticketId }));
     fetchTickets();
     fetchPendingDeletes();
@@ -155,7 +212,12 @@ const AdminTicketsScreen = () => {
   };
 
   return (
-    <AdminScreen title="Support Tickets" subtitle="Assign, respond, and resolve tickets.">
+    <AdminScreen
+      kicker={panelKicker}
+      title={tUi('ui.pages.admin.adminTickets.allTickets_10363e2701')}
+      subtitle={tUi('ui.pages.admin.adminTickets.subtitle_1a2b3c4d5j')}
+    >
+      <Text style={styles.filterLabel}>{tUi('ui.pages.admin.adminTickets.filterByStatus_9e240a5b82')}</Text>
       <View style={styles.filterRow}>
         {['all', ...STATUS_OPTIONS].map((status) => (
           <Pressable
@@ -166,12 +228,13 @@ const AdminTicketsScreen = () => {
             <Text
               style={[styles.filterText, statusFilter === status && styles.filterTextActive]}
             >
-              {status.toLowerCase()}
+              {getStatusFilterLabel(status)}
             </Text>
           </Pressable>
         ))}
       </View>
 
+      <Text style={styles.filterLabel}>{tUi('ui.pages.admin.adminTickets.filterByAssignedTo_d037356f6b')}</Text>
       <View style={styles.filterRow}>
         <Pressable
           style={[styles.filterChip, assignedFilter === 'all' && styles.filterChipActive]}
@@ -180,7 +243,7 @@ const AdminTicketsScreen = () => {
           <Text
             style={[styles.filterText, assignedFilter === 'all' && styles.filterTextActive]}
           >
-            all
+            {tUi('ui.pages.admin.adminTickets.all_89e88f8e70')}
           </Text>
         </Pressable>
         <Pressable
@@ -190,7 +253,7 @@ const AdminTicketsScreen = () => {
           <Text
             style={[styles.filterText, assignedFilter === 'unassigned' && styles.filterTextActive]}
           >
-            unassigned
+            {tUi('ui.pages.admin.adminTickets.unassigned_0796076cc1')}
           </Text>
         </Pressable>
         {supportAgents.map((agent) => (
@@ -213,16 +276,20 @@ const AdminTicketsScreen = () => {
 
       {pendingDeletes.length ? (
         <View style={styles.pendingCard}>
-          <Text style={styles.pendingTitle}>Pending delete requests</Text>
+          <Text style={styles.pendingTitle}>
+            {tUi('ui.pages.admin.adminTickets.pendingDeleteRequestsTitle_7d6c5b4a3f', {
+              count: pendingDeletes.length,
+            })}
+          </Text>
           {pendingDeletes.map((ticket) => (
             <View key={ticket.id} style={styles.pendingRow}>
               <Text style={styles.pendingText}>{ticket.title}</Text>
               <View style={styles.pendingActions}>
                 <Pressable onPress={() => handleApproveDelete(ticket.id)}>
-                  <Text style={styles.inlineButton}>Approve</Text>
+                  <Text style={styles.inlineButton}>{tUi('ui.pages.admin.adminTickets.approveDelete_4efd775c5f')}</Text>
                 </Pressable>
                 <Pressable onPress={() => handleRejectDelete(ticket.id)}>
-                  <Text style={[styles.inlineButton, styles.deleteButton]}>Reject</Text>
+                  <Text style={[styles.inlineButton, styles.deleteButton]}>{tUi('ui.pages.admin.adminTickets.reject_6ed0dbd575')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -241,21 +308,21 @@ const AdminTicketsScreen = () => {
               key={ticket.id}
               title={ticket.title}
               subtitle={ticket.description}
-              meta={`Customer: ${ticket.customer?.email || 'Unknown'} | ${formatDateTime(
-                ticket.created_at
-              )}`}
-              status={ticket.status}
+              meta={`${tUi('ui.pages.admin.adminTickets.customer_b9f6549afe')} ${
+                ticket.customer?.email || tUi('ui.mobile.adminInstallments.unknownUser')
+              } · ${formatDateTime(ticket.created_at)}`}
+              status={getTicketStatusLabel(ticket.status)}
               statusTone={ticket.status === 'Resolved' ? 'success' : 'warning'}
               onPress={() => handleSelectTicket(ticket)}
               right={
                 <Pressable onPress={() => setAssignModalTicket(ticket)}>
-                  <Text style={styles.inlineButton}>Assign</Text>
+                  <Text style={styles.inlineButton}>{tUi('ui.pages.admin.adminTickets.assign_b71a20df8c')}</Text>
                 </Pressable>
               }
             />
           ))}
           {!filtered.length ? (
-            <Text style={styles.emptyText}>No tickets found.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminTickets.noTicketsFound_563b84a408')}</Text>
           ) : null}
         </View>
       )}
@@ -264,7 +331,11 @@ const AdminTicketsScreen = () => {
         <View style={styles.detailCard}>
           <Text style={styles.detailTitle}>{selectedTicket.title}</Text>
           <Text style={styles.detailMeta}>{selectedTicket.description}</Text>
-          <Text style={styles.detailMeta}>{`Status: ${selectedTicket.status}`}</Text>
+          <Text style={styles.detailMeta}>
+            {`${tUi('ui.pages.admin.adminOrders.status_7bb0ee7637')}: ${getTicketStatusLabel(
+              selectedTicket.status
+            )}`}
+          </Text>
           <View style={styles.statusRow}>
             {STATUS_OPTIONS.map((status) => (
               <Pressable
@@ -275,13 +346,13 @@ const AdminTicketsScreen = () => {
                 ]}
                 onPress={() => handleUpdateStatus(selectedTicket.id, status)}
               >
-                <Text style={styles.statusChipText}>{status}</Text>
+                <Text style={styles.statusChipText}>{getTicketStatusLabel(status)}</Text>
               </Pressable>
             ))}
           </View>
           <View style={styles.responsesSection}>
             <Text style={styles.responsesTitle}>
-              {`Responses (${selectedResponses.length})`}
+              {`${tUi('ui.pages.admin.adminTickets.responses_2332bf585e')}${selectedResponses.length})`}
             </Text>
             {selectedResponses.length ? (
               selectedResponses.map((response) => (
@@ -294,12 +365,12 @@ const AdminTicketsScreen = () => {
                 </View>
               ))
             ) : (
-              <Text style={styles.responsesEmpty}>No responses yet.</Text>
+              <Text style={styles.responsesEmpty}>{tUi('ui.pages.admin.adminTickets.noResponsesYet_5773352778')}</Text>
             )}
           </View>
           <TextInput
-            style={styles.responseInput}
-            placeholder="Add a response"
+            style={[styles.responseInput, inputRtlStyle]}
+            placeholder={tUi('ui.pages.admin.adminTickets.typeYourResponse_3b25ee5a90')}
             placeholderTextColor={colors.muted}
             value={responseMessage}
             onChangeText={setResponseMessage}
@@ -307,10 +378,12 @@ const AdminTicketsScreen = () => {
           />
           <View style={styles.detailActions}>
             <Pressable style={styles.primaryButton} onPress={() => handleAddResponse(selectedTicket.id)}>
-              <Text style={styles.primaryButtonText}>Send response</Text>
+              <Text style={styles.primaryButtonText}>
+                {tUi('ui.pages.admin.adminTickets.sendResponse_19ad5c5ebf')}
+              </Text>
             </Pressable>
             <Pressable style={styles.deleteButton} onPress={() => handleDelete(selectedTicket.id)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText}>{tUi('ui.pages.admin.adminTickets.delete_96591806d8')}</Text>
             </Pressable>
           </View>
         </View>
@@ -319,7 +392,9 @@ const AdminTicketsScreen = () => {
       <Modal transparent visible={!!assignModalTicket} animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setAssignModalTicket(null)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.modalTitle}>Assign support agent</Text>
+            <Text style={styles.modalTitle}>
+              {tUi('ui.pages.admin.adminTickets.assignTicket_a1cbabca83')}
+            </Text>
             {supportAgents.map((agent) => (
               <Pressable
                 key={agent.id}
@@ -337,7 +412,12 @@ const AdminTicketsScreen = () => {
               </Pressable>
             ))}
             <Pressable style={styles.primaryButton} onPress={handleAssign}>
-              <Text style={styles.primaryButtonText}>Assign</Text>
+              <Text style={styles.primaryButtonText}>{tUi('ui.pages.admin.adminTickets.assign_b71a20df8c')}</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryButton} onPress={() => setAssignModalTicket(null)}>
+              <Text style={styles.secondaryButtonText}>
+                {tUi('ui.pages.admin.adminTickets.cancel_b33ccf8e29')}
+              </Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -346,7 +426,13 @@ const AdminTicketsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    marginBottom: 6,
+  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -531,7 +617,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },
@@ -558,6 +644,18 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     fontWeight: '700',
     color: colors.primary,
+  },
+  secondaryButton: {
+    marginTop: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  secondaryButtonText: {
+    color: colors.text,
+    fontWeight: '600',
   },
 });
 

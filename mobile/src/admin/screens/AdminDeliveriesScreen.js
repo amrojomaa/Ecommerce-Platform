@@ -10,14 +10,20 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import OrderMapTracker from '../components/OrderMapTracker';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { DELIVERY_ENDPOINTS, buildUrl } from '../../config/api';
 import { confirmAction } from '../utils/confirm';
 import { buildImageUrl, formatDate, formatDateTime } from '../utils/format';
 import { useCurrency } from '../../hooks/useCurrency';
+import { usePanelRole } from '../hooks/usePanelRole';
 
 const STATUS_FILTERS = [
   'all',
@@ -29,6 +35,20 @@ const STATUS_FILTERS = [
   'cancelled',
 ];
 
+const DELIVERY_STATUS_LABEL_KEYS = {
+  available: 'ui.pages.admin.adminDeliveries.available_66883aa01e',
+  assigned: 'ui.pages.orders.status.assigned',
+  picked_up: 'ui.pages.orders.status.pickedUp',
+  delivering: 'ui.pages.orders.status.delivering',
+  delivered: 'ui.pages.admin.adminDeliveries.delivered_7131e29334',
+  cancelled: 'ui.pages.orders.status.cancelled',
+};
+
+const PHOTO_TYPE_LABEL_KEYS = {
+  pickup: 'ui.pages.admin.adminDeliveries.pickupProof_de18bafb10',
+  delivery: 'ui.pages.admin.adminDeliveries.deliveryProof_8e26a61d41',
+};
+
 const statusToneMap = {
   available: 'default',
   assigned: 'warning',
@@ -39,7 +59,58 @@ const statusToneMap = {
 };
 
 const AdminDeliveriesScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { panelKicker } = usePanelRole();
+  const { isRtl, textAlign, row, alignSelfEnd, alignSelfStart } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
   const { formatCurrency } = useCurrency();
+
+  const mapLabels = useMemo(
+    () => ({
+      unavailable: tUi('ui.mobile.mapTracker.unavailable'),
+      coordsUnavailable: tUi('ui.mobile.mapTracker.coordsUnavailable'),
+      pickup: tUi('ui.mobile.mapTracker.pickupLocation'),
+      delivery: tUi('ui.mobile.mapTracker.deliveryLocation'),
+      driver: tUi('ui.mobile.mapTracker.driverLocation'),
+      live: tUi('ui.mobile.mapTracker.liveTracking'),
+      deliveryCompleted: tUi('ui.mobile.adminDeliveries.deliveryCompleted'),
+      deliveryCancelled: tUi('ui.mobile.adminDeliveries.deliveryCancelled'),
+      trackingDeliveredInactive: tUi('ui.mobile.adminDeliveries.trackingDeliveredInactive'),
+      trackingCancelledInactive: tUi('ui.mobile.adminDeliveries.trackingCancelledInactive'),
+    }),
+    [tUi]
+  );
+
+  const getStatusLabel = useCallback(
+    (status) => {
+      const normalized = String(status || '').toLowerCase();
+      const key = DELIVERY_STATUS_LABEL_KEYS[normalized];
+      if (key) return tUi(key);
+      return normalized.replace(/_/g, ' ');
+    },
+    [tUi]
+  );
+
+  const getStatusFilterLabel = useCallback(
+    (status) => {
+      if (status === 'all') {
+        return tUi('ui.pages.admin.adminDeliveries.all_37e6961373');
+      }
+      return getStatusLabel(status);
+    },
+    [getStatusLabel, tUi]
+  );
+
+  const getPhotoTypeLabel = useCallback(
+    (type) => {
+      const key = PHOTO_TYPE_LABEL_KEYS[type];
+      return key ? tUi(key) : type;
+    },
+    [tUi]
+  );
   const [jobs, setJobs] = useState([]);
   const [allJobs, setAllJobs] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -86,13 +157,31 @@ const AdminDeliveriesScreen = () => {
   }, [allJobs, statusFilter]);
 
   const handleAssignDriver = async () => {
-    if (!assignModalJob || !selectedDriverId) return;
-    await http.patch(buildUrl(DELIVERY_ENDPOINTS.ASSIGN_DRIVER, { job_id: assignModalJob.id }), {
-      driver_id: Number(selectedDriverId),
-    });
-    setAssignModalJob(null);
-    setSelectedDriverId('');
-    fetchJobs();
+    if (!assignModalJob) return;
+    if (!selectedDriverId) {
+      Toast.show({
+        type: 'error',
+        text1: tUi('ui.pages.admin.adminDeliveries.pleaseSelectADriverFirst_409da1b2f7'),
+      });
+      return;
+    }
+    try {
+      await http.patch(buildUrl(DELIVERY_ENDPOINTS.ASSIGN_DRIVER, { job_id: assignModalJob.id }), {
+        driver_id: Number(selectedDriverId),
+      });
+      setAssignModalJob(null);
+      setSelectedDriverId('');
+      fetchJobs();
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.admin.adminDeliveries.driverAssignedSuccessfully_d1e7b8c241'),
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.toast.operationFailed'),
+      });
+    }
   };
 
   const handleReviewPhoto = async (jobId, photoType) => {
@@ -108,8 +197,26 @@ const AdminDeliveriesScreen = () => {
   };
 
   const handleResolveIssue = async (jobId) => {
-    await http.patch(buildUrl(DELIVERY_ENDPOINTS.RESOLVE_ISSUE, { job_id: jobId }));
-    fetchJobs();
+    const confirmed = await confirmAction(
+      tUi('ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7'),
+      tUi('ui.pages.admin.adminDeliveries.issueClosedByAdmin_a88a36322d'),
+      tUi('ui.mobile.common.confirm'),
+      tUi('ui.mobile.common.cancel')
+    );
+    if (!confirmed) return;
+    try {
+      await http.patch(buildUrl(DELIVERY_ENDPOINTS.RESOLVE_ISSUE, { job_id: jobId }));
+      fetchJobs();
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.admin.adminDeliveries.issueMarkedAsSolved_9610dc7d9b'),
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.toast.operationFailed'),
+      });
+    }
   };
 
   const fetchIssueMessages = useCallback(async (jobId) => {
@@ -159,27 +266,34 @@ const AdminDeliveriesScreen = () => {
   }).length;
 
   const formatCoords = (lat, lng) => {
-    if (lat == null || lng == null) return 'Coordinates unavailable';
+    const unavailable = tUi('ui.mobile.adminDeliveries.coordinatesUnavailable');
+    if (lat == null || lng == null) return unavailable;
     const latNum = Number(lat);
     const lngNum = Number(lng);
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return 'Coordinates unavailable';
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return unavailable;
     return `(${latNum.toFixed(4)}, ${lngNum.toFixed(4)})`;
   };
 
   const customerName = (customer) => {
-    if (!customer) return 'N/A';
-    return [customer.first_name, customer.last_name].filter(Boolean).join(' ') || 'Customer';
+    if (!customer) return tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e');
+    return (
+      [customer.first_name, customer.last_name].filter(Boolean).join(' ') ||
+      tUi('ui.pages.admin.adminUsers.customer_68c8b84985')
+    );
   };
 
   const photosByType = (job, type) => (job.photos || []).filter((photo) => photo.photo_type === type);
 
-  const renderPhotoGroup = (job, type, label, checked) => {
+  const renderPhotoGroup = (job, type, checked) => {
+    const label = getPhotoTypeLabel(type);
     const photos = photosByType(job, type);
     if (!photos.length) {
       return (
         <View style={styles.photoGroup}>
           <Text style={styles.sectionTitle}>{label}</Text>
-          <Text style={styles.emptyInline}>No {label.toLowerCase()} photos uploaded.</Text>
+          <Text style={styles.emptyInline}>
+            {tUi('ui.pages.admin.adminInstallments.notUploaded_b78a3d1521')}
+          </Text>
         </View>
       );
     }
@@ -187,7 +301,7 @@ const AdminDeliveriesScreen = () => {
     const reviewKey = `${job.id}-${type}`;
     return (
       <View style={styles.photoGroup}>
-        <View style={styles.sectionHeaderRow}>
+        <View style={[styles.sectionHeaderRow, { flexDirection: row }]}>
           <Text style={styles.sectionTitle}>{label}</Text>
           <Pressable
             style={[styles.smallActionButton, checked && styles.smallActionButtonDisabled]}
@@ -195,11 +309,15 @@ const AdminDeliveriesScreen = () => {
             onPress={() => handleReviewPhoto(job.id, type)}
           >
             <Text style={styles.smallActionText}>
-              {checked ? 'Checked OK' : reviewingPhotoType === reviewKey ? 'Saving...' : 'Mark OK'}
+              {checked
+                ? tUi('ui.pages.admin.adminDeliveries.checkedOk_c8b794882a')
+                : reviewingPhotoType === reviewKey
+                  ? tUi('ui.pages.admin.adminDeliveries.saving_3400c1bb21')
+                  : tUi('ui.pages.admin.adminDeliveries.markOk_245791044e')}
             </Text>
           </Pressable>
         </View>
-        <View style={styles.photoGrid}>
+        <View style={[styles.photoGrid, { flexDirection: row }]}>
           {photos.map((photo) => (
             <View key={photo.id} style={styles.proofCard}>
               <Image source={{ uri: buildImageUrl(photo.image_path) }} style={styles.proofImage} />
@@ -236,37 +354,43 @@ const AdminDeliveriesScreen = () => {
 
   const renderJobDetails = (job) => (
     <View style={styles.detailCard}>
-      <View style={styles.jobHeader}>
+      <View style={[styles.jobHeader, { flexDirection: row }]}>
         <View>
-          <Text style={styles.detailTitle}>Job #{job.id}</Text>
-          <Text style={styles.detailMeta}>{`Order #${job.order_id}`}</Text>
+          <Text style={styles.detailTitle}>
+            {tUi('ui.pages.admin.adminDeliveries.jobDetails_7a8b9c0d1e', { value0: job.id })}
+          </Text>
+          <Text style={styles.detailMeta}>
+            {tUi('ui.pages.admin.adminDeliveries.orderTitle_8e5d31f868', { value0: job.order_id })}
+          </Text>
         </View>
         <Text style={[styles.statusBadge, styles[`status_${(job.status || 'available').toLowerCase()}`]]}>
-          {(job.status || 'available').replace(/_/g, ' ')}
+          {getStatusLabel(job.status || 'available')}
         </Text>
       </View>
 
-      <View style={styles.summaryGrid}>
+      <View style={[styles.summaryGrid, { flexDirection: row }]}>
         <View style={styles.summaryCell}>
-          <Text style={styles.detailLabel}>Payment</Text>
+          <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminDeliveries.payment_ca9b9e5f35')}</Text>
           <Text style={styles.detailValue}>{formatCurrency(job.payment_amount || 0)}</Text>
         </View>
         <View style={styles.summaryCell}>
-          <Text style={styles.detailLabel}>Driver</Text>
-          <Text style={styles.detailValue}>{job.driver_name || 'Not assigned'}</Text>
+          <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminDeliveries.driver_98ea19431c')}</Text>
+          <Text style={styles.detailValue}>
+            {job.driver_name || tUi('ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1')}
+          </Text>
         </View>
         <View style={styles.summaryCell}>
-          <Text style={styles.detailLabel}>Created</Text>
+          <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminDeliveries.created_138ce7b7fa')}</Text>
           <Text style={styles.detailValue}>{formatDate(job.created_at)}</Text>
         </View>
       </View>
 
-      <View style={styles.tabRow}>
+      <View style={[styles.tabRow, { flexDirection: row }]}>
         {[
-          ['overview', 'Overview'],
-          ['tracking', 'Live tracking'],
-          ['proof', 'Delivery Proof Photos'],
-          ...(job.issue_type ? [['issue', 'Issue']] : []),
+          ['overview', tUi('ui.pages.admin.adminDeliveries.tabOverview_9c0d1e2f3a')],
+          ['tracking', tUi('ui.pages.admin.adminDeliveries.tabTracking_0d1e2f3a4b')],
+          ['proof', tUi('ui.pages.admin.adminDeliveries.deliveryProofPhotos_2ec00d3e69')],
+          ...(job.issue_type ? [['issue', tUi('ui.mobile.adminDeliveries.tabIssue')]] : []),
         ].map(([key, label]) => (
           <Pressable
             key={key}
@@ -282,35 +406,46 @@ const AdminDeliveriesScreen = () => {
 
       {expandedJobTab === 'overview' ? (
         <View>
-          <View style={styles.detailGrid}>
+          <View style={[styles.detailGrid, { flexDirection: row }]}>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Pickup</Text>
-              <Text style={styles.infoText}>{job.pickup_address || 'TBD'}</Text>
+              <Text style={styles.infoTitle}>{tUi('ui.pages.admin.adminDeliveries.pickup_b758cea6c8')}</Text>
+              <Text style={styles.infoText}>
+                {job.pickup_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+              </Text>
               <Text style={styles.coordsText}>
                 {formatCoords(job.pickup_latitude, job.pickup_longitude)}
               </Text>
             </View>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Delivery</Text>
-              <Text style={styles.infoText}>{job.delivery_address || 'TBD'}</Text>
+              <Text style={styles.infoTitle}>{tUi('ui.pages.admin.adminDeliveries.delivery_e0a72301c9')}</Text>
+              <Text style={styles.infoText}>
+                {job.delivery_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+              </Text>
               <Text style={styles.coordsText}>
                 {formatCoords(job.delivery_latitude, job.delivery_longitude)}
               </Text>
             </View>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Customer</Text>
+              <Text style={styles.infoTitle}>{tUi('ui.pages.admin.adminDeliveries.customer_6ce1add7ce')}</Text>
               <Text style={styles.infoText}>
                 {customerName(job.customer)}
                 {job.customer?.phone ? ` | ${job.customer.phone}` : ''}
               </Text>
             </View>
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Driver</Text>
-              <Text style={styles.infoText}>{job.driver_name || 'Not assigned'}</Text>
+              <Text style={styles.infoTitle}>{tUi('ui.pages.admin.adminDeliveries.driver_98ea19431c')}</Text>
+              <Text style={styles.infoText}>
+                {job.driver_name || tUi('ui.pages.admin.adminDeliveries.notAssigned_128e07a7a1')}
+              </Text>
               {['available', 'assigned'].includes((job.status || '').toLowerCase()) ? (
-                <Pressable style={styles.assignInlineButton} onPress={() => setAssignModalJob(job)}>
+                <Pressable
+                  style={[styles.assignInlineButton, { alignSelf: alignSelfStart }]}
+                  onPress={() => setAssignModalJob(job)}
+                >
                   <Text style={styles.assignInlineText}>
-                    {job.driver_id ? 'Reassign driver' : 'Assign driver'}
+                    {job.driver_id
+                      ? tUi('ui.mobile.adminDeliveries.reassignDriver')
+                      : tUi('ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a')}
                   </Text>
                 </Pressable>
               ) : null}
@@ -318,17 +453,18 @@ const AdminDeliveriesScreen = () => {
           </View>
 
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Items</Text>
+            <Text style={styles.sectionTitle}>{tUi('ui.pages.admin.adminDeliveries.items_fa39ea7cbb')}</Text>
             {(job.items || []).length ? (
-              <View style={styles.itemWrap}>
+              <View style={[styles.itemWrap, { flexDirection: row }]}>
                 {job.items.map((item, index) => (
                   <Text key={item.id || index} style={styles.itemPill}>
-                    {item.product?.name || item.product_name || 'Item'} x{item.quantity}
+                    {item.product?.name || item.product_name || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}{' '}
+                    x{item.quantity}
                   </Text>
                 ))}
               </View>
             ) : (
-              <Text style={styles.emptyInline}>No item data.</Text>
+              <Text style={styles.emptyInline}>{tUi('ui.mobile.adminDeliveries.noItemData')}</Text>
             )}
           </View>
         </View>
@@ -336,37 +472,27 @@ const AdminDeliveriesScreen = () => {
 
       {expandedJobTab === 'tracking' ? (
         <View style={styles.sectionBlock}>
-          <Text style={styles.sectionTitle}>Live tracking</Text>
-          {['delivered', 'cancelled'].includes((job.status || '').toLowerCase()) ? (
-            <View style={styles.trackingDoneCard}>
-              <Text style={styles.trackingDoneTitle}>
-                {job.status === 'delivered' ? 'Delivery completed' : 'Delivery cancelled'}
-              </Text>
-              <Text style={styles.trackingDoneText}>
-                {job.status === 'delivered'
-                  ? 'This order has been delivered. Live map tracking is no longer active.'
-                  : 'This delivery was cancelled. Live map tracking is inactive.'}
-              </Text>
-            </View>
-          ) : null}
-          <View style={styles.trackingCard}>
-            <Text style={styles.infoTitle}>Pickup</Text>
-            <Text style={styles.infoText}>{job.pickup_address || 'TBD'}</Text>
+          <Text style={styles.sectionTitle}>{tUi('ui.pages.admin.adminDeliveries.tabTracking_0d1e2f3a4b')}</Text>
+          <OrderMapTracker deliveryJob={job} labels={mapLabels} />
+          <View style={[styles.trackingCard, { marginTop: 12 }]}>
+            <Text style={styles.infoTitle}>{tUi('ui.pages.admin.adminDeliveries.pickup_b758cea6c8')}</Text>
+            <Text style={styles.infoText}>
+              {job.pickup_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+            </Text>
             <Text style={styles.coordsText}>
               {formatCoords(job.pickup_latitude, job.pickup_longitude)}
             </Text>
-            <Text style={[styles.infoTitle, styles.trackingDeliveryTitle]}>Delivery</Text>
-            <Text style={styles.infoText}>{job.delivery_address || 'TBD'}</Text>
+            <Text style={[styles.infoTitle, styles.trackingDeliveryTitle]}>
+              {tUi('ui.pages.admin.adminDeliveries.delivery_e0a72301c9')}
+            </Text>
+            <Text style={styles.infoText}>
+              {job.delivery_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+            </Text>
             <Text style={styles.coordsText}>
               {formatCoords(job.delivery_latitude, job.delivery_longitude)}
             </Text>
-            <View style={styles.mapPreview}>
-              <Text style={styles.mapMarker}>P</Text>
-              <View style={styles.mapLine} />
-              <Text style={styles.mapMarker}>D</Text>
-            </View>
             <Pressable style={styles.mapButton} onPress={() => openRouteInMaps(job)}>
-              <Text style={styles.mapButtonText}>Open route in Google Maps</Text>
+              <Text style={styles.mapButtonText}>{tUi('ui.mobile.adminDeliveries.openRouteInMaps')}</Text>
             </Pressable>
           </View>
         </View>
@@ -374,60 +500,68 @@ const AdminDeliveriesScreen = () => {
 
       {expandedJobTab === 'proof' ? (
         <View style={styles.sectionBlock}>
-          {renderPhotoGroup(job, 'pickup', 'Pickup Proof', job.pickup_photo_checked)}
-          {renderPhotoGroup(job, 'delivery', 'Delivery Proof', job.delivery_photo_checked)}
+          {renderPhotoGroup(job, 'pickup', job.pickup_photo_checked)}
+          {renderPhotoGroup(job, 'delivery', job.delivery_photo_checked)}
         </View>
       ) : null}
 
       {expandedJobTab === 'issue' && job.issue_type ? (
         <View style={styles.issueCard}>
           <Text style={styles.issueTitle}>{job.issue_type}</Text>
-          <Text style={styles.issueBody}>{job.issue_description || 'No description'}</Text>
+          <Text style={styles.issueBody}>
+            {job.issue_description || tUi('ui.mobile.adminDeliveries.noDescription')}
+          </Text>
           {photosByType(job, 'issue').length ? (
-            <View style={styles.photoGrid}>
+            <View style={[styles.photoGrid, { flexDirection: row }]}>
               {photosByType(job, 'issue').map((photo) => (
                 <Image key={photo.id} source={{ uri: buildImageUrl(photo.image_path) }} style={styles.proofImage} />
               ))}
             </View>
           ) : null}
           <View style={styles.threadBox}>
-            <Text style={styles.threadTitle}>Issue thread</Text>
+            <Text style={styles.threadTitle}>{tUi('ui.mobile.adminDeliveries.issueThread')}</Text>
             {issueMessagesLoading ? (
-              <Text style={styles.threadMeta}>Loading messages...</Text>
+              <Text style={styles.threadMeta}>{tUi('ui.pages.admin.adminDeliveries.loadingDiscussion_a617f0a9e2')}</Text>
             ) : issueMessages.length ? (
               issueMessages.map((msg) => (
                 <View key={msg.id} style={styles.threadMessage}>
                   <Text style={styles.threadMeta}>
-                    {msg.sender?.email || msg.sender_email || 'Team'} | {formatDateTime(msg.created_at)}
+                    {msg.sender?.email || msg.sender_email || tUi('ui.pages.admin.adminDeliveries.user_78896fd17c')}{' '}
+                    | {formatDateTime(msg.created_at)}
                   </Text>
                   <Text style={styles.threadText}>{msg.message}</Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.threadMeta}>No messages yet.</Text>
+              <Text style={styles.threadMeta}>{tUi('ui.pages.admin.adminDeliveries.noMessagesYet_3b81b04428')}</Text>
             )}
             {!job.issue_resolved ? (
               <View style={styles.messageForm}>
                 <TextInput
-                  style={styles.messageInput}
+                  style={[styles.messageInput, inputRtlStyle]}
                   value={issueMessageText}
                   onChangeText={setIssueMessageText}
-                  placeholder="Write an issue update"
+                  placeholder={tUi('ui.mobile.adminDeliveries.issueUpdatePlaceholder')}
                   placeholderTextColor={colors.muted}
                   multiline
                 />
-                <Pressable style={styles.sendButton} onPress={handleSendIssueMessage}>
-                  <Text style={styles.sendButtonText}>Send</Text>
+                <Pressable
+                  style={[styles.sendButton, { alignSelf: alignSelfEnd }]}
+                  onPress={handleSendIssueMessage}
+                >
+                  <Text style={styles.sendButtonText}>{tUi('ui.pages.admin.adminDeliveries.send_50281357f3')}</Text>
                 </Pressable>
               </View>
             ) : null}
           </View>
           {!job.issue_resolved ? (
             <Pressable style={styles.resolveButton} onPress={() => handleResolveIssue(job.id)}>
-              <Text style={styles.resolveButtonText}>Mark Resolved</Text>
+              <Text style={styles.resolveButtonText}>
+                {tUi('ui.pages.admin.adminDeliveries.markAsSolved_d73588c2d7')}
+              </Text>
             </Pressable>
           ) : (
-            <Text style={styles.resolvedBadge}>Resolved</Text>
+            <Text style={styles.resolvedBadge}>{tUi('ui.mobile.adminDeliveries.resolvedBadge')}</Text>
           )}
         </View>
       ) : null}
@@ -436,11 +570,12 @@ const AdminDeliveriesScreen = () => {
 
   return (
     <AdminScreen
-      title="Deliveries"
-      subtitle="Assign drivers, review photos, and manage issues."
-      meta={`Issues: ${issueCount} | Photos: ${proofCount}`}
+      kicker={panelKicker}
+      title={tUi('ui.pages.admin.adminDeliveries.deliveryManagement_51f1bfe811')}
+      subtitle={tUi('ui.pages.admin.adminDeliveries.subtitle_1a2b3c4d5g')}
+      meta={`${tUi('ui.pages.admin.adminDeliveries.issueReport_8c535704c0')}: ${issueCount} | ${tUi('ui.pages.admin.adminDeliveries.deliveryProofPhotos_2ec00d3e69')}: ${proofCount}`}
     >
-      <View style={styles.filterRow}>
+      <View style={[styles.filterRow, { flexDirection: row }]}>
         {STATUS_FILTERS.map((status) => (
           <Pressable
             key={status}
@@ -450,7 +585,7 @@ const AdminDeliveriesScreen = () => {
             <Text
               style={[styles.filterText, statusFilter === status && styles.filterTextActive]}
             >
-              {status}
+              {getStatusFilterLabel(status)}
             </Text>
           </Pressable>
         ))}
@@ -459,10 +594,22 @@ const AdminDeliveriesScreen = () => {
       {issueCount > 0 || proofCount > 0 ? (
         <View style={styles.alertCard}>
           {issueCount > 0 ? (
-            <Text style={styles.alertText}>{issueCount} issue(s) need attention</Text>
+            <Text style={styles.alertText}>
+              {issueCount} {tUi('ui.pages.admin.adminDeliveries.delivery_8e33d75337')}{' '}
+              {issueCount === 1
+                ? tUi('ui.pages.admin.adminDeliveries.issueReportNeeds_9d4a2961c3')
+                : tUi('ui.pages.admin.adminDeliveries.issueReportsNeed_06c771831a')}{' '}
+              {tUi('ui.pages.admin.adminDeliveries.adminAttention_5a79bc3bce')}
+            </Text>
           ) : null}
           {proofCount > 0 ? (
-            <Text style={styles.alertText}>{proofCount} photo(s) need review</Text>
+            <Text style={styles.alertText}>
+              {proofCount} {tUi('ui.pages.admin.adminDeliveries.delivery_8e33d75337')}{' '}
+              {proofCount === 1
+                ? tUi('ui.pages.admin.adminDeliveries.jobHas_b7c5f7c5de')
+                : tUi('ui.pages.admin.adminDeliveries.jobsHave_aa577eee49')}{' '}
+              {tUi('ui.pages.admin.adminDeliveries.proofPhotosUploadedByDrivers_6d35ed5c58')}
+            </Text>
           ) : null}
         </View>
       ) : null}
@@ -481,17 +628,19 @@ const AdminDeliveriesScreen = () => {
             return (
               <View key={job.id}>
                 <AdminListItem
-                  title={`Job #${job.id}`}
-                  subtitle={`${job.customer?.first_name || 'Customer'} → ${job.delivery_address || 'TBD'}`}
+                  title={tUi('ui.pages.admin.adminDeliveries.jobDetails_7a8b9c0d1e', { value0: job.id })}
+                  subtitle={`${job.customer?.first_name || tUi('ui.pages.admin.adminUsers.customer_68c8b84985')} → ${job.delivery_address || tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}`}
                   meta={meta}
-                  status={status}
+                  status={getStatusLabel(status)}
                   statusTone={statusToneMap[status] || 'default'}
                   onPress={() =>
                     setExpandedJobId((prev) => (prev === job.id ? null : job.id))
                   }
                   right={
                     <Text style={styles.inlineButton}>
-                      {expandedJobId === job.id ? 'Hide' : 'Details'}
+                      {expandedJobId === job.id
+                        ? tUi('ui.pages.admin.adminDeliveries.closeDetails_8b9c0d1e2f')
+                        : tUi('ui.mobile.adminOrders.orderDetails')}
                     </Text>
                   }
                 />
@@ -500,215 +649,25 @@ const AdminDeliveriesScreen = () => {
             );
           })}
           {!jobs.length ? (
-            <Text style={styles.emptyText}>No deliveries found.</Text>
+            <Text style={styles.emptyText}>
+              {statusFilter === 'all'
+                ? tUi('ui.pages.admin.adminDeliveries.noDeliveryJobsFound_80dac255bf')
+                : tUi('ui.pages.admin.adminDeliveries.noDeliveryJobsWithStatus_64e7ce84ea', {
+                    value0: getStatusFilterLabel(statusFilter),
+                  })}
+            </Text>
           ) : null}
         </View>
       )}
 
-      {false && selectedJob ? (
-        <View style={styles.detailCard}>
-          <View style={styles.jobHeader}>
-            <View>
-              <Text style={styles.detailTitle}>Job #{selectedJob.id}</Text>
-              <Text style={styles.detailMeta}>{`Order #${selectedJob.order_id}`}</Text>
-            </View>
-            <Text style={[styles.statusBadge, styles[`status_${(selectedJob.status || 'available').toLowerCase()}`]]}>
-              {(selectedJob.status || 'available').replace(/_/g, ' ')}
-            </Text>
-          </View>
-
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryCell}>
-              <Text style={styles.detailLabel}>Payment</Text>
-              <Text style={styles.detailValue}>{formatCurrency(selectedJob.payment_amount || 0)}</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={styles.detailLabel}>Driver</Text>
-              <Text style={styles.detailValue}>{selectedJob.driver_name || 'Not assigned'}</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={styles.detailLabel}>Created</Text>
-              <Text style={styles.detailValue}>{formatDate(selectedJob.created_at)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.tabRow}>
-            {[
-              ['overview', 'Overview'],
-              ['tracking', 'Live tracking'],
-              ['proof', 'Delivery Proof Photos'],
-              ...(selectedJob.issue_type ? [['issue', 'Issue']] : []),
-            ].map(([key, label]) => (
-              <Pressable
-                key={key}
-                style={[styles.tabButton, expandedJobTab === key && styles.tabButtonActive]}
-                onPress={() => setExpandedJobTab(key)}
-              >
-                <Text style={[styles.tabText, expandedJobTab === key && styles.tabTextActive]}>
-                  {label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {expandedJobTab === 'overview' ? (
-            <View>
-              <View style={styles.detailGrid}>
-                <View style={styles.infoCard}>
-                  <Text style={styles.infoTitle}>Pickup</Text>
-                  <Text style={styles.infoText}>{selectedJob.pickup_address || 'TBD'}</Text>
-                  <Text style={styles.coordsText}>
-                    {formatCoords(selectedJob.pickup_latitude, selectedJob.pickup_longitude)}
-                  </Text>
-                </View>
-                <View style={styles.infoCard}>
-                  <Text style={styles.infoTitle}>Delivery</Text>
-                  <Text style={styles.infoText}>{selectedJob.delivery_address || 'TBD'}</Text>
-                  <Text style={styles.coordsText}>
-                    {formatCoords(selectedJob.delivery_latitude, selectedJob.delivery_longitude)}
-                  </Text>
-                </View>
-                <View style={styles.infoCard}>
-                  <Text style={styles.infoTitle}>Customer</Text>
-                  <Text style={styles.infoText}>
-                    {customerName(selectedJob.customer)}
-                    {selectedJob.customer?.phone ? ` | ${selectedJob.customer.phone}` : ''}
-                  </Text>
-                </View>
-                <View style={styles.infoCard}>
-                  <Text style={styles.infoTitle}>Driver</Text>
-                  <Text style={styles.infoText}>{selectedJob.driver_name || 'Not assigned'}</Text>
-                  {['available', 'assigned'].includes((selectedJob.status || '').toLowerCase()) ? (
-                    <Pressable style={styles.assignInlineButton} onPress={() => setAssignModalJob(selectedJob)}>
-                      <Text style={styles.assignInlineText}>
-                        {selectedJob.driver_id ? 'Reassign driver' : 'Assign driver'}
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-
-              <View style={styles.sectionBlock}>
-                <Text style={styles.sectionTitle}>Items</Text>
-                {(selectedJob.items || []).length ? (
-                  <View style={styles.itemWrap}>
-                    {selectedJob.items.map((item, index) => (
-                      <Text key={item.id || index} style={styles.itemPill}>
-                        {item.product?.name || item.product_name || 'Item'} x{item.quantity}
-                      </Text>
-                    ))}
-                  </View>
-                ) : (
-                  <Text style={styles.emptyInline}>No item data.</Text>
-                )}
-              </View>
-            </View>
-          ) : null}
-
-          {expandedJobTab === 'tracking' ? (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.sectionTitle}>Live tracking</Text>
-              {['delivered', 'cancelled'].includes((selectedJob.status || '').toLowerCase()) ? (
-                <View style={styles.trackingDoneCard}>
-                  <Text style={styles.trackingDoneTitle}>
-                    {selectedJob.status === 'delivered' ? 'Delivery completed' : 'Delivery cancelled'}
-                  </Text>
-                  <Text style={styles.trackingDoneText}>
-                    {selectedJob.status === 'delivered'
-                      ? 'This order has been delivered. Live map tracking is no longer active.'
-                      : 'This delivery was cancelled. Live map tracking is inactive.'}
-                  </Text>
-                </View>
-              ) : null}
-              <View style={styles.trackingCard}>
-                <Text style={styles.infoTitle}>Pickup</Text>
-                <Text style={styles.infoText}>{selectedJob.pickup_address || 'TBD'}</Text>
-                <Text style={styles.coordsText}>
-                  {formatCoords(selectedJob.pickup_latitude, selectedJob.pickup_longitude)}
-                </Text>
-                <Text style={[styles.infoTitle, styles.trackingDeliveryTitle]}>Delivery</Text>
-                <Text style={styles.infoText}>{selectedJob.delivery_address || 'TBD'}</Text>
-                <Text style={styles.coordsText}>
-                  {formatCoords(selectedJob.delivery_latitude, selectedJob.delivery_longitude)}
-                </Text>
-                <View style={styles.mapPreview}>
-                  <Text style={styles.mapMarker}>P</Text>
-                  <View style={styles.mapLine} />
-                  <Text style={styles.mapMarker}>D</Text>
-                </View>
-                <Pressable style={styles.mapButton} onPress={() => openRouteInMaps(selectedJob)}>
-                  <Text style={styles.mapButtonText}>Open route in Google Maps</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
-
-          {expandedJobTab === 'proof' ? (
-            <View style={styles.sectionBlock}>
-              {renderPhotoGroup(selectedJob, 'pickup', 'Pickup Proof', selectedJob.pickup_photo_checked)}
-              {renderPhotoGroup(selectedJob, 'delivery', 'Delivery Proof', selectedJob.delivery_photo_checked)}
-            </View>
-          ) : null}
-
-          {expandedJobTab === 'issue' && selectedJob.issue_type ? (
-            <View style={styles.issueCard}>
-              <Text style={styles.issueTitle}>{selectedJob.issue_type}</Text>
-              <Text style={styles.issueBody}>{selectedJob.issue_description || 'No description'}</Text>
-              {photosByType(selectedJob, 'issue').length ? (
-                <View style={styles.photoGrid}>
-                  {photosByType(selectedJob, 'issue').map((photo) => (
-                    <Image key={photo.id} source={{ uri: buildImageUrl(photo.image_path) }} style={styles.proofImage} />
-                  ))}
-                </View>
-              ) : null}
-              <View style={styles.threadBox}>
-                <Text style={styles.threadTitle}>Issue thread</Text>
-                {issueMessagesLoading ? (
-                  <Text style={styles.threadMeta}>Loading messages...</Text>
-                ) : issueMessages.length ? (
-                  issueMessages.map((msg) => (
-                    <View key={msg.id} style={styles.threadMessage}>
-                      <Text style={styles.threadMeta}>
-                        {msg.sender?.email || msg.sender_email || 'Team'} | {formatDateTime(msg.created_at)}
-                      </Text>
-                      <Text style={styles.threadText}>{msg.message}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.threadMeta}>No messages yet.</Text>
-                )}
-                {!selectedJob.issue_resolved ? (
-                  <View style={styles.messageForm}>
-                    <TextInput
-                      style={styles.messageInput}
-                      value={issueMessageText}
-                      onChangeText={setIssueMessageText}
-                      placeholder="Write an issue update"
-                      placeholderTextColor={colors.muted}
-                      multiline
-                    />
-                    <Pressable style={styles.sendButton} onPress={handleSendIssueMessage}>
-                      <Text style={styles.sendButtonText}>Send</Text>
-                    </Pressable>
-                  </View>
-                ) : null}
-              </View>
-              {!selectedJob.issue_resolved ? (
-                <Pressable style={styles.resolveButton} onPress={() => handleResolveIssue(selectedJob.id)}>
-                  <Text style={styles.resolveButtonText}>Mark Resolved</Text>
-                </Pressable>
-              ) : (
-                <Text style={styles.resolvedBadge}>Resolved</Text>
-              )}
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
       <Modal transparent visible={!!assignModalJob} animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setAssignModalJob(null)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.modalTitle}>Assign driver</Text>
+            <Text style={styles.modalTitle}>
+              {assignModalJob?.driver_id
+                ? tUi('ui.mobile.adminDeliveries.reassignDriver')
+                : tUi('ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a')}
+            </Text>
             {drivers.map((driver) => (
               <Pressable
                 key={driver.id}
@@ -726,7 +685,11 @@ const AdminDeliveriesScreen = () => {
               </Pressable>
             ))}
             <Pressable style={styles.primaryButton} onPress={handleAssignDriver}>
-              <Text style={styles.primaryButtonText}>Assign</Text>
+              <Text style={styles.primaryButtonText}>
+                {assignModalJob?.driver_id
+                  ? tUi('ui.mobile.adminDeliveries.reassignDriver')
+                  : tUi('ui.pages.admin.adminDeliveries.assignDriver_a52d732a9a')}
+              </Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -735,7 +698,7 @@ const AdminDeliveriesScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1189,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },

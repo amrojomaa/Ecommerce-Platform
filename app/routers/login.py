@@ -56,6 +56,24 @@ def _clear_refresh_token_cookie(response: Response) -> None:
     )
 
 
+def _extract_refresh_token(request: Request) -> str | None:
+    cookie_token = request.cookies.get(OAuth2.REFRESH_TOKEN_COOKIE_NAME)
+    if cookie_token:
+        return cookie_token
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        candidate = auth_header[7:].strip()
+        return candidate or None
+    return None
+
+
+def _token_response(access_token: str, refresh_token: str | None = None) -> dict:
+    payload = {"access_token": access_token, "token_type": "bearer"}
+    if refresh_token:
+        payload["refresh_token"] = refresh_token
+    return payload
+
+
 def generate_verification_code() -> str:
     """Generate a 6-digit verification code"""
     return str(random.randint(100000, 999999))
@@ -345,11 +363,8 @@ async def google_auth(
         token = OAuth2.create_access_token(data={"user_id": user.id}, token_version=user.token_version)
         refresh_token = OAuth2.create_refresh_token(data={"user_id": user.id}, token_version=user.token_version)
         _set_refresh_token_cookie(response, refresh_token)
-        
-        return {
-            "access_token": token,
-            "token_type": "bearer"
-        }
+
+        return _token_response(token, refresh_token)
         
     except HTTPException:
         raise
@@ -505,11 +520,7 @@ def login(
         else:
             _clear_refresh_token_cookie(response)
 
-        return {"access_token" : token , 
-                "token_type" : 'bearer',
-                # "username" : getuser.email,
-                # "user_id" : getuser.id
-                }
+        return _token_response(token, refresh_token if remember_me else None)
     except HTTPException:
         raise
     except Exception as e:
@@ -552,8 +563,8 @@ def refresh_token(
     response: Response,
     db: Session = Depends(get_db),
 ):
-    """Issue a fresh access token using a refresh token cookie."""
-    raw_refresh_token = request.cookies.get(OAuth2.REFRESH_TOKEN_COOKIE_NAME)
+    """Issue a fresh access token using a refresh token cookie or Authorization header."""
+    raw_refresh_token = _extract_refresh_token(request)
     if not raw_refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -597,7 +608,7 @@ def refresh_token(
     )
     _set_refresh_token_cookie(response, new_refresh_token)
 
-    return {"access_token": new_access_token, "token_type": "bearer"}
+    return _token_response(new_access_token, new_refresh_token)
 
 
 @router.post("/logout")

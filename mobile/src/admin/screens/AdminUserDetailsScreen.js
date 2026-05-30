@@ -8,8 +8,13 @@ import {
   Text,
   View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import AdminScreen from '../components/AdminScreen';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
+import { getRoleLabel } from '../../i18n/roles';
 import http from '../../services/http';
 import { USER_ENDPOINTS, buildUrl } from '../../config/api';
 import { buildImageUrl, formatDateTime } from '../utils/format';
@@ -29,12 +34,22 @@ const ROLE_OPTIONS = [
 ];
 
 const AdminUserDetailsScreen = ({ route, navigation }) => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { language } = useLanguage();
+
   const { userId } = route.params || {};
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState('customer');
   const [updating, setUpdating] = useState(false);
+
+  const screenHeader = {
+    title: tUi('ui.pages.admin.adminUserDetails.userAccountInformation_1a87059564'),
+    subtitle: tUi('ui.pages.admin.adminUserDetails.subtitle_1a2b3c4d5i'),
+  };
 
   const fetchUser = useCallback(async () => {
     if (!userId) return;
@@ -43,10 +58,17 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
       const response = await http.get(buildUrl(USER_ENDPOINTS.BY_ID, { id: userId }));
       setUser(response.data || null);
       setSelectedRole(response.data?.role || 'customer');
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1:
+          error.response?.data?.detail ||
+          tUi('ui.pages.admin.adminUserDetails.failedToFetchUserDetails_f6dd9f5e61'),
+      });
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [tUi, userId]);
 
   useEffect(() => {
     fetchUser();
@@ -65,6 +87,17 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
       });
       setUser((prev) => (prev ? { ...prev, role: selectedRole } : prev));
       setShowRoleModal(false);
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.admin.adminUsers.userRoleUpdatedToValue_65e151007e', {
+          value0: getRoleLabel(selectedRole, language),
+        }),
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || tUi('ui.toast.operationFailed'),
+      });
     } finally {
       setUpdating(false);
     }
@@ -73,19 +106,35 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
   const handleToggleBlock = async () => {
     if (!user) return;
     const nextBlocked = !user.is_blocked;
-    const ok = await confirmAction(
-      nextBlocked ? 'Suspend user' : 'Unblock user',
-      nextBlocked
-        ? 'Suspend this account?'
-        : 'Reactivate this account?'
-    );
-    if (!ok) return;
+    if (nextBlocked) {
+      const ok = await confirmAction(
+        tUi('ui.pages.admin.adminUsers.suspendThisUser_753829cad1'),
+        tUi('ui.pages.admin.adminUserDetails.suspendConfirm_8a9b0c1d2e', {
+          value0: `${user.first_name || ''} ${user.last_name || ''}`.trim() || tUi('ui.mobile.common.unnamedUser'),
+          value1: user.email,
+        }),
+        tUi('ui.pages.admin.adminUsers.suspend_b9bc672f89'),
+        tUi('ui.pages.admin.adminUsers.cancel_5783570289')
+      );
+      if (!ok) return;
+    }
     setUpdating(true);
     try {
       const response = await http.patch(buildUrl(USER_ENDPOINTS.UPDATE_BLOCK, { id: user.id }), {
         is_blocked: nextBlocked,
       });
       setUser((prev) => (prev ? { ...prev, ...response.data } : prev));
+      Toast.show({
+        type: 'success',
+        text1: nextBlocked
+          ? tUi('ui.pages.admin.adminUserDetails.userSuspended_9b0c1d2e3f')
+          : tUi('ui.pages.admin.adminUserDetails.userReactivated_0c1d2e3f4a'),
+      });
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || tUi('ui.toast.operationFailed'),
+      });
     } finally {
       setUpdating(false);
     }
@@ -93,12 +142,29 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
 
   const handleDelete = async () => {
     if (!user) return;
-    const ok = await confirmAction('Delete user', 'This cannot be undone.');
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminUsers.deleteUser_e3ea89de3e'),
+      tUi('ui.pages.admin.adminUsers.thisActionCannotBeUndone_c8a181f419'),
+      tUi('ui.pages.admin.adminUsers.delete_a6a9493a15'),
+      tUi('ui.pages.admin.adminUsers.cancel_5783570289')
+    );
     if (!ok) return;
     setUpdating(true);
     try {
+      const displayName =
+        `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+        tUi('ui.mobile.common.unnamedUser');
       await http.delete(buildUrl(USER_ENDPOINTS.DELETE, { id: user.id }));
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.admin.adminUserDetails.userDeleted_1d2e3f4a5b', { value0: displayName }),
+      });
       navigation.goBack();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || tUi('ui.toast.operationFailed'),
+      });
     } finally {
       setUpdating(false);
     }
@@ -106,7 +172,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <AdminScreen title="User Details" subtitle="Review account information.">
+      <AdminScreen title={screenHeader.title} subtitle={screenHeader.subtitle}>
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -116,49 +182,69 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
 
   if (!user) {
     return (
-      <AdminScreen title="User Details" subtitle="Review account information.">
-        <Text style={styles.emptyText}>User not found.</Text>
+      <AdminScreen title={screenHeader.title} subtitle={screenHeader.subtitle}>
+        <Text style={styles.emptyText}>{tUi('ui.mobile.common.noResults')}</Text>
       </AdminScreen>
     );
   }
 
-  const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unnamed User';
+  const fullName =
+    `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+    tUi('ui.mobile.common.unnamedUser');
 
   return (
-    <AdminScreen title="User Details" subtitle="Review account information.">
+    <AdminScreen title={screenHeader.title} subtitle={screenHeader.subtitle}>
       <View style={styles.headerCard}>
         <Image source={{ uri: buildImageUrl(user.profile_image) }} style={styles.avatar} />
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>{fullName}</Text>
           <Text style={styles.headerMeta}>{user.email}</Text>
-          <Text style={styles.headerMeta}>{user.role}</Text>
+          <Text style={styles.headerMeta}>{getRoleLabel(user.role, language)}</Text>
         </View>
       </View>
 
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Status</Text>
-        <Text style={styles.detailValue}>{user.is_blocked ? 'Blocked' : 'Active'}</Text>
+        <Text style={styles.detailLabel}>
+          {tUi('ui.pages.admin.adminUserDetails.accountStatus_4e5f6a7b8c')}
+        </Text>
+        <Text style={styles.detailValue}>
+          {user.is_blocked
+            ? tUi('ui.mobile.common.blocked')
+            : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
+        </Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Verified</Text>
-        <Text style={styles.detailValue}>{user.is_verified ? 'Yes' : 'No'}</Text>
+        <Text style={styles.detailLabel}>
+          {tUi('ui.pages.admin.adminUserDetails.verificationStatus_52adfe9e86')}
+        </Text>
+        <Text style={styles.detailValue}>
+          {user.is_verified
+            ? tUi('ui.pages.admin.adminUserDetails.verified_ebcf9e3db7')
+            : tUi('ui.pages.admin.adminUserDetails.notVerified_b491c0f754')}
+        </Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Created</Text>
+        <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminUserDetails.created_6f7a8b9c0d')}</Text>
         <Text style={styles.detailValue}>{formatDateTime(user.created_at)}</Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Phone</Text>
-        <Text style={styles.detailValue}>{user.phone_number || 'Not provided'}</Text>
+        <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminUserDetails.phone_9225bd8c30')}</Text>
+        <Text style={styles.detailValue}>
+          {user.phone_number || tUi('ui.pages.admin.adminUserDetails.notProvided_3d4e5f6a7b')}
+        </Text>
       </View>
       <View style={styles.detailRow}>
-        <Text style={styles.detailLabel}>Address</Text>
-        <Text style={styles.detailValue}>{user.address || 'Not provided'}</Text>
+        <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminUserDetails.address_99019633c4')}</Text>
+        <Text style={styles.detailValue}>
+          {user.address || tUi('ui.pages.admin.adminUserDetails.notProvided_3d4e5f6a7b')}
+        </Text>
       </View>
 
       <View style={styles.actionRow}>
         <Pressable style={styles.secondaryButton} onPress={() => setShowRoleModal(true)}>
-          <Text style={styles.secondaryButtonText}>Change role</Text>
+          <Text style={styles.secondaryButtonText}>
+            {tUi('ui.pages.admin.adminUsers.changeRole_3f89e37f4b')}
+          </Text>
         </Pressable>
         <Pressable
           style={[styles.secondaryButton, styles.blockButton]}
@@ -166,18 +252,24 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
           disabled={updating}
         >
           <Text style={styles.secondaryButtonText}>
-            {user.is_blocked ? 'Unblock' : 'Block'}
+            {user.is_blocked
+              ? tUi('ui.pages.admin.adminUsers.unblock_6cbc50835c')
+              : tUi('ui.pages.admin.adminUsers.block_acca25213e')}
           </Text>
         </Pressable>
         <Pressable style={styles.deleteButton} onPress={handleDelete} disabled={updating}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
+          <Text style={styles.deleteButtonText}>
+            {tUi('ui.pages.admin.adminUsers.delete_a6a9493a15')}
+          </Text>
         </Pressable>
       </View>
 
       <Modal transparent visible={showRoleModal} animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setShowRoleModal(false)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.modalTitle}>Select role</Text>
+            <Text style={styles.modalTitle}>
+              {tUi('ui.pages.admin.adminUsers.changeUserRole_086699c24a')}
+            </Text>
             {ROLE_OPTIONS.map((role) => (
               <Pressable
                 key={role}
@@ -193,7 +285,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
                     selectedRole === role && styles.roleOptionTextActive,
                   ]}
                 >
-                  {role.replace('_', ' ')}
+                  {getRoleLabel(role, language)}
                 </Text>
               </Pressable>
             ))}
@@ -203,7 +295,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
               disabled={updating}
             >
               <Text style={styles.primaryButtonText}>
-                {updating ? 'Saving...' : 'Save'}
+                {updating ? tUi('ui.mobile.common.saving') : tUi('ui.mobile.common.save')}
               </Text>
             </Pressable>
           </Pressable>
@@ -213,7 +305,7 @@ const AdminUserDetailsScreen = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   loadingWrap: {
     paddingVertical: 40,
     alignItems: 'center',
@@ -300,7 +392,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },

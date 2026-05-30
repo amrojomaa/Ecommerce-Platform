@@ -10,7 +10,10 @@ import {
   View,
 } from 'react-native';
 import AdminScreen from '../components/AdminScreen';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import {
   COMMENT_ENDPOINTS,
@@ -25,7 +28,19 @@ import { AuthContext } from '../../context/AuthContext';
 
 const SENTIMENT_FILTERS = ['all', 'positive', 'neutral', 'negative'];
 
+const SENTIMENT_LABEL_KEYS = {
+  positive: 'ui.pages.admin.adminComments.sentimentPositive_70da220f7a',
+  neutral: 'ui.pages.admin.adminComments.sentimentNeutral_1adf64fbd4',
+  negative: 'ui.pages.admin.adminComments.sentimentNegative_78ec8a0d98',
+};
+
 const AdminCommentsScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { isRtl, textAlign } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
   const { formatCurrency } = useCurrency();
   const { user } = useContext(AuthContext);
   const [products, setProducts] = useState([]);
@@ -37,6 +52,24 @@ const AdminCommentsScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState('all');
+
+  const getSentimentLabel = useCallback(
+    (sentiment) => {
+      const key = SENTIMENT_LABEL_KEYS[sentiment] || SENTIMENT_LABEL_KEYS.neutral;
+      return tUi(key);
+    },
+    [tUi]
+  );
+
+  const getSentimentFilterLabel = useCallback(
+    (filter) => {
+      if (filter === 'all') {
+        return tUi('ui.mobile.common.all');
+      }
+      return getSentimentLabel(filter);
+    },
+    [getSentimentLabel, tUi]
+  );
 
   const fetchProducts = useCallback(async () => {
     setLoadingProducts(true);
@@ -106,7 +139,12 @@ const AdminCommentsScreen = () => {
   }, [comments, sentimentFilter]);
 
   const handleDelete = async (commentId) => {
-    const ok = await confirmAction('Delete comment', 'Delete this comment?');
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminComments.deleteComment_d6666490e7'),
+      tUi('ui.pages.admin.adminComments.areYouSureYouWant_b3d0559f52'),
+      tUi('ui.pages.admin.adminComments.delete_66f5dde37d'),
+      tUi('ui.pages.admin.adminComments.cancel_117ba1126e')
+    );
     if (!ok) return;
     await http.delete(buildUrl(COMMENT_ENDPOINTS.DELETE, { comment_id: commentId }));
     if (selectedProductId) {
@@ -118,17 +156,17 @@ const AdminCommentsScreen = () => {
   const selectedProduct = products.find((product) => product.id === selectedProductId);
 
   return (
-    <AdminScreen title="Comments" subtitle="Moderate product reviews and ratings.">
+    <AdminScreen title={tUi('ui.pages.admin.adminComments.manageReviews_9e45000031')} subtitle={tUi('ui.pages.admin.adminComments.subtitle_b4e8c1d2f3')}>
       <View style={styles.searchRow}>
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search products"
+          style={[styles.searchInput, inputRtlStyle]}
+          placeholder={tUi('ui.pages.admin.adminComments.searchByProductName_7e4227491a')}
           placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         <Pressable style={styles.filterChip} onPress={() => setCategoryFilter('')}>
-          <Text style={styles.filterText}>{categoryFilter || 'All categories'}</Text>
+          <Text style={styles.filterText}>{categoryFilter || tUi('ui.mobile.common.all')}</Text>
         </Pressable>
       </View>
 
@@ -161,10 +199,19 @@ const AdminCommentsScreen = () => {
           <Text style={styles.summaryMeta}>{selectedProduct.category_name}</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryValue}>
-              Avg {Number(ratingSummary?.average_rating || 0).toFixed(1)}
+              {`${tUi('ui.pages.admin.adminFeedback.avg_88b67561cc')} ${Number(
+                ratingSummary?.average_rating || 0
+              ).toFixed(1)}`}
             </Text>
-            <Text style={styles.summaryValue}>Ratings {ratingSummary?.total_ratings || 0}</Text>
+            <Text style={styles.summaryValue}>
+              {tUi('ui.mobile.adminComments.ratingsCount', {
+                value0: ratingSummary?.total_ratings || 0,
+              })}
+            </Text>
           </View>
+          <Text style={styles.filterLabel}>
+            {tUi('ui.pages.admin.adminComments.filterBySentiment_c7d8e9f0a1')}
+          </Text>
           <View style={styles.filterRow}>
             {SENTIMENT_FILTERS.map((filter) => (
               <Pressable
@@ -175,7 +222,7 @@ const AdminCommentsScreen = () => {
                 <Text
                   style={[styles.filterText, sentimentFilter === filter && styles.filterTextActive]}
                 >
-                  {filter}
+                  {getSentimentFilterLabel(filter)}
                 </Text>
               </Pressable>
             ))}
@@ -192,20 +239,23 @@ const AdminCommentsScreen = () => {
           {filteredComments.map((comment) => (
             <View key={comment.id} style={styles.commentCard}>
               <Text style={styles.commentTitle}>
-                {comment.user?.first_name || 'Customer'} {comment.user?.last_name || ''}
+                {comment.user?.first_name || tUi('roles.customer')}{' '}
+                {comment.user?.last_name || ''}
               </Text>
               <Text style={styles.commentMeta}>{formatDate(comment.created_at)}</Text>
               <Text style={styles.commentBody}>{comment.content}</Text>
               <View style={styles.commentFooter}>
-                <Text style={styles.commentBadge}>{comment.sentiment || 'neutral'}</Text>
+                <Text style={styles.commentBadge}>
+                  {getSentimentLabel(comment.sentiment || 'neutral')}
+                </Text>
                 <Pressable onPress={() => handleDelete(comment.id)}>
-                  <Text style={styles.inlineButton}>Delete</Text>
+                  <Text style={styles.inlineButton}>{tUi('ui.pages.admin.adminComments.delete_66f5dde37d')}</Text>
                 </Pressable>
               </View>
             </View>
           ))}
           {selectedProductId && !filteredComments.length ? (
-            <Text style={styles.emptyText}>No comments found.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminComments.noReviewsFound_6ae1b83edd')}</Text>
           ) : null}
         </View>
       )}
@@ -213,7 +263,7 @@ const AdminCommentsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,10 +337,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
   },
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    marginTop: 10,
+    marginBottom: 6,
+  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
   },
   filterChip: {
     paddingHorizontal: 12,

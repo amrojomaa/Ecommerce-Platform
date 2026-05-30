@@ -11,7 +11,11 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AdminScreen from '../components/AdminScreen';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
+import { getRoleLabel } from '../../i18n/roles';
 import http from '../../services/http';
 import { USER_ENDPOINTS } from '../../config/api';
 import { buildImageUrl, formatDate } from '../utils/format';
@@ -31,6 +35,11 @@ const ROLE_FILTERS = [
 ];
 
 const AdminUsersScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { language, isRtl } = useLanguage();
+
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,12 +74,15 @@ const AdminUsersScreen = () => {
   }, [roleFilter, searchQuery, users]);
 
   return (
-    <AdminScreen title="Users" subtitle="Review and manage customer accounts.">
+    <AdminScreen
+      title={tUi('ui.pages.admin.adminUsers.manageUsers_eac32c061d')}
+      subtitle={tUi('ui.pages.admin.adminUsers.subtitle_1a2b3c4d5h')}
+    >
       <View style={styles.searchRow}>
         <Feather name="search" size={16} color={colors.muted} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search users"
+          style={[styles.searchInput, isRtl && styles.searchInputRtl]}
+          placeholder={tUi('ui.pages.admin.adminUsers.searchUsers_6f4c0b5424')}
           placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -85,7 +97,9 @@ const AdminUsersScreen = () => {
             onPress={() => setRoleFilter(role)}
           >
             <Text style={[styles.filterText, roleFilter === role && styles.filterTextActive]}>
-              {role.replace('_', ' ')}
+              {role === 'all'
+                ? tUi('ui.pages.admin.adminUsers.all_934fce7d68')
+                : getRoleLabel(role, language)}
             </Text>
           </Pressable>
         ))}
@@ -98,7 +112,9 @@ const AdminUsersScreen = () => {
       ) : (
         <View>
           {filtered.map((user) => {
-            const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unnamed User';
+            const name =
+              `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+              tUi('ui.mobile.common.unnamedUser');
             return (
               <Pressable
                 key={user.id}
@@ -115,14 +131,24 @@ const AdminUsersScreen = () => {
                   <Text style={styles.userMeta}>{formatDate(user.created_at)}</Text>
                 </View>
                 <View style={styles.userBadgeWrap}>
-                  <Text style={styles.userBadge}>{user.role || 'customer'}</Text>
-                  <Text style={styles.userStatus}>{user.is_blocked ? 'Blocked' : 'Active'}</Text>
+                  <Text style={styles.userBadge}>
+                    {getRoleLabel(user.role || 'customer', language)}
+                  </Text>
+                  <Text style={styles.userStatus}>
+                    {user.is_blocked
+                      ? tUi('ui.mobile.common.blocked')
+                      : tUi('ui.pages.admin.adminUsers.active_b157924ea3')}
+                  </Text>
                 </View>
               </Pressable>
             );
           })}
           {!filtered.length ? (
-            <Text style={styles.emptyText}>No users found.</Text>
+            <Text style={styles.emptyText}>
+              {searchQuery.trim() || roleFilter !== 'all'
+                ? tUi('ui.pages.admin.adminUsers.noUsersMatchYourSearch_afa1ee1f27')
+                : tUi('ui.pages.admin.adminUsers.noUsersFound_53cddce410')}
+            </Text>
           ) : null}
         </View>
       )}
@@ -130,7 +156,7 @@ const AdminUsersScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,6 +172,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     color: colors.text,
+  },
+  searchInputRtl: {
+    marginLeft: 0,
+    marginRight: 8,
+    textAlign: 'right',
   },
   filterRow: {
     flexDirection: 'row',

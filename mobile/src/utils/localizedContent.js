@@ -26,3 +26,8 @@ export const localizeProduct = (product, languageCode) => {
     ),
   };
 };
+
+export const localizeCategoryName = (category, languageCode) => {
+  if (!category) return '';
+  return pickLocalized(category.name, category.name_ar, category.name_fr, languageCode);
+};

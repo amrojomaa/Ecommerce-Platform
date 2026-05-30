@@ -1,126 +1,104 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from '../config/google';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
+import {
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_CLIENT_ID,
+} from '../config/google';
 
-// Complete the auth session if redirected back to the app
 WebBrowser.maybeCompleteAuthSession();
 
-const getOAuthParam = (url, key) => {
-  const search = url.includes('?') ? url.split('?')[1]?.split('#')[0] : '';
-  const hash = url.includes('#') ? url.split('#')[1] : '';
-  const queryValue = new URLSearchParams(search || '').get(key);
-  const hashValue = new URLSearchParams(hash || '').get(key);
-  return queryValue || hashValue;
-};
+const redirectUri = makeRedirectUri({
+  scheme: 'mobile',
+  path: 'oauth',
+});
 
 /**
- * Hook for Google Authentication in Expo Go.
- * Uses WebBrowser to perform OAuth implicit flow and redirects back
- * to the app via custom scheme / deep link.
+ * Google sign-in for Expo Go / native using expo-auth-session (no auth.expo.io proxy).
  */
 export function useGoogleAuth({ onSuccess, onError }) {
   const [loading, setLoading] = useState(false);
-  const deepLinkUrl = Linking.useURL();
-  const handledAccessTokenRef = useRef(null);
 
-  const handleRedirectUrl = useCallback(
-    async (url) => {
-      if (!url) return;
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    redirectUri,
+    scopes: ['profile', 'email'],
+  });
 
-      console.log('[Google Auth] Redirect URL received:', url);
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('[Google Auth] Native redirect URI:', redirectUri);
+    }
+  }, []);
 
-      const accessToken = getOAuthParam(url, 'access_token');
-      const error = getOAuthParam(url, 'error');
-
-      if (error) {
-        console.error('[Google Auth] Error from redirect:', error);
-        onError?.(decodeURIComponent(error));
+  useEffect(() => {
+    if (response?.type !== 'success') {
+      if (response?.type === 'error') {
+        onError?.(response.error?.message || 'Google sign-in failed');
         setLoading(false);
-        return;
+      } else if (response?.type === 'cancel' || response?.type === 'dismiss') {
+        setLoading(false);
       }
+      return;
+    }
 
-      if (accessToken) {
-        if (handledAccessTokenRef.current === accessToken) {
-          console.log('[Google Auth] Duplicate redirect ignored');
-          return;
+    const accessToken =
+      response.authentication?.accessToken || response.params?.access_token;
+
+    if (!accessToken) {
+      onError?.('Google sign-in failed: no access token returned');
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const result = await onSuccess?.(accessToken);
+        if (active && result && result.success === false) {
+          onError?.(result.error || 'Google sign-in failed');
         }
-        handledAccessTokenRef.current = accessToken;
-
-        console.log('[Google Auth] Access token extracted successfully');
-        setLoading(true);
-        try {
-          const result = await onSuccess?.(accessToken);
-          if (result && result.success === false) {
-            onError?.(result.error || 'Google sign-in failed');
-          }
-        } catch (err) {
-          console.error('[Google Auth] Success callback error:', err);
+      } catch (err) {
+        if (active) {
           onError?.(err.message || 'Google sign-in failed');
-        } finally {
+        }
+      } finally {
+        if (active) {
           setLoading(false);
         }
       }
-    },
-    [onSuccess, onError]
-  );
+    })();
 
-  // Monitor incoming deep links
-  useEffect(() => {
-    if (deepLinkUrl) {
-      handleRedirectUrl(deepLinkUrl);
-    }
-  }, [deepLinkUrl, handleRedirectUrl]);
+    return () => {
+      active = false;
+    };
+  }, [response, onSuccess, onError]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!request) {
+      onError?.('Google sign-in is not ready yet. Please try again.');
+      return;
+    }
+
     setLoading(true);
-    handledAccessTokenRef.current = null;
     try {
-      // 1. Get the current Expo deep link (e.g. exp://192.168.1.8:8081/--/oauth)
-      const expoRedirectUri = Linking.createURL('oauth');
-      console.log('[Google Auth] Expo Redirect URI:', expoRedirectUri);
-
-      console.log('[Google Auth] Google Redirect URI:', GOOGLE_REDIRECT_URI);
-
-      // 2. Construct the Google OAuth authorization URL
-      const scope = 'profile email';
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${GOOGLE_CLIENT_ID}` +
-        `&redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}` +
-        `&response_type=token` +
-        `&scope=${encodeURIComponent(scope)}` +
-        `&state=${encodeURIComponent(expoRedirectUri)}`;
-
-      const proxyStartUrl =
-        `${GOOGLE_REDIRECT_URI}/start?` +
-        `authUrl=${encodeURIComponent(authUrl)}` +
-        `&returnUrl=${encodeURIComponent(expoRedirectUri)}`;
-
-      console.log('[Google Auth] Opening auth browser session...');
-      
-      // 3. Open the Expo auth proxy. It will send the Google result back to expoRedirectUri.
-      const result = await WebBrowser.openAuthSessionAsync(proxyStartUrl, expoRedirectUri);
-      
-      console.log('[Google Auth] Browser session ended:', result.type);
-
-      if (result.type === 'success' && result.url) {
-        await handleRedirectUrl(result.url);
-      } else if (result.type === 'cancel' || result.type === 'dismiss') {
-        // Small delay to allow the deepLinkUrl to capture before resetting loading
-        setTimeout(() => {
-          setLoading(false);
-        }, 1200);
+      const result = await promptAsync();
+      if (result?.type !== 'success') {
+        setLoading(false);
       }
     } catch (error) {
-      console.error('[Google Auth] Error starting sign-in:', error);
-      onError?.(error.message || 'Google sign-in failed');
       setLoading(false);
+      onError?.(error.message || 'Google sign-in failed');
     }
-  }, [handleRedirectUrl, onError]);
+  }, [request, promptAsync, onError]);
 
   return {
     signInWithGoogle,
     googleLoading: loading,
-    googleReady: true,
+    googleReady: !!request,
   };
 }

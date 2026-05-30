@@ -6,7 +6,7 @@ export const GOOGLE_CLIENT_ID =
 export const GOOGLE_ANDROID_CLIENT_ID =
   '108100700042-vsat96sb064hvhav7i93n2jdhbi9bmku.apps.googleusercontent.com';
 
-export const EXPO_OWNER = 'yazansaleh2003';
+export const EXPO_OWNER = 'amrojomsa';
 export const EXPO_SLUG = 'mobile';
 
 /** Must match Authorized redirect URI on the Web OAuth client in Google Cloud */

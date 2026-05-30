@@ -12,18 +12,34 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
 import http from '../../services/http';
 import { INSTALLMENT_ENDPOINTS, buildUrl } from '../../config/api';
 import { confirmAction } from '../utils/confirm';
 import { buildImageUrl, formatDate, formatDateTime } from '../utils/format';
 import { useCurrency } from '../../hooks/useCurrency';
+import { usePanelRole } from '../hooks/usePanelRole';
 
-const DOCUMENT_TYPES = [
-  ['id_front', 'ID Front'],
-  ['id_back', 'ID Back'],
-  ['selfie_with_id', 'Selfie With ID'],
+const DOCUMENT_TYPE_KEYS = [
+  ['id_front', 'ui.mobile.adminInstallments.docIdFront'],
+  ['id_back', 'ui.mobile.adminInstallments.docIdBack'],
+  ['selfie_with_id', 'ui.mobile.adminInstallments.docSelfie'],
 ];
+
+const STATUS_FILTERS = ['all', 'pending', 'approved', 'rejected', 'cancelled', 'completed'];
+
+const STATUS_LABEL_KEYS = {
+  pending: 'ui.pages.admin.adminInstallments.pending_63a369810e',
+  approved: 'ui.pages.admin.adminInstallments.approve_1d97c149aa',
+  rejected: 'ui.pages.admin.adminInstallments.reject_b300f1d667',
+  cancelled: 'ui.pages.admin.adminInstallments.cancelled_1f3e021548',
+  canceled: 'ui.pages.admin.adminInstallments.cancelled_1f3e021548',
+  completed: 'ui.pages.admin.adminInstallments.completed_1d0c28c972',
+};
 
 const toneForStatus = (status) => {
   switch (status) {
@@ -41,6 +57,12 @@ const toneForStatus = (status) => {
 };
 
 const AdminInstallmentsScreen = () => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { panelKicker } = usePanelRole();
+  const { language } = useLanguage();
+  const { isRtl, textAlign, row } = useRtlLayout();
   const { formatCurrency } = useCurrency();
   const [requests, setRequests] = useState([]);
   const [allRequests, setAllRequests] = useState([]);
@@ -51,17 +73,36 @@ const AdminInstallmentsScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [adminNote, setAdminNote] = useState('');
 
-  const getAuthConfig = async () => {
+  const getStatusLabel = useCallback(
+    (status) => {
+      const normalized = String(status || 'pending').toLowerCase();
+      const key = STATUS_LABEL_KEYS[normalized];
+      return key ? tUi(key) : normalized;
+    },
+    [tUi]
+  );
+
+  const getFilterLabel = useCallback(
+    (status) => {
+      if (status === 'all') {
+        return tUi('ui.pages.admin.adminInstallments.all_cbfec376e0');
+      }
+      return getStatusLabel(status);
+    },
+    [getStatusLabel, tUi]
+  );
+
+  const getAuthConfig = useCallback(async () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
-      throw new Error('Session missing. Please sign in again.');
+      throw new Error(tUi('ui.mobile.adminInstallments.failedLoad'));
     }
     return {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     };
-  };
+  }, [tUi]);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -75,14 +116,14 @@ const AdminInstallmentsScreen = () => {
         setExpandedRequestId(nextRequests[0].id);
       }
     } catch (error) {
-      const message = error.message || 'Failed to load installment requests';
+      const message = error.message || tUi('ui.mobile.adminInstallments.failedLoad');
       setAllRequests([]);
       setErrorMessage(message);
       Toast.show({ type: 'error', text1: message });
     } finally {
       setLoading(false);
     }
-  }, [expandedRequestId]);
+  }, [expandedRequestId, getAuthConfig, tUi]);
 
   useEffect(() => {
     fetchRequests();
@@ -97,9 +138,10 @@ const AdminInstallmentsScreen = () => {
 
   const handleApprove = async (requestId) => {
     const approved = await confirmAction(
-      'Approve Request?',
-      'This action cannot be undone.',
-      'Approve'
+      tUi('ui.mobile.adminInstallments.approveTitle'),
+      tUi('ui.mobile.adminInstallments.approveMessage'),
+      tUi('ui.pages.admin.adminInstallments.approve_1d97c149aa'),
+      tUi('ui.mobile.common.cancel')
     );
     if (!approved) return;
     setActioning(true);
@@ -112,7 +154,10 @@ const AdminInstallmentsScreen = () => {
       );
       fetchRequests();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to approve request' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminInstallments.failedApprove'),
+      });
     } finally {
       setActioning(false);
     }
@@ -120,9 +165,10 @@ const AdminInstallmentsScreen = () => {
 
   const handleReject = async (requestId) => {
     const rejected = await confirmAction(
-      'Reject Request?',
-      'This action cannot be undone.',
-      'Reject'
+      tUi('ui.mobile.adminInstallments.rejectTitle'),
+      tUi('ui.mobile.adminInstallments.approveMessage'),
+      tUi('ui.pages.admin.adminInstallments.reject_b300f1d667'),
+      tUi('ui.mobile.common.cancel')
     );
     if (!rejected) return;
     setActioning(true);
@@ -135,7 +181,10 @@ const AdminInstallmentsScreen = () => {
       );
       fetchRequests();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to reject request' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminInstallments.failedReject'),
+      });
     } finally {
       setActioning(false);
     }
@@ -143,9 +192,10 @@ const AdminInstallmentsScreen = () => {
 
   const handleCancel = async (requestId) => {
     const cancelled = await confirmAction(
-      'Cancel Request?',
-      'Cancelled installment requests cannot be restored.',
-      'Cancel Request'
+      tUi('ui.mobile.adminInstallments.cancelTitle'),
+      tUi('ui.mobile.adminInstallments.approveMessage'),
+      tUi('ui.pages.admin.adminInstallments.cancelRequest_a6b7885506'),
+      tUi('ui.pages.admin.adminInstallments.keepRequest_6a95cf977a')
     );
     if (!cancelled) return;
     setActioning(true);
@@ -158,7 +208,10 @@ const AdminInstallmentsScreen = () => {
       );
       fetchRequests();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to cancel request' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminInstallments.failedCancel'),
+      });
     } finally {
       setActioning(false);
     }
@@ -175,30 +228,54 @@ const AdminInstallmentsScreen = () => {
 
   const pendingCount = allRequests.filter((req) => (req.status || '').toLowerCase() === 'pending').length;
 
-  const customerLabel = (request) => {
-    const user = request?.user;
-    if (!user) return request?.user_email || request?.user_name || `User #${request?.user_id || '-'}`;
-    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
-    return user.email || fullName || `User #${request.user_id || '-'}`;
-  };
+  const customerLabel = useCallback(
+    (request) => {
+      const user = request?.user;
+      if (!user) {
+        return (
+          request?.user_email
+          || request?.user_name
+          || tUi('ui.pages.admin.adminInstallments.userValue_2bb65a2840', {
+            value0: request?.user_id || '-',
+          })
+        );
+      }
+      const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+      return (
+        user.email
+        || fullName
+        || tUi('ui.pages.admin.adminInstallments.userValue_2bb65a2840', {
+          value0: request.user_id || '-',
+        })
+      );
+    },
+    [tUi]
+  );
+
+  const processingLabel = tUi('ui.pages.admin.adminInstallments.cancelling_23939436ee');
 
   return (
     <AdminScreen
-      title="Installments"
-      subtitle="Review and approve installment requests."
-      meta={`Pending: ${pendingCount}`}
+      kicker={panelKicker}
+      title={tUi('ui.pages.admin.adminInstallments.installmentRequests_2fc67af45f')}
+      subtitle={tUi('ui.pages.admin.adminInstallments.subtitle_1a2b3c4d5f')}
+      meta={tUi('ui.mobile.adminInstallments.pendingMeta', { value0: pendingCount })}
     >
-      <View style={styles.filterRow}>
-        {['all', 'pending', 'approved', 'rejected', 'cancelled', 'completed'].map((status) => (
+      <View style={[styles.filterRow, { flexDirection: row }]}>
+        {STATUS_FILTERS.map((status) => (
           <Pressable
             key={status}
             style={[styles.filterChip, statusFilter === status && styles.filterChipActive]}
             onPress={() => setStatusFilter(status)}
           >
             <Text
-              style={[styles.filterText, statusFilter === status && styles.filterTextActive]}
+              style={[
+                styles.filterText,
+                { textAlign },
+                statusFilter === status && styles.filterTextActive,
+              ]}
             >
-              {status}
+              {getFilterLabel(status)}
             </Text>
           </Pressable>
         ))}
@@ -210,10 +287,12 @@ const AdminInstallmentsScreen = () => {
         </View>
       ) : errorMessage ? (
         <View style={styles.errorCard}>
-          <Text style={styles.errorTitle}>Could not load installments</Text>
-          <Text style={styles.errorText}>{errorMessage}</Text>
+          <Text style={[styles.errorTitle, { textAlign }]}>
+            {tUi('ui.mobile.adminInstallments.failedLoad')}
+          </Text>
+          <Text style={[styles.errorText, { textAlign }]}>{errorMessage}</Text>
           <Pressable style={styles.retryButton} onPress={fetchRequests}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{tUi('ui.mobile.common.retry')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -221,10 +300,10 @@ const AdminInstallmentsScreen = () => {
           {requests.map((request) => (
             <AdminListItem
               key={request.id}
-              title={`Request #${request.id}`}
-              subtitle={`${customerLabel(request)} | Order #${request.order_id}`}
-              meta={`${formatCurrency(request.total_amount || 0)} total | ${formatCurrency(request.remaining_balance || 0)} remaining`}
-              status={request.status || 'pending'}
+              title={`${tUi('ui.pages.admin.adminInstallments.request_be00a60c8a')}${request.id}`}
+              subtitle={`${customerLabel(request)} | ${tUi('ui.pages.admin.adminInstallments.order_49f67d4db8')} #${request.order_id}`}
+              meta={`${formatCurrency(request.total_amount || 0)} ${tUi('ui.pages.admin.adminInstallments.total_e06af0484d')} | ${formatCurrency(request.remaining_balance || 0)} ${tUi('ui.pages.admin.adminInstallments.remaining_4f3da92ffc')}`}
+              status={getStatusLabel(request.status)}
               statusTone={toneForStatus(request.status)}
               onPress={() =>
                 setExpandedRequestId((prev) => (prev === request.id ? null : request.id))
@@ -232,98 +311,156 @@ const AdminInstallmentsScreen = () => {
             />
           ))}
           {!requests.length ? (
-            <Text style={styles.emptyText}>No installment requests found.</Text>
+            <Text style={[styles.emptyText, { textAlign }]}>
+              {tUi('ui.pages.admin.adminInstallments.noInstallmentRequestsForThis_a2ec84d62f')}
+            </Text>
           ) : null}
         </View>
       )}
 
       {selectedRequest ? (
         <View style={styles.detailCard}>
-          <Text style={styles.detailTitle}>Request Details</Text>
-          <Text style={styles.detailMeta}>{`Request #${selectedRequest.id} | Order #${selectedRequest.order_id}`}</Text>
+          <Text style={[styles.detailTitle, { textAlign }]}>
+            {`${tUi('ui.pages.admin.adminInstallments.request_be00a60c8a')}${selectedRequest.id}`}
+          </Text>
+          <Text style={[styles.detailMeta, { textAlign }]}>
+            {`${tUi('ui.pages.admin.adminInstallments.request_be00a60c8a')}${selectedRequest.id} | ${tUi('ui.pages.admin.adminInstallments.order_49f67d4db8')} #${selectedRequest.order_id}`}
+          </Text>
 
           <View style={styles.summaryGrid}>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Customer</Text>
-              <Text style={styles.detailValue}>{customerLabel(selectedRequest)}</Text>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.customer_6bb072f714')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>{customerLabel(selectedRequest)}</Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Phone</Text>
-              <Text style={styles.detailValue}>{selectedRequest.user?.phone || 'N/A'}</Text>
-            </View>
-            <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Duration</Text>
-              <Text style={styles.detailValue}>{selectedRequest.duration_months || 0} months</Text>
-            </View>
-            <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Status</Text>
-              <Text style={[styles.detailValue, { color: colors.primary }]}>
-                {selectedRequest.status || 'pending'}
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.phone_792be90cbb')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {selectedRequest.user?.phone || '—'}
               </Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Total Amount</Text>
-              <Text style={styles.detailValue}>{formatCurrency(selectedRequest.total_amount || 0)}</Text>
-            </View>
-            <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Remaining</Text>
-              <Text style={styles.detailValue}>{formatCurrency(selectedRequest.remaining_balance || 0)}</Text>
-            </View>
-            <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Monthly Payment</Text>
-              <Text style={styles.detailValue}>{formatCurrency(selectedRequest.monthly_payment || 0)}</Text>
-            </View>
-            <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Next Payment</Text>
-              <Text style={styles.detailValue}>
-                {selectedRequest.next_payment_date ? formatDate(selectedRequest.next_payment_date) : 'Not scheduled'}
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.duration_8a9f6bac49')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {`${selectedRequest.duration_months || 0} ${tUi('ui.pages.admin.adminInstallments.months_194cd42615')}`}
               </Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Created</Text>
-              <Text style={styles.detailValue}>{formatDateTime(selectedRequest.created_at)}</Text>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.status_757a85a464')}
+              </Text>
+              <Text style={[styles.detailValue, { color: colors.primary, textAlign }]}>
+                {getStatusLabel(selectedRequest.status)}
+              </Text>
             </View>
             <View style={styles.detailCell}>
-              <Text style={styles.detailLabel}>Reviewed</Text>
-              <Text style={styles.detailValue}>{formatDateTime(selectedRequest.reviewed_at)}</Text>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.totalAmount_bf522a1f51')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {formatCurrency(selectedRequest.total_amount || 0)}
+              </Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.remainingBalance_546b92638c')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {formatCurrency(selectedRequest.remaining_balance || 0)}
+              </Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.monthlyPayment_c6144d075c')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {formatCurrency(selectedRequest.monthly_payment || 0)}
+              </Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.nextPaymentDate_dd7feff4cb')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {selectedRequest.next_payment_date
+                  ? formatDate(selectedRequest.next_payment_date)
+                  : tUi('ui.pages.admin.adminInstallments.notScheduled_983560543f')}
+              </Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.created_bf6813b664')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {formatDateTime(selectedRequest.created_at)}
+              </Text>
+            </View>
+            <View style={styles.detailCell}>
+              <Text style={[styles.detailLabel, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.approve_1d97c149aa')}
+              </Text>
+              <Text style={[styles.detailValue, { textAlign }]}>
+                {formatDateTime(selectedRequest.reviewed_at)}
+              </Text>
             </View>
           </View>
 
           {selectedRequest.user_note ? (
             <View style={styles.noteBlock}>
-              <Text style={styles.sectionTitle}>User Note</Text>
-              <Text style={styles.noteText}>{selectedRequest.user_note}</Text>
+              <Text style={[styles.sectionTitle, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.userNote_9a1c56bb0b')}
+              </Text>
+              <Text style={[styles.noteText, { textAlign }]}>{selectedRequest.user_note}</Text>
             </View>
           ) : null}
 
           {selectedRequest.admin_note ? (
             <View style={styles.noteBlock}>
-              <Text style={styles.sectionTitle}>Admin Note</Text>
-              <Text style={styles.noteText}>{selectedRequest.admin_note}</Text>
+              <Text style={[styles.sectionTitle, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.adminNote_ea6470d41f')}
+              </Text>
+              <Text style={[styles.noteText, { textAlign }]}>{selectedRequest.admin_note}</Text>
             </View>
           ) : null}
 
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Items</Text>
+            <Text style={[styles.sectionTitle, { textAlign }]}>
+              {tUi('ui.pages.admin.adminInstallments.order_49f67d4db8')}
+            </Text>
             {(selectedRequest.items || []).length ? (
               selectedRequest.items.map((item) => (
-                <View key={item.id} style={styles.compactRow}>
+                <View key={item.id} style={[styles.compactRow, { flexDirection: row }]}>
                   <View style={styles.compactMain}>
-                    <Text style={styles.compactTitle}>{item.product_name}</Text>
-                    <Text style={styles.compactMeta}>Qty {item.quantity} | Unit {formatCurrency(item.unit_price || 0)}</Text>
+                    <Text style={[styles.compactTitle, { textAlign }]}>{item.product_name}</Text>
+                    <Text style={[styles.compactMeta, { textAlign }]}>
+                      {tUi('ui.pages.admin.adminInstallments.value_0e4b2e2dbc', {
+                        value0: `${item.quantity} × ${formatCurrency(item.unit_price || 0)}`,
+                      })}
+                    </Text>
                   </View>
-                  <Text style={styles.compactAmount}>{formatCurrency(item.total || 0)}</Text>
+                  <Text style={[styles.compactAmount, { textAlign }]}>
+                    {formatCurrency(item.total || 0)}
+                  </Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyInline}>No item data.</Text>
+              <Text style={[styles.emptyInline, { textAlign }]}>
+                {tUi('ui.mobile.common.noResults')}
+              </Text>
             )}
           </View>
 
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Verification Documents</Text>
+            <Text style={[styles.sectionTitle, { textAlign }]}>
+              {tUi('ui.pages.admin.adminInstallments.verificationDocuments_b2c3d4e5f6')}
+            </Text>
             <View style={styles.documentGrid}>
-              {DOCUMENT_TYPES.map(([type, label]) => {
+              {DOCUMENT_TYPE_KEYS.map(([type, labelKey]) => {
                 const document = (selectedRequest.documents || []).find((doc) => doc.document_type === type);
                 return (
                   <View key={type} style={styles.documentCard}>
@@ -331,10 +468,12 @@ const AdminInstallmentsScreen = () => {
                       <Image source={{ uri: buildImageUrl(document.file_path) }} style={styles.documentImage} />
                     ) : (
                       <View style={styles.documentMissing}>
-                        <Text style={styles.documentMissingText}>Missing</Text>
+                        <Text style={[styles.documentMissingText, { textAlign }]}>
+                          {tUi('ui.pages.admin.adminInstallments.notUploaded_b78a3d1521')}
+                        </Text>
                       </View>
                     )}
-                    <Text style={styles.documentLabel}>{label}</Text>
+                    <Text style={[styles.documentLabel, { textAlign }]}>{tUi(labelKey)}</Text>
                   </View>
                 );
               })}
@@ -343,32 +482,45 @@ const AdminInstallmentsScreen = () => {
 
           {(selectedRequest.status || '').toLowerCase() === 'pending' ? (
             <View style={styles.sectionBlock}>
-              <Text style={styles.sectionTitle}>Admin Note</Text>
+              <Text style={[styles.sectionTitle, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.adminNote_ea6470d41f')}
+              </Text>
               <TextInput
-                style={styles.noteInput}
+                style={[
+                  styles.noteInput,
+                  { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' },
+                ]}
                 value={adminNote}
                 onChangeText={setAdminNote}
                 multiline
-                placeholder="Optional note for approval, rejection, or cancellation"
+                placeholder={tUi('ui.mobile.adminInstallments.notePlaceholder')}
                 placeholderTextColor={colors.muted}
               />
             </View>
           ) : null}
           {(selectedRequest.status || '').toLowerCase() === 'pending' ? (
-            <View style={styles.actionRow}>
+            <View style={[styles.actionRow, { flexDirection: row }]}>
               <Pressable
                 style={[styles.dangerButton, actioning && styles.buttonDisabled]}
                 onPress={() => handleReject(selectedRequest.id)}
                 disabled={actioning}
               >
-                <Text style={styles.buttonText}>{actioning ? 'Processing...' : 'Reject'}</Text>
+                <Text style={styles.buttonText}>
+                  {actioning
+                    ? processingLabel
+                    : tUi('ui.pages.admin.adminInstallments.reject_b300f1d667')}
+                </Text>
               </Pressable>
               <Pressable
                 style={[styles.successButton, actioning && styles.buttonDisabled]}
                 onPress={() => handleApprove(selectedRequest.id)}
                 disabled={actioning}
               >
-                <Text style={styles.buttonText}>{actioning ? 'Processing...' : 'Approve'}</Text>
+                <Text style={styles.buttonText}>
+                  {actioning
+                    ? processingLabel
+                    : tUi('ui.pages.admin.adminInstallments.approve_1d97c149aa')}
+                </Text>
               </Pressable>
             </View>
           ) : null}
@@ -380,49 +532,77 @@ const AdminInstallmentsScreen = () => {
               onPress={() => handleCancel(selectedRequest.id)}
               disabled={actioning}
             >
-              <Text style={styles.buttonText}>{actioning ? 'Processing...' : 'Cancel Request'}</Text>
+              <Text style={styles.buttonText}>
+                {actioning
+                  ? processingLabel
+                  : tUi('ui.pages.admin.adminInstallments.cancelRequest_a6b7885506')}
+              </Text>
             </Pressable>
           ) : null}
 
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Payment Schedule</Text>
+            <Text style={[styles.sectionTitle, { textAlign }]}>
+              {tUi('ui.pages.admin.adminInstallments.paymentSchedule_779f92e1ea')}
+            </Text>
             {(selectedRequest.schedules || []).length ? (
               selectedRequest.schedules.map((schedule) => (
-                <View key={schedule.id} style={styles.compactRow}>
+                <View key={schedule.id} style={[styles.compactRow, { flexDirection: row }]}>
                   <View style={styles.compactMain}>
-                    <Text style={styles.compactTitle}>Installment #{schedule.installment_number}</Text>
-                    <Text style={styles.compactMeta}>Due {formatDate(schedule.due_date)}</Text>
-                    <Text style={styles.compactMeta}>Status: {schedule.status || 'pending'}</Text>
+                    <Text style={[styles.compactTitle, { textAlign }]}>
+                      {`${tUi('ui.pages.admin.adminInstallments.request_be00a60c8a')}${schedule.installment_number}`}
+                    </Text>
+                    <Text style={[styles.compactMeta, { textAlign }]}>
+                      {`${tUi('ui.pages.admin.adminInstallments.dueDate_b86b269e67')} ${formatDate(schedule.due_date)}`}
+                    </Text>
+                    <Text style={[styles.compactMeta, { textAlign }]}>
+                      {`${tUi('ui.pages.admin.adminInstallments.status_757a85a464')}: ${getStatusLabel(schedule.status)}`}
+                    </Text>
                   </View>
                   <View style={styles.amountColumn}>
-                    <Text style={styles.compactAmount}>{formatCurrency(schedule.amount_due || 0)}</Text>
+                    <Text style={[styles.compactAmount, { textAlign }]}>
+                      {formatCurrency(schedule.amount_due || 0)}
+                    </Text>
                     {Number(schedule.amount_paid || 0) > 0 ? (
-                      <Text style={styles.compactMeta}>Paid {formatCurrency(schedule.amount_paid || 0)}</Text>
+                      <Text style={[styles.compactMeta, { textAlign }]}>
+                        {`${tUi('ui.pages.admin.adminInstallments.amount_f04179eb75')} ${formatCurrency(schedule.amount_paid || 0)}`}
+                      </Text>
                     ) : null}
                   </View>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyInline}>No schedule generated.</Text>
+              <Text style={[styles.emptyInline, { textAlign }]}>
+                {tUi('ui.pages.admin.adminInstallments.notScheduled_983560543f')}
+              </Text>
             )}
           </View>
 
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionTitle}>Payment History</Text>
+            <Text style={[styles.sectionTitle, { textAlign }]}>
+              {tUi('ui.pages.admin.adminInstallments.paymentHistory_f1eac32837')}
+            </Text>
             {(selectedRequest.payments || []).length ? (
               [...(selectedRequest.payments || [])]
                 .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at))
                 .map((payment) => (
-                  <View key={payment.id} style={styles.compactRow}>
+                  <View key={payment.id} style={[styles.compactRow, { flexDirection: row }]}>
                     <View style={styles.compactMain}>
-                      <Text style={styles.compactTitle}>{formatDateTime(payment.paid_at)}</Text>
-                      {payment.note ? <Text style={styles.compactMeta}>{payment.note}</Text> : null}
+                      <Text style={[styles.compactTitle, { textAlign }]}>
+                        {formatDateTime(payment.paid_at)}
+                      </Text>
+                      {payment.note ? (
+                        <Text style={[styles.compactMeta, { textAlign }]}>{payment.note}</Text>
+                      ) : null}
                     </View>
-                    <Text style={styles.compactAmount}>{formatCurrency(payment.amount || 0)}</Text>
+                    <Text style={[styles.compactAmount, { textAlign }]}>
+                      {formatCurrency(payment.amount || 0)}
+                    </Text>
                   </View>
                 ))
             ) : (
-              <Text style={styles.emptyInline}>No payment history.</Text>
+              <Text style={[styles.emptyInline, { textAlign }]}>
+                {tUi('ui.mobile.common.noResults')}
+              </Text>
             )}
           </View>
         </View>
@@ -431,7 +611,8 @@ const AdminInstallmentsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, isDark }) =>
+  StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -443,7 +624,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
-    marginRight: 8,
+    marginEnd: 8,
     marginBottom: 8,
   },
   filterChipActive: {
@@ -468,9 +649,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   errorCard: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? `${colors.danger}22` : '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: isDark ? colors.danger : '#FECACA',
     borderRadius: 16,
     padding: 16,
   },
@@ -522,7 +703,7 @@ const styles = StyleSheet.create({
   },
   detailCell: {
     width: '50%',
-    paddingRight: 10,
+    paddingEnd: 10,
     marginTop: 12,
   },
   detailRow: {
@@ -585,7 +766,7 @@ const styles = StyleSheet.create({
   },
   compactMain: {
     flex: 1,
-    paddingRight: 10,
+    paddingEnd: 10,
   },
   compactTitle: {
     color: colors.text,
@@ -651,7 +832,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
-    marginRight: 8,
+    marginEnd: 8,
   },
   successButton: {
     flex: 1,
@@ -675,6 +856,6 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.7,
   },
-});
+  });
 
 export default AdminInstallmentsScreen;

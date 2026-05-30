@@ -1,45 +1,47 @@
 import React, { useContext } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
-import LoginScreen from '../screens/LoginScreen';
-import SignupScreen from '../screens/SignupScreen';
-import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import VerifyResetCodeScreen from '../screens/VerifyResetCodeScreen';
-import ResetPasswordScreen from '../screens/ResetPasswordScreen';
+import { useTheme } from '../context/ThemeContext';
 import AdminNavigator from '../admin/navigation/AdminNavigator';
-import AdminAccessDeniedScreen from '../admin/screens/AdminAccessDeniedScreen';
-import { colors } from '../admin/styles/theme';
+import CustomerNavigator from '../customer/navigation/CustomerNavigator';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
-  const { isAuthenticated, loading, isAdmin } = useContext(AuthContext);
+  const { loading, hasPanelAccess, isAuthenticated } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
+
+  const navigationTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
+  const showPanelApp = isAuthenticated && hasPanelAccess();
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="VerifyResetCode" component={VerifyResetCodeScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          </>
-        ) : isAdmin() ? (
+        {showPanelApp ? (
           <Stack.Screen name="AdminApp" component={AdminNavigator} />
         ) : (
-          <Stack.Screen name="AdminAccessDenied" component={AdminAccessDeniedScreen} />
+          <Stack.Screen name="CustomerApp" component={CustomerNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
@@ -53,6 +55,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
   },
 });

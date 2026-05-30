@@ -11,9 +11,14 @@ import {
 import { Feather } from '@expo/vector-icons';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
 import http from '../../services/http';
 import { CATEGORY_ENDPOINTS } from '../../config/api';
+import Toast from 'react-native-toast-message';
 import { confirmAction } from '../utils/confirm';
 
 const emptyForm = {
@@ -26,6 +31,13 @@ const emptyForm = {
 };
 
 const AdminCategoriesScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { isRtl } = useLanguage();
+  const { textAlign, row } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,28 +117,44 @@ const AdminCategoriesScreen = () => {
   };
 
   const handleDelete = async (category) => {
-    const ok = await confirmAction('Delete category', `Delete ${category.name}?`);
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminCategories.deleteCategory_be5e4141c7'),
+      tUi('ui.pages.admin.adminCategories.areYouSureYouWant_cc06d151de'),
+      tUi('ui.pages.admin.adminCategories.delete_d1c593a8bd'),
+      tUi('ui.mobile.common.cancel')
+    );
     if (!ok) return;
-    await http.delete(CATEGORY_ENDPOINTS.DELETE.replace('{id}', category.id));
-    fetchCategories();
+    try {
+      await http.delete(CATEGORY_ENDPOINTS.DELETE.replace('{id}', category.id));
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.admin.adminCategories.categoryDeletedSuccessfully_af4e890bd7'),
+      });
+      fetchCategories();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || tUi('ui.toast.operationFailed'),
+      });
+    }
   };
 
   return (
     <AdminScreen
-      title="Categories"
-      subtitle="Organize product categories and translations."
+      title={tUi('ui.pages.admin.adminCategories.manageCategories_0cb9f43ae9')}
+      subtitle={tUi('ui.pages.admin.adminCategories.subtitle_1a2b3c4d5e')}
       action={
         <Pressable style={styles.primaryButton} onPress={openCreate}>
           <Feather name="plus" size={16} color={colors.surface} />
-          <Text style={styles.primaryButtonText}>Add Category</Text>
+          <Text style={styles.primaryButtonText}>{tUi('ui.pages.admin.adminCategories.addCategoryBtn_6e7f8a9b0c')}</Text>
         </Pressable>
       }
     >
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, { flexDirection: row }]}>
         <Feather name="search" size={16} color={colors.muted} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search categories"
+          style={[styles.searchInput, inputRtlStyle]}
+          placeholder={tUi('ui.pages.admin.adminCategories.searchCategories_7a8b9c0d1e')}
           placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -148,17 +176,17 @@ const AdminCategoriesScreen = () => {
               right={
                 <View style={styles.inlineActions}>
                   <Pressable onPress={() => openEdit(category)}>
-                    <Text style={styles.inlineButton}>Edit</Text>
+                    <Text style={styles.inlineButton}>{tUi('ui.pages.admin.adminCategories.edit_36f0067e76')}</Text>
                   </Pressable>
                   <Pressable onPress={() => handleDelete(category)}>
-                    <Text style={[styles.inlineButton, styles.deleteButton]}>Delete</Text>
+                    <Text style={[styles.inlineButton, styles.deleteButton]}>{tUi('ui.pages.admin.adminCategories.delete_d1c593a8bd')}</Text>
                   </Pressable>
                 </View>
               }
             />
           ))}
           {!filtered.length ? (
-            <Text style={styles.emptyText}>No categories found.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminCategories.noSearchResults_8b9c0d1e2f')}</Text>
           ) : null}
         </View>
       )}
@@ -167,72 +195,80 @@ const AdminCategoriesScreen = () => {
         <Pressable style={styles.modalOverlay} onPress={() => setShowModal(false)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.modalTitle}>
-              {editingCategory ? 'Edit Category' : 'New Category'}
+              {editingCategory
+                ? tUi('ui.pages.admin.adminCategories.editCategory_ce33b7c66f')
+                : tUi('ui.pages.admin.adminCategories.addNewCategory_1a6cfcaeec')}
             </Text>
             <View style={styles.modalGroup}>
-              <Text style={styles.modalLabel}>Name</Text>
+              <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelName')}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputRtlStyle]}
                 value={form.name}
                 onChangeText={(value) => setForm((prev) => ({ ...prev, name: value }))}
-                placeholder="Category name"
+                placeholder={tUi('ui.mobile.adminCategories.placeholderName')}
+                placeholderTextColor={colors.muted}
               />
             </View>
             <View style={styles.modalRow}>
               <View style={styles.modalColumn}>
-                <Text style={styles.modalLabel}>Name (AR)</Text>
+                <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelNameAr')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputRtlStyle]}
                   value={form.name_ar}
                   onChangeText={(value) => setForm((prev) => ({ ...prev, name_ar: value }))}
-                  placeholder="Arabic name"
+                  placeholder={tUi('ui.mobile.adminCategories.placeholderNameAr')}
+                  placeholderTextColor={colors.muted}
                 />
               </View>
               <View style={styles.modalColumn}>
-                <Text style={styles.modalLabel}>Name (FR)</Text>
+                <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelNameFr')}</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputRtlStyle]}
                   value={form.name_fr}
                   onChangeText={(value) => setForm((prev) => ({ ...prev, name_fr: value }))}
-                  placeholder="French name"
+                  placeholder={tUi('ui.mobile.adminCategories.placeholderNameFr')}
+                  placeholderTextColor={colors.muted}
                 />
               </View>
             </View>
             <View style={styles.modalGroup}>
-              <Text style={styles.modalLabel}>Description</Text>
+              <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelDescription')}</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, inputRtlStyle]}
                 value={form.description}
                 onChangeText={(value) => setForm((prev) => ({ ...prev, description: value }))}
-                placeholder="Category description"
+                placeholder={tUi('ui.mobile.adminCategories.placeholderDescription')}
+                placeholderTextColor={colors.muted}
                 multiline
               />
             </View>
             <View style={styles.modalRow}>
               <View style={styles.modalColumn}>
-                <Text style={styles.modalLabel}>Description (AR)</Text>
+                <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelDescriptionAr')}</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[styles.input, styles.textArea, inputRtlStyle]}
                   value={form.description_ar}
                   onChangeText={(value) => setForm((prev) => ({ ...prev, description_ar: value }))}
-                  placeholder="Arabic description"
+                  placeholder={tUi('ui.mobile.adminCategories.placeholderDescriptionAr')}
+                  placeholderTextColor={colors.muted}
                   multiline
                 />
               </View>
               <View style={styles.modalColumn}>
-                <Text style={styles.modalLabel}>Description (FR)</Text>
+                <Text style={styles.modalLabel}>{tUi('ui.mobile.adminCategories.labelDescriptionFr')}</Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[styles.input, styles.textArea, inputRtlStyle]}
                   value={form.description_fr}
                   onChangeText={(value) => setForm((prev) => ({ ...prev, description_fr: value }))}
-                  placeholder="French description"
+                  placeholder={tUi('ui.mobile.adminCategories.placeholderDescriptionFr')}
+                  placeholderTextColor={colors.muted}
                   multiline
                 />
               </View>
             </View>
             <View style={styles.modalActions}>
               <Pressable style={styles.secondaryButton} onPress={() => setShowModal(false)}>
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                <Text style={styles.secondaryButtonText}>{tUi('ui.mobile.common.cancel')}</Text>
               </Pressable>
               <Pressable
                 style={[styles.primaryButton, saving && styles.buttonDisabled]}
@@ -240,7 +276,7 @@ const AdminCategoriesScreen = () => {
                 disabled={saving}
               >
                 <Text style={styles.primaryButtonText}>
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? tUi('ui.mobile.common.saving') : tUi('ui.mobile.common.save')}
                 </Text>
               </Pressable>
             </View>
@@ -251,7 +287,7 @@ const AdminCategoriesScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -320,7 +356,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },

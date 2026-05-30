@@ -4,18 +4,38 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
+import { CartProvider } from './src/context/CartContext';
+import { WishlistProvider } from './src/context/WishlistContext';
+import { LanguageProvider } from './src/context/LanguageContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+
+function AppShell() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <AppNavigator />
+      <Toast />
+    </View>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <View style={styles.container}>
-          <StatusBar style="light" />
-          <AppNavigator />
-          <Toast />
-        </View>
-      </AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <AppShell />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -23,6 +43,5 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F3EE',
   },
 });

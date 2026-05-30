@@ -1,90 +1,33 @@
-const STRINGS = {
-  'navbar.forYou': 'For You',
-  'navbar.signup': 'Sign Up',
-  'navbar.products': 'Products',
-  'legacy.Categories': 'Categories',
-  'ui.pages.home.heroKicker_2e51d0c3a7': 'Curated essentials',
-  'ui.pages.home.welcomeToOurStore_fe0466a249': 'Welcome to our store',
-  'ui.pages.home.discoverAmazingProductsAtUnbeatable_e717e87b85': 'Discover amazing products at unbeatable prices.',
-  'ui.pages.home.shopNow_e58073dc0e': 'Shop now',
-  'ui.pages.home.heroNote_1c0a3b7d12': 'Fast delivery, secure payments, and daily discounts.',
-  'ui.pages.home.discounts_7c50f5ea26': 'Discounts',
-  'ui.pages.home.featuredProducts_666a6cab05': 'Featured products',
-  'ui.pages.home.shopByCategory_dde1ec52b8': 'Shop by category',
-  'ui.pages.home.valuePropsTitle_f8f0c4ad1a': 'Why shop with us',
-  'ui.pages.home.valuePropsSubtitle_0aa1c14a1b': 'Everything you need, delivered with care.',
-  'ui.pages.home.valuePropDeliveryTitle_1d1ac5c1d0': 'Fast delivery',
-  'ui.pages.home.valuePropDeliveryBody_2c33b0dd6f': 'Track your order in real time with reliable fulfillment.',
-  'ui.pages.home.valuePropPaymentsTitle_7f8b4c3d2a': 'Secure payments',
-  'ui.pages.home.valuePropPaymentsBody_3e51c43f90': 'Pay with confidence using secure checkout options.',
-  'ui.pages.home.valuePropSupportTitle_7a8f1b90ad': 'Always-on support',
-  'ui.pages.home.valuePropSupportBody_1b8b2d09d8': 'Our team is here whenever you need help.',
-  'ui.pages.home.promoTitle_5f7b0db4da': 'Seasonal savings are live',
-  'ui.pages.home.promoBody_0dc5f5e2c8': 'Save more when you bundle your favorites.',
-  'ui.pages.home.promoCta_32bb6c9d5d': 'Browse deals',
-  'ui.pages.home.categoriesSubtitle_0a7d16c8f1': 'Explore popular collections picked for you.',
-  'ui.pages.home.discountsSubtitle_9a4b3d5b2f': 'Limited time offers across top categories.',
-  'ui.pages.home.featuredSubtitle_6d8a2e0a4e': 'Hand-picked items trending this week.',
-  'ui.pages.home.viewAllProducts_e59509eaba': 'View all products',
-  'ui.pages.home.addToCart_db672a40f8': 'Add to cart',
-  'ui.pages.home.productAddedToCart_d4e0ddfeac': 'Product added to cart',
-  'ui.pages.home.addToWishlist_ace0a00bdf': 'Add to wishlist',
-  'ui.pages.home.removeFromWishlist_8663e14321': 'Remove from wishlist',
-  'ui.pages.home.loginToWishlist': 'Login to manage your wishlist',
-  'ui.pages.home.loginToAddToCart': 'Login to add items to cart',
-  'ui.components.starRating.rating_5bd901ae20': 'rating',
-  'ui.components.starRating.ratings_8aa35770e7': 'ratings',
-  'ui.components.starRating.noRatingsYet_94fd652938': 'No ratings yet',
-  'ui.common.or': 'or',
-  'ui.pages.login.login_4b4596ebf5': 'Login',
-  'ui.pages.login.welcomeBackPleaseLoginTo_2f667109f5': 'Welcome back. Please sign in.',
-  'ui.pages.login.email_2f2d1d3b03': 'Email',
-  'ui.pages.login.enterYourEmail_94997e7f2c': 'Enter your email',
-  'ui.pages.login.password_c9fb7b6316': 'Password',
-  'ui.pages.login.enterYourPassword_4257b32a43': 'Enter your password',
-  'ui.pages.login.forgotYourPassword_7484c9cd8e': 'Forgot password?',
-  'ui.pages.login.rememberMe_399aa1dfc4': 'Remember me',
-  'ui.pages.login.loggingIn_7d068b432f': 'Signing in...',
-  'ui.pages.login.loginSuccessful_e6d02ef027': 'Login successful',
-  'ui.pages.login.somethingWentWrong_fbd74f86ef': 'Something went wrong',
-  'ui.pages.login.donTHaveAnAccount_5c2496a86e': "Don't have an account? ",
-  'ui.pages.login.signUp_8e16000dc0': 'Sign up',
-  'ui.pages.login.continueWithGoogle_3b1c8480ac': 'Continue with Google',
-  'ui.pages.login.signingIn_5c57a8b55c': 'Signing in...',
-  'ui.pages.login.showPassword_e3faa6cab8': 'Show password',
-  'ui.pages.login.hidePassword_34503b95bb': 'Hide password',
-  'ui.pages.signup.signUp_31e879f853': 'Sign up',
-  'ui.pages.signup.createANewAccountTo_acca247e59': 'Create a new account to get started.',
-  'ui.pages.signup.firstName_0115dc327f': 'First name',
-  'ui.pages.signup.enterYourFirstName_456883bf94': 'Enter your first name',
-  'ui.pages.signup.lastName_d680d61780': 'Last name',
-  'ui.pages.signup.enterYourLastName_6449322e24': 'Enter your last name',
-  'ui.pages.signup.email_4283f2f98d': 'Email',
-  'ui.pages.signup.enterYourEmail_1b36f3c709': 'Enter your email',
-  'ui.pages.signup.phoneOptional_75c8e69b0d': 'Phone (optional)',
-  'ui.pages.signup.enterYourPhoneNumber_28d611e3a3': 'Enter your phone number',
-  'ui.pages.signup.countryOptional_5204ef7b72': 'Country (optional)',
-  'ui.pages.signup.enterYourCountry_b8ec420563': 'Enter your country',
-  'ui.pages.signup.cityOptional_a7da0fbc82': 'City (optional)',
-  'ui.pages.signup.enterYourCity_592c44c282': 'Enter your city',
-  'ui.pages.signup.streetOptional_8c6d703abb': 'Street (optional)',
-  'ui.pages.signup.enterYourStreetAddress_8a29161f56': 'Enter your street address',
-  'ui.pages.signup.password_7084f01dbc': 'Password',
-  'ui.pages.signup.enterYourPassword_13b5e3dee5': 'Enter your password',
-  'ui.pages.signup.confirmPassword_3222757f3c': 'Confirm password',
-  'ui.pages.signup.confirmYourPassword_942a5af97c': 'Confirm your password',
-  'ui.pages.signup.creatingAccount_294bb5a7e0': 'Creating account...',
-  'ui.pages.signup.signingUp_fb7acde66f': 'Signing up...',
-  'ui.pages.signup.continueWithGoogle_f632e5cb4c': 'Continue with Google',
-  'ui.pages.signup.alreadyHaveAnAccount_2afe32fcac': 'Already have an account? ',
-  'ui.pages.signup.login_fa9a00d8ad': 'Login',
-  'ui.pages.signup.accountCreatedAndLoggedIn_ce5b7626b2': 'Account created.',
-  'ui.pages.signup.somethingWentWrongWithGoogle_a4fe280b0f': 'Google signup failed.',
-  'ui.pages.signup.googleSignupFailedPleaseTry_529ce3ad69': 'Google signup failed. Please try again.',
-  'ui.pages.signup.hidePassword_ce0d2d6955': 'Hide password',
-  'ui.pages.signup.showPassword_72f22e7185': 'Show password',
+import { useCallback } from 'react';
+import { DEFAULT_LANGUAGE, normalizeLanguageCode } from './constants';
+import { useLanguage } from '../context/LanguageContext';
+import en from './locales/en';
+import ar from './locales/ar';
+import fr from './locales/fr';
+
+const LOCALES = { en, ar, fr };
+
+const interpolate = (value, options = {}) => {
+  if (!value || !options || typeof value !== 'string') {
+    return value;
+  }
+
+  let result = value;
+  Object.entries(options).forEach(([token, tokenValue]) => {
+    result = result.replace(new RegExp(`\\{\\{${token}\\}\\}`, 'g'), String(tokenValue));
+    result = result.replace(new RegExp(`\\{${token}\\}`, 'g'), String(tokenValue));
+  });
+  return result;
 };
 
-export const tUi = (key) => {
-  return STRINGS[key] || key;
+export const tUi = (key, languageCode = DEFAULT_LANGUAGE, options) => {
+  const language = normalizeLanguageCode(languageCode);
+  const strings = LOCALES[language] || LOCALES.en;
+  const value = strings[key] ?? LOCALES.en[key] ?? key;
+  return interpolate(value, options);
+};
+
+export const useTUi = () => {
+  const { language } = useLanguage();
+  return useCallback((key, options) => tUi(key, language, options), [language]);
 };

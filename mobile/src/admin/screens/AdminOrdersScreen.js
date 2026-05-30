@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -11,11 +12,16 @@ import {
 import { Feather } from '@expo/vector-icons';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import OrderMapTracker from '../components/OrderMapTracker';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { ORDER_ENDPOINTS } from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
-import { formatDateTime } from '../utils/format';
+import { usePanelRole } from '../hooks/usePanelRole';
+import { buildImageUrl, formatDateTime } from '../utils/format';
 
 const STATUS_FILTERS = [
   'all',
@@ -31,6 +37,31 @@ const STATUS_FILTERS = [
   'cancelled',
 ];
 
+const ORDER_FILTER_LABEL_KEYS = {
+  all: 'ui.mobile.common.all',
+  revenue: 'ui.pages.admin.adminOrders.revenue_a1caf5553a',
+  pos: 'ui.pages.admin.adminOrders.pos_a479fcd150',
+  created: 'ui.pages.orders.status.created',
+  paid: 'ui.pages.orders.status.paid',
+  assigned: 'ui.pages.orders.status.assigned',
+  picked_up: 'ui.pages.orders.status.pickedUp',
+  delivering: 'ui.pages.orders.status.delivering',
+  shipped: 'ui.pages.orders.status.shipped',
+  delivered: 'ui.pages.orders.status.delivered',
+  cancelled: 'ui.pages.orders.status.cancelled',
+};
+
+const ORDER_STATUS_LABEL_KEYS = {
+  created: 'ui.pages.orders.status.created',
+  paid: 'ui.pages.orders.status.paid',
+  assigned: 'ui.pages.orders.status.assigned',
+  picked_up: 'ui.pages.orders.status.pickedUp',
+  delivering: 'ui.pages.orders.status.delivering',
+  shipped: 'ui.pages.orders.status.shipped',
+  delivered: 'ui.pages.orders.status.delivered',
+  cancelled: 'ui.pages.orders.status.cancelled',
+};
+
 const statusToneMap = {
   paid: 'success',
   shipped: 'success',
@@ -44,13 +75,55 @@ const statusToneMap = {
 };
 
 const AdminOrdersScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { panelKicker } = usePanelRole();
+  const { isRtl, textAlign, row } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
+  const getOrderStatusLabel = useCallback(
+    (status) => {
+      const normalized = String(status || 'created').toLowerCase();
+      const key = ORDER_STATUS_LABEL_KEYS[normalized];
+      return key ? tUi(key) : normalized;
+    },
+    [tUi]
+  );
+
+  const getFilterLabel = useCallback(
+    (filter) => {
+      const key = ORDER_FILTER_LABEL_KEYS[filter];
+      return key ? tUi(key) : filter.replace('_', ' ');
+    },
+    [tUi]
+  );
+
   const { formatCurrency } = useCurrency();
+
+  const mapLabels = useMemo(
+    () => ({
+      unavailable: tUi('ui.mobile.mapTracker.unavailable'),
+      coordsUnavailable: tUi('ui.mobile.mapTracker.coordsUnavailable'),
+      pickup: tUi('ui.mobile.mapTracker.pickupLocation'),
+      delivery: tUi('ui.mobile.mapTracker.deliveryLocation'),
+      driver: tUi('ui.mobile.mapTracker.driverLocation'),
+      live: tUi('ui.mobile.mapTracker.liveTracking'),
+      deliveryCompleted: tUi('ui.mobile.adminDeliveries.deliveryCompleted'),
+      deliveryCancelled: tUi('ui.mobile.adminDeliveries.deliveryCancelled'),
+      trackingDeliveredInactive: tUi('ui.mobile.adminDeliveries.trackingDeliveredInactive'),
+      trackingCancelledInactive: tUi('ui.mobile.adminDeliveries.trackingCancelledInactive'),
+    }),
+    [tUi]
+  );
+
   const [orders, setOrders] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [expandedOrderTab, setExpandedOrderTab] = useState('details');
   const [statusModalOrder, setStatusModalOrder] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
@@ -120,8 +193,19 @@ const AdminOrdersScreen = () => {
     [expandedOrderId, orders]
   );
 
+  useEffect(() => {
+    setExpandedOrderTab('details');
+  }, [expandedOrderId]);
+
+  const selectedDelivery = selectedOrder?.order_delivery || null;
+
   return (
-    <AdminScreen title="Orders" subtitle="Track, filter, and update order status.">
+    <AdminScreen
+      kicker={panelKicker}
+      title={tUi('ui.pages.admin.adminOrders.allOrders_4b39990b5b')}
+      subtitle={tUi('ui.pages.admin.adminOrders.subtitle_1a2b3c4d5e')}
+    >
+      <Text style={styles.filterLabel}>{tUi('ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa')}</Text>
       <View style={styles.filterRow}>
         {STATUS_FILTERS.map((filter) => (
           <Pressable
@@ -132,7 +216,7 @@ const AdminOrdersScreen = () => {
             <Text
               style={[styles.filterText, statusFilter === filter && styles.filterTextActive]}
             >
-              {filter.replace('_', ' ')}
+              {getFilterLabel(filter)}
             </Text>
           </Pressable>
         ))}
@@ -141,8 +225,8 @@ const AdminOrdersScreen = () => {
       <View style={styles.searchRow}>
         <Feather name="search" size={16} color={colors.muted} />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search order or customer"
+          style={[styles.searchInput, inputRtlStyle]}
+          placeholder={tUi('ui.mobile.common.search')}
           placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -163,57 +247,154 @@ const AdminOrdersScreen = () => {
             return (
               <AdminListItem
                 key={order.id}
-                title={`Order #${order.id}`}
+                title={tUi('ui.pages.admin.adminDeliveries.orderTitle_8e5d31f868', {
+                  value0: order.id,
+                })}
                 subtitle={
                   order.sale_channel === 'pos'
-                    ? order.customer_name || 'POS Order'
-                    : order.user?.email || 'Customer'
+                    ? order.customer_name || tUi('ui.pages.admin.adminOrders.inStorePosSale_28efdad1f0')
+                    : order.user?.email || tUi('ui.pages.admin.adminOrders.customer_af49dd1c93')
                 }
                 meta={meta}
-                status={status}
+                status={getOrderStatusLabel(status)}
                 statusTone={statusToneMap[status] || 'default'}
                 onPress={() =>
                   setExpandedOrderId((prev) => (prev === order.id ? null : order.id))
                 }
                 right={
                   <Pressable onPress={() => setStatusModalOrder(order)}>
-                    <Text style={styles.inlineButton}>Update</Text>
+                    <Text style={styles.inlineButton}>{tUi('ui.pages.admin.adminOrders.changeStatus_82cd1fa50c')}</Text>
                   </Pressable>
                 }
               />
             );
           })}
           {!orders.length ? (
-            <Text style={styles.emptyText}>No orders found.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28')}</Text>
           ) : null}
         </View>
       )}
 
       {selectedOrder ? (
         <View style={styles.detailCard}>
-          <Text style={styles.detailTitle}>Order Details</Text>
-          <Text style={styles.detailMeta}>{`Order #${selectedOrder.id}`}</Text>
+          <Text style={styles.detailTitle}>{tUi('ui.mobile.adminOrders.orderDetails')}</Text>
+          <Text style={styles.detailMeta}>
+            {tUi('ui.pages.admin.adminDeliveries.orderTitle_8e5d31f868', {
+              value0: selectedOrder.id,
+            })}
+          </Text>
           <Text style={styles.detailMeta}>{formatDateTime(selectedOrder.created_at)}</Text>
-          <View style={styles.detailSection}>
-            <Text style={styles.detailLabel}>Items</Text>
-            {(selectedOrder.items || selectedOrder.orderitems || []).map((item) => (
-              <View key={item.id} style={styles.detailRow}>
-                <Text style={styles.detailValue}>
-                  {item.product?.name || `Item #${item.product_id}`}
+
+          {selectedDelivery ? (
+            <View style={[styles.tabRow, { flexDirection: row }]}>
+              <Pressable
+                style={[styles.tabChip, expandedOrderTab === 'details' && styles.tabChipActive]}
+                onPress={() => setExpandedOrderTab('details')}
+              >
+                <Text
+                  style={[
+                    styles.tabChipText,
+                    expandedOrderTab === 'details' && styles.tabChipTextActive,
+                  ]}
+                >
+                  {tUi('ui.mobile.adminOrders.tabDetails')}
                 </Text>
-                <Text style={styles.detailValue}>{`${item.quantity} x ${formatCurrency(
-                  item.price
-                )}`}</Text>
-              </View>
-            ))}
-          </View>
+              </Pressable>
+              <Pressable
+                style={[styles.tabChip, expandedOrderTab === 'report' && styles.tabChipActive]}
+                onPress={() => setExpandedOrderTab('report')}
+              >
+                <Text
+                  style={[
+                    styles.tabChipText,
+                    expandedOrderTab === 'report' && styles.tabChipTextActive,
+                  ]}
+                >
+                  {tUi('ui.pages.admin.adminOrders.driverReport_1685bd9703')}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.tabChip, expandedOrderTab === 'map' && styles.tabChipActive]}
+                onPress={() => setExpandedOrderTab('map')}
+              >
+                <Text
+                  style={[
+                    styles.tabChipText,
+                    expandedOrderTab === 'map' && styles.tabChipTextActive,
+                  ]}
+                >
+                  {tUi('ui.pages.admin.adminOrders.liveTrackingMap_5e6f7a8b9c')}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {expandedOrderTab === 'details' || !selectedDelivery ? (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminOrders.items_716d042f1e')}</Text>
+              {(selectedOrder.items || selectedOrder.orderitems || []).map((item) => (
+                <View key={item.id} style={[styles.detailRow, { flexDirection: row }]}>
+                  <Text style={styles.detailValue}>
+                    {item.product?.name || tUi('ui.pages.admin.adminOrders.nA_eb6526e85d')}
+                  </Text>
+                  <Text style={styles.detailValue}>{`${item.quantity} x ${formatCurrency(
+                    item.price
+                  )}`}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {expandedOrderTab === 'report' && selectedDelivery ? (
+            <View style={styles.detailSection}>
+              {selectedDelivery.issue_type ? (
+                <Text style={styles.detailValue}>
+                  <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminOrders.type_5479c42965')} </Text>
+                  {String(selectedDelivery.issue_type).replace(/_/g, ' ')}
+                </Text>
+              ) : (
+                <Text style={styles.detailMeta}>
+                  {tUi('ui.pages.admin.adminOrders.noIssueTypeProvided_be64d46132')}
+                </Text>
+              )}
+              {selectedDelivery.issue_description ? (
+                <Text style={[styles.detailValue, { marginTop: 8 }]}>
+                  <Text style={styles.detailLabel}>
+                    {tUi('ui.pages.admin.adminOrders.description_ddd5e10a09')}{' '}
+                  </Text>
+                  {selectedDelivery.issue_description}
+                </Text>
+              ) : null}
+              {Array.isArray(selectedDelivery.photos) && selectedDelivery.photos.length > 0 ? (
+                <View style={[styles.photoGrid, { flexDirection: row }]}>
+                  {selectedDelivery.photos.map((photo) => (
+                    <View key={photo.id} style={styles.photoCard}>
+                      <Image
+                        source={{ uri: buildImageUrl(photo.image_path) }}
+                        style={styles.photoImage}
+                      />
+                      <Text style={styles.photoCaption}>
+                        {String(photo.photo_type || '').replace(/_/g, ' ')}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {expandedOrderTab === 'map' && selectedDelivery ? (
+            <View style={styles.detailSection}>
+              <OrderMapTracker deliveryJob={selectedDelivery} labels={mapLabels} />
+            </View>
+          ) : null}
         </View>
       ) : null}
 
       <Modal transparent visible={!!statusModalOrder} animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setStatusModalOrder(null)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.modalTitle}>Update status</Text>
+            <Text style={styles.modalTitle}>{tUi('ui.mobile.adminOrders.updateStatus')}</Text>
             {statusModalOrder &&
               getAvailableStatuses(statusModalOrder.status || 'created').map((status) => (
                 <Pressable
@@ -222,11 +403,11 @@ const AdminOrdersScreen = () => {
                   onPress={() => handleUpdateStatus(statusModalOrder, status)}
                   disabled={updatingStatus}
                 >
-                  <Text style={styles.modalOptionText}>{status.replace('_', ' ')}</Text>
+                  <Text style={styles.modalOptionText}>{getOrderStatusLabel(status)}</Text>
                 </Pressable>
               ))}
             <Pressable style={styles.secondaryButton} onPress={() => setStatusModalOrder(null)}>
-              <Text style={styles.secondaryButtonText}>Close</Text>
+              <Text style={styles.secondaryButtonText}>{tUi('ui.mobile.common.cancel')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -235,7 +416,13 @@ const AdminOrdersScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+    marginBottom: 6,
+  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -313,6 +500,54 @@ const styles = StyleSheet.create({
   detailSection: {
     marginTop: 12,
   },
+  tabRow: {
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  tabChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  tabChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  tabChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.muted,
+  },
+  tabChipTextActive: {
+    color: colors.surface,
+  },
+  photoGrid: {
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  photoCard: {
+    width: 110,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+  },
+  photoImage: {
+    width: '100%',
+    height: 90,
+  },
+  photoCaption: {
+    fontSize: 11,
+    color: colors.muted,
+    padding: 6,
+    textTransform: 'capitalize',
+  },
   detailLabel: {
     fontSize: 12,
     color: colors.muted,
@@ -329,7 +564,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },

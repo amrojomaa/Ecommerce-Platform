@@ -1,6 +1,6 @@
 {
   "expo": {
-    "owner": "yazansaleh2003",
+    "owner": "amrojomsa",
     "name": "mobile",
     "slug": "mobile",
     "scheme": "mobile",
@@ -26,11 +26,6 @@
     "plugins": [
       "expo-secure-store",
       "expo-web-browser"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "49c9e74f-0a71-485a-8ab2-438151b5c932"
-      }
-    }
+    ]
   }
 }

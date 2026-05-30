@@ -1,21 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import AdminScreen from '../components/AdminScreen';
-import { colors, shadow } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
 import http from '../../services/http';
 import { POS_ENDPOINTS } from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
 
-const cashierName = (cashier) => {
-  if (!cashier) return 'Unknown Cashier';
-  return [cashier.first_name, cashier.last_name].filter(Boolean).join(' ') || 'Unknown Cashier';
-};
-
 const AdminPosAnalyticsScreen = ({ navigation }) => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { language } = useLanguage();
+  const { row } = useRtlLayout();
+
   const { formatCurrency } = useCurrency();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const resolveCashierName = useCallback(
+    (cashier) => {
+      if (!cashier) return tUi('ui.mobile.adminPos.unknownCashier');
+      return (
+        [cashier.first_name, cashier.last_name].filter(Boolean).join(' ') ||
+        tUi('ui.mobile.adminPos.unknownCashier')
+      );
+    },
+    [tUi]
+  );
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -42,7 +58,7 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
       if (!statsMap[cashierId]) {
         statsMap[cashierId] = {
           id: cashierId,
-          name: cashierName(sale.cashier),
+          name: resolveCashierName(sale.cashier),
           totalOrders: 0,
           totalSales: 0,
         };
@@ -57,17 +73,17 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
       totalOrders: sales.length,
       cashierStats: Object.values(statsMap).sort((a, b) => b.totalSales - a.totalSales),
     };
-  }, [sales]);
+  }, [resolveCashierName, sales]);
 
   return (
     <AdminScreen
-      kicker="POS Analytics"
-      title="POS Analytics"
-      subtitle="Supervise POS terminal operations and cashier performance for today."
+      kicker={tUi('ui.pages.admin.adminDashboard.action.posAnalytics.title')}
+      title={tUi('ui.pages.admin.adminDashboard.action.posAnalytics.title')}
+      subtitle={tUi('ui.pages.admin.adminDashboard.action.posAnalytics.desc')}
       action={
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable style={[styles.backButton, { flexDirection: row }]} onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={16} color={colors.primary} />
-          <Text style={styles.backText}>Back</Text>
+          <Text style={styles.backText}>{tUi('ui.sidebar.menu.dashboard')}</Text>
         </Pressable>
       }
     >
@@ -83,7 +99,7 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
                 <Feather name="clipboard" size={22} color={colors.primary} />
               </View>
               <Text style={styles.statValue}>{totalOrders}</Text>
-              <Text style={styles.statLabel}>Total POS Orders Today</Text>
+              <Text style={styles.statLabel}>{tUi('ui.pages.admin.adminDashboard.totalOrders_3968b1aea2')}</Text>
             </View>
 
             <View style={styles.statCard}>
@@ -91,21 +107,26 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
                 <Feather name="dollar-sign" size={22} color={colors.primary} />
               </View>
               <Text style={styles.statValue}>{formatCurrency(totalRevenue)}</Text>
-              <Text style={styles.statLabel}>Total POS Revenue Today</Text>
+              <Text style={styles.statLabel}>{tUi('ui.pages.admin.adminDashboard.totalRevenue_8625d01bf6')}</Text>
             </View>
           </View>
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Cashier Performance</Text>
+            <Text style={styles.sectionTitle}>{tUi('ui.sidebar.panel.cashier')}</Text>
           </View>
           {cashierStats.length === 0 ? (
-            <Text style={styles.emptyText}>No POS sales recorded today.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminOrders.noInStorePosOrders_e985e1c501')}</Text>
           ) : (
             cashierStats.map((stat) => (
               <View key={stat.id} style={styles.rowCard}>
                 <View style={styles.rowMain}>
                   <Text style={styles.rowTitle}>{stat.name}</Text>
-                  <Text style={styles.rowMeta}>{stat.totalOrders} orders processed</Text>
+                  <Text style={styles.rowMeta}>
+                    {tUi('ui.pages.admin.adminUsers.valueValue_e33c0a89f9', {
+                      value0: stat.totalOrders,
+                      value1: tUi('ui.pages.admin.adminOrders.orders_0e0e34ceea'),
+                    })}
+                  </Text>
                 </View>
                 <Text style={styles.rowAmount}>{formatCurrency(stat.totalSales)}</Text>
               </View>
@@ -113,20 +134,25 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
           )}
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent POS Transactions</Text>
+            <Text style={styles.sectionTitle}>{tUi('ui.pages.admin.adminOrders.pos_a479fcd150')}</Text>
           </View>
           {sales.length === 0 ? (
-            <Text style={styles.emptyText}>No transactions today.</Text>
+            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminOrders.noInStorePosOrders_e985e1c501')}</Text>
           ) : (
             sales.slice(0, 50).map((sale) => (
               <View key={sale.id} style={styles.rowCard}>
                 <View style={styles.rowMain}>
-                  <Text style={styles.rowTitle}>Order #{sale.id}</Text>
-                  <Text style={styles.rowMeta}>
-                    {sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : 'No time'}
+                  <Text style={styles.rowTitle}>
+                    {tUi('ui.pages.admin.adminDeliveries.orderTitle_8e5d31f868', { value0: sale.id })}
                   </Text>
                   <Text style={styles.rowMeta}>
-                    {cashierName(sale.cashier)} • {sale.customer_name || 'Walk-in'}
+                    {sale.created_at
+                      ? new Date(sale.created_at).toLocaleTimeString(language)
+                      : tUi('ui.pages.admin.adminDeliveries.nA_201b30d45e')}
+                  </Text>
+                  <Text style={styles.rowMeta}>
+                    {resolveCashierName(sale.cashier)} ·{' '}
+                    {sale.customer_name || tUi('roles.customer')}
                   </Text>
                 </View>
                 <Text style={styles.rowAmount}>{formatCurrency(Number(sale.total_amount) || 0)}</Text>
@@ -139,7 +165,7 @@ const AdminPosAnalyticsScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   loadingWrap: {
     paddingVertical: 40,
     alignItems: 'center',
@@ -151,7 +177,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: isDark ? `${colors.primary}22` : '#EEF2FF',
   },
   backText: {
     color: colors.primary,
@@ -181,10 +207,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   ordersIcon: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: isDark ? `${colors.primary}22` : '#DBEAFE',
   },
   revenueIcon: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: isDark ? `${colors.success}22` : '#DCFCE7',
   },
   statValue: {
     color: colors.text,

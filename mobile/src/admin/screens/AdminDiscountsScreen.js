@@ -8,14 +8,37 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import AdminScreen from '../components/AdminScreen';
 import AdminListItem from '../components/AdminListItem';
-import { colors } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
+import { useLanguage } from '../../context/LanguageContext';
 import http from '../../services/http';
 import { PRODUCT_ENDPOINTS, buildUrl } from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
+import { confirmAction } from '../utils/confirm';
 
 const AdminDiscountsScreen = () => {
+  const { colors, shadow, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { isRtl } = useLanguage();
+  const { textAlign, row } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
+  const getDiscountTypeLabel = (type) =>
+    type === 'fixed_amount'
+      ? tUi('ui.pages.admin.adminDiscounts.fixedAmount_17d721b6a9')
+      : tUi('ui.pages.admin.adminDiscounts.percentage_d8edf1d60e');
+
+  const getDiscountValuePlaceholder = (type) =>
+    type === 'fixed_amount'
+      ? tUi('ui.pages.admin.adminDiscounts.eG2550_a1fe96880e')
+      : tUi('ui.pages.admin.adminDiscounts.eG15_654d286fe1');
+
   const { formatCurrency } = useCurrency();
   const [allProducts, setAllProducts] = useState([]);
   const [products, setProducts] = useState([]);
@@ -33,10 +56,17 @@ const AdminDiscountsScreen = () => {
       const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
       const list = response.data || [];
       setAllProducts(list);
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1:
+          error.response?.data?.detail ||
+          tUi('ui.pages.admin.adminDiscounts.failedToFetchProductsFor_b7ed6e5511'),
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tUi]);
 
   useEffect(() => {
     fetchProducts();
@@ -65,6 +95,18 @@ const AdminDiscountsScreen = () => {
 
   const handleSave = async () => {
     if (!editingProduct) return;
+
+    const disabling = editingProduct.discount_enabled && !form.discount_enabled;
+    if (disabling) {
+      const ok = await confirmAction(
+        tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
+        `${tUi('ui.pages.admin.adminDiscounts.removeDiscountConfirm_5d1e7b3a92')} "${editingProduct.name}"?`,
+        tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
+        tUi('ui.mobile.common.cancel')
+      );
+      if (!ok) return;
+    }
+
     setSaving(true);
     try {
       await http.patch(buildUrl(PRODUCT_ENDPOINTS.UPDATE_DISCOUNT, { id: editingProduct.id }), {
@@ -74,13 +116,34 @@ const AdminDiscountsScreen = () => {
       });
       setShowModal(false);
       setEditingProduct(null);
+      Toast.show({
+        type: 'success',
+        text1: disabling
+          ? tUi('ui.pages.admin.adminDiscounts.discountRemoved_9e4c2b1a77')
+          : tUi('ui.pages.admin.adminDiscounts.discountUpdated_4c8e2a1f90'),
+      });
       fetchProducts();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.toast.operationFailed'),
+      });
     } finally {
       setSaving(false);
     }
   };
 
   const handleToggle = async (product) => {
+    const disabling = product.discount_enabled;
+    if (disabling) {
+      const ok = await confirmAction(
+        tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
+        `${tUi('ui.pages.admin.adminDiscounts.removeDiscountConfirm_5d1e7b3a92')} "${product.name}"?`,
+        tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
+        tUi('ui.mobile.common.cancel')
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       await http.patch(buildUrl(PRODUCT_ENDPOINTS.UPDATE_DISCOUNT, { id: product.id }), {
@@ -88,7 +151,18 @@ const AdminDiscountsScreen = () => {
         discount_type: product.discount_type || 'percentage',
         discount_value: Number.parseFloat(product.discount_value || 0),
       });
+      Toast.show({
+        type: 'success',
+        text1: disabling
+          ? tUi('ui.pages.admin.adminDiscounts.discountRemoved_9e4c2b1a77')
+          : tUi('ui.pages.admin.adminDiscounts.discountUpdated_4c8e2a1f90'),
+      });
       fetchProducts();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.toast.operationFailed'),
+      });
     } finally {
       setSaving(false);
     }
@@ -106,25 +180,41 @@ const AdminDiscountsScreen = () => {
     [allProducts]
   );
 
+  const activeDiscountCount = allProducts.filter((p) => p.discount_enabled).length;
+
   return (
     <AdminScreen
-      title="Discounts"
-      subtitle="Review and manage active product discounts."
-      meta={`${allProducts.filter((p) => p.discount_enabled).length} products`}
+      title={tUi('ui.pages.admin.adminDiscounts.discounts_5acbd929a0')}
+      subtitle={tUi('ui.pages.admin.adminDiscounts.manageAllProductDiscountsFrom_052f906975')}
+      meta={tUi('ui.pages.admin.adminUsers.valueValue_e33c0a89f9', {
+        value0: activeDiscountCount,
+        value1: tUi('ui.pages.admin.adminDiscounts.productsLabel_6f7e8d9c0a'),
+      })}
     >
       <View style={styles.searchBox}>
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name or SKU..."
+          style={[styles.searchInput, inputRtlStyle]}
+          placeholder={tUi('ui.pages.admin.adminDiscounts.searchByProductNameOr_231a9422f6')}
+          placeholderTextColor={colors.muted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Total Discount Value</Text>
+        <Text style={styles.summaryLabel}>
+          {tUi('ui.pages.admin.adminUsers.valueValue_e33c0a89f9', {
+            value0: tUi('ui.pages.admin.adminOrders.total_fe96c090ae'),
+            value1: tUi('ui.pages.admin.adminProducts.discountValue_e3feb63e4a'),
+          })}
+        </Text>
         <Text style={styles.summaryValue}>{formatCurrency(totalDiscountValue)}</Text>
-        <Text style={styles.summaryMeta}>{products.length} active discounts</Text>
+        <Text style={styles.summaryMeta}>
+          {tUi('ui.pages.admin.adminUsers.valueValue_e33c0a89f9', {
+            value0: products.length,
+            value1: tUi('ui.pages.admin.adminDiscounts.existingDiscounts_4d5e6f7a8b').toLowerCase(),
+          })}
+        </Text>
       </View>
 
       {loading ? (
@@ -139,23 +229,23 @@ const AdminDiscountsScreen = () => {
               title={product.name}
               subtitle={product.sku}
               meta={`${product.discount_type === 'percentage' ? '%' : '$'}${product.discount_value}`}
-              status={product.discount_enabled ? 'Active' : 'Inactive'}
+              status={product.discount_enabled ? tUi('ui.mobile.common.active') : tUi('ui.mobile.common.inactive')}
               statusTone={product.discount_enabled ? 'success' : 'default'}
               onPress={() =>
                 setExpandedProductId((prev) => (prev === product.id ? null : product.id))
               }
               right={
                 <Pressable onPress={() => openEdit(product)}>
-                  <Text style={styles.inlineButton}>Edit</Text>
+                  <Text style={styles.inlineButton}>{tUi('ui.mobile.common.edit')}</Text>
                 </Pressable>
               }
             />
           ))}
           {!products.length ? (
             <Text style={styles.emptyText}>
-              {allProducts.filter((p) => p.discount_enabled).length === 0
-                ? 'No active discounts.'
-                : 'No matching discounts.'}
+              {activeDiscountCount === 0
+                ? tUi('ui.pages.admin.adminDiscounts.noDiscountsYet_5e6f7a8b9c')
+                : tUi('ui.pages.admin.adminDiscounts.noProductsMatchYourSearch_ddd67f60ff')}
             </Text>
           ) : null}
         </View>
@@ -164,26 +254,28 @@ const AdminDiscountsScreen = () => {
       {selectedProduct ? (
         <View style={styles.detailCard}>
           <Text style={styles.detailTitle}>{selectedProduct.name}</Text>
-          <Text style={styles.detailMeta}>SKU: {selectedProduct.sku}</Text>
+          <Text style={styles.detailMeta}>
+            {tUi('ui.common.id')}: {selectedProduct.sku}
+          </Text>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Price</Text>
+            <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.price_e83d5427d6')}</Text>
             <Text style={styles.detailValue}>{formatCurrency(selectedProduct.price || 0)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Discount Type</Text>
-            <Text style={styles.detailValue}>{selectedProduct.discount_type}</Text>
+            <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.discountType_290629062f')}</Text>
+            <Text style={styles.detailValue}>{getDiscountTypeLabel(selectedProduct.discount_type)}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Discount Value</Text>
+            <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.discountValue_e3feb63e4a')}</Text>
             <Text style={styles.detailValue}>{selectedProduct.discount_value}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Stock</Text>
+            <Text style={styles.detailLabel}>{tUi('ui.pages.admin.adminProducts.stock_04fad4218b')}</Text>
             <Text style={styles.detailValue}>{selectedProduct.quantity_in_stock || 0}</Text>
           </View>
           {selectedProduct.discount_description ? (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Description</Text>
+              <Text style={styles.detailLabel}>{tUi('ui.mobile.adminCategories.labelDescription')}</Text>
               <Text style={styles.detailValue}>{selectedProduct.discount_description}</Text>
             </View>
           ) : null}
@@ -193,15 +285,15 @@ const AdminDiscountsScreen = () => {
       <Modal transparent visible={showModal} animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={() => setShowModal(false)}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.modalTitle}>Edit Discount</Text>
+            <Text style={styles.modalTitle}>{tUi('ui.pages.admin.adminDiscounts.editDiscount_3c4d5e6f7a')}</Text>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Discount Enabled</Text>
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminDiscounts.enableDiscount_a54df19510')}</Text>
               <Pressable
                 style={[styles.toggleButton, form.discount_enabled && styles.toggleButtonActive]}
                 onPress={() => setForm((prev) => ({ ...prev, discount_enabled: !prev.discount_enabled }))}
               >
                 <Text style={[styles.toggleText, form.discount_enabled && styles.toggleTextActive]}>
-                  {form.discount_enabled ? 'On' : 'Off'}
+                  {form.discount_enabled ? tUi('ui.mobile.common.on') : tUi('ui.mobile.common.off')}
                 </Text>
               </Pressable>
             </View>
@@ -209,17 +301,18 @@ const AdminDiscountsScreen = () => {
               <>
                 <View style={styles.formRow}>
                   <View style={styles.formColumn}>
-                    <Text style={styles.label}>Type</Text>
-                    <Text style={styles.select}>{form.discount_type}</Text>
+                    <Text style={styles.label}>{tUi('ui.mobile.adminProducts.labelType')}</Text>
+                    <Text style={styles.select}>{getDiscountTypeLabel(form.discount_type)}</Text>
                   </View>
                   <View style={styles.formColumn}>
-                    <Text style={styles.label}>Value</Text>
+                    <Text style={styles.label}>{tUi('ui.mobile.adminProducts.labelValue')}</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, inputRtlStyle]}
                       value={form.discount_value}
                       onChangeText={(value) => setForm((prev) => ({ ...prev, discount_value: value }))}
                       keyboardType="decimal-pad"
-                      placeholder="0"
+                      placeholder={getDiscountValuePlaceholder(form.discount_type)}
+                      placeholderTextColor={colors.muted}
                     />
                   </View>
                 </View>
@@ -227,14 +320,16 @@ const AdminDiscountsScreen = () => {
             ) : null}
             <View style={styles.formActions}>
               <Pressable style={styles.secondaryButton} onPress={() => setShowModal(false)}>
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                <Text style={styles.secondaryButtonText}>{tUi('ui.mobile.common.cancel')}</Text>
               </Pressable>
               <Pressable
                 style={[styles.primaryButton, saving && styles.buttonDisabled]}
                 onPress={handleSave}
                 disabled={saving}
               >
-                <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {saving ? tUi('ui.mobile.common.saving') : tUi('ui.mobile.common.save')}
+                </Text>
               </Pressable>
             </View>
           </Pressable>
@@ -244,7 +339,7 @@ const AdminDiscountsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   searchBox: {
     marginBottom: 12,
   },
@@ -330,7 +425,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     padding: 20,
   },

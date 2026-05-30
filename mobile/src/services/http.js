@@ -48,7 +48,21 @@ const setAuthorizationHeader = (config, token) => {
 };
 
 const refreshAccessToken = async (oldToken) => {
+  let storedRefreshToken = null;
+  try {
+    storedRefreshToken = await SecureStore.getItemAsync('refresh_token');
+  } catch (_) {}
+
   const attempts = [];
+
+  if (storedRefreshToken) {
+    attempts.push({
+      url: AUTH_ENDPOINTS.REFRESH_TOKEN,
+      config: {
+        headers: { Authorization: `Bearer ${storedRefreshToken}` },
+      },
+    });
+  }
 
   if (oldToken) {
     attempts.push({
@@ -68,8 +82,12 @@ const refreshAccessToken = async (oldToken) => {
     try {
       const response = await axios.post(`${API_BASE_URL}${attempt.url}`, {}, attempt.config);
       const nextToken = response.data?.access_token;
+      const nextRefreshToken = response.data?.refresh_token;
       if (nextToken) {
         await SecureStore.setItemAsync('token', nextToken);
+        if (nextRefreshToken) {
+          await SecureStore.setItemAsync('refresh_token', nextRefreshToken);
+        }
         return nextToken;
       }
     } catch (_) {}
@@ -140,10 +158,13 @@ http.interceptors.response.use(
       if (shouldClearToken) {
         try {
           await SecureStore.deleteItemAsync('token');
+          await SecureStore.deleteItemAsync('refresh_token');
           await SecureStore.deleteItemAsync('user');
         } catch (_) {}
       }
     }
+
+    const isSilentAuth = Boolean(error.config?._silentAuth);
 
     // Unified error handling
     const detail = error.response?.data?.detail;
@@ -161,11 +182,13 @@ http.interceptors.response.use(
       errorMessage = error.message || 'An error occurred';
     }
 
-    console.error(
-      `[API] ${requestMethod} ${requestUrl || 'unknown URL'} failed:`,
-      error.response?.status || 'network',
-      errorMessage
-    );
+    if (!isSilentAuth) {
+      console.error(
+        `[API] ${requestMethod} ${requestUrl || 'unknown URL'} failed:`,
+        error.response?.status || 'network',
+        errorMessage
+      );
+    }
 
     return Promise.reject({
       message: errorMessage,

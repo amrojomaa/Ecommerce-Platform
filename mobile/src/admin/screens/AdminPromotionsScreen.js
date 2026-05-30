@@ -12,17 +12,14 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 import AdminScreen from '../components/AdminScreen';
-import { colors, shadow } from '../styles/theme';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useRtlLayout } from '../../hooks/useRtlLayout';
+import { useTUi } from '../../i18n/uiText';
 import http from '../../services/http';
 import { PROMOTION_ENDPOINTS, buildUrl } from '../../config/api';
 import { confirmAction } from '../utils/confirm';
-
-const filterLabels = {
-  include_products: 'Include products',
-  exclude_products: 'Exclude products',
-  include_categories: 'Include categories',
-  exclude_categories: 'Exclude categories',
-};
 
 const emptyForm = {
   name: '',
@@ -35,7 +32,21 @@ const emptyForm = {
   filter_values: [],
 };
 
+const FILTER_TYPES = [
+  'include_products',
+  'exclude_products',
+  'include_categories',
+  'exclude_categories',
+];
+
 const AdminPromotionsScreen = () => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tUi = useTUi();
+  const { isRtl } = useLanguage();
+  const { textAlign, row } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+
   const [promotions, setPromotions] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
@@ -46,10 +57,22 @@ const AdminPromotionsScreen = () => {
   const [showModal, setShowModal] = useState(false);
   const [optionSearch, setOptionSearch] = useState('');
 
+  const filterLabels = useMemo(
+    () => ({
+      include_products: tUi('ui.mobile.adminPromotions.filterIncludeProducts'),
+      exclude_products: tUi('ui.mobile.adminPromotions.filterExcludeProducts'),
+      include_categories: tUi('ui.mobile.adminPromotions.filterIncludeCategories'),
+      exclude_categories: tUi('ui.mobile.adminPromotions.filterExcludeCategories'),
+    }),
+    [tUi]
+  );
+
+  const getFilterLabel = (filterType) => filterLabels[filterType] || filterType;
+
   const getAuthConfig = async () => {
     const token = await SecureStore.getItemAsync('token');
     if (!token) {
-      throw new Error('Session missing. Please sign in again.');
+      throw new Error(tUi('ui.toast.operationFailed'));
     }
     return {
       headers: {
@@ -146,18 +169,18 @@ const AdminPromotionsScreen = () => {
     const targetValue = Number.parseFloat(form.target_value);
     const discountValue = Number.parseFloat(form.discount_value);
 
-    if (!form.name.trim()) return 'Promotion name is required';
+    if (!form.name.trim()) return tUi('ui.mobile.adminPromotions.validationName');
     if (Number.isNaN(targetValue) || targetValue <= 0) {
-      return 'Target value must be greater than zero';
+      return tUi('ui.mobile.adminPromotions.validationTarget');
     }
     if (Number.isNaN(discountValue) || discountValue <= 0) {
-      return 'Discount value must be greater than zero';
+      return tUi('ui.mobile.adminPromotions.validationDiscount');
     }
     if (form.discount_type === 'percentage' && discountValue > 100) {
-      return 'Percentage discount cannot exceed 100';
+      return tUi('ui.mobile.adminPromotions.validationPercent');
     }
     if (!form.filter_values.length) {
-      return 'Select at least one product or category';
+      return tUi('ui.mobile.adminPromotions.validationFilter');
     }
     return null;
   };
@@ -185,30 +208,41 @@ const AdminPromotionsScreen = () => {
           payload,
           authConfig
         );
-        Toast.show({ type: 'success', text1: 'Promotion updated' });
+        Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminPromotions.promotionUpdated_3f8ee4a136') });
       } else {
         await http.post(PROMOTION_ENDPOINTS.CREATE, payload, authConfig);
-        Toast.show({ type: 'success', text1: 'Promotion created' });
+        Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminPromotions.promotionCreated_6ec4515cf9') });
       }
       resetForm();
       await loadData();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to save promotion' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminPromotions.failedSave'),
+      });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (promo) => {
-    const ok = await confirmAction('Delete promotion', `Delete ${promo.name}?`);
+    const ok = await confirmAction(
+      tUi('ui.pages.admin.adminPromotions.deletePromotion_038b26221a'),
+      tUi('ui.mobile.adminPromotions.deleteConfirm', { value0: promo.name }),
+      tUi('ui.mobile.common.confirm'),
+      tUi('ui.mobile.common.cancel')
+    );
     if (!ok) return;
     try {
       const authConfig = await getAuthConfig();
       await http.delete(buildUrl(PROMOTION_ENDPOINTS.DELETE, { promotion_id: promo.id }), authConfig);
-      Toast.show({ type: 'success', text1: 'Promotion deleted' });
+      Toast.show({ type: 'success', text1: tUi('ui.pages.admin.adminPromotions.promotionDeleted_b08f0c57d3') });
       await loadData();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to delete promotion' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminPromotions.failedDelete'),
+      });
     }
   };
 
@@ -220,25 +254,32 @@ const AdminPromotionsScreen = () => {
       }, authConfig);
       await loadData();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to update promotion' });
+      Toast.show({
+        type: 'error',
+        text1: error.message || tUi('ui.mobile.adminPromotions.failedUpdate'),
+      });
     }
   };
 
   const describePromotion = (promo) => {
-    const target = promo.target_type === 'amount' ? `Spend ${promo.target_value}` : `Buy ${promo.target_value}`;
+    const target = promo.target_type === 'amount'
+      ? tUi('ui.mobile.adminPromotions.spendTarget', { value0: promo.target_value })
+      : tUi('ui.mobile.adminPromotions.buyTarget', { value0: promo.target_value });
     const discount = promo.discount_type === 'percentage'
-      ? `${promo.discount_value}% off`
-      : `$${promo.discount_value} off`;
-    return `${target} | ${discount} | ${filterLabels[promo.filter_type] || promo.filter_type}`;
+      ? tUi('ui.mobile.adminPromotions.percentOff', { value0: promo.discount_value })
+      : tUi('ui.mobile.adminPromotions.amountOff', { value0: `$${promo.discount_value}` });
+    return `${target} | ${discount} | ${getFilterLabel(promo.filter_type)}`;
   };
 
   return (
     <AdminScreen
-      title="Promotions"
-      subtitle="Build rule-based cart promotions for selected products or categories."
+      title={tUi('ui.pages.admin.adminPromotions.promotions_8cc39c7561')}
+      subtitle={tUi('ui.pages.admin.adminPromotions.createRuleBasedDiscountsFor_4ea978f98e')}
       action={
         <Pressable style={styles.primaryButton} onPress={openCreate}>
-          <Text style={styles.primaryButtonText}>New</Text>
+          <Text style={styles.primaryButtonText}>
+            {tUi('ui.pages.admin.adminPromotions.createPromotion_f093f3973d')}
+          </Text>
         </Pressable>
       }
     >
@@ -250,34 +291,48 @@ const AdminPromotionsScreen = () => {
         <View>
           {promotions.map((promo) => (
             <View key={promo.id} style={styles.promoCard}>
-              <View style={styles.promoHeader}>
-                <View style={styles.promoTitleWrap}>
+              <View style={[styles.promoHeader, { flexDirection: row }]}>
+                <View style={[styles.promoTitleWrap, isRtl ? styles.promoTitleWrapRtl : null]}>
                   <Text style={styles.promoTitle}>{promo.name}</Text>
                   <Text style={styles.promoMeta}>{describePromotion(promo)}</Text>
                 </View>
                 <Text style={[styles.promoBadge, promo.is_active && styles.promoBadgeActive]}>
-                  {promo.is_active ? 'Active' : 'Inactive'}
+                  {promo.is_active
+                    ? tUi('ui.mobile.common.active')
+                    : tUi('ui.mobile.common.inactive')}
                 </Text>
               </View>
-              <View style={styles.valueWrap}>
+              <View style={[styles.valueWrap, { flexDirection: row }]}>
                 {(promo.filter_values || []).map((value) => (
                   <Text key={value} style={styles.valuePill}>{value}</Text>
                 ))}
               </View>
-              <View style={styles.promoActions}>
+              <View style={[styles.promoActions, { flexDirection: row }]}>
                 <Pressable onPress={() => openEdit(promo)}>
-                  <Text style={styles.actionButton}>Edit</Text>
+                  <Text style={styles.actionButton}>
+                    {tUi('ui.pages.admin.adminPromotions.edit_0a20314f38')}
+                  </Text>
                 </Pressable>
                 <Pressable onPress={() => handleToggleActive(promo)}>
-                  <Text style={styles.actionButton}>{promo.is_active ? 'Disable' : 'Enable'}</Text>
+                  <Text style={styles.actionButton}>
+                    {promo.is_active
+                      ? tUi('ui.mobile.adminPromotions.disable')
+                      : tUi('ui.mobile.adminPromotions.enable')}
+                  </Text>
                 </Pressable>
                 <Pressable onPress={() => handleDelete(promo)}>
-                  <Text style={[styles.actionButton, styles.deleteButtonText]}>Delete</Text>
+                  <Text style={[styles.actionButton, styles.deleteButtonText]}>
+                    {tUi('ui.pages.admin.adminPromotions.delete_54b841e5c7')}
+                  </Text>
                 </Pressable>
               </View>
             </View>
           ))}
-          {!promotions.length ? <Text style={styles.emptyText}>No promotions yet.</Text> : null}
+          {!promotions.length ? (
+            <Text style={styles.emptyText}>
+              {tUi('ui.pages.admin.adminPromotions.noPromotionsYet_258a69c574')}
+            </Text>
+          ) : null}
         </View>
       )}
 
@@ -285,19 +340,23 @@ const AdminPromotionsScreen = () => {
         <Pressable style={styles.modalOverlay} onPress={resetForm}>
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalTitle}>{editingPromotion ? 'Edit promotion' : 'New promotion'}</Text>
+              <Text style={styles.modalTitle}>
+                {editingPromotion
+                  ? tUi('ui.pages.admin.adminPromotions.editPromotion_c2740c715e')
+                  : tUi('ui.mobile.adminPromotions.newPromotion')}
+              </Text>
 
-              <Text style={styles.label}>Promotion name</Text>
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.promotionName_df0623c346')}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputRtlStyle]}
                 value={form.name}
                 onChangeText={(value) => setFormField('name', value)}
-                placeholder="Weekend fruits deal"
+                placeholder={tUi('ui.pages.admin.adminPromotions.exampleWeekendFruitsDeal_29e2c6c9a5')}
                 placeholderTextColor={colors.muted}
               />
 
-              <Text style={styles.label}>Target type</Text>
-              <View style={styles.segmentRow}>
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.targetType_fefe0c8c35')}</Text>
+              <View style={[styles.segmentRow, { flexDirection: row }]}>
                 {['amount', 'quantity'].map((type) => (
                   <Pressable
                     key={type}
@@ -305,26 +364,28 @@ const AdminPromotionsScreen = () => {
                     onPress={() => setFormField('target_type', type)}
                   >
                     <Text style={[styles.segmentText, form.target_type === type && styles.segmentTextActive]}>
-                      {type}
+                      {type === 'amount'
+                        ? tUi('ui.pages.admin.adminPromotions.amount_3a1fe500a9')
+                        : tUi('ui.pages.admin.adminPromotions.quantity_d07d26e488')}
                     </Text>
                   </Pressable>
                 ))}
               </View>
 
-              <View style={styles.formRow}>
+              <View style={[styles.formRow, { flexDirection: row }]}>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>Target value</Text>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.targetValue_75b09d40c0')}</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputRtlStyle]}
                     value={form.target_value}
                     onChangeText={(value) => setFormField('target_value', value)}
                     keyboardType="decimal-pad"
                   />
                 </View>
                 <View style={styles.formColumn}>
-                  <Text style={styles.label}>Discount value</Text>
+                  <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.discountValue_e889384e6c')}</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, inputRtlStyle]}
                     value={form.discount_value}
                     onChangeText={(value) => setFormField('discount_value', value)}
                     keyboardType="decimal-pad"
@@ -332,8 +393,8 @@ const AdminPromotionsScreen = () => {
                 </View>
               </View>
 
-              <Text style={styles.label}>Discount type</Text>
-              <View style={styles.segmentRow}>
+              <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.discountType_01c9cdd79c')}</Text>
+              <View style={[styles.segmentRow, { flexDirection: row }]}>
                 {['percentage', 'fixed'].map((type) => (
                   <Pressable
                     key={type}
@@ -341,73 +402,83 @@ const AdminPromotionsScreen = () => {
                     onPress={() => setFormField('discount_type', type)}
                   >
                     <Text style={[styles.segmentText, form.discount_type === type && styles.segmentTextActive]}>
-                      {type === 'percentage' ? 'Percentage' : 'Fixed'}
+                      {type === 'percentage'
+                        ? tUi('ui.pages.admin.adminPromotions.percentage_5c6ebe68e7')
+                        : tUi('ui.mobile.adminPromotions.fixed')}
                     </Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text style={styles.label}>Rule</Text>
-              <View style={styles.ruleGrid}>
-                {Object.entries(filterLabels).map(([key, label]) => (
+              <Text style={styles.label}>{tUi('ui.mobile.adminPromotions.rule')}</Text>
+              <View style={[styles.ruleGrid, { flexDirection: row }]}>
+                {FILTER_TYPES.map((key) => (
                   <Pressable
                     key={key}
                     style={[styles.ruleChip, form.filter_type === key && styles.ruleChipActive]}
                     onPress={() => setFormField('filter_type', key)}
                   >
                     <Text style={[styles.ruleText, form.filter_type === key && styles.ruleTextActive]}>
-                      {label}
+                      {filterLabels[key]}
                     </Text>
                   </Pressable>
                 ))}
               </View>
 
-              <Text style={styles.label}>Selected</Text>
-              <View style={styles.valueWrap}>
+              <Text style={styles.label}>{tUi('ui.mobile.adminPromotions.selected')}</Text>
+              <View style={[styles.valueWrap, { flexDirection: row }]}>
                 {form.filter_values.map((value) => (
                   <Pressable key={value} style={styles.selectedPill} onPress={() => removeFilterValue(value)}>
                     <Text style={styles.selectedPillText}>{value} x</Text>
                   </Pressable>
                 ))}
-                {!form.filter_values.length ? <Text style={styles.emptyInline}>None selected</Text> : null}
+                {!form.filter_values.length ? (
+                  <Text style={styles.emptyInline}>{tUi('ui.mobile.adminPromotions.noneSelected')}</Text>
+                ) : null}
               </View>
 
-              <Text style={styles.label}>Add products/categories</Text>
+              <Text style={styles.label}>{tUi('ui.mobile.adminPromotions.addOptions')}</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, inputRtlStyle]}
                 value={optionSearch}
                 onChangeText={setOptionSearch}
-                placeholder="Search options"
+                placeholder={tUi('ui.pages.admin.adminPromotions.search_3ef2a27f22')}
                 placeholderTextColor={colors.muted}
               />
               <View style={styles.optionBox}>
                 {activeOptions.slice(0, 30).map((option) => (
-                  <Pressable key={option} style={styles.optionRow} onPress={() => addFilterValue(option)}>
+                  <Pressable key={option} style={[styles.optionRow, { flexDirection: row }]} onPress={() => addFilterValue(option)}>
                     <Text style={styles.optionText}>{option}</Text>
-                    <Text style={styles.optionAdd}>Add</Text>
+                    <Text style={styles.optionAdd}>{tUi('ui.pages.admin.adminPromotions.select_f53d6e97bb')}</Text>
                   </Pressable>
                 ))}
-                {!activeOptions.length ? <Text style={styles.emptyInline}>No options available</Text> : null}
+                {!activeOptions.length ? (
+                  <Text style={styles.emptyInline}>{tUi('ui.mobile.adminPromotions.noOptions')}</Text>
+                ) : null}
               </View>
 
-              <View style={styles.activeRow}>
-                <Text style={styles.label}>Active</Text>
+              <View style={[styles.activeRow, { flexDirection: row }]}>
+                <Text style={styles.label}>{tUi('ui.pages.admin.adminPromotions.active_9a948ffb7d')}</Text>
                 <Pressable
                   style={[styles.toggleButton, form.is_active && styles.toggleButtonActive]}
                   onPress={() => setFormField('is_active', !form.is_active)}
                 >
                   <Text style={[styles.toggleText, form.is_active && styles.toggleTextActive]}>
-                    {form.is_active ? 'On' : 'Off'}
+                    {form.is_active
+                      ? tUi('ui.mobile.adminPromotions.on')
+                      : tUi('ui.mobile.adminPromotions.off')}
                   </Text>
                 </Pressable>
               </View>
 
-              <View style={styles.formActions}>
+              <View style={[styles.formActions, { flexDirection: row }]}>
                 <Pressable style={styles.secondaryButton} onPress={resetForm}>
-                  <Text style={styles.secondaryButtonText}>Cancel</Text>
+                  <Text style={styles.secondaryButtonText}>{tUi('ui.mobile.common.cancel')}</Text>
                 </Pressable>
                 <Pressable style={[styles.primaryActionButton, saving && styles.buttonDisabled]} onPress={handleSave} disabled={saving}>
-                  <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
+                  <Text style={styles.primaryButtonText}>
+                    {saving ? tUi('ui.mobile.common.saving') : tUi('ui.mobile.common.save')}
+                  </Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -418,7 +489,8 @@ const AdminPromotionsScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = ({ colors, shadow }) =>
+  StyleSheet.create({
   loadingWrap: {
     paddingVertical: 40,
     alignItems: 'center',
@@ -461,6 +533,10 @@ const styles = StyleSheet.create({
   promoTitleWrap: {
     flex: 1,
     paddingRight: 10,
+  },
+  promoTitleWrapRtl: {
+    paddingRight: 0,
+    paddingLeft: 10,
   },
   promoTitle: {
     fontSize: 16,
@@ -701,6 +777,6 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.7,
   },
-});
+  });
 
 export default AdminPromotionsScreen;

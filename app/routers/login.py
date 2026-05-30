@@ -363,6 +363,105 @@ async def google_auth(
             detail="An error occurred during Google authentication"
         )
 
+from fastapi.responses import HTMLResponse
+
+@router.get("/auth/google/callback", response_class=HTMLResponse)
+async def google_callback(
+    state: str = None,
+):
+    """
+    Callback endpoint for Google OAuth implicit flow.
+    Extracts the hash fragment (access token) client-side and redirects to Expo Go.
+    """
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Authenticating with Google</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #f8fafc;
+                color: #0f172a;
+            }
+            .card {
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+                text-align: center;
+                max-width: 90%;
+                width: 400px;
+            }
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3b82f6;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 20px auto;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            h2 { margin-bottom: 0.5rem; font-weight: 600; }
+            p { color: #64748b; margin-bottom: 2rem; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Completing Sign-in</h2>
+            <p>Please wait while we redirect you back to the app...</p>
+            <div id="loader" class="spinner"></div>
+            <div id="message" style="display:none; color: #ef4444; font-weight: 500;"></div>
+        </div>
+        <script>
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const error = params.get('error') || new URLSearchParams(window.location.search).get('error');
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const expoRedirectUri = params.get('state') || urlParams.get('state') || params.get('oauth_callback') || urlParams.get('oauth_callback');
+            
+            if (error) {
+                document.getElementById('loader').style.display = 'none';
+                const msg = document.getElementById('message');
+                msg.style.display = 'block';
+                msg.textContent = 'Error: ' + decodeURIComponent(error);
+            } else if (accessToken && expoRedirectUri) {
+                const separator = expoRedirectUri.includes('?') ? '&' : '?';
+                const finalUrl = expoRedirectUri + separator + 'access_token=' + accessToken;
+                window.location.href = finalUrl;
+                
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                    const msg = document.getElementById('message');
+                    msg.style.display = 'block';
+                    msg.style.color = '#3b82f6';
+                    msg.innerHTML = 'If you are not redirected automatically, <a href="' + finalUrl + '" style="text-decoration: underline; color: #2563eb;">click here to return to the app</a>.';
+                }, 1500);
+            } else {
+                document.getElementById('loader').style.display = 'none';
+                const msg = document.getElementById('message');
+                msg.style.display = 'block';
+                msg.textContent = 'Authentication failed. Missing token or redirect URI. (Got token: ' + (accessToken ? 'yes' : 'no') + ', Got redirect URI: ' + (expoRedirectUri ? 'yes' : 'no') + ')';
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
 @router.post("/login")
 def login(
     response: Response,

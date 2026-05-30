@@ -223,6 +223,7 @@ class DBOrder(Base):
     promotion_discount = Column(Float, nullable=False, server_default=text("0"))
     promotion_name = Column(String, nullable=True)
     customer_name = Column(String, nullable=True)
+    order_metadata = Column(JSON, nullable=True)
 
     user = relationship("DBUser", back_populates="order", foreign_keys=[user_id])
     driver = relationship("DBUser", foreign_keys=[driver_id])

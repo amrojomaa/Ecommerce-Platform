@@ -606,3 +606,136 @@
     width: 100%;
   }
 }
+
+.profile-section--danger {
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.profile-delete-zone {
+  scroll-margin-top: 5rem;
+}
+
+.profile-delete-zone-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+  padding: 1.5rem 1.75rem;
+  border-radius: 1.2rem;
+  border: 1px dashed rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.06), rgba(239, 68, 68, 0.02));
+  box-shadow: var(--shadow);
+}
+
+.profile-delete-zone-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 1rem;
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error-color);
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.profile-delete-zone-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.profile-delete-zone-kicker {
+  display: inline-flex;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--error-color);
+}
+
+.profile-delete-zone-body h2 {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.profile-delete-zone-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 640px;
+}
+
+.profile-delete-zone-list {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.profile-delete-zone-list li + li {
+  margin-top: 0.25rem;
+}
+
+.profile-delete-zone-action {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
+.profile-delete-zone-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: var(--error-color);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+.profile-delete-zone-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-delete-zone-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.dark .profile-delete-zone-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(15, 23, 42, 0.35));
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+@media (max-width: 768px) {
+  .profile-delete-zone-card {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-delete-zone-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.15rem;
+  }
+
+  .profile-delete-zone-action,
+  .profile-delete-zone-btn {
+    width: 100%;
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaHeadset, FaHeart, FaRegHeart, FaShieldAlt, FaShoppingCart, FaTag, FaTruck } from 'react-icons/fa';
+import { FaArrowRight, FaHeart, FaRegHeart, FaShoppingCart, FaTag } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { tUi } from '../i18n/uiText';
 import http from '../services/http';
@@ -215,79 +215,11 @@ const Home = () => {
         </div>
       </motion.section>
 
-      <section className="value-props-section">
-        <div className="section-header">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}>{tUi("ui.pages.home.valuePropsTitle_f8f0c4ad1a")}
-
-
-          </motion.h2>
-          <p className="section-subtitle">{tUi("ui.pages.home.valuePropsSubtitle_0aa1c14a1b")}</p>
-        </div>
-        <div className="value-props-grid">
-          <motion.article
-            className="value-prop-card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4 }}>
-            
-            <span className="value-prop-icon">
-              <FaTruck />
-            </span>
-            <h3>{tUi("ui.pages.home.valuePropDeliveryTitle_1d1ac5c1d0")}</h3>
-            <p>{tUi("ui.pages.home.valuePropDeliveryBody_2c33b0dd6f")}</p>
-          </motion.article>
-          <motion.article
-            className="value-prop-card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1, duration: 0.4 }}>
-            
-            <span className="value-prop-icon">
-              <FaShieldAlt />
-            </span>
-            <h3>{tUi("ui.pages.home.valuePropPaymentsTitle_7f8b4c3d2a")}</h3>
-            <p>{tUi("ui.pages.home.valuePropPaymentsBody_3e51c43f90")}</p>
-          </motion.article>
-          <motion.article
-            className="value-prop-card"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.4 }}>
-            
-            <span className="value-prop-icon">
-              <FaHeadset />
-            </span>
-            <h3>{tUi("ui.pages.home.valuePropSupportTitle_7a8f1b90ad")}</h3>
-            <p>{tUi("ui.pages.home.valuePropSupportBody_1b8b2d09d8")}</p>
-          </motion.article>
-        </div>
-      </section>
-
-      <section className="promo-band">
-        <div className="promo-content">
-          <div>
-            <h3>{tUi("ui.pages.home.promoTitle_5f7b0db4da")}</h3>
-            <p>{tUi("ui.pages.home.promoBody_0dc5f5e2c8")}</p>
-          </div>
-          <Link to="/products" className="promo-cta">
-            {tUi("ui.pages.home.promoCta_32bb6c9d5d")}
-          </Link>
-        </div>
-      </section>
-
       {/* Featured Categories */}
       {categories.length > 0 &&
       <section className="categories-section" id="categories">
           <div className="categories-band">
             <div className="section-header">
-              <span className="categories-kicker">{tUi("legacy.Categories")}</span>
               <motion.h2
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
@@ -334,7 +266,6 @@ const Home = () => {
           <div className="discounts-band">
             <div className="discounts-band-header">
               <div className="section-header">
-                <span className="discounts-kicker">{tUi("ui.pages.home.discounts_7c50f5ea26")}</span>
                 <motion.h2
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
@@ -432,7 +363,6 @@ const Home = () => {
         <div className="featured-band">
           <div className="featured-band-header">
             <div className="section-header">
-              <span className="featured-kicker">{tUi("ui.pages.home.featuredProducts_666a6cab05")}</span>
               <motion.h2
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}

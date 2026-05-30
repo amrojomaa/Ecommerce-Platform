@@ -120,6 +120,7 @@ export const CATEGORY_ENDPOINTS = {
 export const USER_ENDPOINTS = {
   ME: '/users/me/information',
   UPDATE_ME: '/users/me',
+  DELETE_ME: '/users/me',
   UPLOAD_PROFILE_IMAGE: '/users/me/profile-image',
   DELETE_PROFILE_IMAGE: '/users/me/profile-image',
   ALL: '/users/all',

@@ -17,6 +17,7 @@
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-color);
   padding: 0;
+  overflow-x: clip;
   transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
@@ -35,6 +36,7 @@
   align-items: center;
   column-gap: clamp(1rem, 2vw, 2rem);
   height: 100%;
+  min-width: 0;
 }
 
 .navbar-logo {
@@ -100,6 +102,168 @@
 .navbar-search button:hover {
   background-color: var(--primary-hover);
   transform: scale(1.02);
+}
+
+.navbar-search-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.navbar-search-suggestions {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  inset-inline: 0;
+  z-index: 1200;
+  background: var(--background);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-lg);
+  padding: 0.65rem;
+  overflow: hidden;
+}
+
+.navbar-search-suggestions--mobile {
+  inset-inline: 0;
+}
+
+.navbar-search-suggestions-title {
+  margin: 0 0 0.45rem;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.navbar-search-suggestions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.navbar-search-suggestion-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.navbar-search-suggestion-icon {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.navbar-search-suggestion-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light mode */
+html:not(.dark) .navbar-search-suggestions {
+  background: var(--background);
+  border-color: var(--border-color);
+}
+
+html:not(.dark) .navbar-search-suggestions-title {
+  color: var(--text-secondary);
+}
+
+html:not(.dark) .navbar-search-suggestion-item {
+  background: rgba(248, 250, 252, 0.98);
+  color: var(--text-primary);
+}
+
+html:not(.dark) .navbar-search-suggestion-icon {
+  color: var(--text-secondary);
+}
+
+html:not(.dark) .navbar-search-suggestion-text {
+  color: var(--text-primary);
+}
+
+html:not(.dark) .navbar-search-suggestion-item:hover,
+html:not(.dark) .navbar-search-suggestion-item:focus-visible {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary-color);
+  outline: none;
+}
+
+html:not(.dark) .navbar-search-suggestion-item:hover .navbar-search-suggestion-icon,
+html:not(.dark) .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-icon,
+html:not(.dark) .navbar-search-suggestion-item:hover .navbar-search-suggestion-text,
+html:not(.dark) .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-text {
+  color: var(--primary-color);
+}
+
+.dark .navbar-search-suggestions,
+.navbar.dark .navbar-search-suggestions {
+  background: var(--surface);
+  border-color: var(--border-color);
+}
+
+.dark .navbar-search-suggestions-title,
+.navbar.dark .navbar-search-suggestions-title {
+  color: var(--text-primary);
+}
+
+.dark .navbar-search-suggestion-item,
+.navbar.dark .navbar-search-suggestion-item {
+  background: rgba(15, 23, 42, 0.55);
+  color: var(--text-primary);
+}
+
+.dark .navbar-search-suggestion-icon,
+.navbar.dark .navbar-search-suggestion-icon {
+  color: var(--text-secondary);
+}
+
+.dark .navbar-search-suggestion-text,
+.navbar.dark .navbar-search-suggestion-text {
+  color: var(--text-primary);
+}
+
+.dark .navbar-search-suggestion-item:hover,
+.dark .navbar-search-suggestion-item:focus-visible,
+.navbar.dark .navbar-search-suggestion-item:hover,
+.navbar.dark .navbar-search-suggestion-item:focus-visible {
+  background: rgba(37, 99, 235, 0.22);
+  color: #93c5fd;
+}
+
+.dark .navbar-search-suggestion-item:hover .navbar-search-suggestion-icon,
+.dark .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-icon,
+.navbar.dark .navbar-search-suggestion-item:hover .navbar-search-suggestion-icon,
+.navbar.dark .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-icon {
+  color: #93c5fd;
+}
+
+.dark .navbar-search-suggestion-item:hover .navbar-search-suggestion-text,
+.dark .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-text,
+.navbar.dark .navbar-search-suggestion-item:hover .navbar-search-suggestion-text,
+.navbar.dark .navbar-search-suggestion-item:focus-visible .navbar-search-suggestion-text {
+  color: #93c5fd;
+}
+
+.navbar-search-mobile {
+  position: relative;
+}
+
+.navbar-search-mobile .navbar-search-field {
+  flex: 1;
 }
 
 .navbar-pos-search {
@@ -726,28 +890,68 @@
   .navbar-menu {
     gap: var(--space-4);
   }
+
+  .navbar--panel .navbar-language-switcher {
+    display: none;
+  }
+
+  .navbar--panel .navbar-link {
+    max-width: min(220px, 28vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navbar--panel .navbar-pos-history-btn {
+    max-width: min(220px, 34vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 1100px) {
+  .navbar:not(.navbar--panel) .navbar-search {
+    display: none;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-link,
+  .navbar:not(.navbar--panel) .navbar-user,
+  .navbar:not(.navbar--panel) .navbar-language-switcher {
+    display: none;
+  }
+
+  .navbar:not(.navbar--panel) .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .navbar:not(.navbar--panel) .mobile-menu {
+    display: flex;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-logo {
+    font-size: 1.15rem;
+  }
+
+  .navbar:not(.navbar--panel) .navbar-menu {
+    gap: var(--space-3);
+    overflow: visible;
+  }
 }
 
 @media (max-width: 768px) {
-  .navbar-search {
+  .navbar-search,
+  .navbar-pos-search {
     display: none;
   }
 
   .navbar-menu {
     gap: var(--space-3);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .navbar-menu::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
   }
 
   .navbar-link,
   .navbar-user,
-  .navbar-language-switcher {
+  .navbar-language-switcher,
+  .navbar-pos-history-btn {
     display: none;
   }
 
@@ -757,6 +961,13 @@
 
   .mobile-menu {
     display: flex;
+  }
+
+  .navbar-logo {
+    font-size: 1.1rem;
+    max-width: min(220px, 52vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

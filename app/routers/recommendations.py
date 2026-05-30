@@ -77,7 +77,10 @@ def realtime_recommendations(
     if db.query(models.DBProduct).limit(1).first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No catalogue data")
     uid = _user_id(current_user)
-    ranked, _meta = re.recommend_hybrid_for_user(db, uid, limit, re.REALTIME_PARAMS)
+    ranked, meta = re.recommend_hybrid_for_user(db, uid, limit, re.REALTIME_PARAMS)
+    if not ranked and meta.get("strategy") == "empty_no_interactions":
+        ranked, meta = re.recommend_hybrid_for_user(db, uid, limit, re.BATCH_PARAMS)
+        meta = {**meta, "realtime_fallback": "batch_window"}
     return _to_envelope_list(db, ranked)
 
 
@@ -113,6 +116,9 @@ def batch_recommendations(
                 comp = _parse_dt(getattr(cached, "payload", {}).get("computed_at"))
             if comp:
                 stale = (_utc_age_seconds(comp)) > BATCH_STALE_SECONDS
+            cached_items = (getattr(cached, "payload", None) or {}).get("items") or []
+            if not cached_items:
+                stale = True
         except Exception:
             stale = True
 

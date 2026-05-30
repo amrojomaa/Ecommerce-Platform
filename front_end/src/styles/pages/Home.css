@@ -353,16 +353,6 @@
   flex-direction: column;
 }
 
-.categories-kicker {
-  display: inline-flex;
-  align-items: center;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
 .home-categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 280px));
@@ -506,7 +496,6 @@ html[dir='rtl'] .home-category-card:hover .home-category-card-arrow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "kicker kicker"
     "title cta"
     "subtitle subtitle";
   gap: 0.75rem 2rem;
@@ -517,17 +506,6 @@ html[dir='rtl'] .home-category-card:hover .home-category-card-arrow {
 .discounts-band-header .section-header {
   display: contents;
   margin-bottom: 0;
-}
-
-.discounts-kicker {
-  grid-area: kicker;
-  display: inline-flex;
-  align-items: center;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #dc2626;
 }
 
 .discounts-band-header .section-header h2 {
@@ -789,7 +767,6 @@ html[dir='rtl'] .discount-card-cart-btn {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
-    "kicker kicker"
     "title cta"
     "subtitle subtitle";
   gap: 0.75rem 2rem;
@@ -800,17 +777,6 @@ html[dir='rtl'] .discount-card-cart-btn {
 .featured-band-header .section-header {
   display: contents;
   margin-bottom: 0;
-}
-
-.featured-kicker {
-  grid-area: kicker;
-  display: inline-flex;
-  align-items: center;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--primary-color);
 }
 
 .featured-band-header .section-header h2 {
@@ -864,8 +830,7 @@ html[dir='rtl'] .featured-cta:hover svg {
 
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 210px));
-  justify-content: start;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1.15rem;
 }
 
@@ -1116,7 +1081,6 @@ html[dir='rtl'] .featured-card-rating {
   .featured-band-header {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "kicker"
       "title"
       "subtitle"
       "cta";
@@ -1126,6 +1090,10 @@ html[dir='rtl'] .featured-card-rating {
   .discounts-cta,
   .featured-cta {
     justify-self: start;
+  }
+
+  .featured-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1178,8 +1146,7 @@ html[dir='rtl'] .featured-card-rating {
   }
 
   .featured-grid {
-    grid-template-columns: repeat(auto-fill, minmax(145px, 185px));
-    justify-content: start;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.85rem;
   }
 }
@@ -1199,8 +1166,4 @@ html[dir='rtl'] .featured-card-rating {
   color: #f8fafc;
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24);
-}
-
-.dark .discounts-kicker {
-  color: #f87171;
 }

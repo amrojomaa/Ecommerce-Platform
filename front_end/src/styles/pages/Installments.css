@@ -35,10 +35,6 @@
   margin-bottom: 10px;
 }
 
-.installment-create-toggle {
-  margin-bottom: 12px;
-}
-
 .request-sort-btn {
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -729,6 +725,11 @@ html[dir='rtl'] .upload-file-name {
   margin-bottom: 0.5rem;
 }
 
+.installments-page .page-header-actions {
+  align-self: center;
+  flex-shrink: 0;
+}
+
 .installments-main-toggle-btn.page-btn-primary {
   font-size: 0.95rem;
   padding-inline: 1.25rem;
@@ -983,6 +984,19 @@ html[dir='rtl'] .upload-file-name {
 }
 
 @media (max-width: 768px) {
+  .installments-page .page-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .installments-page .page-header-actions {
+    align-self: stretch;
+  }
+
+  .installments-page .installments-main-toggle-btn.page-btn-primary {
+    width: 100%;
+  }
+
   .pay-remaining-box {
     flex-direction: column;
     align-items: stretch;

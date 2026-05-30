@@ -8,6 +8,11 @@ def add_column():
             print("Successfully added customer_name to orders")
         except Exception as e:
             print("Error or already exists:", e)
+        try:
+            conn.execute(text("ALTER TABLE orders ADD COLUMN order_metadata JSONB"))
+            print("Successfully added order_metadata to orders")
+        except Exception as e:
+            print("Error or already exists:", e)
 
 if __name__ == "__main__":
     add_column()

@@ -3,6 +3,8 @@
 .product-details-page {
   width: 100%;
   min-height: 100vh;
+  margin-top: -1rem;
+  gap: 1.5rem;
   background:
     radial-gradient(ellipse 60% 50% at 25% 30%, rgba(37, 99, 235, 0.08) 0%, transparent 70%),
     radial-gradient(ellipse 40% 40% at 80% 70%, rgba(99, 102, 241, 0.05) 0%, transparent 60%),
@@ -37,7 +39,8 @@
 }
 
 .product-details-heading.page-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+  padding-bottom: 0;
   clear: both;
 }
 
@@ -55,7 +58,7 @@
   align-items: center;
   gap: 4px;
   padding: 3px var(--space-2);
-  margin-bottom: var(--space-1);
+  margin-bottom: 0;
   margin-left: auto;
   float: right;
   background: rgba(255, 255, 255, 0.06);
@@ -577,6 +580,46 @@ html[dir='rtl'] .add-to-cart-btn {
 }
 
 /* Light mode readability overrides for legacy dark-first rules */
+.product-details-page .back-button {
+  background: var(--surface);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 0.45rem 0.9rem;
+}
+
+.product-details-page .back-button:hover {
+  background: var(--background);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: var(--primary-color);
+}
+
+.product-details-page .back-button svg {
+  color: currentColor;
+}
+
+.product-details-page .quantity-controls label {
+  color: var(--text-secondary);
+}
+
+.product-details-page .quantity-input {
+  border-color: var(--border-color);
+  background: var(--background);
+}
+
+.product-details-page .quantity-input button.quantity-btn {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.product-details-page .quantity-input button.quantity-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
 .product-details-page .product-info h1 {
   color: var(--text-primary);
 }
@@ -597,6 +640,20 @@ html[dir='rtl'] .add-to-cart-btn {
   background: rgba(255, 255, 255, 0.85);
   border-color: var(--border-color);
   color: var(--text-primary);
+}
+
+.product-details-page .wishlist-btn:hover,
+.product-details-page .wishlist-btn.active {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.product-details-page .wishlist-btn.active .wishlist-icon-filled,
+.product-details-page .wishlist-btn:hover .wishlist-icon-filled,
+.product-details-page .wishlist-btn.active .wishlist-icon-outline,
+.product-details-page .wishlist-btn:hover .wishlist-icon-outline {
+  color: #f87171;
 }
 
 .dark .product-details-page .wishlist-btn {
@@ -654,6 +711,43 @@ html[dir='rtl'] .add-to-cart-btn {
 }
 
 .dark .product-details-page .quantity-input input {
+  color: #ffffff;
+}
+
+.dark .product-details-page .back-button {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.dark .product-details-page .back-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.dark .product-details-page .back-button svg {
+  color: currentColor;
+}
+
+.dark .product-details-page .quantity-controls label {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.dark .product-details-page .quantity-input {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .product-details-page .quantity-input button.quantity-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .product-details-page .quantity-input button.quantity-btn:hover:not(:disabled) {
+  background: var(--primary-color);
   color: #ffffff;
 }
 
@@ -783,4 +877,43 @@ html[dir='rtl'] .back-button svg {
   .product-images::before {
     display: none;
   }
+}
+
+.pd-related-section {
+  margin-top: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.pd-related-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: start;
+}
+
+.pd-related-title {
+  margin: 0;
+  font-family: 'Fraunces', 'Space Grotesk', serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.pd-related-subtitle {
+  margin: 0;
+  max-width: 640px;
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.pd-related-loading {
+  min-height: 220px;
+}
+
+.pd-related-grid {
+  margin-top: 0.25rem;
 }

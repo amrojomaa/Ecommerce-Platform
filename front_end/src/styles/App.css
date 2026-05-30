@@ -61,6 +61,10 @@
   --control-border: var(--border-color);
   --control-hover-bg: var(--surface);
   --control-focus-ring: rgba(37, 99, 235, 0.25);
+
+  /* Layout */
+  --navbar-height: 64px;
+  --toast-top-offset: calc(var(--navbar-height) + 0.5rem);
 }
 
 .dark {
@@ -203,4 +207,11 @@ a:hover {
   justify-content: center;
   align-items: center;
   min-height: 50vh;
+}
+
+/* Toast notifications — sit below fixed navbar with extra clearance */
+.Toastify__toast-container--top-right,
+.Toastify__toast-container--top-left,
+.Toastify__toast-container--top-center {
+  top: var(--toast-top-offset) !important;
 }

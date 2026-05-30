@@ -5,16 +5,20 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas
 from .. import OAuth2
+from .products import get_ratings_summary_by_product_ids
 
 
-def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem) -> dict:
+def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem, ratings_map: dict | None = None) -> dict:
     """Helper function to convert DBWishlistItem to dict with product images"""
     original_price = float(wishlist_item.product.price)
     discounted_price = float(wishlist_item.product.final_price)
     has_discount = discounted_price < original_price
+    rating_summary = (ratings_map or {}).get(wishlist_item.product.id, {})
     return {
         "id": wishlist_item.id,
+        "product_id": wishlist_item.product_id,
         "product": {
+            "id": wishlist_item.product.id,
             "name": wishlist_item.product.name,
             "name_ar": wishlist_item.product.name_ar,
             "name_fr": wishlist_item.product.name_fr,
@@ -29,7 +33,9 @@ def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem) -> dict:
             "description": wishlist_item.product.description,
             "description_ar": wishlist_item.product.description_ar,
             "description_fr": wishlist_item.product.description_fr,
-            "images": [img.image_path for img in wishlist_item.product.images]
+            "images": [img.image_path for img in wishlist_item.product.images],
+            "average_rating": float(rating_summary.get("average_rating", 0.0)),
+            "total_ratings": int(rating_summary.get("total_ratings", 0)),
         }
     }
 
@@ -71,7 +77,8 @@ def add_to_wishlist(request: schemas.AddWishlist, db: Session = Depends(get_db),
     db.commit()
     db.refresh(wishlist_item)
     
-    return get_wishlist_item_with_images(wishlist_item)
+    ratings_map = get_ratings_summary_by_product_ids(db, [product.id])
+    return get_wishlist_item_with_images(wishlist_item, ratings_map)
 
 
 @router.get("/showmewishlist", response_model=schemas.WishlistResponse)
@@ -90,7 +97,9 @@ def show_me_wishlist(db: Session = Depends(get_db),
         }
 
     # Convert wishlist items to include product images
-    wishlist_items = [get_wishlist_item_with_images(item) for item in wishlist.items]
+    product_ids = [item.product_id for item in wishlist.items]
+    ratings_map = get_ratings_summary_by_product_ids(db, product_ids)
+    wishlist_items = [get_wishlist_item_with_images(item, ratings_map) for item in wishlist.items]
 
     return {
         "items": wishlist_items

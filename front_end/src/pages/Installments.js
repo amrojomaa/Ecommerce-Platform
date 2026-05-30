@@ -34,6 +34,14 @@ const INSTALLMENT_STATUS_KEYS = {
   created: 'ui.pages.installments.status.created',
 };
 
+const ORDER_STATUS_LABEL_KEYS = {
+  created: 'ui.pages.orders.status.created',
+  pending: 'ui.pages.orders.status.pending',
+  paid: 'ui.pages.orders.status.paid',
+  cancelled: 'ui.pages.orders.status.cancelled',
+  canceled: 'ui.pages.orders.status.cancelled',
+};
+
 const statusLabel = (status) => {
   const normalizedStatus = String(status || 'pending').toLowerCase();
   const key = INSTALLMENT_STATUS_KEYS[normalizedStatus];
@@ -43,10 +51,27 @@ const statusLabel = (status) => {
   return normalizedStatus.replace(/_/g, ' ');
 };
 
+const getOrderStatusLabel = (status) => {
+  const normalizedStatus = String(status || 'created').toLowerCase();
+  const key = ORDER_STATUS_LABEL_KEYS[normalizedStatus];
+  if (key) {
+    return tUi(key);
+  }
+  return normalizedStatus.replace(/_/g, ' ');
+};
+
+const formatOrderOptionLabel = (order, formatCurrency) =>
+  tUi('ui.pages.installments.orderOption_b4e8c2d3ee', {
+    value0: order.id,
+    value1: formatCurrency(Number(order.total_amount) || 0),
+    value2: getOrderStatusLabel(order.status),
+  });
+
 const Installments = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const orderIdFromUrl = Number(searchParams.get('orderId') || 0);
+  const hasOrderIdFromUrl = orderIdFromUrl > 0;
   const { formatCurrency } = useCurrency();
   const { fetchUserInfo } = useAuth();
   const { clearCart, fetchCart } = useCart();
@@ -74,7 +99,7 @@ const Installments = () => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [cancellingRequestId, setCancellingRequestId] = useState(null);
-  const [isCreateFormOpen, setIsCreateFormOpen] = useState(() => Boolean(orderIdFromUrl));
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(() => hasOrderIdFromUrl);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [editingRequestId, setEditingRequestId] = useState(null);
   const [useDownPayment, setUseDownPayment] = useState(false);
@@ -163,7 +188,12 @@ const Installments = () => {
     try {
       const response = await http.get(ORDER_ENDPOINTS.MY_ORDERS);
       const source = Array.isArray(response.data) ? response.data : [];
-      const eligible = source.filter((order) => order.status === 'created');
+      const eligible = source.filter(
+        (order) =>
+          order?.status === 'created' &&
+          Number(order.id) > 0 &&
+          Number(order.total_amount) > 0
+      );
       setOrders(eligible);
     } catch (error) {
       toast.error(error.message || 'Failed to load your orders');
@@ -241,9 +271,9 @@ const Installments = () => {
       return;
     }
 
-    const preferredOrder = orderIdFromUrl && orders.some((order) => Number(order.id) === orderIdFromUrl) ?
-    String(orderIdFromUrl) :
-    String(orders[0].id);
+    const preferredOrder = hasOrderIdFromUrl && orders.some((order) => Number(order.id) === orderIdFromUrl)
+      ? String(orderIdFromUrl)
+      : String(orders[0].id);
     setSelectedOrderId(preferredOrder);
   }, [orders, orderIdFromUrl]);
 
@@ -265,10 +295,10 @@ const Installments = () => {
   }, [hasPendingOrApprovedRequest, isCreateFormOpen, editingRequestId]);
 
   useEffect(() => {
-    if (orderIdFromUrl) {
+    if (hasOrderIdFromUrl) {
       setIsCreateFormOpen(true);
     }
-  }, [orderIdFromUrl]);
+  }, [hasOrderIdFromUrl]);
 
   const handleOrderChange = (event) => {
     setSelectedOrderId(event.target.value);
@@ -554,24 +584,23 @@ const Installments = () => {
         title={tUi("ui.pages.installments.installmentPayments_2b8fec206d")}
         subtitle={tUi("ui.pages.installments.requestAPlanUploadYour_362dac0d89")}
         animate={false}
+        actions={
+          <button
+            type="button"
+            className="page-btn-primary installments-main-toggle-btn"
+            disabled={hasPendingOrApprovedRequest && !editingRequestId}
+            onClick={() => setIsCreateFormOpen((prev) => !prev)}
+          >
+            {editingRequestId
+              ? tUi("ui.pages.installments.editingRequestValue_f47b4032cb", { value0: editingRequestId })
+              : hasPendingOrApprovedRequest
+                ? tUi("ui.pages.installments.newRequestUnavailablePendingApproved_430157ba94")
+                : isCreateFormOpen
+                  ? tUi("ui.pages.installments.hideNewInstallmentRequest_cdf088530f")
+                  : tUi("ui.pages.installments.openNewInstallmentRequest_46b153cb23")}
+          </button>
+        }
       />
-
-      <div className="installment-create-toggle">
-        <button
-          type="button"
-          className="page-btn-primary installments-main-toggle-btn"
-          disabled={hasPendingOrApprovedRequest && !editingRequestId}
-          onClick={() => setIsCreateFormOpen((prev) => !prev)}>
-          
-          {editingRequestId ? tUi("ui.pages.installments.editingRequestValue_f47b4032cb", { value0:
-            editingRequestId }) :
-          hasPendingOrApprovedRequest ? tUi("ui.pages.installments.newRequestUnavailablePendingApproved_430157ba94") :
-
-          isCreateFormOpen ? tUi("ui.pages.installments.hideNewInstallmentRequest_cdf088530f") : tUi("ui.pages.installments.openNewInstallmentRequest_46b153cb23")
-
-          }
-        </button>
-      </div>
 
       {isCreateFormOpen && (!hasPendingOrApprovedRequest || Boolean(editingRequestId)) &&
       <section className="installment-request-card page-card page-card--static">
@@ -580,26 +609,32 @@ const Installments = () => {
         <div className="page-empty installments-empty-msg"><p className="empty-state">{tUi("ui.pages.installments.youNeedAnOrderBefore_a494dca334")}</p></div> :
 
         <form onSubmit={handleSubmit}>
-              {orderIdFromUrl && selectedOrder && (
+              {hasOrderIdFromUrl && selectedOrder && (
                 <div className="active-order-banner">
                   <span>ℹ️ {i18n.language && i18n.language.startsWith('ar') ? 'تقوم حالياً بتقديم طلب تقسيط للطلب رقم:' : i18n.language && i18n.language.startsWith('fr') ? 'Vous demandez des versements pour la commande :' : 'You are requesting installments for Order:'} <strong>#{selectedOrder.id}</strong> ({formatCurrency(selectedOrder.total_amount)})</span>
                 </div>
               )}
 
               <div className="form-grid">
-                {!orderIdFromUrl && (
+                {!hasOrderIdFromUrl && (
                   <div className="form-group">
-                    <label htmlFor="order-select">{tUi("ui.pages.installments.order_362b958f76")}</label>
+                    <label htmlFor="order-select">{tUi('ui.pages.installments.orders_362b958f77')}</label>
                     <select
                       id="order-select"
                       value={selectedOrderId}
                       onChange={handleOrderChange}
-                      disabled={Boolean(editingRequestId)}>
-                      {orders.map((order) =>
-                        <option key={order.id} value={order.id}>
-                          #{order.id} - {formatCurrency(order.total_amount)} ({statusLabel(order.status)})
+                      disabled={Boolean(editingRequestId)}
+                    >
+                      {!selectedOrderId && (
+                        <option value="">
+                          {tUi('ui.pages.installments.orderSelectPlaceholder_b4e8c2d3ef')}
                         </option>
                       )}
+                      {orders.map((order) => (
+                        <option key={order.id} value={String(order.id)}>
+                          {formatOrderOptionLabel(order, formatCurrency)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 )}

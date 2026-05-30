@@ -37,6 +37,7 @@ import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Wishlist from './pages/Wishlist';
 import Recommendations from './pages/Recommendations';
+import AboutUs from './pages/AboutUs';
 import Tickets from './pages/Tickets';
 import Installments from './pages/Installments';
 
@@ -138,6 +139,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="products" element={<Products />} />
           <Route path="products/:name" element={<ProductDetails />} />
+          <Route path="about" element={<AboutUs />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="verify-email" element={<EmailVerification />} />
@@ -233,11 +235,10 @@ function App() {
 
       </Routes>
       <ToastContainer
-                      position={isRtl ? "top-left" : "top-right"}
-                      autoClose={3000}
-                      rtl={isRtl}
-                      style={{ top: '85px' }} />
-                    
+        position={isRtl ? 'top-left' : 'top-right'}
+        autoClose={3000}
+        rtl={isRtl}
+      />
     </Router>
     </ConfirmProvider>
     </WishlistProvider>

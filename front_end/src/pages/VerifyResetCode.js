@@ -118,6 +118,14 @@ const VerifyResetCode = () => {
           verification_code: code
         }
       });
+      try {
+        sessionStorage.setItem('password_reset_session', JSON.stringify({
+          email,
+          verification_code: code,
+        }));
+      } catch {
+        // ignore storage failures
+      }
     } else {
       setError(result.error || 'Invalid verification code. Please try again.');
       toast.error(result.error || 'Invalid verification code');

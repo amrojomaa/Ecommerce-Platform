@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -20,13 +19,6 @@ import { formatDate } from '../utils/format';
 import { usePanelRole } from '../hooks/usePanelRole';
 
 const TAB_OPTIONS = ['reported', 'all'];
-const SENTIMENT_FILTERS = ['all', 'positive', 'neutral', 'negative'];
-
-const SENTIMENT_LABEL_KEYS = {
-  positive: 'ui.pages.admin.adminComments.sentimentPositive_70da220f7a',
-  neutral: 'ui.pages.admin.adminComments.sentimentNeutral_1adf64fbd4',
-  negative: 'ui.pages.admin.adminComments.sentimentNegative_78ec8a0d98',
-};
 
 const SupportManagerCommentsScreen = () => {
   const { colors, shadow, isDark } = useTheme();
@@ -38,18 +30,8 @@ const SupportManagerCommentsScreen = () => {
   const [activeTab, setActiveTab] = useState('reported');
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sentimentFilter, setSentimentFilter] = useState('all');
   const [deletingId, setDeletingId] = useState(null);
   const [approvingId, setApprovingId] = useState(null);
-
-  const getSentimentLabel = useCallback(
-    (sentiment) => {
-      if (!sentiment) return null;
-      const key = SENTIMENT_LABEL_KEYS[String(sentiment).toLowerCase()];
-      return key ? tUi(key) : sentiment;
-    },
-    [tUi]
-  );
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
@@ -60,22 +42,14 @@ const SupportManagerCommentsScreen = () => {
         ...(activeTab === 'reported' ? { is_reported: true } : {}),
       };
       const response = await http.get(COMMENT_ENDPOINTS.ALL, { params });
-      let data = response.data || [];
-
-      if (sentimentFilter !== 'all' && activeTab === 'all') {
-        data = data.filter(
-          (comment) => String(comment.sentiment || '').toLowerCase() === sentimentFilter
-        );
-      }
-
-      setComments(data);
+      setComments(response.data || []);
     } catch (_) {
       setComments([]);
       Toast.show({ type: 'error', text1: tUi('ui.pages.support_manager.comments.loadFailed') });
     } finally {
       setLoading(false);
     }
-  }, [activeTab, sentimentFilter, tUi]);
+  }, [activeTab, tUi]);
 
   useEffect(() => {
     fetchComments();
@@ -139,14 +113,11 @@ const SupportManagerCommentsScreen = () => {
           <Pressable
             key={tab}
             style={[styles.tabChip, activeTab === tab && styles.tabChipActive]}
-            onPress={() => {
-              setActiveTab(tab);
-              setSentimentFilter('all');
-            }}
+            onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabChipText, activeTab === tab && styles.tabChipTextActive]}>
               {tab === 'reported'
-                ? tUi('ui.pages.support_manager.comments.tab.reported')
+                ? tUi('ui.pages.support_manager.comments.tab.reports')
                 : tUi('ui.pages.support_manager.comments.tab.all')}
               {activeTab === tab ? ` (${comments.length})` : ''}
             </Text>
@@ -155,36 +126,9 @@ const SupportManagerCommentsScreen = () => {
       </View>
 
       {activeTab === 'all' ? (
-        <View style={styles.filterBlock}>
-          <Text style={[styles.filterLabel, { textAlign }]}>
-            {tUi('ui.pages.support_manager.comments.filter.sentiment')}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={[styles.filterRow, { flexDirection: row }]}>
-              {SENTIMENT_FILTERS.map((filter) => (
-                <Pressable
-                  key={filter}
-                  style={[styles.filterChip, sentimentFilter === filter && styles.filterChipActive]}
-                  onPress={() => setSentimentFilter(filter)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      sentimentFilter === filter && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {filter === 'all'
-                      ? tUi('ui.mobile.common.all')
-                      : getSentimentLabel(filter)}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
-          <Text style={[styles.countText, { textAlign }]}>
-            <Text style={styles.countStrong}>{comments.length}</Text> {countLabel}
-          </Text>
-        </View>
+        <Text style={[styles.countText, { textAlign }]}>
+          <Text style={styles.countStrong}>{comments.length}</Text> {countLabel}
+        </Text>
       ) : null}
 
       {loading ? (
@@ -214,9 +158,6 @@ const SupportManagerCommentsScreen = () => {
                     {formatDate(comment.created_at)}
                   </Text>
                 </View>
-                {comment.sentiment ? (
-                  <Text style={styles.sentimentPill}>{getSentimentLabel(comment.sentiment)}</Text>
-                ) : null}
               </View>
 
               <Text style={[styles.commentBody, { textAlign }]}>{comment.content}</Text>

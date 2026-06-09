@@ -174,7 +174,7 @@ const DriverActiveJobScreen = () => {
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: error.response?.data?.detail || error.message || 'Failed to upload photo',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverActiveJob.failedToUploadPhoto_b4e8c2d3fb'),
       });
     } finally {
       setUploading(false);
@@ -207,7 +207,7 @@ const DriverActiveJobScreen = () => {
             } catch (error) {
               Toast.show({
                 type: 'error',
-                text1: error.response?.data?.detail || error.message || 'Failed to delete photo',
+                text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverActiveJob.failedToDeletePhoto_b4e8c2d3fc'),
               });
             } finally {
               setDeletingPhotoType(null);
@@ -227,7 +227,10 @@ const DriverActiveJobScreen = () => {
       setJobs((prev) => prev.map((job) => (job.id === response.data.id ? response.data : job)));
       await fetchActiveJobs();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.response?.data?.detail || error.message || 'Failed to update' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverActiveJob.failedToUpdate_b4e8c2d3fd'),
+      });
       await fetchActiveJobs();
     } finally {
       setUpdating(false);
@@ -244,7 +247,10 @@ const DriverActiveJobScreen = () => {
       await fetchActiveJobs();
       refreshActiveCount();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.response?.data?.detail || error.message || 'Failed to update' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverActiveJob.failedToUpdate_b4e8c2d3fd'),
+      });
       await fetchActiveJobs();
     } finally {
       setUpdating(false);
@@ -270,7 +276,10 @@ const DriverActiveJobScreen = () => {
       setIssuePhotoAsset(null);
       await fetchActiveJobs();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to report issue' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverActiveJob.failedToReportIssue_b4e8c2d3fe'),
+      });
     }
   };
 
@@ -285,7 +294,10 @@ const DriverActiveJobScreen = () => {
       setIssueMessages((prev) => [...prev, response.data]);
       setIssueMessageText('');
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to send message' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.components.supportTicketChatModal.sendFailed_c3d4e5f6a7'),
+      });
     } finally {
       setIssueSending(false);
     }

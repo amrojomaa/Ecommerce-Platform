@@ -30,9 +30,9 @@ const AccountScreen = () => {
 
   const handleLogout = async () => {
     const confirmed = await confirmAction(
-      tUi('ui.navbar.logout') || 'Logout',
-      tUi('ui.mobile.common.logoutConfirm') || 'Sign out of your account?',
-      tUi('ui.navbar.logout') || 'Logout',
+      tUi('navbar.logout'),
+      tUi('ui.mobile.common.logoutConfirm'),
+      tUi('navbar.logout'),
       tUi('ui.mobile.common.cancel')
     );
     if (confirmed) await logout();
@@ -97,6 +97,19 @@ const AccountScreen = () => {
 
       <Pressable
         style={[styles.menuRow, { borderColor: colors.border, backgroundColor: colors.surface, flexDirection: row }]}
+        onPress={() => navigation.navigate('AiAssistant')}
+      >
+        <View style={[styles.iconBox, { backgroundColor: `${colors.primary}14` }]}>
+          <Feather name="message-circle" size={18} color={colors.primary} />
+        </View>
+        <Text style={[styles.menuLabel, { color: colors.text, textAlign }]}>
+          {tUi('ui.mobile.customer.account.aiAssistant')}
+        </Text>
+        <Feather name={isRtl ? 'chevron-left' : 'chevron-right'} size={20} color={colors.muted} />
+      </Pressable>
+
+      <Pressable
+        style={[styles.menuRow, { borderColor: colors.border, backgroundColor: colors.surface, flexDirection: row }]}
         onPress={() => navigation.navigate('About')}
       >
         <View style={[styles.iconBox, { backgroundColor: `${colors.primary}14` }]}>
@@ -114,7 +127,7 @@ const AccountScreen = () => {
           onPress={handleLogout}
         >
           <Feather name="log-out" size={18} color={colors.danger} />
-          <Text style={[styles.logoutText, { color: colors.danger }]}>{tUi('ui.navbar.logout')}</Text>
+          <Text style={[styles.logoutText, { color: colors.danger }]}>{tUi('navbar.logout')}</Text>
         </Pressable>
       ) : null}
     </CustomerScreen>

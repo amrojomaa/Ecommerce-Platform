@@ -941,9 +941,11 @@ class CommentDisplay(BaseModel):
     content: str
     rating: Optional[int] = None
     sentiment: Optional[str] = None  # 'positive', 'neutral', or 'negative'
+    product_id: Optional[int] = None
+    is_reported: Optional[bool] = False
     created_at: datetime
     user: CommentUser
-    
+
     class Config:
         from_attributes = True
 
@@ -1041,6 +1043,58 @@ class ProductSentimentAnalytics(BaseModel):
     neutral_count: int
     negative_count: int
     
+    class Config:
+        from_attributes = True
+
+
+class ProductHomeSummary(BaseModel):
+    product_count: int
+    discount_count: int
+    category_count: int
+    category_names: List[str]
+    featured_products: List[Product]
+    discounted_products: List[Product]
+
+    class Config:
+        from_attributes = True
+
+
+class HomeProductPage(BaseModel):
+    items: List[Product]
+    total: int
+    page: int
+    page_size: int
+
+    class Config:
+        from_attributes = True
+
+
+class ProductCatalogPage(BaseModel):
+    items: List[Product]
+    total: int
+    page: int
+    page_size: int
+    categories: List[str]
+
+    class Config:
+        from_attributes = True
+
+
+class ProductOption(BaseModel):
+    id: int
+    name: str
+    category_name: str
+
+    class Config:
+        from_attributes = True
+
+
+class ProductAdminStats(BaseModel):
+    total: int
+    low_stock: int
+    out_of_stock: int
+    discounted: int
+
     class Config:
         from_attributes = True
 

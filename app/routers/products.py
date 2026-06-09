@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status, Response, Depends
+from fastapi import HTTPException, status, Response, Depends, Query
 from fastapi import APIRouter
 from .. import OAuth2, models, schemas
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from .admin import require_admin_or_warehouse_manager, require_seller_or_admin, require_product_catalog_viewer
@@ -112,17 +112,33 @@ def get_ratings_summary_by_product_ids(db: Session, product_ids: List[int]) -> D
     return ratings_map
 
 
-def get_product_with_images(product: models.DBProduct, ratings_map: Dict[int, dict] | None = None) -> dict:
-    """Helper function to convert DBProduct to dict with images"""
+def _products_base_query(db: Session):
+    """Eager-load relations to avoid N+1 queries when listing products."""
+    return db.query(models.DBProduct).options(
+        joinedload(models.DBProduct.images),
+        joinedload(models.DBProduct.category),
+    )
+
+
+def get_product_with_images(
+    product: models.DBProduct,
+    ratings_map: Dict[int, dict] | None = None,
+    *,
+    catalog_only: bool = False,
+) -> dict:
+    """Helper function to convert DBProduct to dict with images."""
     rating_summary = (ratings_map or {}).get(product.id, {})
+    image_paths = [img.image_path for img in product.images]
+    if catalog_only:
+        image_paths = image_paths[:1]
     product_dict = {
         "id": product.id,
         "name": product.name,
         "name_ar": product.name_ar,
         "name_fr": product.name_fr,
-        "description": product.description,
-        "description_ar": product.description_ar,
-        "description_fr": product.description_fr,
+        "description": "" if catalog_only else product.description,
+        "description_ar": None if catalog_only else product.description_ar,
+        "description_fr": None if catalog_only else product.description_fr,
         "price": float(product.price),
         "discount_enabled": bool(product.discount_enabled),
         "discount_type": product.discount_type,
@@ -132,16 +148,31 @@ def get_product_with_images(product: models.DBProduct, ratings_map: Dict[int, di
         "category_name": product.category_name,
         "category_name_ar": product.category.name_ar if product.category else None,
         "category_name_fr": product.category.name_fr if product.category else None,
-        "images": [img.image_path for img in product.images],
+        "images": image_paths,
         "average_rating": float(rating_summary.get("average_rating", 0.0)),
         "total_ratings": int(rating_summary.get("total_ratings", 0)),
     }
     return product_dict
 
 
+def _serialize_products(
+    db: Session,
+    products: List[models.DBProduct],
+    *,
+    catalog_only: bool = False,
+) -> list:
+    if not products:
+        return []
+    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
+    return [
+        schemas.Product(**get_product_with_images(p, ratings_map, catalog_only=catalog_only))
+        for p in products
+    ]
+
+
 @router.get("/products/filter", response_model=list[schemas.Product])
 def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db)):
-    query = db.query(models.DBProduct)
+    query = _products_base_query(db)
     if prod.name:
         query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
     if prod.category:
@@ -161,12 +192,35 @@ def filter_products(prod: schemas.FilterProducts = Depends(), db: Session = Depe
     products = query.all()
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
-    ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
-    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
+    return _serialize_products(db, products, catalog_only=True)
 
 @router.get("/products/filter/user", response_model=list[schemas.Product])
 def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
-    query = db.query(models.DBProduct)
+    query = _products_base_query(db)
+    if prod.name:
+        query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
+    if prod.category:
+        query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
+    if prod.min_price:
+        try:
+            min_price = float(prod.min_price)
+            query = query.filter(models.DBProduct.price >= min_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid min_price
+    if prod.max_price:
+        try:
+            max_price = float(prod.max_price)
+            query = query.filter(models.DBProduct.price <= max_price)
+        except (ValueError, TypeError):
+            pass  # Ignore invalid max_price
+    products = query.all()
+    if not products:
+        raise HTTPException(status_code=404, detail="No products found")
+    return _serialize_products(db, products, catalog_only=True)
+
+@router.get("/products/filter/admin", response_model=list[schemas.ProductBase])
+def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_seller_or_admin)):
+    query = _products_base_query(db)
     if prod.name:
         query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
     if prod.category:
@@ -187,31 +241,7 @@ def filter_products_user(prod: schemas.FilterProducts = Depends(), db: Session =
     if not products:
         raise HTTPException(status_code=404, detail="No products found")
     ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
-    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
-
-@router.get("/products/filter/admin", response_model=list[schemas.ProductBase])
-def filter_products_admin(prod: schemas.FilterProducts = Depends(), db: Session = Depends(get_db), admin_user = Depends(require_seller_or_admin)):
-    query = db.query(models.DBProduct)
-    if prod.name:
-        query = query.filter(models.DBProduct.name.ilike(f"%{prod.name}%"))
-    if prod.category:
-        query = query.filter(models.DBProduct.category_name.ilike(f"%{prod.category}%"))
-    if prod.min_price:
-        try:
-            min_price = float(prod.min_price)
-            query = query.filter(models.DBProduct.price >= min_price)
-        except (ValueError, TypeError):
-            pass  # Ignore invalid min_price
-    if prod.max_price:
-        try:
-            max_price = float(prod.max_price)
-            query = query.filter(models.DBProduct.price <= max_price)
-        except (ValueError, TypeError):
-            pass  # Ignore invalid max_price
-    products = query.all()
-    if not products:
-        raise HTTPException(status_code=404, detail="No products found")
-    return [schemas.ProductBase(**get_product_with_images(p)) for p in products]
+    return [schemas.ProductBase(**get_product_with_images(p, ratings_map)) for p in products]
 
 @router.post("/products/create", status_code=status.HTTP_201_CREATED, response_model=schemas.ProductBase)
 def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db), admin_user = Depends(require_seller_or_admin)):
@@ -264,17 +294,214 @@ def create_product(product: schemas.ProductBase ,db: Session = Depends (get_db),
     return schemas.ProductBase(**get_product_with_images(new_product))
 
 
+@router.get("/products/home-summary", response_model=schemas.ProductHomeSummary)
+def get_products_home_summary(db: Session = Depends(get_db)):
+    product_count = db.query(func.count(models.DBProduct.id)).scalar() or 0
+    discount_count = (
+        db.query(func.count(models.DBProduct.id))
+        .filter(models.DBProduct.discount_enabled.is_(True))
+        .scalar()
+        or 0
+    )
+    category_count = db.query(func.count(func.distinct(models.DBProduct.category_name))).scalar() or 0
+    category_names = [
+        row[0]
+        for row in db.query(models.DBProduct.category_name).distinct().order_by(models.DBProduct.category_name).limit(12).all()
+        if row[0]
+    ]
+
+    featured = _products_base_query(db).order_by(models.DBProduct.id.asc()).limit(6).all()
+    discounted = (
+        _products_base_query(db)
+        .filter(models.DBProduct.discount_enabled.is_(True))
+        .order_by(models.DBProduct.id.asc())
+        .limit(6)
+        .all()
+    )
+
+    featured_serialized = _serialize_products(db, featured, catalog_only=True)
+    discounted_serialized = _serialize_products(db, discounted, catalog_only=True)
+
+    return schemas.ProductHomeSummary(
+        product_count=product_count,
+        discount_count=discount_count,
+        category_count=category_count,
+        category_names=category_names,
+        featured_products=featured_serialized,
+        discounted_products=discounted_serialized,
+    )
+
+
+@router.get("/products/home-featured", response_model=schemas.HomeProductPage)
+def get_home_featured_products(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(6, ge=1, le=24),
+    db: Session = Depends(get_db),
+):
+    total = db.query(func.count(models.DBProduct.id)).scalar() or 0
+    offset = (page - 1) * page_size
+    products = (
+        _products_base_query(db)
+        .order_by(models.DBProduct.id.asc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+    return schemas.HomeProductPage(
+        items=_serialize_products(db, products, catalog_only=True),
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/products/home-discounted", response_model=schemas.HomeProductPage)
+def get_home_discounted_products(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(6, ge=1, le=24),
+    db: Session = Depends(get_db),
+):
+    base_query = _products_base_query(db).filter(models.DBProduct.discount_enabled.is_(True))
+    total = base_query.count()
+    offset = (page - 1) * page_size
+    products = base_query.order_by(models.DBProduct.id.asc()).offset(offset).limit(page_size).all()
+    return schemas.HomeProductPage(
+        items=_serialize_products(db, products, catalog_only=True),
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/products/catalog", response_model=schemas.ProductCatalogPage)
+def get_products_catalog(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=60),
+    db: Session = Depends(get_db),
+):
+    total = db.query(func.count(models.DBProduct.id)).scalar() or 0
+    offset = (page - 1) * page_size
+    products = (
+        _products_base_query(db)
+        .order_by(models.DBProduct.id.asc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+    category_names = [
+        row[0]
+        for row in db.query(models.DBProduct.category_name)
+        .distinct()
+        .order_by(models.DBProduct.category_name)
+        .all()
+        if row[0]
+    ]
+    return schemas.ProductCatalogPage(
+        items=_serialize_products(db, products, catalog_only=True),
+        total=total,
+        page=page,
+        page_size=page_size,
+        categories=category_names,
+    )
+
+
+@router.get("/products/options", response_model=List[schemas.ProductOption])
+def get_product_options(
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_product_catalog_viewer),
+):
+    rows = (
+        db.query(models.DBProduct.id, models.DBProduct.name, models.DBProduct.category_name)
+        .order_by(models.DBProduct.name.asc())
+        .all()
+    )
+    return [
+        schemas.ProductOption(id=row.id, name=row.name, category_name=row.category_name)
+        for row in rows
+    ]
+
+
 @router.get("/products/all", response_model=List[schemas.Product])
-def get_all_products(db: Session = Depends (get_db)):
-    products = db.query(models.DBProduct).all()
+def get_all_products(
+    db: Session = Depends(get_db),
+    catalog_only: bool = Query(True, description="Omit long descriptions and extra images for faster catalog loads"),
+):
+    products = _products_base_query(db).order_by(models.DBProduct.id.asc()).all()
+    return _serialize_products(db, products, catalog_only=catalog_only)
+
+@router.get("/products/admin-stats", response_model=schemas.ProductAdminStats)
+def get_product_admin_stats(
+    threshold: int = Query(10, ge=0),
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_product_catalog_viewer),
+):
+    total = db.query(func.count(models.DBProduct.id)).scalar() or 0
+    low_stock = (
+        db.query(func.count(models.DBProduct.id))
+        .filter(models.DBProduct.quantity > 0, models.DBProduct.quantity < threshold)
+        .scalar()
+        or 0
+    )
+    out_of_stock = (
+        db.query(func.count(models.DBProduct.id))
+        .filter(models.DBProduct.quantity <= 0)
+        .scalar()
+        or 0
+    )
+    discounted = (
+        db.query(func.count(models.DBProduct.id))
+        .filter(models.DBProduct.discount_enabled.is_(True))
+        .scalar()
+        or 0
+    )
+    return schemas.ProductAdminStats(
+        total=total,
+        low_stock=low_stock,
+        out_of_stock=out_of_stock,
+        discounted=discounted,
+    )
+
+
+@router.get("/products/stock-alerts", response_model=List[schemas.ProductBase])
+def get_product_stock_alerts(
+    threshold: int = Query(10, ge=0),
+    limit: int = Query(8, ge=1, le=50),
+    db: Session = Depends(get_db),
+    admin_user=Depends(require_product_catalog_viewer),
+):
+    products = (
+        _products_base_query(db)
+        .filter(models.DBProduct.quantity < threshold)
+        .order_by(models.DBProduct.quantity.asc(), models.DBProduct.id.asc())
+        .limit(limit)
+        .all()
+    )
+    if not products:
+        return []
     ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
-    return [schemas.Product(**get_product_with_images(p, ratings_map)) for p in products]
+    return [
+        schemas.ProductBase(**get_product_with_images(p, ratings_map, catalog_only=True))
+        for p in products
+    ]
+
 
 @router.get("/products/alladmin", response_model=List[schemas.ProductBase])
-def get_all_products_admin(db: Session = Depends (get_db), admin_user = Depends(require_product_catalog_viewer)):
-    products = db.query(models.DBProduct).all()
+def get_all_products_admin(
+    db: Session = Depends(get_db),
+    catalog_only: bool = Query(
+        True,
+        description="Omit long descriptions and extra images for faster admin list loads",
+    ),
+    admin_user=Depends(require_product_catalog_viewer),
+):
+    products = _products_base_query(db).order_by(models.DBProduct.id.asc()).all()
+    if not products:
+        return []
     ratings_map = get_ratings_summary_by_product_ids(db, [p.id for p in products])
-    return [schemas.ProductBase(**get_product_with_images(p, ratings_map)) for p in products]
+    return [
+        schemas.ProductBase(**get_product_with_images(p, ratings_map, catalog_only=catalog_only))
+        for p in products
+    ]
 
 
 @router.get("/products/name/byadmin", response_model=schemas.ProductBase)
@@ -294,10 +521,11 @@ def get_products_by_name(name: str, db: Session = Depends (get_db)):
 
 @router.get("/products/{id}", response_model=schemas.ProductBase)
 def get_products_by_id(id :int, db: Session = Depends (get_db), admin_user = Depends(require_seller_or_admin)): 
-    product = db.query(models.DBProduct).filter(models.DBProduct.id == id).first()
+    product = _products_base_query(db).filter(models.DBProduct.id == id).first()
     if product == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the product not a found")
-    return schemas.ProductBase(**get_product_with_images(product))
+    ratings_map = get_ratings_summary_by_product_ids(db, [product.id])
+    return schemas.ProductBase(**get_product_with_images(product, ratings_map))
 
 
 

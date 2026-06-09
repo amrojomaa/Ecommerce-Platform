@@ -22,20 +22,24 @@ import { ORDER_ENDPOINTS } from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
 import { usePanelRole } from '../hooks/usePanelRole';
 import { buildImageUrl, formatDateTime } from '../utils/format';
+import {
+  TIME_PERIODS,
+  getDefaultTimeValue,
+  orderMatchesTimePeriod,
+} from '../../utils/orderTimeFilter';
+import {
+  ADMIN_ORDER_STATUS_FILTERS,
+  ORDER_STATUS_LABEL_KEYS,
+  filterOrdersByStatus,
+  getAvailableOrderStatusTransitions,
+} from '../../utils/orderStatuses';
 
-const STATUS_FILTERS = [
-  'all',
-  'revenue',
-  'pos',
-  'created',
-  'paid',
-  'assigned',
-  'picked_up',
-  'delivering',
-  'shipped',
-  'delivered',
-  'cancelled',
-];
+const TIME_PERIOD_LABEL_KEYS = {
+  all: 'ui.pages.admin.adminOrders.timePeriodAll_a1b2c3d4e5',
+  day: 'ui.pages.admin.adminOrders.timePeriodDay_f6g7h8i9j0',
+  month: 'ui.pages.admin.adminOrders.timePeriodMonth_k1l2m3n4o5',
+  year: 'ui.pages.admin.adminOrders.timePeriodYear_p6q7r8s9t0',
+};
 
 const ORDER_FILTER_LABEL_KEYS = {
   all: 'ui.mobile.common.all',
@@ -43,29 +47,22 @@ const ORDER_FILTER_LABEL_KEYS = {
   pos: 'ui.pages.admin.adminOrders.pos_a479fcd150',
   created: 'ui.pages.orders.status.created',
   paid: 'ui.pages.orders.status.paid',
+  preparing: 'ui.pages.orders.status.preparing',
+  packed: 'ui.pages.orders.status.packed',
+  ready_for_pickup: 'ui.pages.orders.status.readyForPickup',
   assigned: 'ui.pages.orders.status.assigned',
   picked_up: 'ui.pages.orders.status.pickedUp',
   delivering: 'ui.pages.orders.status.delivering',
-  shipped: 'ui.pages.orders.status.shipped',
-  delivered: 'ui.pages.orders.status.delivered',
-  cancelled: 'ui.pages.orders.status.cancelled',
-};
-
-const ORDER_STATUS_LABEL_KEYS = {
-  created: 'ui.pages.orders.status.created',
-  paid: 'ui.pages.orders.status.paid',
-  assigned: 'ui.pages.orders.status.assigned',
-  picked_up: 'ui.pages.orders.status.pickedUp',
-  delivering: 'ui.pages.orders.status.delivering',
-  shipped: 'ui.pages.orders.status.shipped',
   delivered: 'ui.pages.orders.status.delivered',
   cancelled: 'ui.pages.orders.status.cancelled',
 };
 
 const statusToneMap = {
   paid: 'success',
-  shipped: 'success',
   delivered: 'success',
+  packed: 'warning',
+  ready_for_pickup: 'warning',
+  preparing: 'warning',
   assigned: 'warning',
   picked_up: 'warning',
   delivering: 'warning',
@@ -99,6 +96,14 @@ const AdminOrdersScreen = () => {
     [tUi]
   );
 
+  const getTimePeriodLabel = useCallback(
+    (period) => {
+      const key = TIME_PERIOD_LABEL_KEYS[period];
+      return key ? tUi(key) : period;
+    },
+    [tUi]
+  );
+
   const { formatCurrency } = useCurrency();
 
   const mapLabels = useMemo(
@@ -121,6 +126,8 @@ const AdminOrdersScreen = () => {
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [timePeriod, setTimePeriod] = useState('all');
+  const [timeValue, setTimeValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [expandedOrderTab, setExpandedOrderTab] = useState('details');
@@ -143,14 +150,8 @@ const AdminOrdersScreen = () => {
   }, [fetchOrders]);
 
   useEffect(() => {
-    let list = [...allOrders];
-    if (statusFilter === 'revenue') {
-      list = list.filter((order) => ['paid', 'shipped', 'delivered'].includes(order.status));
-    } else if (statusFilter === 'pos') {
-      list = list.filter((order) => order.sale_channel === 'pos');
-    } else if (statusFilter !== 'all') {
-      list = list.filter((order) => (order.status || 'created') === statusFilter);
-    }
+    let list = filterOrdersByStatus(allOrders, statusFilter);
+    list = list.filter((order) => orderMatchesTimePeriod(order, timePeriod, timeValue));
 
     const term = searchQuery.trim().toLowerCase();
     if (term) {
@@ -162,7 +163,30 @@ const AdminOrdersScreen = () => {
     }
 
     setOrders(list);
-  }, [allOrders, searchQuery, statusFilter]);
+  }, [allOrders, searchQuery, statusFilter, timePeriod, timeValue]);
+
+  const handleTimePeriodSelect = (period) => {
+    const nextValue = period === 'all' ? '' : getDefaultTimeValue(period);
+    setTimePeriod(period);
+    setTimeValue(nextValue);
+  };
+
+  const clearAllFilters = () => {
+    setStatusFilter('all');
+    setTimePeriod('all');
+    setTimeValue('');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters =
+    statusFilter !== 'all' || timePeriod !== 'all' || searchQuery.trim().length > 0;
+
+  const getEmptyMessage = () => {
+    if (timePeriod !== 'all') {
+      return tUi('ui.pages.admin.adminOrders.noOrdersFoundForTime_u1v2w3x4y5');
+    }
+    return tUi('ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28');
+  };
 
   const handleUpdateStatus = async (order, newStatus) => {
     if (!order || !newStatus) return;
@@ -181,12 +205,8 @@ const AdminOrdersScreen = () => {
     }
   };
 
-  const getAvailableStatuses = (status) => {
-    if (status === 'paid') return ['shipped', 'cancelled'];
-    if (status === 'shipped') return ['delivered', 'cancelled'];
-    if (['assigned', 'picked_up', 'delivering'].includes(status)) return ['cancelled'];
-    return ['cancelled'];
-  };
+  const getAvailableStatuses = (order) =>
+    getAvailableOrderStatusTransitions(order?.status, { saleChannel: order?.sale_channel });
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === expandedOrderId) || null,
@@ -207,7 +227,7 @@ const AdminOrdersScreen = () => {
     >
       <Text style={styles.filterLabel}>{tUi('ui.pages.admin.adminOrders.filterByStatus_c0507d4cfa')}</Text>
       <View style={styles.filterRow}>
-        {STATUS_FILTERS.map((filter) => (
+        {ADMIN_ORDER_STATUS_FILTERS.map((filter) => (
           <Pressable
             key={filter}
             style={[styles.filterChip, statusFilter === filter && styles.filterChipActive]}
@@ -222,7 +242,80 @@ const AdminOrdersScreen = () => {
         ))}
       </View>
 
-      <View style={styles.searchRow}>
+      <Text style={styles.filterLabel}>
+        {tUi('ui.pages.admin.adminOrders.filterByTime_z6a7b8c9d0')}
+      </Text>
+      <View style={styles.filterRow}>
+        {TIME_PERIODS.map((period) => (
+          <Pressable
+            key={period}
+            style={[styles.filterChip, timePeriod === period && styles.filterChipActive]}
+            onPress={() => handleTimePeriodSelect(period)}
+          >
+            <Text
+              style={[styles.filterText, timePeriod === period && styles.filterTextActive]}
+            >
+              {getTimePeriodLabel(period)}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {timePeriod === 'day' ? (
+        <View style={[styles.dateRow, { flexDirection: row }]}>
+          <Feather name="calendar" size={16} color={colors.muted} />
+          <TextInput
+            style={[styles.dateInput, inputRtlStyle]}
+            value={timeValue}
+            onChangeText={setTimeValue}
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor={colors.muted}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel={tUi('ui.pages.admin.adminOrders.selectDay_e1f2g3h4i5')}
+          />
+        </View>
+      ) : null}
+
+      {timePeriod === 'month' ? (
+        <View style={[styles.dateRow, { flexDirection: row }]}>
+          <Feather name="calendar" size={16} color={colors.muted} />
+          <TextInput
+            style={[styles.dateInput, inputRtlStyle]}
+            value={timeValue}
+            onChangeText={setTimeValue}
+            placeholder="YYYY-MM"
+            placeholderTextColor={colors.muted}
+            keyboardType="numbers-and-punctuation"
+            accessibilityLabel={tUi('ui.pages.admin.adminOrders.selectMonth_j6k7l8m9n0')}
+          />
+        </View>
+      ) : null}
+
+      {timePeriod === 'year' ? (
+        <View style={[styles.dateRow, { flexDirection: row }]}>
+          <Feather name="calendar" size={16} color={colors.muted} />
+          <TextInput
+            style={[styles.dateInput, inputRtlStyle]}
+            value={timeValue}
+            onChangeText={setTimeValue}
+            placeholder="YYYY"
+            placeholderTextColor={colors.muted}
+            keyboardType="number-pad"
+            maxLength={4}
+            accessibilityLabel={tUi('ui.pages.admin.adminOrders.selectYear_o1p2q3r4s5')}
+          />
+        </View>
+      ) : null}
+
+      {hasActiveFilters ? (
+        <Pressable style={styles.clearFiltersButton} onPress={clearAllFilters}>
+          <Text style={styles.clearFiltersText}>
+            {tUi('ui.pages.admin.adminOrders.showAllOrders_a234fdd874')}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      <View style={[styles.searchRow, { flexDirection: row }]}>
         <Feather name="search" size={16} color={colors.muted} />
         <TextInput
           style={[styles.searchInput, inputRtlStyle]}
@@ -270,7 +363,7 @@ const AdminOrdersScreen = () => {
             );
           })}
           {!orders.length ? (
-            <Text style={styles.emptyText}>{tUi('ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28')}</Text>
+            <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           ) : null}
         </View>
       )}
@@ -396,7 +489,7 @@ const AdminOrdersScreen = () => {
           <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
             <Text style={styles.modalTitle}>{tUi('ui.mobile.adminOrders.updateStatus')}</Text>
             {statusModalOrder &&
-              getAvailableStatuses(statusModalOrder.status || 'created').map((status) => (
+              getAvailableStatuses(statusModalOrder).map((status) => (
                 <Pressable
                   key={status}
                   style={styles.modalOption}
@@ -449,8 +542,7 @@ const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
   filterTextActive: {
     color: colors.surface,
   },
-  searchRow: {
-    flexDirection: 'row',
+  dateRow: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: 14,
@@ -459,11 +551,42 @@ const createStyles = ({ colors, shadow, isDark }) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 12,
+    gap: 8,
+  },
+  dateInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+  },
+  clearFiltersButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  searchRow: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
     color: colors.text,
+    fontSize: 14,
   },
   loadingWrap: {
     paddingVertical: 40,

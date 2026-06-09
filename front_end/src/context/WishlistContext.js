@@ -1,7 +1,7 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import http from '../services/http';
-import { WISHLIST_ENDPOINTS, PRODUCT_ENDPOINTS } from '../config/api';
+import { WISHLIST_ENDPOINTS } from '../config/api';
 import { trackRecommendationEvent } from '../services/recommendations';
 
 export const WishlistContext = createContext();
@@ -31,48 +31,6 @@ const mapWishlistItem = (item) => ({
   total_ratings: item.product.total_ratings ?? 0,
   product: item.product,
 });
-
-const enrichWishlistItems = async (items) => {
-  if (!items.some((item) => !item.product_id)) {
-    return items;
-  }
-
-  try {
-    const response = await http.get(PRODUCT_ENDPOINTS.ALL);
-    const catalogByName = new Map((response.data || []).map((product) => [product.name, product]));
-
-    return items.map((item) => {
-      if (item.product_id) {
-        return item;
-      }
-
-      const match = catalogByName.get(item.name);
-      if (!match) {
-        return item;
-      }
-
-      return {
-        ...item,
-        product_id: match.id,
-        average_rating: Number.isFinite(Number(item.average_rating))
-          ? item.average_rating
-          : match.average_rating ?? 0,
-        total_ratings: Number.isFinite(Number(item.total_ratings))
-          ? item.total_ratings
-          : match.total_ratings ?? 0,
-        product: {
-          ...item.product,
-          id: match.id,
-          average_rating: item.product?.average_rating ?? match.average_rating ?? 0,
-          total_ratings: item.product?.total_ratings ?? match.total_ratings ?? 0,
-        },
-      };
-    });
-  } catch (error) {
-    console.error('Error enriching wishlist items:', error);
-    return items;
-  }
-};
 
 export const WishlistProvider = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
@@ -147,12 +105,10 @@ export const WishlistProvider = ({ children }) => {
     };
 
     window.addEventListener('auth-change', handleAuthChange);
-    window.addEventListener('focus', checkUserChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
-      window.removeEventListener('focus', checkUserChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
@@ -166,9 +122,7 @@ export const WishlistProvider = ({ children }) => {
       const wishlistData = response.data;
       
       if (wishlistData.items && Array.isArray(wishlistData.items)) {
-        const transformedItems = await enrichWishlistItems(
-          wishlistData.items.map(mapWishlistItem)
-        );
+        const transformedItems = wishlistData.items.map(mapWishlistItem);
         setWishlistItems(transformedItems);
       } else {
         setWishlistItems([]);
@@ -324,28 +278,44 @@ export const WishlistProvider = ({ children }) => {
     }
   };
 
-  const isInWishlist = (productName) => {
-    return wishlistItems.some((item) => item.name === productName);
-  };
+  const wishlistNameSet = useMemo(
+    () => new Set(wishlistItems.map((item) => item.name)),
+    [wishlistItems]
+  );
 
-  const getWishlistItemCount = () => {
-    return wishlistItems.length;
-  };
+  const isInWishlist = useCallback(
+    (productName) => wishlistNameSet.has(productName),
+    [wishlistNameSet]
+  );
+
+  const getWishlistItemCount = () => wishlistItems.length;
 
   const clearWishlist = () => {
     setWishlistItems([]);
   };
 
-  const value = {
-    wishlistItems,
-    loading,
-    addToWishlist,
-    removeFromWishlist,
-    isInWishlist,
-    getWishlistItemCount,
-    clearWishlist,
-    fetchWishlist,
-  };
+  const value = useMemo(
+    () => ({
+      wishlistItems,
+      wishlistNameSet,
+      loading,
+      addToWishlist,
+      removeFromWishlist,
+      isInWishlist,
+      getWishlistItemCount,
+      clearWishlist,
+      fetchWishlist,
+    }),
+    [
+      wishlistItems,
+      wishlistNameSet,
+      loading,
+      addToWishlist,
+      removeFromWishlist,
+      isInWishlist,
+      fetchWishlist,
+    ]
+  );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 };

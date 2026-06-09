@@ -32,6 +32,11 @@ const TICKET_STATUS_LABEL_KEYS = {
   closed: 'ui.pages.tickets.closed_f259bec343',
 };
 
+const isTicketClosed = (status) => {
+  const normalized = String(status || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return normalized === 'closed' || normalized === 'resolved';
+};
+
 const TicketsScreen = () => {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -47,7 +52,7 @@ const TicketsScreen = () => {
   const [activeChatTicket, setActiveChatTicket] = useState(null);
   const [openFaqId, setOpenFaqId] = useState(null);
 
-  const hasOpenSlot = !tickets.some((t) => t.status !== 'Closed');
+  const hasOpenSlot = !tickets.some((t) => !isTicketClosed(t.status));
 
   const getStatusLabel = (status) => {
     const normalized = String(status || 'open').trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -89,7 +94,10 @@ const TicketsScreen = () => {
       setShowCreate(false);
       fetchTickets();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.response?.data?.detail || 'Failed to create ticket' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.tickets.failedToCreateTicket_b4e8c2d3f2'),
+      });
     } finally {
       setCreating(false);
     }
@@ -99,12 +107,14 @@ const TicketsScreen = () => {
     <CustomerScreen
       showBack
       title={tUi('ui.mobile.customer.account.tickets')}
-      subtitle={tUi('ui.pages.tickets.subtitle_b4e8c2d3e0') || 'Get help from our support team'}
+      subtitle={tUi('ui.pages.tickets.subtitle_g2b3c4d5e6')}
       action={
         hasOpenSlot ? (
           <Pressable onPress={() => setShowCreate((v) => !v)}>
             <Text style={{ color: colors.primary, fontWeight: '700' }}>
-              {showCreate ? tUi('ui.pages.recommendations.cancel_5a0d97a8e1') : tUi('ui.pages.tickets.createTicket_b4e8c2d3e1') || 'New ticket'}
+              {showCreate
+                ? tUi('ui.pages.recommendations.cancel_5a0d97a8e1')
+                : tUi('ui.pages.tickets.createTicket_6a6e8488fc')}
             </Text>
           </Pressable>
         ) : null
@@ -114,14 +124,14 @@ const TicketsScreen = () => {
         <View style={[styles.formBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <TextInput
             style={[styles.input, inputRtl, { borderColor: colors.border, color: colors.text }]}
-            placeholder={tUi('ui.pages.tickets.title_b4e8c2d3e2') || 'Title'}
+            placeholder={tUi('ui.pages.tickets.title_1ae4d1369f')}
             placeholderTextColor={colors.muted}
             value={newTicket.title}
             onChangeText={(v) => setNewTicket((p) => ({ ...p, title: v }))}
           />
           <TextInput
             style={[styles.input, styles.textArea, inputRtl, { borderColor: colors.border, color: colors.text }]}
-            placeholder={tUi('ui.pages.tickets.description_b4e8c2d3e3') || 'Description'}
+            placeholder={tUi('ui.pages.tickets.description_5df2b50e3c')}
             placeholderTextColor={colors.muted}
             value={newTicket.description}
             onChangeText={(v) => setNewTicket((p) => ({ ...p, description: v }))}
@@ -133,13 +143,15 @@ const TicketsScreen = () => {
             disabled={creating}
           >
             <Text style={styles.primaryBtnText}>
-              {creating ? tUi('ui.pages.installments.submitting_3eccdd056d') : tUi('ui.pages.tickets.submitTicket_b4e8c2d3e4') || 'Submit'}
+              {creating ? tUi('ui.pages.tickets.creating_5f1a5f7f04') : tUi('ui.pages.tickets.createTicket_6a6e8488fc')}
             </Text>
           </Pressable>
         </View>
       ) : null}
 
-      <Text style={[styles.faqTitle, { color: colors.text, textAlign }]}>FAQ</Text>
+      <Text style={[styles.faqTitle, { color: colors.text, textAlign }]}>
+        {tUi('ui.pages.tickets.commonQuestions_u6v7w8x9y0')}
+      </Text>
       {FAQ_ITEMS.map((item) => (
         <View key={item.id} style={[styles.faqItem, { borderColor: colors.border }]}>
           <Pressable onPress={() => setOpenFaqId(openFaqId === item.id ? null : item.id)}>
@@ -157,7 +169,9 @@ const TicketsScreen = () => {
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
       ) : tickets.length === 0 ? (
-        <Text style={{ color: colors.muted, textAlign, marginTop: 16 }}>—</Text>
+        <Text style={{ color: colors.muted, textAlign, marginTop: 16 }}>
+          {tUi('ui.pages.tickets.youHavenTCreatedAny_d33bce3131')}
+        </Text>
       ) : (
         tickets.map((ticket) => (
           <View
@@ -176,7 +190,9 @@ const TicketsScreen = () => {
               onPress={() => setActiveChatTicket({ id: ticket.id, status: ticket.status })}
             >
               <Feather name="message-circle" size={16} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>{tUi('ui.pages.tickets.openChat_b4e8c2d3e5') || 'Open chat'}</Text>
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>
+                {tUi('ui.pages.tickets.startLiveChat_l7m8n9o0p1')}
+              </Text>
             </Pressable>
           </View>
         ))

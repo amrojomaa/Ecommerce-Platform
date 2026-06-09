@@ -1,22 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaArrowRight, FaHeart, FaRegHeart, FaShoppingCart, FaTag } from 'react-icons/fa';
+import {
+  FaArrowRight,
+  FaChevronLeft,
+  FaChevronRight,
+  FaHeart,
+  FaRegHeart,
+  FaShoppingCart,
+} from 'react-icons/fa';
+import { getCategoryIconComponent } from '../utils/categoryIcons';
 import { toast } from 'react-toastify';
 import { tUi } from '../i18n/uiText';
 import http from '../services/http';
-import { PRODUCT_ENDPOINTS } from '../config/api';
+import { CATEGORY_ENDPOINTS, PRODUCT_ENDPOINTS } from '../config/api';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { useWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
 import { useCurrency } from '../hooks/useCurrency';
 import StarRating from '../components/StarRating';
-import { getImageUrl } from '../utils/helpers';
+import { getCatalogImageUrl } from '../utils/helpers';
 import { useTranslation } from 'react-i18next';
 import { normalizeLanguageCode } from '../i18n/constants';
-import { localizeProduct } from '../utils/localizedContent';
+import { localizeCategoryName, localizeProduct } from '../utils/localizedContent';
 import '../styles/pages/Home.css';
+
+const CATEGORIES_PER_PAGE = 5;
+const PRODUCTS_PER_PAGE = 6;
+
+const HomePaginatedShell = ({ page, totalPages, onPageChange, children }) => {
+  if (totalPages <= 1) {
+    return children;
+  }
+
+  return (
+    <div className="home-paginated-section">
+      <button
+        type="button"
+        className="home-section-pager-btn home-paginated-nav home-paginated-nav--prev"
+        disabled={page <= 1}
+        onClick={() => onPageChange(page - 1)}
+        aria-label={tUi('ui.pages.products.previous_6fad74798c')}
+      >
+        <FaChevronLeft aria-hidden="true" />
+      </button>
+      <div className="home-paginated-content">{children}</div>
+      <button
+        type="button"
+        className="home-section-pager-btn home-paginated-nav home-paginated-nav--next"
+        disabled={page >= totalPages}
+        onClick={() => onPageChange(page + 1)}
+        aria-label={tUi('ui.pages.products.next_5a273f44ac')}
+      >
+        <FaChevronRight aria-hidden="true" />
+      </button>
+    </div>
+  );
+};
 
 const Home = () => {
   const location = useLocation();
@@ -28,15 +69,111 @@ const Home = () => {
   const { formatCurrency } = useCurrency();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [discountedProducts, setDiscountedProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
   const [productCount, setProductCount] = useState(0);
   const [discountCount, setDiscountCount] = useState(0);
   const [categoryCount, setCategoryCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [featuredTotal, setFeaturedTotal] = useState(0);
+  const [discountTotal, setDiscountTotal] = useState(0);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [featuredPage, setFeaturedPage] = useState(1);
+  const [discountPage, setDiscountPage] = useState(1);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [discountLoading, setDiscountLoading] = useState(true);
+
+  const categoryTotalPages = Math.max(1, Math.ceil(allCategories.length / CATEGORIES_PER_PAGE));
+  const featuredTotalPages = Math.max(1, Math.ceil(featuredTotal / PRODUCTS_PER_PAGE));
+  const discountTotalPages = Math.max(1, Math.ceil(discountTotal / PRODUCTS_PER_PAGE));
+
+  const paginatedCategories = useMemo(() => {
+    const start = (categoryPage - 1) * CATEGORIES_PER_PAGE;
+    return allCategories.slice(start, start + CATEGORIES_PER_PAGE);
+  }, [allCategories, categoryPage]);
 
   useEffect(() => {
-    fetchFeaturedProducts();
-  }, [location.pathname, languageCode]); // Refresh when navigating to home page
+    if (categoryPage > categoryTotalPages) {
+      setCategoryPage(categoryTotalPages);
+    }
+  }, [categoryPage, categoryTotalPages]);
+
+  useEffect(() => {
+    if (featuredPage > featuredTotalPages) {
+      setFeaturedPage(featuredTotalPages);
+    }
+  }, [featuredPage, featuredTotalPages]);
+
+  useEffect(() => {
+    if (discountPage > discountTotalPages) {
+      setDiscountPage(discountTotalPages);
+    }
+  }, [discountPage, discountTotalPages]);
+
+  const fetchHomeStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const [summaryRes, categoriesRes] = await Promise.all([
+        http.get(PRODUCT_ENDPOINTS.HOME_SUMMARY),
+        http.get(CATEGORY_ENDPOINTS.ALL),
+      ]);
+      const summary = summaryRes.data || {};
+      setProductCount(summary.product_count || 0);
+      setDiscountCount(summary.discount_count || 0);
+      setCategoryCount(summary.category_count || 0);
+      setAllCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
+      setCategoryPage(1);
+    } catch (error) {
+      console.error('Error fetching home stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  const fetchFeaturedPage = useCallback(async () => {
+    setFeaturedLoading(true);
+    try {
+      const response = await http.get(PRODUCT_ENDPOINTS.HOME_FEATURED, {
+        params: { page: featuredPage, page_size: PRODUCTS_PER_PAGE },
+      });
+      const data = response.data || {};
+      setFeaturedProducts(data.items || []);
+      setFeaturedTotal(data.total || 0);
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+      setFeaturedProducts([]);
+    } finally {
+      setFeaturedLoading(false);
+    }
+  }, [featuredPage]);
+
+  const fetchDiscountPage = useCallback(async () => {
+    setDiscountLoading(true);
+    try {
+      const response = await http.get(PRODUCT_ENDPOINTS.HOME_DISCOUNTED, {
+        params: { page: discountPage, page_size: PRODUCTS_PER_PAGE },
+      });
+      const data = response.data || {};
+      setDiscountedProducts(data.items || []);
+      setDiscountTotal(data.total || 0);
+    } catch (error) {
+      console.error('Error fetching discounted products:', error);
+      setDiscountedProducts([]);
+    } finally {
+      setDiscountLoading(false);
+    }
+  }, [discountPage]);
+
+  useEffect(() => {
+    fetchHomeStats();
+  }, [location.pathname, fetchHomeStats]);
+
+  useEffect(() => {
+    fetchFeaturedPage();
+  }, [fetchFeaturedPage]);
+
+  useEffect(() => {
+    fetchDiscountPage();
+  }, [fetchDiscountPage]);
 
   useEffect(() => {
     if (!location.hash) {
@@ -51,43 +188,17 @@ const Home = () => {
       }
     };
 
-    if (loading) {
+    if (statsLoading || featuredLoading || discountLoading) {
       return;
     }
 
     scrollToHashTarget();
-  }, [location.hash, loading]);
-
-  const fetchFeaturedProducts = async () => {
-    try {
-      const response = await http.get(PRODUCT_ENDPOINTS.ALL);
-      const products = response.data;
-      const discounts = products.filter((product) => product.discount_enabled);
-      const uniqueCategories = [...new Set(products.map((product) => product.category_name))];
-
-      // Get first 6 products as featured
-      setFeaturedProducts(products.slice(0, 6));
-      setDiscountedProducts(discounts.slice(0, 6));
-      const localizedCategories = uniqueCategories.map((categoryValue) => {
-        const matched = products.find((p) => p.category_name === categoryValue);
-        const localized = matched ? localizeProduct(matched, languageCode).localized_category_name : categoryValue;
-        return { value: categoryValue, label: localized };
-      });
-      setCategories(localizedCategories.slice(0, 4));
-      setProductCount(products.length);
-      setDiscountCount(discounts.length);
-      setCategoryCount(uniqueCategories.length);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [location.hash, statsLoading, featuredLoading, discountLoading]);
 
   const heroCtaPath = isAuthenticated ? '/recommendations' : '/signup';
   const heroCtaLabel = isAuthenticated ? tUi('navbar.forYou') : tUi('navbar.signup');
   const formatStatValue = (value) => {
-    if (loading) {
+    if (statsLoading) {
       return '...';
     }
     return value > 0 ? `${value}+` : '0';
@@ -216,7 +327,7 @@ const Home = () => {
       </motion.section>
 
       {/* Featured Categories */}
-      {categories.length > 0 &&
+      {allCategories.length > 0 &&
       <section className="categories-section" id="categories">
           <div className="categories-band">
             <div className="section-header">
@@ -230,38 +341,43 @@ const Home = () => {
               </motion.h2>
               <p className="section-subtitle">{tUi("ui.pages.home.categoriesSubtitle_0a7d16c8f1")}</p>
             </div>
-            <div className="home-categories-grid">
-              {categories.map((category, index) =>
-          <motion.div
-            key={category.value}
-            className="home-category-card-wrapper"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5 }}>
-            
-                <Link to={`/products?category=${encodeURIComponent(category.value)}`} className="home-category-card">
-                  <span className="home-category-card-index">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="home-category-icon" aria-hidden="true">
-                    <FaTag />
-                  </span>
-                  <div className="home-category-card-body">
-                    <h3>{category.label}</h3>
-                  </div>
-                  <span className="home-category-card-arrow" aria-hidden="true">
-                    <FaArrowRight />
-                  </span>
-                </Link>
-              </motion.div>
-          )}
-            </div>
+            <HomePaginatedShell
+              page={categoryPage}
+              totalPages={categoryTotalPages}
+              onPageChange={setCategoryPage}
+            >
+              <div className="home-categories-grid">
+                {paginatedCategories.map((category, index) => {
+                  const displayIndex = (categoryPage - 1) * CATEGORIES_PER_PAGE + index + 1;
+                  const categoryLabel = localizeCategoryName(category, languageCode);
+                  const CategoryIcon = getCategoryIconComponent(category, index, categoryLabel);
+                  return (
+                    <div key={category.id || category.name} className="home-category-card-wrapper">
+                      <Link
+                        to={`/products?category=${encodeURIComponent(category.name)}`}
+                        className="home-category-card"
+                      >
+                        <span className="home-category-card-index">
+                          {String(displayIndex).padStart(2, '0')}
+                        </span>
+                        <span className="home-category-icon" aria-hidden="true">
+                          <CategoryIcon />
+                        </span>
+                        <div className="home-category-card-body">
+                          <h3>{categoryLabel}</h3>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </HomePaginatedShell>
           </div>
         </section>
       }
 
       {/* Discounts */}
-      {discountedProducts.length > 0 &&
+      {(discountCount > 0 || discountLoading) &&
       <section className="discounts-section" id="discounts">
           <div className="discounts-band">
             <div className="discounts-band-header">
@@ -281,27 +397,27 @@ const Home = () => {
                 <FaArrowRight aria-hidden="true" />
               </Link>
             </div>
-            {loading ?
+            <HomePaginatedShell
+              page={discountPage}
+              totalPages={discountTotalPages}
+              onPageChange={setDiscountPage}
+            >
+            {discountLoading ?
         <div className="home-discounts-grid">
-              {[...Array(6)].map((_, i) =>
+              {[...Array(PRODUCTS_PER_PAGE)].map((_, i) =>
           <ProductCardSkeleton key={i} />
           )}
             </div> :
 
         <div className="home-discounts-grid">
-              {discountedProducts.map((product, index) => {
+              {discountedProducts.map((product) => {
                 const localizedProduct = localizeProduct(product, languageCode);
                 const discountPercent = getDiscountPercent(product);
 
                 return (
-          <motion.div
+          <div
             key={`discount-${product.name}`}
-            className="discount-card-wrapper"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5 }}>
+            className="discount-card-wrapper">
             
                   <Link
               to={`/products/${encodeURIComponent(product.name)}`}
@@ -314,9 +430,10 @@ const Home = () => {
                 }
                       <img
                   src={product.images && product.images.length > 0 ?
-                  getImageUrl(product.images[0]) :
-                  getImageUrl('/images/placeholder.jpg')}
-                  alt={localizedProduct.localized_name} />
+                  getCatalogImageUrl(product.images[0]) :
+                  getCatalogImageUrl('/images/placeholder.jpg')}
+                  alt={localizedProduct.localized_name}
+                  loading="lazy" />
                 
                     </div>
                     <div className="discount-card-body">
@@ -349,11 +466,12 @@ const Home = () => {
                       </button>
               }
                   </Link>
-                </motion.div>
+                </div>
                 );
               })}
             </div>
         }
+            </HomePaginatedShell>
           </div>
         </section>
       }
@@ -378,26 +496,26 @@ const Home = () => {
               <FaArrowRight aria-hidden="true" />
             </Link>
           </div>
-          {loading ?
+          <HomePaginatedShell
+            page={featuredPage}
+            totalPages={featuredTotalPages}
+            onPageChange={setFeaturedPage}
+          >
+          {featuredLoading ?
         <div className="featured-grid">
-            {[...Array(6)].map((_, i) =>
+            {[...Array(PRODUCTS_PER_PAGE)].map((_, i) =>
           <ProductCardSkeleton key={i} />
           )}
           </div> :
 
         <div className="featured-grid">
-            {featuredProducts.map((product, index) => {
+            {featuredProducts.map((product) => {
               const localizedProduct = localizeProduct(product, languageCode);
 
               return (
-          <motion.div
+          <div
             key={product.name}
-            className="featured-card-wrapper"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5 }}>
+            className="featured-card-wrapper">
             
                 <Link
               to={`/products/${encodeURIComponent(product.name)}`}
@@ -407,12 +525,13 @@ const Home = () => {
                     <span className="featured-card-media-category">{localizedProduct.localized_category_name}</span>
                     <img
                   src={product.images && product.images.length > 0 ?
-                  getImageUrl(product.images[0]) :
-                  getImageUrl('/images/placeholder.jpg')}
+                  getCatalogImageUrl(product.images[0]) :
+                  getCatalogImageUrl('/images/placeholder.jpg')}
                   alt={localizedProduct.localized_name}
+                  loading="lazy"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                    e.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
                   }} />
                 
                     {isAuthenticated &&
@@ -448,7 +567,7 @@ const Home = () => {
                     size="small"
                     initialAverageRating={product.average_rating}
                     initialTotalRatings={product.total_ratings}
-                    fetchOnMount={!Number.isFinite(Number(product.average_rating))} />
+                    fetchOnMount={false} />
                   
                       </div>
                 }
@@ -484,11 +603,12 @@ const Home = () => {
                     </div>
                   </div>
                 </Link>
-              </motion.div>
+              </div>
               );
             })}
           </div>
         }
+          </HomePaginatedShell>
         </div>
       </section>
     </div>);

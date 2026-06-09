@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { useTUi } from '../../i18n/uiText';
 import { useCart } from '../../hooks/useCart';
 import HomeScreen from '../screens/HomeScreen';
@@ -20,6 +21,8 @@ import InstallmentsScreen from '../screens/InstallmentsScreen';
 import RecommendationsScreen from '../screens/RecommendationsScreen';
 import CustomerProfileScreen from '../screens/CustomerProfileScreen';
 import AboutScreen from '../screens/AboutScreen';
+import AiAssistantScreen from '../screens/AiAssistantScreen';
+import AiAssistantFab from '../components/AiAssistantFab';
 import LoginScreen from '../../screens/LoginScreen';
 import SignupScreen from '../../screens/SignupScreen';
 import ForgotPasswordScreen from '../../screens/ForgotPasswordScreen';
@@ -29,14 +32,14 @@ import ResetPasswordScreen from '../../screens/ResetPasswordScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-const TabBadge = ({ count }) => {
+const TabBadge = ({ count, isRtl }) => {
   if (!count) return null;
   return (
     <View
       style={{
         position: 'absolute',
         top: -4,
-        right: -8,
+        ...(isRtl ? { left: -8 } : { right: -8 }),
         minWidth: 18,
         height: 18,
         borderRadius: 999,
@@ -53,10 +56,12 @@ const TabBadge = ({ count }) => {
 
 const CustomerTabs = () => {
   const { colors } = useTheme();
+  const { isRtl } = useLanguage();
   const tUi = useTUi();
   const { cartCount } = useCart();
 
   return (
+    <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -92,7 +97,7 @@ const CustomerTabs = () => {
           tabBarIcon: ({ color, size }) => (
             <View>
               <Feather name="shopping-cart" color={color} size={size} />
-              <TabBadge count={cartCount} />
+              <TabBadge count={cartCount} isRtl={isRtl} />
             </View>
           ),
         }}
@@ -106,6 +111,8 @@ const CustomerTabs = () => {
         }}
       />
     </Tab.Navigator>
+    <AiAssistantFab />
+    </View>
   );
 };
 
@@ -122,6 +129,7 @@ const CustomerNavigator = () => (
     <Stack.Screen name="Recommendations" component={RecommendationsScreen} />
     <Stack.Screen name="Profile" component={CustomerProfileScreen} />
     <Stack.Screen name="About" component={AboutScreen} />
+    <Stack.Screen name="AiAssistant" component={AiAssistantScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Signup" component={SignupScreen} />
     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

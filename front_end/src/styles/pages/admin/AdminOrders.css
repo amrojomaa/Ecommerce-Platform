@@ -105,6 +105,37 @@
   max-width: 14rem;
 }
 
+.adm-orders-filter-row .adm-orders-select--time {
+  width: 11rem;
+  min-width: 11rem;
+  max-width: 11rem;
+}
+
+.adm-orders-date-input {
+  height: 42px;
+  min-width: 10.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.adm-orders-date-input--year {
+  width: 6.5rem;
+  min-width: 6.5rem;
+}
+
+.adm-orders-date-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--control-focus-ring, rgba(37, 99, 235, 0.15));
+}
+
 .adm-orders-select {
   height: 42px;
   width: 100%;
@@ -598,6 +629,7 @@
 
   .adm-orders-filter-row {
     width: 100%;
+    flex-wrap: wrap;
   }
 
   .adm-orders-header-meta {
@@ -610,6 +642,25 @@
     min-width: 0;
     width: 100%;
     max-width: none;
+  }
+
+  .adm-orders-filter-row .adm-orders-select--time {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .adm-orders-date-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .adm-orders-date-input--year {
+    flex: 0 0 6.5rem;
+    width: 6.5rem;
+    min-width: 6.5rem;
   }
 
   .adm-orders-table {

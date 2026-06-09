@@ -31,6 +31,11 @@ import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminProductsPage.css';
 import '../../styles/pages/admin/AdminProductsModal.css';
 import '../../styles/pages/admin/AdminProducts.css';
+import { invalidateProductCatalogCache } from '../../utils/productCatalog';
+import { normalizeLanguageCode } from '../../i18n/constants';
+import { localizeProduct, productMatchesLocalizedSearch } from '../../utils/localizedContent';
+
+const ADMIN_PAGE_SIZE = 12;
 
 const DEFAULT_ANALYTICS = {
   total_reviews: 0,
@@ -40,7 +45,8 @@ const DEFAULT_ANALYTICS = {
 };
 
 const AdminProducts = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +67,7 @@ const AdminProducts = () => {
     discounted: false
   });
   const [sentimentAnalytics, setSentimentAnalytics] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
 
   const routeBase = useMemo(() => {
     if (location.pathname.startsWith('/warehouse')) {
@@ -86,16 +93,28 @@ const AdminProducts = () => {
       filteredProducts = filteredProducts.filter((product) => product.discount_enabled);
     }
 
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedQuery = searchQuery.trim();
     if (normalizedQuery) {
       filteredProducts = filteredProducts.filter((product) =>
-        product.name?.toLowerCase().includes(normalizedQuery) ||
-        product.category_name?.toLowerCase().includes(normalizedQuery)
+        productMatchesLocalizedSearch(product, normalizedQuery, languageCode)
       );
     }
 
     setProducts(filteredProducts);
-  }, [allProducts, lowStockThreshold, quickFilters, searchParams, searchQuery]);
+    setCurrentPage(1);
+  }, [allProducts, lowStockThreshold, quickFilters, searchParams, searchQuery, languageCode]);
+
+  const totalPages = Math.max(1, Math.ceil(products.length / ADMIN_PAGE_SIZE));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ADMIN_PAGE_SIZE;
+    return products.slice(start, start + ADMIN_PAGE_SIZE);
+  }, [products, currentPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const fetchLowStockThreshold = useCallback(async () => {
     try {
@@ -108,37 +127,67 @@ const AdminProducts = () => {
   }, []);
 
   const fetchSentimentAnalytics = useCallback(async (productsToAnalyze) => {
+    if (!productsToAnalyze.length) {
+      setSentimentAnalytics({});
+      return;
+    }
+
     const analytics = {};
+    const chunkSize = 100;
 
-    await Promise.all(
-      productsToAnalyze.map(async (product) => {
-        try {
-          const response = await http.get(
-            buildUrl(COMMENT_ENDPOINTS.SENTIMENT_ANALYTICS, { product_id: product.id })
-          );
-          analytics[product.id] = response.data;
-        } catch (error) {
-          analytics[product.id] = DEFAULT_ANALYTICS;
+    try {
+      for (let index = 0; index < productsToAnalyze.length; index += chunkSize) {
+        const chunk = productsToAnalyze.slice(index, index + chunkSize);
+        const productIds = chunk.map((product) => product.id).filter(Boolean).join(',');
+        if (!productIds) continue;
+
+        const response = await http.get(COMMENT_ENDPOINTS.SENTIMENT_ANALYTICS_BULK, {
+          params: { product_ids: productIds },
+        });
+
+        (response.data || []).forEach((item) => {
+          analytics[item.product_id] = item;
+        });
+      }
+
+      productsToAnalyze.forEach((product) => {
+        if (product.id && !analytics[product.id]) {
+          analytics[product.id] = { ...DEFAULT_ANALYTICS, product_id: product.id };
         }
-      })
-    );
+      });
 
-    setSentimentAnalytics(analytics);
+      setSentimentAnalytics(analytics);
+    } catch (error) {
+      productsToAnalyze.forEach((product) => {
+        if (product.id) {
+          analytics[product.id] = { ...DEFAULT_ANALYTICS, product_id: product.id };
+        }
+      });
+      setSentimentAnalytics(analytics);
+    }
   }, []);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    fetchSentimentAnalytics(paginatedProducts);
+  }, [paginatedProducts, loading, fetchSentimentAnalytics]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+      const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN, {
+        params: { catalog_only: true },
+      });
       const fetchedProducts = response.data || [];
       setAllProducts(fetchedProducts);
-      await fetchSentimentAnalytics(fetchedProducts);
     } catch (error) {
       toast.error(tUi('ui.pages.admin.adminProducts.failedToFetchProducts_a8f46599c5'));
     } finally {
       setLoading(false);
     }
-  }, [fetchSentimentAnalytics]);
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -176,12 +225,13 @@ const AdminProducts = () => {
   };
 
   const getImagePreviewUrl = (imagePath) => {
-    if (!imagePath) return '';
+    if (!imagePath) return `${API_BASE_URL}/images/placeholder.jpg`;
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-    const normalizedPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    return `${API_BASE_URL}/${normalizedPath}`;
+    const normalized = imagePath.replace(/\\/g, '/').replace(/^\/+/, '');
+    const relative = normalized.startsWith('images/') ? normalized.slice('images/'.length) : normalized;
+    return `${API_BASE_URL}/media/thumb/${relative}?w=480&q=75`;
   };
 
   const getSentimentSummary = (productId) => {
@@ -195,9 +245,14 @@ const AdminProducts = () => {
     };
   };
 
-  const handleEdit = (product) => {
-    setEditingProduct(product);
-    setShowModal(true);
+  const handleEdit = async (product) => {
+    try {
+      const response = await http.get(buildUrl(PRODUCT_ENDPOINTS.BY_ID, { id: product.id }));
+      setEditingProduct(response.data);
+      setShowModal(true);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || error.message || 'Failed to load product');
+    }
   };
 
   const handleDelete = async (id) => {
@@ -215,6 +270,7 @@ const AdminProducts = () => {
     try {
       await http.delete(PRODUCT_ENDPOINTS.DELETE.replace('{id}', id));
       toast.success(tUi('ui.pages.admin.adminProducts.productDeletedSuccessfully_f5f852a577'));
+      invalidateProductCatalogCache();
       await fetchProducts();
     } catch (error) {
       toast.error(error.message || 'Failed to delete product');
@@ -260,14 +316,17 @@ const AdminProducts = () => {
     }
 
     const headers = ['Name', 'Category', 'Price', 'Discounted Price', 'Quantity', 'Discount Enabled'];
-    const rows = products.map((product) => [
-      `"${String(product.name || '').replaceAll('"', '""')}"`,
-      `"${String(product.category_name || '').replaceAll('"', '""')}"`,
+    const rows = products.map((product) => {
+      const localized = localizeProduct(product, languageCode);
+      return [
+      `"${String(localized.localized_name || '').replaceAll('"', '""')}"`,
+      `"${String(localized.localized_category_name || '').replaceAll('"', '""')}"`,
       product.price ?? '',
       calculateDiscountedPrice(product),
       product.quantity ?? '',
       product.discount_enabled ? 'Yes' : 'No'
-    ]);
+      ];
+    });
 
     const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -395,18 +454,17 @@ const AdminProducts = () => {
           ) : null}
         </div>
       ) : (
+        <>
         <div className="products-grid products-grid-dashboard">
-          {products.map((product, index) => {
+          {paginatedProducts.map((product) => {
+            const localized = localizeProduct(product, languageCode);
             const sentiment = getSentimentSummary(product.id);
             const discountedPrice = calculateDiscountedPrice(product);
 
             return (
-              <motion.article
+              <article
                 key={product.id}
-                className="admin-product-card admin-product-card-dashboard"
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04 }}>
+                className="admin-product-card admin-product-card-dashboard">
                 <div className="product-image product-image-dashboard">
                   <img
                     src={
@@ -414,7 +472,7 @@ const AdminProducts = () => {
                         ? getImagePreviewUrl(product.images[0])
                         : `${API_BASE_URL}/images/placeholder.jpg`
                     }
-                    alt={product.name}
+                    alt={localized.localized_name}
                     loading="lazy"
                     onError={(event) => {
                       event.currentTarget.src = `${API_BASE_URL}/images/placeholder.jpg`;
@@ -422,7 +480,7 @@ const AdminProducts = () => {
                   />
 
                   <div className="product-image-overlay">
-                    <span className="product-category-badge">{product.category_name}</span>
+                    <span className="product-category-badge">{localized.localized_category_name}</span>
                     {product.discount_enabled ? (
                       <span className="product-sale-badge">
                         {tUi('ui.pages.admin.adminProducts.discount_e4537e1136')}
@@ -433,7 +491,7 @@ const AdminProducts = () => {
 
                 <div className="product-info product-info-dashboard">
                   <div className="product-heading-row">
-                    <h3>{product.name}</h3>
+                    <h3>{localized.localized_name}</h3>
                   </div>
 
                   <div className="product-status-row product-status-row-dashboard">
@@ -534,10 +592,34 @@ const AdminProducts = () => {
                     {tUi('ui.pages.admin.adminProducts.delete_d93e34aa58')}
                   </button>
                 </div>
-              </motion.article>
+              </article>
             );
           })}
         </div>
+        {totalPages > 1 ? (
+          <div className="adm-products-pagination">
+            <button
+              type="button"
+              className="adm-btn-secondary"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
+              Previous
+            </button>
+            <span className="adm-products-pagination-label">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              className="adm-btn-secondary"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
+        </>
       )}
 
       <button
@@ -553,7 +635,10 @@ const AdminProducts = () => {
       <ProductFormModal
         isOpen={showModal}
         onClose={resetForm}
-        onSaved={fetchProducts}
+        onSaved={() => {
+          invalidateProductCatalogCache();
+          fetchProducts();
+        }}
         editingProduct={editingProduct}
         categories={categories}
         setCategories={setCategories}

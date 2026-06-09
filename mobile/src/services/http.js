@@ -182,7 +182,7 @@ http.interceptors.response.use(
       errorMessage = error.message || 'An error occurred';
     }
 
-    if (!isSilentAuth) {
+    if (!isSilentAuth && __DEV__) {
       console.error(
         `[API] ${requestMethod} ${requestUrl || 'unknown URL'} failed:`,
         error.response?.status || 'network',

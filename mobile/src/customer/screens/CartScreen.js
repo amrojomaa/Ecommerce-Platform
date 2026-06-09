@@ -32,7 +32,7 @@ const CartScreen = () => {
   const styles = useThemedStyles(createStyles);
   const tUi = useTUi();
   const { language } = useLanguage();
-  const { row, textAlign } = useRtlLayout();
+  const { row, textAlign, isRtl } = useRtlLayout();
   const { formatCurrency } = useCurrency();
   const {
     cartItems,
@@ -164,7 +164,7 @@ const CartScreen = () => {
             onPress={() => navigateIfAuthenticated(navigation, isAuthenticated, 'Checkout')}
           >
             <Text style={styles.checkoutBtnText}>{tUi('ui.pages.cart.proceedToCheckout_48e6337c2b')}</Text>
-            <Feather name="arrow-right" size={18} color="#fff" />
+            <Feather name={isRtl ? 'arrow-left' : 'arrow-right'} size={18} color="#fff" />
           </Pressable>
         </>
       )}

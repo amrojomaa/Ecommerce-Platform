@@ -27,7 +27,6 @@ const SupportManagerComments = () => {
   const [activeTab, setActiveTab] = useState('reported');
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sentimentFilter, setSentimentFilter] = useState('all');
   const [deleting, setDeleting] = useState(null);
   const [approving, setApproving] = useState(null);
   const confirm = useConfirm();
@@ -41,19 +40,13 @@ const SupportManagerComments = () => {
         is_reported: activeTab === 'reported' ? true : undefined,
       };
       const response = await http.get(COMMENT_ENDPOINTS.ALL, { params });
-      let data = response.data || [];
-
-      if (sentimentFilter !== 'all' && activeTab === 'all') {
-        data = data.filter((comment) => comment.sentiment === sentimentFilter);
-      }
-
-      setComments(data);
+      setComments(response.data || []);
     } catch (error) {
       toast.error(t('ui.pages.support_manager.comments.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [activeTab, sentimentFilter, t]);
+  }, [activeTab, t]);
 
   useEffect(() => {
     fetchComments();
@@ -101,7 +94,7 @@ const SupportManagerComments = () => {
   };
 
   const tabButtons = [
-    { id: 'reported', label: t('ui.pages.support_manager.comments.tab.reported') },
+    { id: 'reported', label: t('ui.pages.support_manager.comments.tab.reports') },
     { id: 'all', label: t('ui.pages.support_manager.comments.tab.all') },
   ];
 
@@ -120,10 +113,7 @@ const SupportManagerComments = () => {
                 role="tab"
                 aria-selected={activeTab === tab.id}
                 className={`spm-pill-tab${activeTab === tab.id ? ' is-active' : ''}`}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setSentimentFilter('all');
-                }}
+                onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
                 {activeTab === tab.id && (
@@ -138,22 +128,6 @@ const SupportManagerComments = () => {
       {activeTab === 'all' && (
         <section className="spm-cmt-section">
           <div className="spm-toolbar">
-            <div className="spm-toolbar-filters">
-              <label className="spm-cmt-filter-label" htmlFor="spm-cmt-sentiment">
-                {t('ui.pages.support_manager.comments.filter.sentiment')}
-              </label>
-              <select
-                id="spm-cmt-sentiment"
-                className="spm-select"
-                value={sentimentFilter}
-                onChange={(event) => setSentimentFilter(event.target.value)}
-              >
-                <option value="all">{tUi('ui.pages.admin.adminComments.all_a69a334f44')}</option>
-                <option value="positive">{tUi('ui.pages.admin.adminComments.positive_4bd9e10f4f')}</option>
-                <option value="neutral">{tUi('ui.pages.admin.adminComments.neutral_415b26d261')}</option>
-                <option value="negative">{tUi('ui.pages.admin.adminComments.negative_5bd4ee87d5')}</option>
-              </select>
-            </div>
             <p className="spm-cmt-count" aria-live="polite">
               <strong>{comments.length}</strong>{' '}
               {comments.length === 1

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdLanguage } from 'react-icons/md';
 import {
@@ -11,23 +11,92 @@ import '../styles/components/LanguageSwitcher.css';
 const LanguageSwitcher = ({ compact = false, icon = false, className = '' }) => {
   const { t, i18n } = useTranslation();
   const language = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef(null);
 
-  const handleLanguageChange = async (event) => {
-    const nextLanguage = normalizeLanguageCode(event.target.value);
+  const handleLanguageChange = async (nextLanguage) => {
+    const normalized = normalizeLanguageCode(nextLanguage);
     try {
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, normalized);
     } catch (error) {
       // Ignore localStorage errors in restricted browsing mode.
     }
-    await i18n.changeLanguage(nextLanguage);
+    await i18n.changeLanguage(normalized);
+    setMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+
+    const handleClickOutside = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside, true);
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [menuOpen]);
+
+  if (icon) {
+    return (
+      <div
+        ref={rootRef}
+        className={`language-switcher language-switcher--icon ${menuOpen ? 'is-open' : ''} ${className}`.trim()}
+      >
+        <button
+          type="button"
+          className="language-switcher-icon-btn"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={t('language.switcherAria')}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+        >
+          <MdLanguage className="language-switcher-icon" aria-hidden="true" />
+        </button>
+        {menuOpen ? (
+          <div className="language-switcher-menu" role="menu">
+            {SUPPORTED_LANGUAGES.map((code) => (
+              <button
+                key={code}
+                type="button"
+                role="menuitemradio"
+                aria-checked={language === code}
+                className={`language-switcher-option ${language === code ? 'is-active' : ''}`.trim()}
+                onClick={() => handleLanguageChange(code)}
+              >
+                {t(`language.option.${code}`)}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  const handleSelectChange = async (event) => {
+    await handleLanguageChange(event.target.value);
   };
 
   const selectElement = (
     <select
       value={language}
-      onChange={handleLanguageChange}
+      onChange={handleSelectChange}
       aria-label={t('language.switcherAria')}
-      className={`language-switcher-select ${icon ? 'language-switcher-select--icon' : ''}`.trim()}
+      className="language-switcher-select"
     >
       {SUPPORTED_LANGUAGES.map((code) => (
         <option key={code} value={code}>
@@ -36,17 +105,6 @@ const LanguageSwitcher = ({ compact = false, icon = false, className = '' }) => 
       ))}
     </select>
   );
-
-  if (icon) {
-    return (
-      <div className={`language-switcher language-switcher--icon ${className}`.trim()}>
-        <span className="language-switcher-icon-shell" aria-hidden="true">
-          <MdLanguage className="language-switcher-icon" />
-        </span>
-        {selectElement}
-      </div>
-    );
-  }
 
   return (
     <div className={`language-switcher ${compact ? 'compact' : ''} ${className}`.trim()}>

@@ -49,13 +49,13 @@ const SellerDashboard = () => {
         /* use default */
       }
 
-      const productsRes = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-      const products = productsRes.data || [];
-      const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < threshold);
-      const outOfStock = products.filter((p) => p.quantity === 0);
-      const discounted = products.filter((p) => p.discount_enabled);
+      const [statsRes, alertsRes] = await Promise.all([
+        http.get(PRODUCT_ENDPOINTS.ADMIN_STATS, { params: { threshold } }),
+        http.get(PRODUCT_ENDPOINTS.STOCK_ALERTS, { params: { threshold, limit: 8 } }),
+      ]);
+      const productStats = statsRes.data || {};
 
-      setLowStockItems(lowStock.slice(0, 8));
+      setLowStockItems(Array.isArray(alertsRes.data) ? alertsRes.data : []);
 
       let incomingOrders = 0;
       let preparingOrders = 0;
@@ -69,12 +69,12 @@ const SellerDashboard = () => {
       }
 
       setStats({
-        totalProducts: products.length,
-        discountedProducts: discounted.length,
+        totalProducts: productStats.total ?? 0,
+        discountedProducts: productStats.discounted ?? 0,
         incomingOrders,
         preparingOrders,
-        lowStockProducts: lowStock.length,
-        outOfStockProducts: outOfStock.length,
+        lowStockProducts: productStats.low_stock ?? 0,
+        outOfStockProducts: productStats.out_of_stock ?? 0,
       });
     } catch (error) {
       console.error('Error fetching seller dashboard data:', error);

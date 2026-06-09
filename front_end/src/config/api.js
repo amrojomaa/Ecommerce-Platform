@@ -20,6 +20,13 @@ export const AUTH_ENDPOINTS = {
 // Product endpoints
 export const PRODUCT_ENDPOINTS = {
   ALL: '/products/all',
+  CATALOG: '/products/catalog',
+  HOME_SUMMARY: '/products/home-summary',
+  HOME_FEATURED: '/products/home-featured',
+  HOME_DISCOUNTED: '/products/home-discounted',
+  ADMIN_STATS: '/products/admin-stats',
+  STOCK_ALERTS: '/products/stock-alerts',
+  OPTIONS: '/products/options',
   ALL_ADMIN: '/products/alladmin',
   BY_NAME: '/products/name/byuser',
   BY_ID: '/products/{id}',
@@ -184,6 +191,7 @@ export const COMMENT_ENDPOINTS = {
   REPORT: '/comments/{comment_id}/report',
   APPROVE: '/comments/{comment_id}/approve',
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics', // Admin only
+  SENTIMENT_ANALYTICS_BULK: '/comments/sentiment-analytics/bulk', // Admin only
   BACKFILL_SENTIMENT: '/comments/backfill-sentiment', // Admin only
 };
 

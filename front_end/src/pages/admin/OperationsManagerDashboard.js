@@ -13,6 +13,7 @@ import {
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
+import { REVENUE_ORDER_STATUSES } from '../../utils/orderStatuses';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/OperationsManagerDashboard.css';
 
@@ -42,7 +43,9 @@ const OperationsManagerDashboard = () => {
           : ordersResponse.data?.orders || [];
         totalOrders = ordersData.length;
         totalRevenue = ordersData
-          .filter((order) => ['paid', 'shipped', 'delivered'].includes(order.status))
+          .filter((order) =>
+            REVENUE_ORDER_STATUSES.includes(String(order.status || '').toLowerCase())
+          )
           .reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
       } catch (error) {
         console.error('Error fetching orders:', error);

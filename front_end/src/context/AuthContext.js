@@ -26,6 +26,8 @@ export const AuthProvider = ({ children }) => {
   const [isExtendingSession, setIsExtendingSession] = useState(false);
   const lastObservedTokenRef = useRef(null);
   const sessionExpiryHandledRef = useRef(false);
+  const sessionWarningOpenRef = useRef(false);
+  const sessionCountdownRef = useRef(SESSION_WARNING_SECONDS);
 
   const clearLocalAuthState = useCallback(() => {
     localStorage.removeItem('token');
@@ -270,6 +272,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      sessionWarningOpenRef.current = false;
+      sessionCountdownRef.current = SESSION_WARNING_SECONDS;
       setSessionWarningOpen(false);
       setSessionCountdown(SESSION_WARNING_SECONDS);
       lastObservedTokenRef.current = null;
@@ -286,6 +290,8 @@ export const AuthProvider = ({ children }) => {
       if (lastObservedTokenRef.current !== token) {
         lastObservedTokenRef.current = token;
         sessionExpiryHandledRef.current = false;
+        sessionWarningOpenRef.current = false;
+        sessionCountdownRef.current = SESSION_WARNING_SECONDS;
         setSessionWarningOpen(false);
         setSessionCountdown(SESSION_WARNING_SECONDS);
       }
@@ -305,9 +311,20 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (secondsRemaining <= SESSION_WARNING_SECONDS) {
-        setSessionWarningOpen(true);
-        setSessionCountdown(secondsRemaining);
-      } else {
+        if (!sessionWarningOpenRef.current) {
+          sessionWarningOpenRef.current = true;
+          setSessionWarningOpen(true);
+        }
+        if (sessionCountdownRef.current !== secondsRemaining) {
+          sessionCountdownRef.current = secondsRemaining;
+          setSessionCountdown(secondsRemaining);
+        }
+        return;
+      }
+
+      if (sessionWarningOpenRef.current) {
+        sessionWarningOpenRef.current = false;
+        sessionCountdownRef.current = SESSION_WARNING_SECONDS;
         setSessionWarningOpen(false);
         setSessionCountdown(SESSION_WARNING_SECONDS);
       }
@@ -380,9 +397,12 @@ export const AuthProvider = ({ children }) => {
             }));
           }
 
-          // Always update user state to reflect any changes
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+          const serializedUser = JSON.stringify(updatedUser);
+          const storedUser = localStorage.getItem('user');
+          if (serializedUser !== storedUser) {
+            setUser(updatedUser);
+            localStorage.setItem('user', serializedUser);
+          }
         }
       } catch (error) {
         // If we get a 401, the session was invalidated (user logged in elsewhere)

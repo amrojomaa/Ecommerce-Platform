@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { useCart } from '../hooks/useCart';
 import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
-import { getImageUrl } from '../utils/helpers';
+import { getCatalogImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageHeader from '../components/PageHeader';
 import { useTranslation } from 'react-i18next';
@@ -171,13 +171,13 @@ const Cart = () => {
                       <img
                         src={
                           item.product?.images?.length
-                            ? getImageUrl(item.product.images[0])
-                            : getImageUrl('/images/placeholder.jpg')
+                            ? getCatalogImageUrl(item.product.images[0])
+                            : getCatalogImageUrl('/images/placeholder.jpg')
                         }
                         alt={productName}
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                          e.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
                         }}
                       />
                     </Link>

@@ -10,6 +10,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useConfirm } from '../../hooks/useConfirm';
 import { localizeCategoryDescription, localizeCategoryName } from '../../utils/localizedContent';
+import { getCategoryIconComponent } from '../../utils/categoryIcons';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminCategories.css';
 
@@ -217,7 +218,9 @@ const AdminCategories = () => {
         ) : (
           <div className="adm-cat-list">
             {filteredCategories.map((category, index) => {
+              const localizedName = localizeCategoryName(category, languageCode);
               const localizedDescription = localizeCategoryDescription(category, languageCode);
+              const CategoryIcon = getCategoryIconComponent(category, index, localizedName);
               return (
               <motion.article
                 key={category.id}
@@ -227,11 +230,11 @@ const AdminCategories = () => {
                 transition={{ delay: index * 0.03 }}
               >
                 <div className="adm-cat-card-icon" aria-hidden>
-                  <FaTag />
+                  <CategoryIcon />
                 </div>
                 <div className="adm-cat-card-body">
                   <div className="adm-cat-card-top">
-                    <h3>{localizeCategoryName(category, languageCode)}</h3>
+                    <h3>{localizedName}</h3>
                   </div>
                   {localizedDescription ? (
                     <p className="adm-cat-card-desc">{localizedDescription}</p>

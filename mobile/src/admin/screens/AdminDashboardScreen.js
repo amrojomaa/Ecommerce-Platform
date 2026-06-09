@@ -25,6 +25,7 @@ import {
 } from '../../config/api';
 import { useCurrency } from '../../hooks/useCurrency';
 import { usePanelRole } from '../hooks/usePanelRole';
+import { filterOrdersByStatus } from '../../utils/orderStatuses';
 
 const AdminDashboardScreen = () => {
   const { colors, shadow, isDark } = useTheme();
@@ -94,9 +95,10 @@ const AdminDashboardScreen = () => {
             ? ordersResponse.data
             : ordersResponse.data?.orders || [];
           totalOrders = ordersData.length;
-          totalRevenue = ordersData
-            .filter((order) => ['paid', 'shipped', 'delivered'].includes(order.status))
-            .reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0);
+          totalRevenue = filterOrdersByStatus(ordersData, 'revenue').reduce(
+            (sum, order) => sum + (parseFloat(order.total_amount) || 0),
+            0
+          );
         } catch (_) {}
 
         let activeDeliveries = 0;

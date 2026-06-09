@@ -113,10 +113,20 @@ const AdminDrawerContent = (props) => {
       <DrawerItemList {...props} />
       <AdminDrawerControls />
       <DrawerItem
-        label={tUi('ui.mobile.nav.logout')}
+        label={({ color, focused }) => (
+          <Text
+            style={{
+              color,
+              fontWeight: focused ? '700' : '500',
+              fontSize: 14,
+              textAlign: isRtl ? 'right' : 'left',
+            }}
+          >
+            {tUi('ui.mobile.nav.logout')}
+          </Text>
+        )}
         icon={({ color, size }) => <Feather name="log-out" size={size} color={color} />}
         onPress={() => logout()}
-        labelStyle={{ color: colors.text }}
       />
     </DrawerContentScrollView>
   );

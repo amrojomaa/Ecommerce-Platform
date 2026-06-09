@@ -1,19 +1,27 @@
 from typing import List
 from fastapi import HTTPException, status, Depends
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from .. import models, schemas
 from .. import OAuth2
 from .products import get_ratings_summary_by_product_ids
 
 
-def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem, ratings_map: dict | None = None) -> dict:
-    """Helper function to convert DBWishlistItem to dict with product images"""
+def get_wishlist_item_with_images(
+    wishlist_item: models.DBWishlistItem,
+    ratings_map: dict | None = None,
+    *,
+    catalog_only: bool = False,
+) -> dict:
+    """Helper function to convert DBWishlistItem to dict with product images."""
     original_price = float(wishlist_item.product.price)
     discounted_price = float(wishlist_item.product.final_price)
     has_discount = discounted_price < original_price
     rating_summary = (ratings_map or {}).get(wishlist_item.product.id, {})
+    image_paths = [img.image_path for img in wishlist_item.product.images]
+    if catalog_only:
+        image_paths = image_paths[:1]
     return {
         "id": wishlist_item.id,
         "product_id": wishlist_item.product_id,
@@ -30,14 +38,25 @@ def get_wishlist_item_with_images(wishlist_item: models.DBWishlistItem, ratings_
             "category_name": wishlist_item.product.category_name,
             "category_name_ar": wishlist_item.product.category.name_ar if wishlist_item.product.category else None,
             "category_name_fr": wishlist_item.product.category.name_fr if wishlist_item.product.category else None,
-            "description": wishlist_item.product.description,
-            "description_ar": wishlist_item.product.description_ar,
-            "description_fr": wishlist_item.product.description_fr,
-            "images": [img.image_path for img in wishlist_item.product.images],
+            "description": "" if catalog_only else wishlist_item.product.description,
+            "description_ar": None if catalog_only else wishlist_item.product.description_ar,
+            "description_fr": None if catalog_only else wishlist_item.product.description_fr,
+            "images": image_paths,
             "average_rating": float(rating_summary.get("average_rating", 0.0)),
             "total_ratings": int(rating_summary.get("total_ratings", 0)),
         }
     }
+
+
+def _wishlist_with_items_query(db: Session):
+    return db.query(models.DBWishlist).options(
+        joinedload(models.DBWishlist.items)
+        .joinedload(models.DBWishlistItem.product)
+        .joinedload(models.DBProduct.images),
+        joinedload(models.DBWishlist.items)
+        .joinedload(models.DBWishlistItem.product)
+        .joinedload(models.DBProduct.category),
+    )
 
 
 router = APIRouter(
@@ -85,7 +104,11 @@ def add_to_wishlist(request: schemas.AddWishlist, db: Session = Depends(get_db),
 def show_me_wishlist(db: Session = Depends(get_db), 
                      current_user: schemas.User = Depends(OAuth2.get_current_user)):
 
-    wishlist = db.query(models.DBWishlist).filter(models.DBWishlist.user_id == current_user.id).first()
+    wishlist = (
+        _wishlist_with_items_query(db)
+        .filter(models.DBWishlist.user_id == current_user.id)
+        .first()
+    )
     if not wishlist:
         return {
             "items": []
@@ -96,10 +119,12 @@ def show_me_wishlist(db: Session = Depends(get_db),
             "items": []
         }
 
-    # Convert wishlist items to include product images
     product_ids = [item.product_id for item in wishlist.items]
     ratings_map = get_ratings_summary_by_product_ids(db, product_ids)
-    wishlist_items = [get_wishlist_item_with_images(item, ratings_map) for item in wishlist.items]
+    wishlist_items = [
+        get_wishlist_item_with_images(item, ratings_map, catalog_only=True)
+        for item in wishlist.items
+    ]
 
     return {
         "items": wishlist_items

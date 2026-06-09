@@ -1,11 +1,11 @@
-﻿import { tUi } from "../i18n/uiText";
+import { tUi } from "../i18n/uiText";
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import http from '../services/http';
 import { COMMENT_ENDPOINTS, buildUrl } from '../config/api';
 import API_BASE_URL from '../config/api';
 import { useAuth } from '../hooks/useAuth';
-import { FaEdit, FaPen, FaRegCommentDots, FaStar, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaFlag, FaPen, FaRegCommentDots, FaStar, FaTimes, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { useConfirm } from '../hooks/useConfirm';
 import { formatDate as formatLocalizedDate, getCurrentLocale } from '../utils/helpers';
@@ -21,6 +21,7 @@ const CommentSection = ({ productId, variant = 'default', onReviewsChanged }) =>
   const [sortOrder, setSortOrder] = useState('newest');
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState(null);
+  const [reportingCommentId, setReportingCommentId] = useState(null);
   const confirm = useConfirm();
 
   useEffect(() => {
@@ -60,6 +61,38 @@ const CommentSection = ({ productId, variant = 'default', onReviewsChanged }) =>
   const canManageComment = (comment) => {
     if (!isAuthenticated || !user) return false;
     return comment.user.id === user.id || (user.role && ['admin', 'support_manager'].includes(user.role));
+  };
+
+  const canReportComment = (comment) => {
+    if (!isAuthenticated || !user) return false;
+    if (comment.user.id === user.id) return false;
+    if (user.role && ['admin', 'support_manager'].includes(user.role)) return false;
+    return true;
+  };
+
+  const handleReportComment = async (commentId) => {
+    const confirmed = await confirm({
+      title: tUi('ui.components.commentSection.reportCommentTitle_p2q3r4s5t6'),
+      message: tUi('ui.components.commentSection.reportCommentMessage_u7v8w9x0y1'),
+      confirmText: tUi('ui.components.commentSection.reportCommentAction_z2a3b4c5d6'),
+      cancelText: tUi('ui.components.commentSection.cancel_9d88d47afa'),
+    });
+    if (!confirmed) return;
+
+    setReportingCommentId(commentId);
+    try {
+      await http.patch(buildUrl(COMMENT_ENDPOINTS.REPORT, { comment_id: commentId }));
+      toast.success(tUi('ui.components.commentSection.reportCommentSuccess_e7f8g9h0i1'));
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      toast.error(
+        typeof detail === 'string'
+          ? detail
+          : tUi('ui.components.commentSection.reportCommentFailed_j2k3l4m5n6')
+      );
+    } finally {
+      setReportingCommentId(null);
+    }
   };
 
   const openComposerForNew = () => {
@@ -351,22 +384,39 @@ const CommentSection = ({ productId, variant = 'default', onReviewsChanged }) =>
                 }
               </div>
 
-              {canManageComment(comment) &&
               <div className="comment-actions">
+                {canReportComment(comment) && (
                   <button
-                  className="comment-edit-btn"
-                  onClick={() => handleStartEdit(comment)}
-                  title={tUi("ui.components.commentSection.editComment_198a1f6826")}>
-                    <FaEdit />
+                    type="button"
+                    className="comment-report-btn"
+                    onClick={() => handleReportComment(comment.id)}
+                    disabled={reportingCommentId === comment.id}
+                    title={tUi('ui.components.commentSection.reportCommentAction_z2a3b4c5d6')}
+                  >
+                    <FaFlag />
                   </button>
-                  <button
-                  className="comment-delete-btn"
-                  onClick={() => handleDeleteComment(comment.id)}
-                  title={tUi("ui.components.commentSection.deleteComment_dc055a305c")}>
-                    <FaTrash />
-                  </button>
-                </div>
-              }
+                )}
+                {canManageComment(comment) && (
+                  <>
+                    <button
+                      type="button"
+                      className="comment-edit-btn"
+                      onClick={() => handleStartEdit(comment)}
+                      title={tUi('ui.components.commentSection.editComment_198a1f6826')}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      type="button"
+                      className="comment-delete-btn"
+                      onClick={() => handleDeleteComment(comment.id)}
+                      title={tUi('ui.components.commentSection.deleteComment_dc055a305c')}
+                    >
+                      <FaTrash />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="comment-content">
               {comment.content}

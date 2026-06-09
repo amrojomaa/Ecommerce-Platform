@@ -78,9 +78,6 @@ def realtime_recommendations(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No catalogue data")
     uid = _user_id(current_user)
     ranked, meta = re.recommend_hybrid_for_user(db, uid, limit, re.REALTIME_PARAMS)
-    if not ranked and meta.get("strategy") == "empty_no_interactions":
-        ranked, meta = re.recommend_hybrid_for_user(db, uid, limit, re.BATCH_PARAMS)
-        meta = {**meta, "realtime_fallback": "batch_window"}
     return _to_envelope_list(db, ranked)
 
 

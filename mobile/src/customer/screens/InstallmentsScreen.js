@@ -51,12 +51,16 @@ const InstallmentsScreen = () => {
     try {
       const response = await http.get(INSTALLMENT_ENDPOINTS.MY_REQUESTS);
       setRequests(response.data || []);
-    } catch (_) {
+    } catch (error) {
       setRequests([]);
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.installments.failedToFetchRequests_b4e8c2d3f3'),
+      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tUi]);
 
   const fetchEligibleOrders = useCallback(async () => {
     try {
@@ -68,10 +72,14 @@ const InstallmentsScreen = () => {
       if (!selectedOrderId && eligible.length) {
         setSelectedOrderId(eligible[0].id);
       }
-    } catch (_) {
+    } catch (error) {
       setOrders([]);
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.installments.failedToFetchOrders_b4e8c2d3f4'),
+      });
     }
-  }, [selectedOrderId]);
+  }, [selectedOrderId, tUi]);
 
   useEffect(() => {
     fetchRequests();
@@ -122,7 +130,10 @@ const InstallmentsScreen = () => {
       formData.append('use_down_payment', 'false');
       if (userNote.trim()) formData.append('user_note', userNote.trim());
       if (!(user?.phone || '').trim()) {
-        Toast.show({ type: 'error', text1: 'Phone required on profile before submitting' });
+        Toast.show({
+          type: 'error',
+          text1: tUi('ui.pages.installments.pleaseAddYourPhoneNumber_a88335d685'),
+        });
         setSubmitting(false);
         return;
       }
@@ -160,7 +171,7 @@ const InstallmentsScreen = () => {
     if (!confirmed) return;
     try {
       await http.patch(buildUrl(INSTALLMENT_ENDPOINTS.MY_CANCEL, { request_id: requestId }));
-      Toast.show({ type: 'success', text1: tUi('ui.pages.installments.requestCancelled_b4e8c2d3f1') || 'Cancelled' });
+      Toast.show({ type: 'success', text1: tUi('ui.pages.installments.installmentRequestCancelled_348c4c2825') });
       fetchRequests();
     } catch (error) {
       Toast.show({ type: 'error', text1: error.response?.data?.detail || error.message });
@@ -180,11 +191,13 @@ const InstallmentsScreen = () => {
     <CustomerScreen
       showBack
       title={tUi('ui.mobile.customer.account.installments')}
-      subtitle={tUi('ui.pages.installments.subtitle_b4e8c2d3ec') || 'Request flexible payment plans'}
+      subtitle={tUi('ui.pages.installments.requestAPlanUploadYour_362dac0d89')}
       action={
         <Pressable onPress={() => setShowCreate((v) => !v)}>
           <Text style={{ color: colors.primary, fontWeight: '700' }}>
-            {showCreate ? tUi('ui.pages.recommendations.cancel_5a0d97a8e1') : tUi('ui.pages.installments.newRequest_b4e8c2d3ed') || 'New request'}
+            {showCreate
+              ? tUi('ui.pages.recommendations.cancel_5a0d97a8e1')
+              : tUi('ui.pages.installments.newInstallmentRequest_d768e2332d')}
           </Text>
         </Pressable>
       }

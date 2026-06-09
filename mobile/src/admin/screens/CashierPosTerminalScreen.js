@@ -31,8 +31,8 @@ const CashierPosTerminalScreen = () => {
   const tUi = useTUi();
   const { formatCurrency } = useCurrency();
   const { language } = useLanguage();
-  const { isRtl, textAlign, row } = useRtlLayout();
-  const inputRtlStyle = { textAlign, writingDirection: isRtl ? 'rtl' : 'ltr' };
+  const { isRtl, textAlign, row, writingDirection } = useRtlLayout();
+  const inputRtlStyle = { textAlign, writingDirection };
 
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -357,31 +357,45 @@ const CashierPosTerminalScreen = () => {
 
           <ScrollView
             horizontal
-            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator
+            direction={isRtl ? 'rtl' : 'ltr'}
             style={styles.categoryScroll}
-            contentContainerStyle={styles.categoryRow}
+            contentContainerStyle={[styles.categoryRow, { flexDirection: row }]}
           >
-            <Pressable
-              style={[styles.categoryChip, category === '' && styles.categoryChipActive]}
-              onPress={() => setCategory('')}
-            >
-              <Text style={[styles.categoryChipText, category === '' && styles.categoryChipTextActive]}>
-                {tUi('ui.pages.cashier.posTerminal.allCategories_0c74d6af15')}
-              </Text>
-            </Pressable>
-            {allCategories.map((cat) => (
+            <View style={styles.categoryChipWrap}>
               <Pressable
-                key={cat.id}
-                style={[styles.categoryChip, category === cat.name && styles.categoryChipActive]}
-                onPress={() => setCategory(cat.name)}
+                style={[styles.categoryChip, category === '' && styles.categoryChipActive]}
+                onPress={() => setCategory('')}
               >
                 <Text
-                  style={[styles.categoryChipText, category === cat.name && styles.categoryChipTextActive]}
-                  numberOfLines={1}
+                  style={[
+                    styles.categoryChipText,
+                    category === '' && styles.categoryChipTextActive,
+                    { writingDirection },
+                  ]}
                 >
-                  {localizeCategoryName(cat, language)}
+                  {tUi('ui.pages.cashier.posTerminal.allCategories_0c74d6af15')}
                 </Text>
               </Pressable>
+            </View>
+            {allCategories.map((cat) => (
+              <View key={cat.id} style={styles.categoryChipWrap}>
+                <Pressable
+                  style={[styles.categoryChip, category === cat.name && styles.categoryChipActive]}
+                  onPress={() => setCategory(cat.name)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      category === cat.name && styles.categoryChipTextActive,
+                      { writingDirection },
+                    ]}
+                  >
+                    {localizeCategoryName(cat, language)}
+                  </Text>
+                </Pressable>
+              </View>
             ))}
           </ScrollView>
 
@@ -640,15 +654,24 @@ const createStyles = ({ colors, shadow, isDark }) =>
       color: colors.text,
     },
     categoryScroll: {
-      maxHeight: 44,
+      flexGrow: 0,
+      flexShrink: 0,
       marginBottom: 8,
+      minHeight: 38,
     },
     categoryRow: {
-      gap: 8,
+      alignItems: 'center',
       paddingBottom: 4,
     },
+    categoryChipWrap: {
+      flexShrink: 0,
+      flexGrow: 0,
+      marginEnd: 8,
+    },
     categoryChip: {
-      paddingHorizontal: 12,
+      flexShrink: 0,
+      flexGrow: 0,
+      paddingHorizontal: 14,
       paddingVertical: 8,
       borderRadius: 999,
       borderWidth: 1,
@@ -663,6 +686,9 @@ const createStyles = ({ colors, shadow, isDark }) =>
       fontSize: 12,
       fontWeight: '600',
       color: colors.text,
+      flexShrink: 0,
+      includeFontPadding: false,
+      textAlign: 'center',
     },
     categoryChipTextActive: {
       color: '#fff',

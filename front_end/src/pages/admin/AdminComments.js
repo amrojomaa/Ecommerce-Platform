@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { FaStar } from 'react-icons/fa';
+import { FiCheck, FiFlag } from 'react-icons/fi';
 import http from '../../services/http';
 import { COMMENT_ENDPOINTS, PRODUCT_ENDPOINTS, RATING_ENDPOINTS, buildUrl } from '../../config/api';
 import API_BASE_URL from '../../config/api';
-import { formatDate, getImageUrl } from '../../utils/helpers';
+import { formatDate, getCatalogImageUrl } from '../../utils/helpers';
 import { localizeProduct } from '../../utils/localizedContent';
 import { normalizeLanguageCode } from '../../i18n/constants';
 import { tUi } from '../../i18n/uiText';
@@ -41,6 +42,10 @@ const AdminComments = () => {
   const [ratingSummary, setRatingSummary] = useState(null);
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [deleting, setDeleting] = useState(null);
+  const [approving, setApproving] = useState(null);
+  const [pageView, setPageView] = useState('catalog');
+  const [reportedComments, setReportedComments] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
   const confirm = useConfirm();
   const { user } = useAuth();
   const { formatCurrency } = useCurrency();
@@ -50,6 +55,11 @@ const AdminComments = () => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role]);
+
+  useEffect(() => {
+    fetchReportedComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (selectedProductId) {
@@ -73,7 +83,9 @@ const AdminComments = () => {
     try {
       const productsEndpoint =
         user?.role === 'support_manager' ? PRODUCT_ENDPOINTS.ALL : PRODUCT_ENDPOINTS.ALL_ADMIN;
-      const response = await http.get(productsEndpoint);
+      const response = await http.get(productsEndpoint, {
+        params: { catalog_only: true },
+      });
       setProducts(response.data || []);
 
       if (productId) {
@@ -137,6 +149,35 @@ const AdminComments = () => {
     }
   };
 
+  const fetchReportedComments = async () => {
+    setReportsLoading(true);
+    try {
+      const response = await http.get(COMMENT_ENDPOINTS.ALL, {
+        params: { skip: 0, limit: 200, is_reported: true },
+      });
+      setReportedComments(response.data || []);
+    } catch (error) {
+      console.error('Error fetching reported comments:', error);
+      toast.error(tUi('ui.pages.admin.adminComments.failedToFetchComments_a09ce4627e'));
+      setReportedComments([]);
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const handleApprove = async (commentId) => {
+    setApproving(commentId);
+    try {
+      await http.patch(buildUrl(COMMENT_ENDPOINTS.APPROVE, { comment_id: commentId }));
+      toast.success(tUi('ui.pages.support_manager.comments.approveSuccess'));
+      await fetchReportedComments();
+    } catch (error) {
+      toast.error(tUi('ui.pages.support_manager.comments.approveFailed'));
+    } finally {
+      setApproving(null);
+    }
+  };
+
   const handleDelete = async (commentId) => {
     const confirmed = await confirm({
       title: tUi('ui.pages.admin.adminComments.deleteComment_d6666490e7'),
@@ -156,6 +197,9 @@ const AdminComments = () => {
         await fetchComments();
         await fetchRatingSummary(selectedProductId);
         await fetchProducts();
+      }
+      if (pageView === 'reports') {
+        await fetchReportedComments();
       }
     } catch (error) {
       toast.error(tUi('ui.pages.admin.adminComments.failedToDeleteComment_1a364f7e19'));
@@ -271,8 +315,8 @@ const AdminComments = () => {
     const localized = localizeProduct(product, languageCode);
     const imageSrc =
       product.images && product.images.length > 0
-        ? getImageUrl(product.images[0])
-        : getImageUrl('/images/placeholder.jpg');
+        ? getCatalogImageUrl(product.images[0])
+        : getCatalogImageUrl('/images/placeholder.jpg');
     const isSelected = selectedProductId === product.id;
     const cardClassName = `adm-reviews-card ${isSelected ? 'is-selected' : ''} ${
       readonly ? 'is-readonly' : ''
@@ -285,9 +329,10 @@ const AdminComments = () => {
           <img
             src={imageSrc}
             alt={localized.localized_name}
+            loading="lazy"
             onError={(event) => {
               event.currentTarget.onerror = null;
-              event.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+              event.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
             }}
           />
         </div>
@@ -323,12 +368,9 @@ const AdminComments = () => {
     );
 
     return (
-      <motion.div
+      <div
         key={product.id}
         className="adm-reviews-card-wrapper"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.03, duration: 0.35 }}
       >
         {readonly ? (
           <div className={cardClassName} aria-current={isSelected ? 'true' : undefined}>
@@ -344,9 +386,132 @@ const AdminComments = () => {
             {cardInner}
           </button>
         )}
-      </motion.div>
+      </div>
     );
   };
+
+  const renderReportedCommentCard = (comment, index) => (
+    <motion.div
+      key={comment.id}
+      className="comment-card is-reported"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <div className="comment-header">
+        <div className="comment-user">
+          {comment.user?.profile_image ? (
+            <img
+              src={getProfileImageUrl(comment.user.profile_image)}
+              alt={comment.user.first_name}
+              className="user-avatar"
+              onError={(event) => {
+                if (event.target.src !== defaultProfileImage) {
+                  event.target.src = defaultProfileImage;
+                }
+              }}
+            />
+          ) : (
+            <div className="user-avatar-placeholder">
+              {comment.user?.first_name?.[0] || 'U'}
+            </div>
+          )}
+          <div className="user-info">
+            <p className="user-name">
+              {comment.user?.first_name} {comment.user?.last_name}
+            </p>
+            <p className="comment-date">{formatDate(comment.created_at)}</p>
+          </div>
+        </div>
+        <div className="comment-actions">
+          <span className="adm-reviews-report-badge">
+            <FiFlag aria-hidden />
+            {tUi('ui.pages.support_manager.comments.reported')}
+          </span>
+          {comment.rating ? (
+            <span className="review-rating-badge">
+              <span className="review-rating-stars">{renderStars(comment.rating)}</span>
+              <strong>{comment.rating}/5</strong>
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <div className="comment-content">
+        <p>{comment.content}</p>
+        {comment.product_id ? (
+          <p className="adm-reviews-report-product">
+            {tUi('ui.pages.admin.adminComments.reportedForProduct_a7b8c9d0e1', {
+              value0: comment.product_id,
+            })}
+          </p>
+        ) : null}
+      </div>
+      <div className="adm-reviews-report-actions">
+        <button
+          type="button"
+          className="adm-btn-secondary adm-reviews-approve-btn"
+          onClick={() => handleApprove(comment.id)}
+          disabled={approving === comment.id}
+        >
+          {approving === comment.id ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            <>
+              <FiCheck aria-hidden />
+              {tUi('ui.pages.support_manager.comments.approve')}
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          className="delete-comment-btn adm-reviews-delete-btn"
+          onClick={() => handleDelete(comment.id)}
+          disabled={deleting === comment.id}
+        >
+          {deleting === comment.id ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            tUi('ui.pages.admin.adminComments.delete_66f5dde37d')
+          )}
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  const renderReportsPanel = () => (
+    <section className="adm-reviews-reports-panel">
+      <div className="adm-reviews-detail-header">
+        <div>
+          <span className="adm-reviews-detail-kicker">
+            {tUi('ui.pages.support_manager.comments.tab.reports')}
+          </span>
+          <h2 className="adm-reviews-detail-title">
+            {tUi('ui.pages.admin.adminComments.reportedReviewsTitle_f2g3h4i5j6')}
+          </h2>
+        </div>
+        <p className="adm-reviews-count" aria-live="polite">
+          {reportedComments.length}{' '}
+          {reportedComments.length === 1
+            ? tUi('ui.pages.support_manager.comments.commentSingular')
+            : tUi('ui.pages.support_manager.comments.commentPlural')}
+        </p>
+      </div>
+
+      {reportsLoading ? (
+        <div className="page-loading loading-container">
+          <LoadingSpinner />
+        </div>
+      ) : reportedComments.length === 0 ? (
+        <div className="no-comments">
+          <p>{tUi('ui.pages.admin.adminComments.noReportedReviews_k7l8m9n0o1')}</p>
+        </div>
+      ) : (
+        <div className="comments-list">
+          {reportedComments.map((comment, index) => renderReportedCommentCard(comment, index))}
+        </div>
+      )}
+    </section>
+  );
 
   const renderReviewsPanel = () => (
     <>
@@ -528,42 +693,72 @@ const AdminComments = () => {
         title={manageReviewsTitle}
         subtitle={tUi('ui.pages.admin.adminComments.subtitle_b4e8c1d2f3')}
         actions={
-          <div className="adm-reviews-header-filters">
-            <div className="adm-reviews-header-filter">
-              <label htmlFor="adm-reviews-search">
-                {tUi('ui.pages.admin.adminComments.searchProduct_e0487af2dc')}
-              </label>
-              <input
-                id="adm-reviews-search"
-                type="text"
-                value={productSearch}
-                onChange={(event) => setProductSearch(event.target.value)}
-                placeholder={tUi('ui.pages.admin.adminComments.searchByProductName_7e4227491a')}
-              />
-            </div>
-            <div className="adm-reviews-header-filter">
-              <label htmlFor="adm-reviews-category">
-                {tUi('ui.pages.products.category_a6c5fd855e')}
-              </label>
-              <select
-                id="adm-reviews-category"
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
+          <div className="adm-reviews-header-actions">
+            <div className="adm-reviews-view-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                className={`adm-reviews-view-tab${pageView === 'catalog' ? ' is-active' : ''}`}
+                aria-selected={pageView === 'catalog'}
+                onClick={() => setPageView('catalog')}
               >
-                <option value="">{tUi('ui.pages.products.allCategories_9fd1de45e8')}</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {getCategoryLabel(category)}
-                  </option>
-                ))}
-              </select>
+                {tUi('ui.pages.admin.adminComments.productCatalog_a2b3c4d5e6')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`adm-reviews-view-tab${pageView === 'reports' ? ' is-active' : ''}`}
+                aria-selected={pageView === 'reports'}
+                onClick={() => {
+                  setPageView('reports');
+                  handleClearProduct();
+                }}
+              >
+                {tUi('ui.pages.support_manager.comments.tab.reports')}
+                {reportedComments.length > 0 ? ` (${reportedComments.length})` : ''}
+              </button>
             </div>
+            {pageView === 'catalog' ? (
+              <div className="adm-reviews-header-filters">
+                <div className="adm-reviews-header-filter">
+                  <label htmlFor="adm-reviews-search">
+                    {tUi('ui.pages.admin.adminComments.searchProduct_e0487af2dc')}
+                  </label>
+                  <input
+                    id="adm-reviews-search"
+                    type="text"
+                    value={productSearch}
+                    onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder={tUi('ui.pages.admin.adminComments.searchByProductName_7e4227491a')}
+                  />
+                </div>
+                <div className="adm-reviews-header-filter">
+                  <label htmlFor="adm-reviews-category">
+                    {tUi('ui.pages.products.category_a6c5fd855e')}
+                  </label>
+                  <select
+                    id="adm-reviews-category"
+                    value={categoryFilter}
+                    onChange={(event) => setCategoryFilter(event.target.value)}
+                  >
+                    <option value="">{tUi('ui.pages.products.allCategories_9fd1de45e8')}</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {getCategoryLabel(category)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ) : null}
           </div>
         }
       />
 
       <main className="adm-reviews-main">
-        {selectedProduct ? (
+        {pageView === 'reports' ? (
+          renderReportsPanel()
+        ) : selectedProduct ? (
           <div className="adm-reviews-split">
             <aside className="adm-reviews-product-panel" aria-label={selectedLocalizedProduct?.localized_name}>
               <div className="adm-reviews-selected-slot">

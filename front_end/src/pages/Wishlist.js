@@ -9,7 +9,7 @@ import { useConfirm } from '../hooks/useConfirm';
 import { useCurrency } from '../hooks/useCurrency';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../hooks/useCart';
-import { getImageUrl } from '../utils/helpers';
+import { getCatalogImageUrl } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageHeader from '../components/PageHeader';
 import StarRating from '../components/StarRating';
@@ -184,13 +184,13 @@ const Wishlist = () => {
                       <img
                         src={
                           product.images?.length
-                            ? getImageUrl(product.images[0])
-                            : getImageUrl('/images/placeholder.jpg')
+                            ? getCatalogImageUrl(product.images[0])
+                            : getCatalogImageUrl('/images/placeholder.jpg')
                         }
                         alt={localized.localized_name}
                         onError={(e) => {
                           e.currentTarget.onerror = null;
-                          e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                          e.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
                         }}
                       />
                       <button
@@ -219,7 +219,7 @@ const Wishlist = () => {
                             size="small"
                             initialAverageRating={product.average_rating}
                             initialTotalRatings={product.total_ratings}
-                            fetchOnMount
+                            fetchOnMount={false}
                           />
                         </div>
                       )}

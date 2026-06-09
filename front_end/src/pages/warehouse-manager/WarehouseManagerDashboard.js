@@ -40,24 +40,23 @@ const WarehouseManagerDashboard = () => {
         /* use default */
       }
 
-      const [productsRes, packedRes, issuesRes] = await Promise.all([
-        http.get(PRODUCT_ENDPOINTS.ALL_ADMIN),
+      const [statsRes, alertsRes, packedRes, issuesRes] = await Promise.all([
+        http.get(PRODUCT_ENDPOINTS.ADMIN_STATS, { params: { threshold } }),
+        http.get(PRODUCT_ENDPOINTS.STOCK_ALERTS, { params: { threshold, limit: 8 } }),
         http.get(WAREHOUSE_ENDPOINTS.PACKED_REVIEW),
         http.get(`${WAREHOUSE_ENDPOINTS.ALL_ISSUES}?status_filter=open`),
       ]);
 
-      const products = Array.isArray(productsRes.data) ? productsRes.data : [];
+      const productStats = statsRes.data || {};
       const packed = Array.isArray(packedRes.data) ? packedRes.data : [];
       const issues = Array.isArray(issuesRes.data) ? issuesRes.data : [];
-      const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < threshold);
-      const outOfStock = products.filter((p) => p.quantity === 0);
 
-      setLowStockItems([...outOfStock, ...lowStock].slice(0, 8));
+      setLowStockItems(Array.isArray(alertsRes.data) ? alertsRes.data : []);
 
       setStats({
-        totalProducts: products.length,
-        lowStock: lowStock.length,
-        outOfStock: outOfStock.length,
+        totalProducts: productStats.total ?? 0,
+        lowStock: productStats.low_stock ?? 0,
+        outOfStock: productStats.out_of_stock ?? 0,
         packedQueue: packed.length,
         openIssues: issues.length,
       });

@@ -174,8 +174,39 @@ def save_uploaded_image(
         temp_file_path.unlink(missing_ok=True)
     else:
         os.replace(temp_file_path, destination_path)
+        _optimize_saved_image(destination_path)
 
     return relative_path
+
+
+def _optimize_saved_image(path: Path, *, max_dimension: int = 1600, jpeg_quality: int = 85) -> None:
+    """Downscale and recompress large uploads to keep catalog images fast."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+
+    try:
+        with Image.open(path) as image:
+            width, height = image.size
+            if max(width, height) <= max_dimension and path.suffix.lower() in {".jpg", ".jpeg", ".webp"}:
+                if path.stat().st_size <= 600 * 1024:
+                    return
+
+            if image.mode not in ("RGB", "L"):
+                image = image.convert("RGB")
+
+            if max(width, height) > max_dimension:
+                image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+            if path.suffix.lower() in {".jpg", ".jpeg"}:
+                image.save(path, format="JPEG", quality=jpeg_quality, optimize=True)
+            elif path.suffix.lower() == ".webp":
+                image.save(path, format="WEBP", quality=jpeg_quality, method=6)
+            elif path.suffix.lower() == ".png":
+                image.save(path, format="PNG", optimize=True)
+    except Exception:
+        return
 
 
 def resolve_local_image_path(path: str) -> Optional[Path]:

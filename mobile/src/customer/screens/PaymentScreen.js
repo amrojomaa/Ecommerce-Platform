@@ -22,7 +22,6 @@ import {
   buildUrl,
 } from '../../config/api';
 import { STRIPE_PUBLISHABLE_KEY } from '../../config/stripe';
-import * as SecureStore from 'expo-secure-store';
 
 const PaymentScreen = () => {
   const route = useRoute();
@@ -80,17 +79,17 @@ const PaymentScreen = () => {
     }
   }, [confirmBackend, navigation, tUi]);
 
-  const buildStripeHtml = useCallback((secret, publishableKey) => {
+  const buildStripeHtml = useCallback((secret, publishableKey, labels, themeColors) => {
     return `<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <script src="https://js.stripe.com/v3/"></script>
-<style>body{font-family:sans-serif;padding:16px;background:#f8fafc;}#card{border:1px solid #e2e8f0;padding:12px;border-radius:12px;margin:12px 0;background:#fff;}
+<style>body{font-family:sans-serif;padding:16px;background:${themeColors.background};color:${themeColors.text};}#card{border:1px solid ${themeColors.border};padding:12px;border-radius:12px;margin:12px 0;background:${themeColors.surface};}
 button{width:100%;padding:14px;border:none;border-radius:999px;background:#2563eb;color:#fff;font-weight:700;font-size:16px;}
 #error{color:#dc2626;margin-top:8px;}</style></head><body>
-<h3>Card payment</h3>
+<h3>${labels.title}</h3>
 <div id="card"></div>
 <div id="error"></div>
-<button id="pay">Pay now</button>
+<button id="pay">${labels.payNow}</button>
 <script>
 const stripe = Stripe('${publishableKey}');
 const elements = stripe.elements();
@@ -118,7 +117,6 @@ document.getElementById('pay').onclick = async () => {
 
     setLoading(true);
     try {
-      const token = await SecureStore.getItemAsync('token');
       const response = await http.post(PAYMENT_ENDPOINTS.CREATE_INTENT, {
         amount,
         order_id: orderId,
@@ -131,7 +129,22 @@ document.getElementById('pay').onclick = async () => {
       setClientSecret(secret);
       setPaymentIntentId(intentId);
       if (secret) {
-        setWebHtml(buildStripeHtml(secret, STRIPE_PUBLISHABLE_KEY));
+        setWebHtml(
+          buildStripeHtml(
+            secret,
+            STRIPE_PUBLISHABLE_KEY,
+            {
+              title: tUi('ui.pages.payment.cardDetails_39aedd6f29'),
+              payNow: tUi('ui.pages.payment.payValue_ac81d68b1e', { value0: formatCurrency(amount) }),
+            },
+            {
+              background: colors.background,
+              surface: colors.surface,
+              border: colors.border,
+              text: colors.text,
+            }
+          )
+        );
       }
     } catch (error) {
       Toast.show({
@@ -147,6 +160,11 @@ document.getElementById('pay').onclick = async () => {
   }, [
     amount,
     buildStripeHtml,
+    colors.background,
+    colors.border,
+    colors.surface,
+    colors.text,
+    formatCurrency,
     hasStripeKey,
     installmentRequestId,
     installmentScheduleId,
@@ -199,7 +217,7 @@ document.getElementById('pay').onclick = async () => {
             {tUi('ui.pages.payment.loadingSecurePaymentGateway_384a1c4eb7')}
           </Text>
           <Text style={{ color: colors.muted, textAlign, lineHeight: 20 }}>
-            Set EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY to enable in-app card payments. You can still review your order summary here.
+            {tUi('ui.pages.payment.stripeKeyHint_b4e8c2d3f5')}
           </Text>
         </View>
       ) : loading ? (

@@ -11,7 +11,9 @@ import PageHeader from '../../components/PageHeader';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useCurrency } from '../../hooks/useCurrency';
-import { getImageUrl } from '../../utils/helpers';
+import { getCatalogImageUrl } from '../../utils/helpers';
+import { normalizeLanguageCode } from '../../i18n/constants';
+import { localizeProduct, productMatchesLocalizedSearch } from '../../utils/localizedContent';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminDiscounts.css';
 
@@ -23,7 +25,8 @@ const initialForm = {
 };
 
 const AdminDiscounts = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
   const navigate = useNavigate();
   const location = useLocation();
   const confirm = useConfirm();
@@ -42,7 +45,9 @@ const AdminDiscounts = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+      const response = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN, {
+        params: { catalog_only: true },
+      });
       setProducts(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       toast.error(tUi('ui.pages.admin.adminDiscounts.failedToFetchProductsFor_b7ed6e5511'));
@@ -77,36 +82,37 @@ const AdminDiscounts = () => {
     [products]
   );
 
-  const listTerm = listSearch.trim().toLowerCase();
+  const listTerm = listSearch.trim();
   const filteredDiscounts = useMemo(() => {
     const matched = !listTerm
       ? [...discountedProducts]
-      : discountedProducts.filter(
-          (product) =>
-            product.name.toLowerCase().includes(listTerm) ||
-            product.category_name.toLowerCase().includes(listTerm)
-        );
-    return matched.sort((a, b) => a.name.localeCompare(b.name));
-  }, [discountedProducts, listTerm]);
+      : discountedProducts.filter((product) => productMatchesLocalizedSearch(product, listTerm, languageCode));
+    return matched.sort((a, b) =>
+      localizeProduct(a, languageCode).localized_name.localeCompare(
+        localizeProduct(b, languageCode).localized_name
+      )
+    );
+  }, [discountedProducts, listTerm, languageCode]);
 
-  const pickTerm = productSearch.trim().toLowerCase();
+  const pickTerm = productSearch.trim();
   const selectableProducts = useMemo(() => {
     const pool = isCreatePage
       ? products.filter((product) => !product.discount_enabled)
       : products;
     if (!pickTerm) return pool;
-    return pool.filter(
-      (product) =>
-        product.name.toLowerCase().includes(pickTerm) ||
-        product.category_name.toLowerCase().includes(pickTerm)
-    );
-  }, [products, pickTerm, isCreatePage]);
+    return pool.filter((product) => productMatchesLocalizedSearch(product, pickTerm, languageCode));
+  }, [products, pickTerm, isCreatePage, languageCode]);
 
   const selectedProduct = useMemo(() => {
     const id = editingId || form.product_id;
     if (!id) return null;
     return products.find((product) => String(product.id) === String(id)) || null;
   }, [products, editingId, form.product_id]);
+
+  const localizedSelectedProduct = useMemo(
+    () => (selectedProduct ? localizeProduct(selectedProduct, languageCode) : null),
+    [selectedProduct, languageCode]
+  );
 
   const validateForm = () => {
     const productId = editingId || form.product_id;
@@ -186,7 +192,7 @@ const AdminDiscounts = () => {
   const removeDiscount = async (product) => {
     const ok = await confirm({
       title: tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
-      message: `${tUi('ui.pages.admin.adminDiscounts.removeDiscountConfirm_5d1e7b3a92')} "${product.name}"?`,
+      message: `${tUi('ui.pages.admin.adminDiscounts.removeDiscountConfirm_5d1e7b3a92')} "${localizeProduct(product, languageCode).localized_name}"?`,
       confirmText: tUi('ui.pages.admin.adminDiscounts.removeDiscount_2a9f4e8c01'),
       cancelText: tUi('ui.pages.admin.adminPromotions.cancel_5bfe37981f')
     });
@@ -252,31 +258,34 @@ const AdminDiscounts = () => {
                     ? tUi('ui.pages.admin.adminDiscounts.selectProductOption_8a9b0c1d2e')
                     : tUi('ui.pages.admin.adminDiscounts.noProductsAvailable_4e5f6a7b8c')}
                 </option>
-                {selectableProducts.map((product) => (
+                {selectableProducts.map((product) => {
+                  const localized = localizeProduct(product, languageCode);
+                  return (
                   <option key={product.id} value={product.id}>
-                    {product.name} ({product.category_name})
+                    {localized.localized_name} ({localized.localized_category_name})
                   </option>
-                ))}
+                  );
+                })}
               </select>
             </div>
           </div>
         )}
 
-        {selectedProduct && (
+        {selectedProduct && localizedSelectedProduct && (
           <div className="adm-discount-selected-product">
             <div className="adm-discount-selected-media">
               <img
                 src={
                   selectedProduct.images?.length > 0
-                    ? getImageUrl(selectedProduct.images[0])
-                    : getImageUrl('/images/placeholder.jpg')
+                    ? getCatalogImageUrl(selectedProduct.images[0])
+                    : getCatalogImageUrl('/images/placeholder.jpg')
                 }
-                alt={selectedProduct.name}
+                alt={localizedSelectedProduct.localized_name}
               />
             </div>
             <div className="adm-discount-selected-meta">
-              <h3>{selectedProduct.name}</h3>
-              <p>{selectedProduct.category_name}</p>
+              <h3>{localizedSelectedProduct.localized_name}</h3>
+              <p>{localizedSelectedProduct.localized_category_name}</p>
               <p>
                 {tUi('ui.pages.orders.price_c9e823260b')}{' '}
                 <strong>{formatCurrency(selectedProduct.price)}</strong>
@@ -452,6 +461,7 @@ const AdminDiscounts = () => {
           ) : (
             <div className="adm-discount-list">
               {filteredDiscounts.map((product) => {
+                const localized = localizeProduct(product, languageCode);
                 const finalPrice = product.discounted_price ?? product.price;
           return (
                   <article key={product.id} className="adm-discount-list-card is-discounted">
@@ -459,20 +469,20 @@ const AdminDiscounts = () => {
                       <img
                         src={
                           product.images?.length > 0
-                            ? getImageUrl(product.images[0])
-                            : getImageUrl('/images/placeholder.jpg')
+                            ? getCatalogImageUrl(product.images[0])
+                            : getCatalogImageUrl('/images/placeholder.jpg')
                         }
-                        alt={product.name}
+                        alt={localized.localized_name}
                       />
                 </div>
                     <div className="adm-discount-list-card-body">
                       <div className="adm-discount-list-card-top">
-                  <h3>{product.name}</h3>
+                  <h3>{localized.localized_name}</h3>
                         <span className="adm-discount-list-badge">
                           {tUi('ui.pages.admin.adminProducts.discount_e4537e1136')}
                     </span>
                   </div>
-                      <p className="adm-discount-list-meta">{product.category_name}</p>
+                      <p className="adm-discount-list-meta">{localized.localized_category_name}</p>
                       <p className="adm-discount-list-meta">
                         {tUi('ui.pages.admin.adminPromotions.discount_3560202e5f')}{' '}
                         <strong>{getDiscountLabel(product)}</strong>

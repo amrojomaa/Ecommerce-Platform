@@ -30,7 +30,7 @@ const HomeScreen = () => {
   const styles = useThemedStyles(createStyles);
   const tUi = useTUi();
   const { language } = useLanguage();
-  const { row, textAlign } = useRtlLayout();
+  const { row, textAlign, isRtl } = useRtlLayout();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
@@ -44,15 +44,13 @@ const HomeScreen = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await http.get(PRODUCT_ENDPOINTS.ALL);
-      const products = response.data || [];
-      const discounts = products.filter((p) => p.discount_enabled);
-      const uniqueCategories = [...new Set(products.map((p) => p.category_name))];
-      setFeaturedProducts(products.slice(0, 6).map((p) => localizeProduct(p, language)));
-      setDiscountedProducts(discounts.slice(0, 6).map((p) => localizeProduct(p, language)));
-      setProductCount(products.length);
-      setDiscountCount(discounts.length);
-      setCategoryCount(uniqueCategories.length);
+      const response = await http.get(PRODUCT_ENDPOINTS.HOME_SUMMARY);
+      const summary = response.data || {};
+      setFeaturedProducts((summary.featured_products || []).map((p) => localizeProduct(p, language)));
+      setDiscountedProducts((summary.discounted_products || []).map((p) => localizeProduct(p, language)));
+      setProductCount(summary.product_count || 0);
+      setDiscountCount(summary.discount_count || 0);
+      setCategoryCount(summary.category_count || 0);
     } catch (_) {
       setFeaturedProducts([]);
       setDiscountedProducts([]);
@@ -123,7 +121,7 @@ const HomeScreen = () => {
           onPress={() => navigation.navigate('Products')}
         >
           <Text style={styles.heroCtaText}>{tUi('ui.pages.home.shopNow_e58073dc0e')}</Text>
-          <Feather name="arrow-right" size={16} color="#fff" />
+          <Feather name={isRtl ? 'arrow-left' : 'arrow-right'} size={16} color="#fff" />
         </Pressable>
       </View>
 

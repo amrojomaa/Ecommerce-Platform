@@ -44,11 +44,12 @@ const StarRating = ({
       return;
     }
 
-    if (fetchOnMount || !hasPreloadedSummary) {
+    if (fetchOnMount) {
       fetchRating();
-    } else {
-      setLoading(false);
+      return;
     }
+
+    setLoading(false);
   }, [productId, fetchOnMount, hasPreloadedSummary, fetchRating]);
 
   useEffect(() => {

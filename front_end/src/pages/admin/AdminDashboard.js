@@ -25,6 +25,7 @@ import {
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
+import { filterOrdersByStatus } from '../../utils/orderStatuses';
 import '../../styles/pages/admin/AdminPanel.css';
 
 const AdminDashboard = () => {
@@ -72,12 +73,13 @@ const AdminDashboard = () => {
         let totalProductsCount = 0;
         let lowStock = 0;
         try {
-          const productsResponse = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
-          const products = productsResponse.data || [];
-          totalProductsCount = products.length;
-          lowStock = products.filter((p) => p.quantity < effectiveThreshold).length;
+          const productsResponse = await http.get(PRODUCT_ENDPOINTS.ADMIN_STATS, {
+            params: { threshold: effectiveThreshold },
+          });
+          totalProductsCount = productsResponse.data?.total ?? 0;
+          lowStock = productsResponse.data?.low_stock ?? 0;
         } catch (productError) {
-          console.error('Error fetching products:', productError);
+          console.error('Error fetching product stats:', productError);
         }
 
         let totalOrders = 0;
@@ -88,12 +90,7 @@ const AdminDashboard = () => {
             ? ordersResponse.data
             : ordersResponse.data?.orders || [];
           totalOrders = ordersData.length;
-          const revenueOrders = ordersData.filter(
-            (order) =>
-              order.status === 'paid' ||
-              order.status === 'shipped' ||
-              order.status === 'delivered'
-          );
+          const revenueOrders = filterOrdersByStatus(ordersData, 'revenue');
           totalRevenue = revenueOrders.reduce(
             (sum, order) => sum + (parseFloat(order.total_amount) || 0),
             0

@@ -3,6 +3,8 @@ import shutil
 import string
 from fastapi import File, HTTPException, UploadFile, status, Depends
 from fastapi import APIRouter
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.routers.admin import require_admin, require_seller
 from ..database import get_db
@@ -65,15 +67,57 @@ def get_category_by_id(id :int, db: Session = Depends (get_db), seller_user = De
 
 
 @router.put("/Categories/{id}", response_model=schemas.CategoriesDisplay)
-def update_category(product: schemas.Categories, id :int, db: Session = Depends (get_db), seller_user = Depends(require_seller)):
-    updatecategory = db.query(models.DBCategory).filter(models.DBCategory.id == id)
-    update = updatecategory.first()
-    if update == None:
+def update_category(
+    product: schemas.Categories,
+    id: int,
+    db: Session = Depends(get_db),
+    seller_user=Depends(require_seller),
+):
+    existing = db.query(models.DBCategory).filter(models.DBCategory.id == id).first()
+    if existing is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="the category not a found")
-    
-    updatecategory.update(product.dict(), synchronize_session=False)
-    db.commit()
-    return updatecategory.first()
+
+    payload = product.dict()
+    new_name = (payload.get("name") or "").strip()
+    if not new_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category name must not be empty")
+
+    old_name = existing.name
+    payload["name"] = new_name
+    name_changed = new_name != old_name
+
+    if name_changed:
+        name_taken = (
+            db.query(models.DBCategory.id)
+            .filter(models.DBCategory.name == new_name, models.DBCategory.id != id)
+            .first()
+        )
+        if name_taken:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category name already exists")
+
+    try:
+        if name_changed:
+            db.execute(text("SET CONSTRAINTS products_category_name_fkey DEFERRED"))
+
+        for field, value in payload.items():
+            setattr(existing, field, value)
+
+        if name_changed:
+            db.query(models.DBProduct).filter(models.DBProduct.category_name == old_name).update(
+                {"category_name": new_name},
+                synchronize_session=False,
+            )
+
+        db.commit()
+        db.refresh(existing)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot update category because the new name conflicts with existing data",
+        )
+
+    return existing
 
 
 @router.delete("/Categories/{id}",  status_code=status.HTTP_204_NO_CONTENT)

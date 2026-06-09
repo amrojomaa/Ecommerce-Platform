@@ -162,7 +162,7 @@ const DeliveryChatModal = ({ visible, onClose, jobId }) => {
       setInputMessage(text);
       Toast.show({
         type: 'error',
-        text1: error.response?.data?.detail || error.message || 'Failed to send message',
+        text1: error.response?.data?.detail || error.message || tUi('ui.components.supportTicketChatModal.sendFailed_c3d4e5f6a7'),
       });
     } finally {
       setIsSending(false);

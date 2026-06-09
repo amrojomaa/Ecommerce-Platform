@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { FiCreditCard, FiDollarSign, FiPackage, FiX } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import { tUi } from '../../i18n/uiText';
@@ -15,9 +15,45 @@ import '../../styles/pages/cashier/PosTerminal.css';
 const thumbUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const normalized = path.startsWith('/') ? path.slice(1) : path;
-  return `${API_BASE_URL}/${normalized}`;
+  const normalized = path.replace(/\\/g, '/').replace(/^\/+/, '');
+  const relative = normalized.startsWith('images/') ? normalized.slice('images/'.length) : normalized;
+  return `${API_BASE_URL}/media/thumb/${relative}?w=200&q=70`;
 };
+
+const PosProductCard = memo(function PosProductCard({ product, languageCode, formatCurrency, onAdd }) {
+  const localizedProduct = localizeProduct(product, languageCode);
+  const outOfStock = product.quantity < 1;
+
+  return (
+    <button
+      type="button"
+      className="pos-product-card"
+      onClick={() => onAdd(product)}
+      disabled={outOfStock}
+    >
+      <div className="pos-product-thumb">
+        {product.images?.[0] ? (
+          <img src={thumbUrl(product.images[0])} alt="" loading="lazy" decoding="async" />
+        ) : (
+          <span className="pos-no-img">{tUi('ui.pages.cashier.posTerminal.noImage_bbc5075c44')}</span>
+        )}
+        {outOfStock && (
+          <span className="pos-out-badge">{tUi('ui.pages.cashier.posTerminal.outOfStock_1bf2a299b1')}</span>
+        )}
+      </div>
+      <div className="pos-product-meta">
+        <span className="pos-product-name">{localizedProduct.localized_name}</span>
+        <div className="pos-product-footer">
+          <span className="pos-product-price">{formatCurrency(product.discounted_price)}</span>
+          <span className="pos-product-stock">
+            {tUi('ui.pages.cashier.posTerminal.stock_968b5e6ede')}
+            {product.quantity}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+});
 
 const PosTerminal = () => {
   const { i18n } = useTranslation();
@@ -26,7 +62,7 @@ const PosTerminal = () => {
   const search = cashierPos?.search ?? '';
   const [category, setCategory] = useState('');
   const [allCategories, setAllCategories] = useState([]);
-  const [catalog, setCatalog] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [lines, setLines] = useState([]);
   const [customerName, setCustomerName] = useState('');
@@ -44,13 +80,13 @@ const PosTerminal = () => {
 
   const resolveProductName = useCallback(
     (productId, fallbackName = '') => {
-      const product = catalog.find((item) => item.id === productId);
+      const product = allProducts.find((item) => item.id === productId);
       if (product) {
         return localizeProduct(product, i18n.language).localized_name || fallbackName;
       }
       return fallbackName;
     },
-    [catalog, i18n.language]
+    [allProducts, i18n.language]
   );
 
   const formatPaymentMethod = (method) => {
@@ -59,20 +95,24 @@ const PosTerminal = () => {
     return method || '—';
   };
 
-  const fetchCatalog = useCallback(async () => {
-    setLoadingCatalog(true);
+  const fetchCatalog = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoadingCatalog(true);
+    }
     try {
-      const { data } = await http.get(POS_ENDPOINTS.PRODUCTS, {
-        params: { q: search.trim(), category: category.trim() },
-      });
-      setCatalog(Array.isArray(data) ? data : []);
+      const { data } = await http.get(POS_ENDPOINTS.PRODUCTS);
+      setAllProducts(Array.isArray(data) ? data : []);
     } catch (e) {
       toast.error(e.response?.data?.detail || tUi('ui.pages.cashier.posTerminal.couldNotLoadProducts_f1a2b3c4d5'));
-      setCatalog([]);
+      if (!silent) {
+        setAllProducts([]);
+      }
     } finally {
-      setLoadingCatalog(false);
+      if (!silent) {
+        setLoadingCatalog(false);
+      }
     }
-  }, [search, category]);
+  }, []);
 
   const fetchToday = useCallback(async () => {
     setLoadingToday(true);
@@ -98,9 +138,30 @@ const PosTerminal = () => {
     }
   }, []);
 
+  const catalog = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const categoryName = category.trim().toLowerCase();
+
+    return allProducts.filter((product) => {
+      if (categoryName && String(product.category_name || '').toLowerCase() !== categoryName) {
+        return false;
+      }
+      if (!term) return true;
+
+      const localized = localizeProduct(product, i18n.language);
+      const fields = [
+        product.name,
+        product.name_ar,
+        product.name_fr,
+        localized.localized_name,
+        product.category_name,
+      ];
+      return fields.some((value) => String(value || '').toLowerCase().includes(term));
+    });
+  }, [allProducts, search, category, i18n.language]);
+
   useEffect(() => {
-    const timer = setTimeout(() => fetchCatalog(), 300);
-    return () => clearTimeout(timer);
+    fetchCatalog();
   }, [fetchCatalog]);
 
   useEffect(() => {
@@ -128,40 +189,43 @@ const PosTerminal = () => {
     0
   );
 
-  const addProduct = (p) => {
-    if (p.quantity < 1) {
-      toast.warn(tUi('ui.pages.cashier.posTerminal.outOfStock_1bf2a299b1'));
-      return;
-    }
-    setLines((prev) => {
-      const i = prev.findIndex((x) => x.product_id === p.id);
-      if (i >= 0) {
-        const next = [...prev];
-        const row = next[i];
-        if (row.quantity + 1 > p.quantity) {
-          toast.warn(
-            tUi('ui.pages.cashier.posTerminal.stockLimitedForProduct_f1a2b3c4d6', {
-              value0: p.quantity,
-              value1: resolveProductName(p.id, p.name),
-            })
-          );
-          return prev;
-        }
-        next[i] = { ...row, quantity: row.quantity + 1 };
-        return next;
+  const addProduct = useCallback(
+    (p) => {
+      if (p.quantity < 1) {
+        toast.warn(tUi('ui.pages.cashier.posTerminal.outOfStock_1bf2a299b1'));
+        return;
       }
-      return [
-        ...prev,
-        {
-          product_id: p.id,
-          name: localizeProduct(p, i18n.language).localized_name || p.name,
-          unit: p.discounted_price,
-          maxStock: p.quantity,
-          quantity: 1,
-        },
-      ];
-    });
-  };
+      setLines((prev) => {
+        const i = prev.findIndex((x) => x.product_id === p.id);
+        if (i >= 0) {
+          const next = [...prev];
+          const row = next[i];
+          if (row.quantity + 1 > p.quantity) {
+            toast.warn(
+              tUi('ui.pages.cashier.posTerminal.stockLimitedForProduct_f1a2b3c4d6', {
+                value0: p.quantity,
+                value1: localizeProduct(p, i18n.language).localized_name || p.name,
+              })
+            );
+            return prev;
+          }
+          next[i] = { ...row, quantity: row.quantity + 1 };
+          return next;
+        }
+        return [
+          ...prev,
+          {
+            product_id: p.id,
+            name: localizeProduct(p, i18n.language).localized_name || p.name,
+            unit: p.discounted_price,
+            maxStock: p.quantity,
+            quantity: 1,
+          },
+        ];
+      });
+    },
+    [i18n.language]
+  );
 
   const adjustQty = (productId, delta) => {
     setLines((prev) =>
@@ -248,7 +312,7 @@ const PosTerminal = () => {
       setCustomerName('');
       setShowPaymentStep(false);
       fetchToday();
-      fetchCatalog();
+      fetchCatalog({ silent: true });
     } catch (e) {
       toast.error(e.response?.data?.detail || tUi('ui.pages.cashier.posTerminal.saleFailed_f1a2b3c4d9'));
     } finally {
@@ -326,39 +390,15 @@ const PosTerminal = () => {
             </div>
           ) : (
             <div className="pos-product-grid">
-              {catalog.map((p) => {
-                const localizedProduct = localizeProduct(p, i18n.language);
-                return (
-                <button
+              {catalog.map((p) => (
+                <PosProductCard
                   key={p.id}
-                  type="button"
-                  className="pos-product-card"
-                  onClick={() => addProduct(p)}
-                  disabled={p.quantity < 1}
-                >
-                  <div className="pos-product-thumb">
-                    {p.images?.[0] ? (
-                      <img src={thumbUrl(p.images[0])} alt="" loading="lazy" />
-                    ) : (
-                      <span className="pos-no-img">{tUi('ui.pages.cashier.posTerminal.noImage_bbc5075c44')}</span>
-                    )}
-                    {p.quantity < 1 && (
-                      <span className="pos-out-badge">{tUi('ui.pages.cashier.posTerminal.outOfStock_1bf2a299b1')}</span>
-                    )}
-                  </div>
-                  <div className="pos-product-meta">
-                    <span className="pos-product-name">{localizedProduct.localized_name}</span>
-                    <div className="pos-product-footer">
-                      <span className="pos-product-price">{formatCurrency(p.discounted_price)}</span>
-                      <span className="pos-product-stock">
-                        {tUi('ui.pages.cashier.posTerminal.stock_968b5e6ede')}
-                        {p.quantity}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              );
-              })}
+                  product={p}
+                  languageCode={i18n.language}
+                  formatCurrency={formatCurrency}
+                  onAdd={addProduct}
+                />
+              ))}
             </div>
           )}
         </section>

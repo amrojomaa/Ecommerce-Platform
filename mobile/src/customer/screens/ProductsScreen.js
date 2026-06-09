@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,6 +31,8 @@ const SORT_OPTIONS = [
   { id: 'price_desc', labelKey: 'ui.pages.products.priceHighToLow_63247b2840' },
 ];
 
+const PAGE_SIZE = 12;
+
 const ProductsScreen = () => {
   const navigation = useNavigation();
   const { isAuthenticated } = useContext(AuthContext);
@@ -48,6 +51,7 @@ const ProductsScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [promoMessage, setPromoMessage] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -67,12 +71,15 @@ const ProductsScreen = () => {
           fetched = [];
         }
       } else {
-        const response = await http.get(PRODUCT_ENDPOINTS.ALL);
+        const response = await http.get(PRODUCT_ENDPOINTS.ALL, {
+          params: { catalog_only: true },
+        });
         fetched = response.data || [];
       }
       const localized = fetched.map((p) => localizeProduct(p, language));
       setProducts(localized);
       setCategories([...new Set(localized.map((p) => p.category_name).filter(Boolean))]);
+      setVisibleCount(PAGE_SIZE);
     } catch (_) {
       setProducts([]);
       setCategories([]);
@@ -113,6 +120,11 @@ const ProductsScreen = () => {
     return list;
   }, [products, sortBy]);
 
+  const visibleProducts = useMemo(
+    () => sortedProducts.slice(0, visibleCount),
+    [sortedProducts, visibleCount]
+  );
+
   const resultLabel =
     sortedProducts.length === 1
       ? tUi('ui.pages.products.productFoundCount_b4e8a1c2e3', { value0: 1 })
@@ -131,15 +143,19 @@ const ProductsScreen = () => {
     }
   };
 
-  return (
-    <CustomerScreen
-      kicker={tUi('ui.mobile.customer.storeKicker')}
-      title={tUi('ui.pages.products.products_95d89e6fd4')}
-      subtitle={tUi('ui.pages.products.discoverOurAmazingCollection_79dc76c0e9')}
-    >
+  const loadMore = () => {
+    if (visibleCount < sortedProducts.length) {
+      setVisibleCount((count) => Math.min(count + PAGE_SIZE, sortedProducts.length));
+    }
+  };
+
+  const listHeader = (
+    <View>
       {promoMessage ? (
         <View style={[styles.promoBand, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-          <Text style={[styles.promoKicker, { color: colors.primary }]}>{tUi('ui.pages.products.promotionAvailableFallback')}</Text>
+          <Text style={[styles.promoKicker, { color: colors.primary }]}>
+            {tUi('ui.pages.products.promotionAvailableFallback')}
+          </Text>
           <Text style={[styles.promoBody, { color: colors.text, textAlign }]}>{promoMessage}</Text>
         </View>
       ) : null}
@@ -207,18 +223,45 @@ const ProductsScreen = () => {
       </ScrollView>
 
       <Text style={[styles.resultCount, { color: colors.muted, textAlign }]}>{resultLabel}</Text>
+    </View>
+  );
 
+  return (
+    <CustomerScreen
+      scroll={false}
+      kicker={tUi('ui.mobile.customer.storeKicker')}
+      title={tUi('ui.pages.products.products_95d89e6fd4')}
+      subtitle={tUi('ui.pages.products.discoverOurAmazingCollection_79dc76c0e9')}
+    >
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
-      ) : sortedProducts.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.muted, textAlign }]}>
-          {tUi('ui.pages.products.noProductsFoundTryAdjusting_7d5a13e1ec')}
-        </Text>
       ) : (
-        <View style={[styles.grid, { flexDirection: row === 'row-reverse' ? 'row-reverse' : 'row' }]}>
-          {sortedProducts.map((product) => (
+        <FlatList
+          style={styles.list}
+          data={visibleProducts}
+          keyExtractor={(item) => String(item.id || item.name)}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={styles.listContent}
+          initialNumToRender={PAGE_SIZE}
+          maxToRenderPerBatch={PAGE_SIZE}
+          windowSize={5}
+          removeClippedSubviews
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.4}
+          ListEmptyComponent={
+            <Text style={[styles.empty, { color: colors.muted, textAlign }]}>
+              {tUi('ui.pages.products.noProductsFoundTryAdjusting_7d5a13e1ec')}
+            </Text>
+          }
+          ListFooterComponent={
+            visibleCount < sortedProducts.length ? (
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+            ) : null
+          }
+          renderItem={({ item: product }) => (
             <ProductCard
-              key={product.id || product.name}
               product={product}
               onPress={() => openProduct(product)}
               onAddCart={() => handleAddCart(product)}
@@ -228,8 +271,8 @@ const ProductsScreen = () => {
               }}
               isWishlisted={isInWishlist(product.name)}
             />
-          ))}
-        </View>
+          )}
+        />
       )}
     </CustomerScreen>
   );
@@ -237,6 +280,16 @@ const ProductsScreen = () => {
 
 const createStyles = ({ colors }) =>
   StyleSheet.create({
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      paddingBottom: 24,
+    },
+    gridRow: {
+      justifyContent: 'space-between',
+      gap: 8,
+    },
     promoBand: {
       borderRadius: 16,
       borderWidth: 1,
@@ -276,7 +329,6 @@ const createStyles = ({ colors }) =>
       backgroundColor: colors.surface,
     },
     resultCount: { fontSize: 13, marginBottom: 8 },
-    grid: { flexWrap: 'wrap', justifyContent: 'space-between' },
     empty: { marginTop: 32, fontSize: 15 },
   });
 

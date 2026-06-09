@@ -345,6 +345,17 @@ export const getImageUrl = (imagePath) => {
   return `${baseUrl}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
 };
 
+/** Resized WEBP thumbnail for product grids — avoids loading multi-MB originals. */
+export const getCatalogImageUrl = (imagePath, size = 480) => {
+  if (!imagePath) return getImageUrl('/images/placeholder.jpg');
+  if (imagePath.startsWith('http')) return imagePath;
+
+  const baseUrl = getApiBaseUrl();
+  const normalized = imagePath.replace(/\\/g, '/').replace(/^\/+/, '');
+  const relative = normalized.startsWith('images/') ? normalized.slice('images/'.length) : normalized;
+  return `${baseUrl}/media/thumb/${relative}?w=${size}&q=75`;
+};
+
 export const buildWebSocketUrl = (path, queryParams = {}) => {
   const apiBase = getApiBaseUrl();
   const normalizedPath = path?.startsWith('/') ? path : `/${path || ''}`;

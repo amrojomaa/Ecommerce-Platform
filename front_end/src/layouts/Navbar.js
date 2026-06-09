@@ -73,6 +73,7 @@ const Navbar = () => {
   const driverHomePath = '/driver';
   const driverNavDashboardLabel = t('navbar.driverDashboard');
   const cashierHomePath = '/cashier';
+  const cashierNavDashboardLabel = t('navbar.cashierDashboard');
   const supportAgentHomePath = '/support-agent';
   const supportManagerHomePath = '/support';
   const sellerHomePath = '/seller';
@@ -511,6 +512,11 @@ const Navbar = () => {
                   <span>{t("navbar.warehouseManager")}</span>
                 </Link>
               }
+              {(isCashierArea || (user?.role === 'cashier' && !isCashierArea)) &&
+              <Link to={cashierHomePath} className="navbar-link admin-link">
+                  <span>{cashierNavDashboardLabel}</span>
+                </Link>
+              }
               {isCashierArea && cashierPos &&
               <button
                 type="button"
@@ -607,7 +613,7 @@ const Navbar = () => {
             </>
           }
 
-          <LanguageSwitcher compact className="navbar-language-switcher" />
+          <LanguageSwitcher icon className="navbar-language-switcher" />
 
           <button
             onClick={toggleTheme}
@@ -767,9 +773,9 @@ const Navbar = () => {
                   {t("navbar.driver")}
                 </Link>
           }
-              {user?.role === "cashier" &&
+              {(user?.role === "cashier" || isCashierArea) &&
           <Link to="/cashier" onClick={() => setMobileMenuOpen(false)}>
-                  {t("navbar.cashier")}
+                  {cashierNavDashboardLabel}
                 </Link>
           }
               {isRealAdmin &&

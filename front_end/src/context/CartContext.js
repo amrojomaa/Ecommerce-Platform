@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import http from '../services/http';
 import { CART_ENDPOINTS } from '../config/api';
 
@@ -90,12 +90,10 @@ export const CartProvider = ({ children }) => {
     };
 
     window.addEventListener('auth-change', handleAuthChange);
-    window.addEventListener('focus', checkUserChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('auth-change', handleAuthChange);
-      window.removeEventListener('focus', checkUserChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);

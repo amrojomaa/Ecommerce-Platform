@@ -35,6 +35,9 @@
   },
   "scripts": {
     "start": "expo start",
+    "start:clear": "expo start --clear",
+    "start:tunnel": "expo start --tunnel --clear",
+    "start:lan": "expo start --lan --clear",
     "start:offline": "expo start --offline",
     "android": "expo run:android",
     "ios": "expo run:ios",

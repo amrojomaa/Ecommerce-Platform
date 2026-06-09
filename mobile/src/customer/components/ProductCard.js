@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import StarRating from '../../components/StarRating';
@@ -15,7 +15,7 @@ const getDiscountPercent = (product) => {
   return Math.round((1 - product.discounted_price / product.price) * 100);
 };
 
-const ProductCard = ({
+const ProductCard = memo(({
   product,
   onPress,
   onAddCart,
@@ -112,7 +112,7 @@ const ProductCard = ({
       </View>
     </Pressable>
   );
-};
+});
 
 const createStyles = ({ colors, shadow }) =>
   StyleSheet.create({

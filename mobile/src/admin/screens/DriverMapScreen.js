@@ -69,7 +69,7 @@ const DriverMapScreen = () => {
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: error.response?.data?.detail || error.message || 'Failed to accept job',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverMap.failedToAcceptJob_b4e8c2d3f9'),
       });
     } finally {
       setAcceptingId(null);
@@ -84,7 +84,10 @@ const DriverMapScreen = () => {
       await fetchJobs();
       refreshAvailableCount();
     } catch (error) {
-      Toast.show({ type: 'error', text1: error.message || 'Failed to decline job' });
+      Toast.show({
+        type: 'error',
+        text1: error.response?.data?.detail || error.message || tUi('ui.pages.driver.driverMap.failedToDeclineJob_b4e8c2d3fa'),
+      });
     }
   };
 

@@ -34,7 +34,9 @@ const WarehouseInventory = () => {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+      const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN, {
+        params: { catalog_only: true },
+      });
       setProducts(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       toast.error(t('ui.pages.warehouse.warehouseInventory.toast.failedToLoadProducts'));

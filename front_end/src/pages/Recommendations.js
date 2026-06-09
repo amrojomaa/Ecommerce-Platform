@@ -1,6 +1,6 @@
 import { tUi } from '../i18n/uiText';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import {
@@ -26,7 +26,7 @@ import PageHeader from '../components/PageHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StarRating from '../components/StarRating';
 import { ProductCardSkeleton } from '../components/Skeleton';
-import { getImageUrl } from '../utils/helpers';
+import { getCatalogImageUrl } from '../utils/helpers';
 import { useTranslation } from 'react-i18next';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
@@ -34,6 +34,7 @@ import '../styles/pages/Products.css';
 import '../styles/pages/Recommendations.css';
 
 const Recommendations = () => {
+  const location = useLocation();
   const confirm = useConfirm();
   const { i18n } = useTranslation();
   const languageCode = normalizeLanguageCode(i18n.resolvedLanguage || i18n.language);
@@ -87,7 +88,17 @@ const Recommendations = () => {
   useEffect(() => {
     loadRealtime();
     loadBatch(false);
-  }, [loadRealtime, loadBatch]);
+  }, [location.pathname, loadRealtime, loadBatch]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadRealtime();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadRealtime]);
 
   const handleResetRecommendations = async () => {
     const ok = await confirm({
@@ -176,13 +187,13 @@ const Recommendations = () => {
             <img
               src={
                 product.images?.length
-                  ? getImageUrl(product.images[0])
-                  : getImageUrl('/images/placeholder.jpg')
+                  ? getCatalogImageUrl(product.images[0])
+                  : getCatalogImageUrl('/images/placeholder.jpg')
               }
               alt={localized.localized_name}
               onError={(e) => {
                 e.currentTarget.onerror = null;
-                e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+                e.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
               }}
             />
             {isAuthenticated && (
@@ -216,7 +227,7 @@ const Recommendations = () => {
                   size="small"
                   initialAverageRating={product.average_rating}
                   initialTotalRatings={product.total_ratings}
-                  fetchOnMount
+                  fetchOnMount={false}
                 />
               </div>
             )}

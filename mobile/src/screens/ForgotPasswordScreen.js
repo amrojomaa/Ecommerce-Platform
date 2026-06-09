@@ -1,91 +1,76 @@
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import AuthPageShell from '../components/auth/AuthPageShell';
+import { AuthPrimaryButton, AuthTextField } from '../components/auth/AuthField';
+import { useTUi } from '../i18n/uiText';
 import http from '../services/http';
 import { AUTH_ENDPOINTS } from '../config/api';
 
-const PRIMARY = '#2563EB';
-
 const ForgotPasswordScreen = ({ navigation }) => {
+  const tUi = useTUi();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim()) {
-      Toast.show({ type: 'error', text1: 'Please enter your email address' });
+      Toast.show({ type: 'error', text1: tUi('ui.pages.forgotPassword.enterYourEmail_dd05194064') });
       return;
     }
 
     setLoading(true);
     try {
       await http.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, { email: email.trim() });
-      Toast.show({ type: 'success', text1: 'Reset code sent to your email' });
+      Toast.show({
+        type: 'success',
+        text1: tUi('ui.pages.forgotPassword.codeSent_b4e8c2d3ff'),
+      });
       navigation.navigate('VerifyResetCode', { email: email.trim() });
     } catch (err) {
-      Toast.show({ type: 'error', text1: err.response?.data?.detail || 'Failed to send reset code' });
+      Toast.show({
+        type: 'error',
+        text1:
+          err.response?.data?.detail ||
+          err.message ||
+          tUi('ui.pages.forgotPassword.somethingWentWrongPleaseTry_fa9ec3dd4b'),
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="#1E293B" />
-      </Pressable>
-      
-      <View style={styles.content}>
-        <Ionicons name="lock-closed-outline" size={64} color={PRIMARY} style={styles.icon} />
-        <Text style={styles.title}>Forgot Password?</Text>
-        <Text style={styles.subtitle}>
-          Enter your email address and we'll send you a code to reset your password.
-        </Text>
+    <AuthPageShell
+      panel={{
+        kicker: tUi('ui.pages.resetPassword.kicker_c8f1a2b3d4'),
+        title: tUi('ui.pages.forgotPassword.forgotPassword_44e42269c0'),
+        subtitle: tUi('ui.pages.forgotPassword.enterYourEmailAddressAnd_a30a91a5df'),
+      }}
+      footer={{
+        text: tUi('ui.pages.forgotPassword.rememberYourPassword_5c46335c87'),
+        linkLabel: tUi('ui.pages.forgotPassword.login_a2083e5051'),
+        onPressLink: () => navigation.navigate('Login'),
+      }}
+    >
+      <AuthTextField
+        label={tUi('ui.pages.forgotPassword.email_52fee565c6')}
+        inputProps={{
+          value: email,
+          onChangeText: setEmail,
+          placeholder: tUi('ui.pages.forgotPassword.enterYourEmail_dd05194064'),
+          keyboardType: 'email-address',
+          autoCapitalize: 'none',
+          autoComplete: 'email',
+        }}
+      />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email Address"
-          placeholderTextColor="#94A3B8"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <Pressable
-          style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.submitBtnText}>Send Reset Code</Text>
-          )}
-        </Pressable>
-      </View>
-    </View>
+      <AuthPrimaryButton
+        label={tUi('ui.pages.forgotPassword.sendVerificationCode_54c2f06c38')}
+        loadingLabel={tUi('ui.pages.forgotPassword.sending_4ecdfd8d99')}
+        loading={loading}
+        onPress={handleSubmit}
+      />
+    </AuthPageShell>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  backBtn: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
-  icon: { alignSelf: 'center', marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: '800', color: '#1E293B', textAlign: 'center', marginBottom: 12 },
-  subtitle: { fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 32, lineHeight: 22 },
-  input: { height: 52, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: '#1E293B', backgroundColor: '#fff', marginBottom: 24 },
-  submitBtn: { backgroundColor: PRIMARY, borderRadius: 12, height: 52, alignItems: 'center', justifyContent: 'center', elevation: 2 },
-  submitBtnDisabled: { backgroundColor: '#94A3B8' },
-  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});
 
 export default ForgotPasswordScreen;

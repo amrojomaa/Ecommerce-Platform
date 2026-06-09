@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from './AuthContext';
+import { useTUi } from '../i18n/uiText';
 import http from '../services/http';
 import { CART_ENDPOINTS, buildUrl } from '../config/api';
 
@@ -7,6 +8,7 @@ export const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
+  const tUi = useTUi();
   const [cartItems, setCartItems] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [promotionDiscount, setPromotionDiscount] = useState(0);
@@ -60,7 +62,7 @@ export const CartProvider = ({ children }) => {
   const addToCart = useCallback(
     async (productName, quantity = 1) => {
       if (!isAuthenticated) {
-        return { success: false, error: 'Please login to add items to cart' };
+        return { success: false, error: tUi('ui.pages.productDetails.pleaseLoginToAddItems_ded862e3e0') };
       }
       setLoading(true);
       try {
@@ -73,18 +75,18 @@ export const CartProvider = ({ children }) => {
       } catch (error) {
         return {
           success: false,
-          error: error.response?.data?.detail || error.message || 'Failed to add item to cart',
+          error: error.response?.data?.detail || error.message || tUi('ui.pages.productDetails.failedToAddToCart_b4e8a1c2d7'),
         };
       } finally {
         setLoading(false);
       }
     },
-    [fetchCart, isAuthenticated]
+    [fetchCart, isAuthenticated, tUi]
   );
 
   const updateCartItem = useCallback(
     async (itemId, quantity) => {
-      if (!isAuthenticated) return { success: false, error: 'Please login' };
+      if (!isAuthenticated) return { success: false, error: tUi('ui.pages.productDetails.pleaseLoginToAddItems_ded862e3e0') };
       const requestSeq = (quantityRequestSeq.current[itemId] || 0) + 1;
       quantityRequestSeq.current[itemId] = requestSeq;
 
@@ -108,16 +110,16 @@ export const CartProvider = ({ children }) => {
         }
         return {
           success: false,
-          error: error.response?.data?.detail || error.message || 'Failed to update cart',
+          error: error.response?.data?.detail || error.message || tUi('ui.pages.cart.failedToUpdate_a3f8c2d1e8'),
         };
       }
     },
-    [applyCartPayload, cartItems, isAuthenticated]
+    [applyCartPayload, cartItems, isAuthenticated, tUi]
   );
 
   const removeCartItem = useCallback(
     async (itemId) => {
-      if (!isAuthenticated) return { success: false, error: 'Please login' };
+      if (!isAuthenticated) return { success: false, error: tUi('ui.pages.productDetails.pleaseLoginToAddItems_ded862e3e0') };
       try {
         await http.delete(buildUrl(CART_ENDPOINTS.DELETE_ITEM, { item_id: itemId }));
         await fetchCart();
@@ -125,11 +127,11 @@ export const CartProvider = ({ children }) => {
       } catch (error) {
         return {
           success: false,
-          error: error.response?.data?.detail || error.message || 'Failed to remove item',
+          error: error.response?.data?.detail || error.message || tUi('ui.pages.cart.failedToRemove_a3f8c2d1e9'),
         };
       }
     },
-    [fetchCart, isAuthenticated]
+    [fetchCart, isAuthenticated, tUi]
   );
 
   const clearCart = useCallback(

@@ -51,19 +51,28 @@ class RecommendParams:
     coherent_in_category_multiplier: float = 1.48
     coherent_out_category_multiplier: float = 0.62
     coherent_min_touch_seeds: int = 2
+    # Drop weak content matches so one product view does not fill the grid with the whole catalog.
+    min_neighbor_similarity: float = 0.10
+    min_relative_score_ratio: float = 0.40
+    focused_touch_neighbors: int = 8
+    focused_min_similarity: float = 0.08
 
 
 REALTIME_PARAMS = RecommendParams(
-    lookback_hours=72.0,
-    half_life_hours=18.0,
-    max_seeds=12,
-    neighbors_per_seed=25,
+    lookback_hours=168.0,
+    half_life_hours=24.0,
+    max_seeds=8,
+    neighbors_per_seed=12,
     search_query_weight=4.0,
     co_purchase_weight=3.5,
     cold_start_affinity_floor=15.0,
-    min_products_for_personalization=2,
+    min_products_for_personalization=1,
     coherent_top_touch_categories=1,
     coherent_min_touch_seeds=1,
+    min_neighbor_similarity=0.10,
+    min_relative_score_ratio=0.45,
+    focused_touch_neighbors=6,
+    focused_min_similarity=0.07,
 )
 
 BATCH_PARAMS = RecommendParams(
@@ -238,24 +247,83 @@ def _user_product_affinity(
     return aff
 
 
-def _top_similar_products(index: _CatalogIndex, product_id: int, k: int) -> list[tuple[int, float]]:
+def _top_similar_products(
+    index: _CatalogIndex,
+    product_id: int,
+    k: int,
+    *,
+    min_similarity: float = 0.0,
+) -> list[tuple[int, float]]:
     row_i = index.idx_of.get(product_id)
     if row_i is None:
         return []
     sims = cosine_similarity(index.X[row_i : row_i + 1], index.X, dense_output=False).toarray().flatten()
     sims[row_i] = -1.0
-    kk = max(1, min(k * 2 + 35, len(sims)))
-    cand = np.argpartition(-sims, kk - 1)[:kk]
+    pool = max(1, min(k + 4, len(sims) - 1))
+    cand = np.argpartition(-sims, pool - 1)[:pool]
     out: list[tuple[int, float]] = []
     for ti in cand:
         if int(ti) == row_i:
             continue
         s = float(sims[int(ti)])
-        if s <= 0:
+        if s < min_similarity:
             continue
         out.append((index.ids[int(ti)], s))
     out.sort(key=lambda x: -x[1])
     return out[:k]
+
+
+def _content_similar_fallback(
+    index: _CatalogIndex,
+    seed_ids: Sequence[int],
+    exclude: set[int],
+    touch_only: set[int],
+    limit: int,
+    *,
+    min_similarity: float,
+    cat_by_pid: Mapping[int, str],
+    preferred_categories: set[str],
+    same_category_only: bool,
+) -> list[tuple[int, float, list[str]]]:
+    """Strict content-neighbor picks when hybrid scoring produced nothing useful."""
+    merged: dict[int, float] = {}
+    for seed_pid in seed_ids:
+        for neighbor_pid, sim in _top_similar_products(
+            index,
+            int(seed_pid),
+            limit * 2,
+            min_similarity=min_similarity,
+        ):
+            if neighbor_pid in exclude or neighbor_pid in touch_only:
+                continue
+            if same_category_only and preferred_categories:
+                cat = cat_by_pid.get(neighbor_pid, "")
+                if cat not in preferred_categories:
+                    continue
+            prev = merged.get(neighbor_pid, 0.0)
+            if sim > prev:
+                merged[neighbor_pid] = sim
+
+    ranked = sorted(merged.items(), key=lambda kv: (-kv[1], kv[0]))
+    return [
+        (pid, float(sim), [f"content_similar_to:{seed_ids[0] if seed_ids else pid}"])
+        for pid, sim in ranked[:limit]
+    ]
+
+
+def _apply_score_floor(
+    candidates: list[tuple[int, float, list[str]]],
+    *,
+    min_absolute: float,
+    min_relative_ratio: float,
+) -> list[tuple[int, float, list[str]]]:
+    if not candidates:
+        return []
+    top_score = candidates[0][1]
+    if top_score <= 0:
+        return []
+    floor = max(min_absolute, top_score * min_relative_ratio)
+    return [item for item in candidates if item[1] >= floor]
 
 
 def _product_category_map(db: Session, product_ids: Iterable[int]) -> dict[int, str]:
@@ -330,6 +398,47 @@ def _score_category_adjust(
         return score
     c = cat_by_pid.get(int(product_id), "") or ""
     return score * (in_mult if c in preferred else out_mult)
+
+
+def _same_category_catalog_fallback(
+    db: Session,
+    seed_ids: Sequence[int],
+    exclude: set[int],
+    touch_only: set[int],
+    limit: int,
+) -> list[tuple[int, float, list[str]]]:
+    """Other products in the same category as what the user viewed (most reliable for 1-view sessions)."""
+    seed_cats: set[str] = set()
+    for pid in seed_ids:
+        row = (
+            db.query(models.DBProduct.category_name)
+            .filter(models.DBProduct.id == int(pid))
+            .first()
+        )
+        if row and row[0]:
+            seed_cats.add(str(row[0]))
+    if not seed_cats:
+        return []
+
+    skip = exclude | touch_only
+    rows = (
+        db.query(models.DBProduct)
+        .filter(models.DBProduct.category_name.in_(seed_cats))
+        .order_by(
+            models.DBProduct.discount_enabled.desc(),
+            models.DBProduct.quantity.desc(),
+            models.DBProduct.id.asc(),
+        )
+        .all()
+    )
+    out: list[tuple[int, float, list[str]]] = []
+    for product in rows:
+        if product.id in skip:
+            continue
+        out.append((int(product.id), 0.45, [f"same_category_as:{seed_ids[0]}"]))
+        if len(out) >= limit:
+            break
+    return out
 
 
 def _cold_start_fallback(
@@ -513,6 +622,11 @@ def recommend_hybrid_for_user(
         params.coherent_min_touch_seeds,
     )
 
+    focused_mode = len(touch_only_affinity) < max(2, params.min_products_for_personalization)
+    neighbor_k = params.focused_touch_neighbors if focused_mode else params.neighbors_per_seed
+    min_sim = params.focused_min_similarity if focused_mode else params.min_neighbor_similarity
+    use_co_purchase = not focused_mode
+
     aggregated: MutableMapping[int, MutableMapping[str, Any]] = defaultdict(lambda: {"score": 0.0, "sources": set()})
 
     # Surface search-matched products themselves so a fresh search alone produces results,
@@ -528,7 +642,12 @@ def recommend_hybrid_for_user(
 
     for seed_pid in seeds:
         seed_pull = affinity.get(seed_pid, 0.0)
-        for neighbor_pid, sim in _top_similar_products(index, seed_pid, params.neighbors_per_seed):
+        for neighbor_pid, sim in _top_similar_products(
+            index,
+            seed_pid,
+            neighbor_k,
+            min_similarity=min_sim,
+        ):
             if neighbor_pid in exclude or neighbor_pid == seed_pid:
                 continue
             if neighbor_pid in touch_only_affinity:
@@ -537,12 +656,13 @@ def recommend_hybrid_for_user(
             item = aggregated[neighbor_pid]
             item["score"] += bump  # type: ignore[operator]
             item["sources"].add(f"content_neighbor_from:{seed_pid}")  # type: ignore[union-attr]
-        for nb, co_scr in co_neighbors.get(seed_pid, {}).items():
-            if nb in exclude or nb in touch_only_affinity:
-                continue
-            bump = seed_pull * co_scr * params.co_purchase_weight
-            aggregated[nb]["score"] += bump  # type: ignore[operator]
-            aggregated[nb]["sources"].add(f"co_purchase_with:{seed_pid}")  # type: ignore[union-attr]
+        if use_co_purchase:
+            for nb, co_scr in co_neighbors.get(seed_pid, {}).items():
+                if nb in exclude or nb in touch_only_affinity:
+                    continue
+                bump = seed_pull * co_scr * params.co_purchase_weight
+                aggregated[nb]["score"] += bump  # type: ignore[operator]
+                aggregated[nb]["sources"].add(f"co_purchase_with:{seed_pid}")  # type: ignore[union-attr]
 
     ranking = sorted(aggregated.items(), key=lambda kv: -float(kv[1]["score"]))  # type: ignore[arg-type]
 
@@ -569,16 +689,61 @@ def recommend_hybrid_for_user(
         src = sorted(pay["sources"])  # type: ignore[arg-type]
         scored_candidates.append((pid, sc, src))
 
+    # In focused mode, keep recommendations inside categories the user actually viewed.
+    if focused_mode and preferred_touch_cats:
+        in_category = [
+            item
+            for item in scored_candidates
+            if cand_cat_map.get(item[0], "") in preferred_touch_cats
+        ]
+        if in_category:
+            scored_candidates = in_category
+
+    scored_candidates = _apply_score_floor(
+        scored_candidates,
+        min_absolute=min_sim,
+        min_relative_ratio=params.min_relative_score_ratio,
+    )
+
     scored_candidates.sort(key=lambda t: (-t[1], t[0]))
     hydrated = scored_candidates[:limit]
     strategy = "hybrid_content_co_purchase"
+    if focused_mode:
+        strategy = "focused_content_similar"
 
-    if not hydrated:
+    touch_only_ids = set(touch_only_affinity.keys())
+    if not hydrated and touch_only_ids:
+        if focused_mode:
+            hydrated = _same_category_catalog_fallback(
+                db,
+                seeds,
+                exclude,
+                touch_only_ids,
+                limit,
+            )
+            if hydrated:
+                strategy = "same_category_fallback"
+        else:
+            hydrated = _content_similar_fallback(
+                index,
+                seeds,
+                exclude,
+                touch_only_ids,
+                limit,
+                min_similarity=min_sim,
+                cat_by_pid=cand_cat_map,
+                preferred_categories=preferred_touch_cats,
+                same_category_only=False,
+            )
+            if hydrated:
+                strategy = "content_similar_fallback"
+
+    if not hydrated and not focused_mode:
         hydrated = _affinity_revisit_fallback(affinity, exclude, limit)
         if hydrated:
             strategy = "affinity_revisit_fallback"
 
-    if not hydrated:
+    if not hydrated and not touch_only_ids:
         hydrated = _cold_start_fallback(
             db,
             exclude,
@@ -591,6 +756,7 @@ def recommend_hybrid_for_user(
 
     meta = {
         "cold_start": strategy == "cold_start_fallback",
+        "focused_mode": focused_mode,
         "total_behavioral_affinity_touch": float(sum(touch_only_affinity.values())),
         "interaction_rows": len(interactions),
         "distinct_touched_products": len(touch_only_affinity),

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from './AuthContext';
+import { useTUi } from '../i18n/uiText';
 import http from '../services/http';
 import { PRODUCT_ENDPOINTS, WISHLIST_ENDPOINTS, buildUrl } from '../config/api';
 
@@ -21,6 +22,7 @@ const mapWishlistItem = (item) => ({
 
 export const WishlistProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
+  const tUi = useTUi();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -50,10 +52,10 @@ export const WishlistProvider = ({ children }) => {
   const addToWishlist = useCallback(
     async (product) => {
       if (!isAuthenticated) {
-        return { success: false, error: 'Please login to add items to wishlist' };
+        return { success: false, error: tUi('ui.pages.wishlist.pleaseLoginToAdd_b4e8c2d3f6') };
       }
       if (wishlistItems.some((item) => item.name === product.name)) {
-        return { success: false, error: 'Product already in wishlist' };
+        return { success: false, error: tUi('ui.pages.wishlist.alreadyInWishlist_b4e8c2d3f7') };
       }
       setLoading(true);
       try {
@@ -66,20 +68,20 @@ export const WishlistProvider = ({ children }) => {
       } catch (error) {
         return {
           success: false,
-          error: error.response?.data?.detail || error.message || 'Failed to add to wishlist',
+          error: error.response?.data?.detail || error.message || tUi('ui.pages.wishlist.failedToAdd_b4e8c2d3f8'),
         };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, wishlistItems]
+    [isAuthenticated, tUi, wishlistItems]
   );
 
   const removeFromWishlist = useCallback(
     async (productName) => {
-      if (!isAuthenticated) return { success: false, error: 'Please login' };
+      if (!isAuthenticated) return { success: false, error: tUi('ui.pages.wishlist.pleaseLoginToAdd_b4e8c2d3f6') };
       const item = wishlistItems.find((entry) => entry.name === productName);
-      if (!item?.id) return { success: false, error: 'Item not found' };
+      if (!item?.id) return { success: false, error: tUi('ui.mobile.common.noResults') };
       const previous = [...wishlistItems];
       setWishlistItems((prev) => prev.filter((entry) => entry.name !== productName));
       setLoading(true);
@@ -90,13 +92,13 @@ export const WishlistProvider = ({ children }) => {
         setWishlistItems(previous);
         return {
           success: false,
-          error: error.response?.data?.detail || error.message || 'Failed to remove from wishlist',
+          error: error.response?.data?.detail || error.message || tUi('ui.pages.wishlist.removeFromWishlist_a74e7f0fd2'),
         };
       } finally {
         setLoading(false);
       }
     },
-    [isAuthenticated, wishlistItems]
+    [isAuthenticated, tUi, wishlistItems]
   );
 
   const isInWishlist = useCallback(

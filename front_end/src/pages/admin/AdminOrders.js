@@ -11,38 +11,68 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PageHeader from '../../components/PageHeader';
 import { useCurrency } from '../../hooks/useCurrency';
 import OrderMapTracker from '../../components/OrderMapTracker';
+import {
+  ADMIN_ORDER_STATUS_FILTERS,
+  filterOrdersByStatus,
+  getAvailableOrderStatusTransitions,
+  getOrderStatusLabel,
+} from '../../utils/orderStatuses';
 import '../../styles/pages/admin/AdminPanel.css';
 import '../../styles/pages/admin/AdminOrders.css';
 
-const ORDER_STATUS_LABEL_KEYS = {
-  created: 'ui.pages.orders.status.created',
-  pending: 'ui.pages.orders.status.pending',
-  paid: 'ui.pages.orders.status.paid',
-  preparing: 'ui.pages.orders.status.preparing',
-  assigned: 'ui.pages.orders.status.assigned',
-  picked_up: 'ui.pages.orders.status.pickedUp',
-  delivering: 'ui.pages.orders.status.delivering',
-  shipped: 'ui.pages.orders.status.shipped',
-  delivered: 'ui.pages.orders.status.delivered',
-  cancelled: 'ui.pages.orders.status.cancelled',
-  failed: 'ui.pages.orders.status.failed',
-  refunded: 'ui.pages.orders.status.refunded'
+const TIME_PERIODS = ['all', 'day', 'month', 'year'];
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+const formatDayInputValue = (date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+const formatMonthInputValue = (date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+
+const getDefaultTimeValue = (period) => {
+  const now = new Date();
+  if (period === 'day') return formatDayInputValue(now);
+  if (period === 'month') return formatMonthInputValue(now);
+  if (period === 'year') return String(now.getFullYear());
+  return '';
 };
 
-const ORDER_STATUSES = [
-  'all',
-  'revenue',
-  'pos',
-  'created',
-  'paid',
-  'preparing',
-  'assigned',
-  'picked_up',
-  'delivering',
-  'shipped',
-  'delivered',
-  'cancelled'
-];
+const parseOrderCreatedAt = (order) => {
+  if (!order?.created_at) return null;
+  const parsed = new Date(order.created_at);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const orderMatchesTimePeriod = (order, period, timeValue) => {
+  if (period === 'all') return true;
+
+  const createdAt = parseOrderCreatedAt(order);
+  if (!createdAt) return false;
+
+  if (period === 'day') {
+    if (!timeValue) return true;
+    const [y, m, d] = timeValue.split('-').map(Number);
+    return (
+      createdAt.getFullYear() === y
+      && createdAt.getMonth() + 1 === m
+      && createdAt.getDate() === d
+    );
+  }
+
+  if (period === 'month') {
+    if (!timeValue) return true;
+    const [y, m] = timeValue.split('-').map(Number);
+    return createdAt.getFullYear() === y && createdAt.getMonth() + 1 === m;
+  }
+
+  if (period === 'year') {
+    if (!timeValue) return true;
+    return createdAt.getFullYear() === Number(timeValue);
+  }
+
+  return true;
+};
 
 const AdminOrders = () => {
   const { t } = useTranslation();
@@ -57,40 +87,40 @@ const AdminOrders = () => {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [expandedOrderTab, setExpandedOrderTab] = useState('report');
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('filter') || 'all');
+  const [timePeriod, setTimePeriod] = useState(() => searchParams.get('period') || 'all');
+  const [timeValue, setTimeValue] = useState(() => {
+    const period = searchParams.get('period') || 'all';
+    return searchParams.get('date') || getDefaultTimeValue(period);
+  });
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
   useEffect(() => {
-    if (allOrders.length === 0) return;
-
-    if (statusFilter === 'all') {
-      setOrders(allOrders);
+    if (allOrders.length === 0) {
+      setOrders([]);
       return;
     }
 
-    if (statusFilter === 'revenue') {
-      setOrders(
-        allOrders.filter((order) => {
-          const status = (order.status || 'created').toLowerCase();
-          return status === 'paid' || status === 'shipped' || status === 'delivered';
-        })
-      );
-      return;
-    }
+    let next = filterOrdersByStatus(allOrders, statusFilter);
+    next = next.filter((order) => orderMatchesTimePeriod(order, timePeriod, timeValue));
+    setOrders(next);
+  }, [statusFilter, timePeriod, timeValue, allOrders]);
 
-    if (statusFilter === 'pos') {
-      setOrders(allOrders.filter((order) => order.sale_channel === 'pos'));
-      return;
+  const syncSearchParams = (nextStatus, nextPeriod, nextDate) => {
+    const params = {};
+    if (nextStatus && nextStatus !== 'all') {
+      params.filter = nextStatus;
     }
-
-    setOrders(
-      allOrders.filter(
-        (order) => (order.status || 'created').toLowerCase() === statusFilter.toLowerCase()
-      )
-    );
-  }, [statusFilter, allOrders]);
+    if (nextPeriod && nextPeriod !== 'all') {
+      params.period = nextPeriod;
+      if (nextDate) {
+        params.date = nextDate;
+      }
+    }
+    setSearchParams(params);
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -109,44 +139,59 @@ const AdminOrders = () => {
     }
   };
 
-  const getAvailableStatuses = (currentStatus) => {
-    if (currentStatus === 'paid') {
-      return ['shipped', 'cancelled'];
-    }
-    if (currentStatus === 'shipped') {
-      return ['delivered', 'cancelled'];
-    }
-    if (['assigned', 'picked_up', 'delivering'].includes(currentStatus)) {
-      return ['cancelled'];
-    }
-    return ['cancelled'];
-  };
+  const getAvailableStatuses = (order) =>
+    getAvailableOrderStatusTransitions(order?.status, { saleChannel: order?.sale_channel });
 
   const handleStatusFilterChange = (e) => {
     const filterValue = e.target.value;
     setStatusFilter(filterValue);
-    if (filterValue === 'all') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ filter: filterValue });
-    }
+    syncSearchParams(filterValue, timePeriod, timeValue);
   };
 
-  const getOrderStatusLabel = (status) => {
-    const normalized = String(status || 'created').toLowerCase();
-    const key = ORDER_STATUS_LABEL_KEYS[normalized];
-    if (key) return tUi(key);
-    return normalized.replace(/_/g, ' ');
+  const handleTimePeriodChange = (e) => {
+    const nextPeriod = e.target.value;
+    const nextValue = nextPeriod === 'all' ? '' : getDefaultTimeValue(nextPeriod);
+    setTimePeriod(nextPeriod);
+    setTimeValue(nextValue);
+    syncSearchParams(statusFilter, nextPeriod, nextValue);
   };
+
+  const handleTimeValueChange = (e) => {
+    const nextValue = e.target.value;
+    setTimeValue(nextValue);
+    syncSearchParams(statusFilter, timePeriod, nextValue);
+  };
+
+  const clearAllFilters = () => {
+    setStatusFilter('all');
+    setTimePeriod('all');
+    setTimeValue('');
+    setSearchParams({});
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || timePeriod !== 'all';
+
+  const resolveOrderStatusLabel = (status) => getOrderStatusLabel(status, tUi);
 
   const formatFilterLabel = (value) => {
     if (value === 'pos') return tUi('ui.pages.admin.adminOrders.pos_a479fcd150');
     if (value === 'revenue') return tUi('ui.pages.admin.adminOrders.revenue_a1caf5553a');
     if (value === 'all') return tUi('ui.pages.admin.adminOrders.all_80e364fbdb');
-    return getOrderStatusLabel(value);
+    return resolveOrderStatusLabel(value);
+  };
+
+  const formatTimePeriodLabel = (value) => {
+    if (value === 'all') return tUi('ui.pages.admin.adminOrders.timePeriodAll_a1b2c3d4e5');
+    if (value === 'day') return tUi('ui.pages.admin.adminOrders.timePeriodDay_f6g7h8i9j0');
+    if (value === 'month') return tUi('ui.pages.admin.adminOrders.timePeriodMonth_k1l2m3n4o5');
+    if (value === 'year') return tUi('ui.pages.admin.adminOrders.timePeriodYear_p6q7r8s9t0');
+    return value;
   };
 
   const getEmptyMessage = () => {
+    if (timePeriod !== 'all') {
+      return tUi('ui.pages.admin.adminOrders.noOrdersFoundForTime_u1v2w3x4y5');
+    }
     if (statusFilter === 'all') {
       return tUi('ui.pages.admin.adminOrders.noOrdersFound_fc2cb6ab28');
     }
@@ -206,12 +251,59 @@ const AdminOrders = () => {
                 value={statusFilter}
                 onChange={handleStatusFilterChange}
               >
-                {ORDER_STATUSES.map((status) => (
+                {ADMIN_ORDER_STATUS_FILTERS.map((status) => (
                   <option key={status} value={status}>
                     {formatFilterLabel(status)}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="adm-orders-filter-row">
+              <label className="adm-orders-filter-label" htmlFor="adm-orders-time-period">
+                {tUi('ui.pages.admin.adminOrders.filterByTime_z6a7b8c9d0')}
+              </label>
+              <select
+                id="adm-orders-time-period"
+                className="adm-orders-select adm-orders-select--time"
+                value={timePeriod}
+                onChange={handleTimePeriodChange}
+              >
+                {TIME_PERIODS.map((period) => (
+                  <option key={period} value={period}>
+                    {formatTimePeriodLabel(period)}
+                  </option>
+                ))}
+              </select>
+              {timePeriod === 'day' && (
+                <input
+                  type="date"
+                  className="adm-orders-date-input"
+                  value={timeValue}
+                  onChange={handleTimeValueChange}
+                  aria-label={tUi('ui.pages.admin.adminOrders.selectDay_e1f2g3h4i5')}
+                />
+              )}
+              {timePeriod === 'month' && (
+                <input
+                  type="month"
+                  className="adm-orders-date-input"
+                  value={timeValue}
+                  onChange={handleTimeValueChange}
+                  aria-label={tUi('ui.pages.admin.adminOrders.selectMonth_j6k7l8m9n0')}
+                />
+              )}
+              {timePeriod === 'year' && (
+                <input
+                  type="number"
+                  className="adm-orders-date-input adm-orders-date-input--year"
+                  min="2000"
+                  max="2100"
+                  step="1"
+                  value={timeValue}
+                  onChange={handleTimeValueChange}
+                  aria-label={tUi('ui.pages.admin.adminOrders.selectYear_o1p2q3r4s5')}
+                />
+              )}
             </div>
             <p className="adm-orders-header-meta" aria-live="polite">
               <strong>{orders.length}</strong> {orderCountLabel}
@@ -237,14 +329,11 @@ const AdminOrders = () => {
         ) : orders.length === 0 ? (
           <div className="adm-orders-empty">
             <p>{getEmptyMessage()}</p>
-            {statusFilter !== 'all' && (
+            {hasActiveFilters && (
               <button
                 type="button"
                 className="adm-btn-secondary"
-                onClick={() => {
-                  setStatusFilter('all');
-                  setSearchParams({});
-                }}
+                onClick={clearAllFilters}
               >
                 {tUi('ui.pages.admin.adminOrders.showAllOrders_a234fdd874')}
               </button>
@@ -325,12 +414,12 @@ const AdminOrders = () => {
                           <td className="adm-orders-total">{formatCurrency(order.total_amount)}</td>
                           <td className="adm-orders-col-status">
                             <span className={`adm-orders-status adm-orders-status--${orderStatus || 'created'}`}>
-                              {getOrderStatusLabel(order.status || 'created')}
+                              {resolveOrderStatusLabel(order.status || 'created')}
                             </span>
                           </td>
                           <td className="adm-orders-col-actions">
                             <div className="adm-orders-actions">
-                              {getAvailableStatuses(order.status || 'created').length > 0 ? (
+                              {getAvailableStatuses(order).length > 0 ? (
                                 <select
                                   value={selectedStatus[order.id] || ''}
                                   onChange={(e) => {
@@ -345,9 +434,9 @@ const AdminOrders = () => {
                                   <option value="">
                                     {tUi('ui.pages.admin.adminOrders.changeStatus_82cd1fa50c')}
                                   </option>
-                                  {getAvailableStatuses(order.status || 'created').map((status) => (
+                                  {getAvailableStatuses(order).map((status) => (
                                     <option key={status} value={status}>
-                                      {getOrderStatusLabel(status)}
+                                      {resolveOrderStatusLabel(status)}
                                     </option>
                                   ))}
                                 </select>

@@ -1,7 +1,9 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { I18nManager } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import Toast from 'react-native-toast-message';
 import { DEFAULT_LANGUAGE, normalizeLanguageCode, SUPPORTED_LANGUAGES } from '../i18n/constants';
+import { tUi } from '../i18n/uiText';
 
 const LANGUAGE_STORAGE_KEY = 'app_language';
 
@@ -9,6 +11,8 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
+  const didHydrateRef = useRef(false);
+  const userChangedLanguageRef = useRef(false);
 
   useEffect(() => {
     SecureStore.getItemAsync(LANGUAGE_STORAGE_KEY)
@@ -16,8 +20,11 @@ export function LanguageProvider({ children }) {
         if (stored) {
           setLanguageState(normalizeLanguageCode(stored));
         }
+        didHydrateRef.current = true;
       })
-      .catch(() => {});
+      .catch(() => {
+        didHydrateRef.current = true;
+      });
   }, []);
 
   useEffect(() => {
@@ -25,11 +32,18 @@ export function LanguageProvider({ children }) {
     if (I18nManager.isRTL !== shouldUseRtl) {
       I18nManager.allowRTL(shouldUseRtl);
       I18nManager.forceRTL(shouldUseRtl);
+      if (didHydrateRef.current && userChangedLanguageRef.current) {
+        Toast.show({
+          type: 'info',
+          text1: tUi('ui.mobile.language.restartRequired', language),
+        });
+      }
     }
   }, [language]);
 
   const setLanguage = useCallback(async (languageCode) => {
     const normalized = normalizeLanguageCode(languageCode);
+    userChangedLanguageRef.current = true;
     setLanguageState(normalized);
     try {
       await SecureStore.setItemAsync(LANGUAGE_STORAGE_KEY, normalized);

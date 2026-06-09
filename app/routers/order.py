@@ -443,15 +443,15 @@ def update_order_status(
     
     Allowed transitions:
     - paid → preparing (Seller)
-    - paid → shipped
     - preparing → packed (Warehouse Staff)
     - packed → ready_for_pickup (Warehouse Manager)
-    - ready_for_pickup → shipped
-    - shipped → delivered
+    - ready_for_pickup → delivered
+    - delivery: assigned → picked_up → delivering → delivered
+    - legacy shipped → delivered only
     - any status → cancelled
     """
-    # Validate status value
-    valid_statuses = ["created", "paid", "preparing", "packed", "ready_for_pickup", "shipped", "delivered", "cancelled", "assigned", "picked_up", "delivering"]
+    # Validate status value ("shipped" kept only for legacy order records)
+    valid_statuses = ["created", "paid", "preparing", "packed", "ready_for_pickup", "delivered", "cancelled", "assigned", "picked_up", "delivering"]
     if status_update.status not in valid_statuses:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -532,10 +532,7 @@ def update_order_status(
     # Allow cancellation from created status (no stock to restore)
     elif new_status == "cancelled" and current_status == "created":
         order.status = new_status
-    # Allow paid → shipped
-    elif current_status == "paid" and new_status == "shipped":
-        order.status = new_status
-    # Allow shipped → delivered
+    # Legacy: shipped → delivered (no new orders should enter shipped)
     elif current_status == "shipped" and new_status == "delivered":
         order.status = new_status
     # Allow assigned → picked_up → delivering → delivered (these are usually handled via delivery module but just in case)
@@ -557,14 +554,17 @@ def update_order_status(
     # Warehouse flow: packed → ready_for_pickup (Warehouse Manager action)
     elif current_status == "packed" and new_status == "ready_for_pickup":
         order.status = new_status
-    # Allow ready_for_pickup → shipped
-    elif current_status == "ready_for_pickup" and new_status == "shipped":
+    # ready_for_pickup → delivered
+    elif current_status == "ready_for_pickup" and new_status == "delivered":
+        order.status = new_status
+    # POS: paid → delivered
+    elif current_status == "paid" and new_status == "delivered" and order.sale_channel == "pos":
         order.status = new_status
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status transition from '{current_status}' to '{new_status}'. "
-                   f"Allowed transitions: created→paid, paid→shipped, shipped→delivered, any→cancelled"
+                   f"Allowed transitions include created→paid, paid→preparing, ready_for_pickup→delivered, any→cancelled"
         )
     
     db.commit()

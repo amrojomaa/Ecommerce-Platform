@@ -13,8 +13,20 @@ const getExpoLanHost = () => {
   return null;
 };
 
-const API_HOST = getExpoLanHost() || '192.168.1.2';
-const API_BASE_URL = `http://${API_HOST}:8000`;
+const resolveApiBaseUrl = () => {
+  const explicitUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, '');
+  }
+
+  const explicitHost = process.env.EXPO_PUBLIC_API_HOST?.trim();
+  const host = explicitHost || getExpoLanHost() || (__DEV__ ? '192.168.1.2' : 'localhost');
+  const protocol = process.env.EXPO_PUBLIC_API_PROTOCOL?.trim() || (__DEV__ ? 'http' : 'https');
+  const port = process.env.EXPO_PUBLIC_API_PORT?.trim() || '8000';
+  return `${protocol}://${host}:${port}`;
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 // Authentication endpoints
 export const AUTH_ENDPOINTS = {
@@ -33,6 +45,7 @@ export const AUTH_ENDPOINTS = {
 // Product endpoints
 export const PRODUCT_ENDPOINTS = {
   ALL: '/products/all',
+  HOME_SUMMARY: '/products/home-summary',
   ALL_ADMIN: '/products/alladmin',
   BY_NAME: '/products/name/byuser',
   BY_ID: '/products/{id}',
@@ -186,6 +199,12 @@ export const PAYMENT_ENDPOINTS = {
   CONFIRM: '/payment/confirm',
 };
 
+// AI assistant endpoints
+export const AI_ASSISTANT_ENDPOINTS = {
+  CHAT: '/ai-assistant/chat',
+  CLEAR: '/ai-assistant/chat/clear',
+};
+
 // Recommendation endpoints
 export const RECOMMENDATION_ENDPOINTS = {
   EVENTS: '/recommendations/events',
@@ -244,6 +263,7 @@ export const COMMENT_ENDPOINTS = {
   ALL: '/comments/all',
   APPROVE: '/comments/{comment_id}/approve',
   SENTIMENT_ANALYTICS: '/products/{product_id}/sentiment-analytics',
+  SENTIMENT_ANALYTICS_BULK: '/comments/sentiment-analytics/bulk',
 };
 
 export const RATING_ENDPOINTS = {

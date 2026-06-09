@@ -41,25 +41,24 @@ const WarehouseStaffDashboard = () => {
         /* use default */
       }
 
-      const [prepRes, packedRes, productsRes] = await Promise.all([
+      const [prepRes, packedRes, statsRes, alertsRes] = await Promise.all([
         http.get(WAREHOUSE_ENDPOINTS.PREPARING_ORDERS),
         http.get(WAREHOUSE_ENDPOINTS.PACKED_ORDERS),
-        http.get(PRODUCT_ENDPOINTS.ALL_ADMIN),
+        http.get(PRODUCT_ENDPOINTS.ADMIN_STATS, { params: { threshold } }),
+        http.get(PRODUCT_ENDPOINTS.STOCK_ALERTS, { params: { threshold, limit: 8 } }),
       ]);
 
       const preparing = Array.isArray(prepRes.data) ? prepRes.data : [];
       const packed = Array.isArray(packedRes.data) ? packedRes.data : [];
-      const products = Array.isArray(productsRes.data) ? productsRes.data : [];
-      const lowStock = products.filter((p) => p.quantity > 0 && p.quantity < threshold);
-      const outOfStock = products.filter((p) => p.quantity === 0);
+      const productStats = statsRes.data || {};
 
-      setLowStockItems(lowStock.slice(0, 8));
+      setLowStockItems(Array.isArray(alertsRes.data) ? alertsRes.data : []);
       setStats({
         preparingCount: preparing.length,
         packedCount: packed.length,
-        totalProducts: products.length,
-        lowStockProducts: lowStock.length,
-        outOfStockProducts: outOfStock.length,
+        totalProducts: productStats.total ?? 0,
+        lowStockProducts: productStats.low_stock ?? 0,
+        outOfStockProducts: productStats.out_of_stock ?? 0,
       });
     } catch (error) {
       console.error('Error fetching warehouse staff dashboard data:', error);

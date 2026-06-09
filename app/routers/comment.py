@@ -36,6 +36,8 @@ def _comment_to_display(comment: models.DBComment, ratings_map: dict[tuple[int, 
         "content": comment.content,
         "rating": ratings_map.get((comment.product_id, comment.user_id)),
         "sentiment": comment.sentiment,
+        "product_id": comment.product_id,
+        "is_reported": bool(comment.is_reported),
         "created_at": comment.created_at,
         "user": comment.user,
     }
@@ -259,7 +261,7 @@ def get_all_comments(
 def report_comment(
     comment_id: int,
     db: Session = Depends(get_db),
-    current_user: int = Depends(OAuth2.get_current_user)
+    current_user = Depends(OAuth2.get_current_user),
 ):
     """
     Report a comment for moderation. Any authenticated user can report.
@@ -267,11 +269,22 @@ def report_comment(
     comment = db.query(models.DBComment).filter(models.DBComment.id == comment_id).first()
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-    
+
+    if comment.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot report your own comment",
+        )
+
+    if comment.is_reported:
+        ratings_map = _ratings_map_for_comments(db, [comment])
+        return _comment_to_display(comment, ratings_map)
+
     comment.is_reported = True
     db.commit()
     db.refresh(comment)
-    return comment
+    ratings_map = _ratings_map_for_comments(db, [comment])
+    return _comment_to_display(comment, ratings_map)
 
 
 @router.patch("/comments/{comment_id}/approve", response_model=schemas.CommentDisplay)
@@ -290,7 +303,8 @@ def approve_comment(
     comment.is_reported = False
     db.commit()
     db.refresh(comment)
-    return comment
+    ratings_map = _ratings_map_for_comments(db, [comment])
+    return _comment_to_display(comment, ratings_map)
 
 
 @router.get("/products/{product_id}/sentiment-analytics", response_model=schemas.ProductSentimentAnalytics)
@@ -348,6 +362,77 @@ def get_product_sentiment_analytics(
         neutral_count=neutral_count,
         negative_count=negative_count
     )
+
+
+@router.get("/comments/sentiment-analytics/bulk", response_model=List[schemas.ProductSentimentAnalytics])
+def get_bulk_product_sentiment_analytics(
+    product_ids: str = Query(..., description="Comma-separated product IDs"),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin_or_support_manager),
+):
+    """Return sentiment analytics for many products in one request."""
+    parsed_ids: list[int] = []
+    for raw_id in product_ids.split(","):
+        raw_id = raw_id.strip()
+        if raw_id.isdigit():
+            parsed_ids.append(int(raw_id))
+
+    if not parsed_ids:
+        return []
+
+    total_rows = (
+        db.query(models.DBComment.product_id, func.count(models.DBComment.id))
+        .filter(models.DBComment.product_id.in_(parsed_ids))
+        .group_by(models.DBComment.product_id)
+        .all()
+    )
+    totals_by_product = {product_id: int(count) for product_id, count in total_rows}
+
+    sentiment_rows = (
+        db.query(
+            models.DBComment.product_id,
+            models.DBComment.sentiment,
+            func.count(models.DBComment.id).label("count"),
+        )
+        .filter(
+            models.DBComment.product_id.in_(parsed_ids),
+            models.DBComment.sentiment.isnot(None),
+        )
+        .group_by(models.DBComment.product_id, models.DBComment.sentiment)
+        .all()
+    )
+
+    analytics_by_product: dict[int, dict[str, int]] = {
+        product_id: {
+            "total_reviews": totals_by_product.get(product_id, 0),
+            "positive_count": 0,
+            "neutral_count": 0,
+            "negative_count": 0,
+        }
+        for product_id in parsed_ids
+    }
+
+    for product_id, sentiment, count in sentiment_rows:
+        bucket = analytics_by_product.setdefault(
+            product_id,
+            {
+                "total_reviews": totals_by_product.get(product_id, 0),
+                "positive_count": 0,
+                "neutral_count": 0,
+                "negative_count": 0,
+            },
+        )
+        if sentiment == "positive":
+            bucket["positive_count"] = int(count)
+        elif sentiment == "neutral":
+            bucket["neutral_count"] = int(count)
+        elif sentiment == "negative":
+            bucket["negative_count"] = int(count)
+
+    return [
+        schemas.ProductSentimentAnalytics(product_id=product_id, **analytics_by_product[product_id])
+        for product_id in parsed_ids
+    ]
 
 
 @router.post("/comments/backfill-sentiment", status_code=status.HTTP_200_OK)

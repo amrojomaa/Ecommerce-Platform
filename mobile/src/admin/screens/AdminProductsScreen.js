@@ -106,19 +106,42 @@ const AdminProductsScreen = () => {
   }, []);
 
   const fetchSentimentAnalytics = useCallback(async (productsToAnalyze) => {
+    if (!productsToAnalyze.length) {
+      setSentimentAnalytics({});
+      return;
+    }
+
     const analytics = {};
-    await Promise.all(
-      productsToAnalyze.map(async (product) => {
-        try {
-          const response = await http.get(
-            buildUrl(COMMENT_ENDPOINTS.SENTIMENT_ANALYTICS, { product_id: product.id })
-          );
-          analytics[product.id] = response.data || DEFAULT_ANALYTICS;
-        } catch (_) {
-          analytics[product.id] = DEFAULT_ANALYTICS;
+    const chunkSize = 100;
+
+    try {
+      for (let index = 0; index < productsToAnalyze.length; index += chunkSize) {
+        const chunk = productsToAnalyze.slice(index, index + chunkSize);
+        const productIds = chunk.map((product) => product.id).filter(Boolean).join(',');
+        if (!productIds) continue;
+
+        const response = await http.get(COMMENT_ENDPOINTS.SENTIMENT_ANALYTICS_BULK, {
+          params: { product_ids: productIds },
+        });
+
+        (response.data || []).forEach((item) => {
+          analytics[item.product_id] = item;
+        });
+      }
+
+      productsToAnalyze.forEach((product) => {
+        if (product.id && !analytics[product.id]) {
+          analytics[product.id] = { ...DEFAULT_ANALYTICS, product_id: product.id };
         }
-      })
-    );
+      });
+    } catch (_) {
+      productsToAnalyze.forEach((product) => {
+        if (product.id) {
+          analytics[product.id] = { ...DEFAULT_ANALYTICS, product_id: product.id };
+        }
+      });
+    }
+
     setSentimentAnalytics(analytics);
   }, []);
 

@@ -126,7 +126,12 @@ const OrdersScreen = () => {
   const subtitle =
     orders.length === 0
       ? tUi('ui.pages.orders.subtitleEmpty_b4e8c2d3e1')
-      : tUi('ui.pages.orders.subtitleWithCount_b4e8c2d3e0', { count: orders.length });
+      : tUi(
+          orders.length === 1
+            ? 'ui.pages.orders.subtitleWithCount_b4e8c2d3e0'
+            : 'ui.pages.orders.subtitleWithCount_b4e8c2d3e0_plural',
+          { count: orders.length }
+        );
 
   return (
     <CustomerScreen showBack title={tUi('ui.pages.orders.myOrders_9215f6342b')} subtitle={subtitle}>

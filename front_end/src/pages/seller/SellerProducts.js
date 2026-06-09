@@ -27,7 +27,9 @@ const SellerProducts = () => {
 
   const fetchProducts = useCallback(async () => {
     try {
-      const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN);
+      const res = await http.get(PRODUCT_ENDPOINTS.ALL_ADMIN, {
+        params: { catalog_only: true },
+      });
       setProducts(res.data || []);
     } catch (error) {
       console.error('Error fetching products:', error);

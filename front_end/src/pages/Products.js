@@ -17,41 +17,11 @@ import { toast } from 'react-toastify';
 import '../styles/pages/Products.css';
 import { trackRecommendationEvent } from '../services/recommendations';
 import { addRecentSearch } from '../utils/recentSearches';
-import { getImageUrl } from '../utils/helpers';
+import { getCatalogImageUrl } from '../utils/helpers';
 import { normalizeLanguageCode } from '../i18n/constants';
 import { localizeProduct } from '../utils/localizedContent';
-
-const formatPromotionMessage = (message, languageCode) => {
-  if (!message) {
-    return '';
-  }
-
-  const selectedProductsMatch = message.match(
-    /^Promotion available:\s*Spend\s*(?<target>.+?)\s*on selected products\s*\((?<items>.+?)\)\s*and get\s*(?<discount>.+?)\s*off\.$/i
-  );
-
-  if (selectedProductsMatch?.groups) {
-    return tUi('ui.pages.products.promotionAvailableSelectedProducts', {
-      target: selectedProductsMatch.groups.target,
-      items: selectedProductsMatch.groups.items,
-      discount: selectedProductsMatch.groups.discount,
-    });
-  }
-
-  const selectedCategoriesMatch = message.match(
-    /^Promotion available:\s*Spend\s*(?<target>.+?)\s*on selected categories\s*\((?<items>.+?)\)\s*and get\s*(?<discount>.+?)\s*off\.$/i
-  );
-
-  if (selectedCategoriesMatch?.groups) {
-    return tUi('ui.pages.products.promotionAvailableSelectedCategories', {
-      target: selectedCategoriesMatch.groups.target,
-      items: selectedCategoriesMatch.groups.items,
-      discount: selectedCategoriesMatch.groups.discount,
-    });
-  }
-
-  return languageCode === 'en' ? message : tUi('ui.pages.products.promotionAvailableFallback');
-};
+import { fetchAllCatalogProducts } from '../utils/productCatalog';
+import { buildLocalizedPromotionDisplay } from '../utils/promotionMessage';
 
 const getDiscountPercent = (product) => {
   if (!product?.discount_enabled || !product.price || !product.discounted_price) {
@@ -74,7 +44,8 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
-  const [activePromotionMessage, setActivePromotionMessage] = useState('');
+  const [activePromotion, setActivePromotion] = useState(null);
+  const [catalogProducts, setCatalogProducts] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
@@ -96,10 +67,13 @@ const Products = () => {
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, selectedCategory, minPrice, maxPrice, isAuthenticated]);
+  }, [searchParams, isAuthenticated]);
 
   useEffect(() => {
-    fetchActivePromotionMessage();
+    fetchActivePromotion();
+    fetchAllCatalogProducts()
+      .then((data) => setCatalogProducts(Array.isArray(data) ? data : []))
+      .catch(() => setCatalogProducts([]));
   }, []);
 
   useEffect(() => {
@@ -124,17 +98,21 @@ const Products = () => {
     setLoading(true);
     try {
       let response;
-      const hasFilters = searchTerm || selectedCategory || minPrice || maxPrice;
+      const appliedSearch = searchParams.get('search') || '';
+      const appliedCategory = searchParams.get('category') || '';
+      const appliedMinPrice = searchParams.get('min_price') || '';
+      const appliedMaxPrice = searchParams.get('max_price') || '';
+      const hasFilters = appliedSearch || appliedCategory || appliedMinPrice || appliedMaxPrice;
 
       if (hasFilters) {
         const endpoint = isAuthenticated ?
           PRODUCT_ENDPOINTS.FILTER_USER :
           PRODUCT_ENDPOINTS.FILTER;
         const params = {};
-        if (searchTerm) params.name = searchTerm;
-        if (selectedCategory) params.category = selectedCategory;
-        if (minPrice) params.min_price = minPrice;
-        if (maxPrice) params.max_price = maxPrice;
+        if (appliedSearch) params.name = appliedSearch;
+        if (appliedCategory) params.category = appliedCategory;
+        if (appliedMinPrice) params.min_price = appliedMinPrice;
+        if (appliedMaxPrice) params.max_price = appliedMaxPrice;
 
         try {
           response = await http.get(endpoint, { params });
@@ -152,8 +130,7 @@ const Products = () => {
           }
         }
       } else {
-        response = await http.get(PRODUCT_ENDPOINTS.ALL);
-        const fetchedProducts = response.data;
+        const fetchedProducts = await fetchAllCatalogProducts();
         setProducts(fetchedProducts);
         const uniqueCategories = [...new Set(fetchedProducts.map((p) => p.category_name))];
         setCategories(uniqueCategories);
@@ -166,13 +143,12 @@ const Products = () => {
     }
   };
 
-  const fetchActivePromotionMessage = async () => {
+  const fetchActivePromotion = async () => {
     try {
       const response = await http.get(PROMOTION_ENDPOINTS.ACTIVE);
-      const promotion = response?.data;
-      setActivePromotionMessage(promotion?.customer_message || '');
+      setActivePromotion(response?.data || null);
     } catch {
-      setActivePromotionMessage('');
+      setActivePromotion(null);
     }
   };
 
@@ -241,28 +217,16 @@ const Products = () => {
     () => sortedProducts.filter((product) => product.discount_enabled),
     [sortedProducts]
   );
-  const localizedPromotionMessage = useMemo(
-    () => formatPromotionMessage(activePromotionMessage, languageCode),
-    [activePromotionMessage, languageCode]
+  const promotionDisplay = useMemo(
+    () =>
+      buildLocalizedPromotionDisplay(activePromotion, {
+        languageCode,
+        formatCurrency,
+        catalogProducts,
+        tUi,
+      }),
+    [activePromotion, languageCode, formatCurrency, catalogProducts]
   );
-  const promotionDisplay = useMemo(() => {
-    if (!localizedPromotionMessage) {
-      return null;
-    }
-
-    const colonIndex = localizedPromotionMessage.indexOf(':');
-    if (colonIndex > 0 && colonIndex < 48) {
-      return {
-        kicker: localizedPromotionMessage.slice(0, colonIndex).trim(),
-        body: localizedPromotionMessage.slice(colonIndex + 1).trim(),
-      };
-    }
-
-    return {
-      kicker: '',
-      body: localizedPromotionMessage,
-    };
-  }, [localizedPromotionMessage]);
 
   const getCategoryLabel = (categoryValue) => {
     const matched = products.find((p) => p.category_name === categoryValue);
@@ -300,14 +264,9 @@ const Products = () => {
     const discountPercent = getDiscountPercent(product);
 
     return (
-      <motion.div
+      <div
         key={`discount-${product.name}`}
         className="products-discount-card-wrapper"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: index * 0.05, duration: 0.4 }}
-        whileHover={{ y: -5 }}
       >
         <Link to={`/products/${encodeURIComponent(product.name)}`} className="products-discount-card">
           <div className="products-discount-card-media">
@@ -317,9 +276,11 @@ const Products = () => {
             }
             <img
               src={product.images && product.images.length > 0 ?
-                getImageUrl(product.images[0]) :
-                getImageUrl('/images/placeholder.jpg')}
+                getCatalogImageUrl(product.images[0]) :
+                getCatalogImageUrl('/images/placeholder.jpg')}
               alt={product.localized_name}
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <div className="products-discount-card-body">
@@ -344,31 +305,28 @@ const Products = () => {
             </button>
           }
         </Link>
-      </motion.div>
+      </div>
     );
   };
 
   const renderProductCard = (product, index) => (
-    <motion.div
+    <div
       key={product.name}
       className="products-card-wrapper"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: (index % itemsPerPage) * 0.04, duration: 0.4 }}
-      whileHover={{ y: -5 }}
     >
       <Link to={`/products/${encodeURIComponent(product.name)}`} className="products-card">
         <div className="products-card-media">
           <span className="products-card-media-category">{product.localized_category_name}</span>
           <img
             src={product.images && product.images.length > 0 ?
-              getImageUrl(product.images[0]) :
-              getImageUrl('/images/placeholder.jpg')}
+              getCatalogImageUrl(product.images[0]) :
+              getCatalogImageUrl('/images/placeholder.jpg')}
             alt={product.localized_name}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = getImageUrl('/images/placeholder.jpg');
+              e.currentTarget.src = getCatalogImageUrl('/images/placeholder.jpg');
             }}
           />
           {isAuthenticated &&
@@ -406,7 +364,7 @@ const Products = () => {
                 size="small"
                 initialAverageRating={product.average_rating}
                 initialTotalRatings={product.total_ratings}
-                fetchOnMount={!Number.isFinite(Number(product.average_rating))}
+                fetchOnMount={false}
               />
             </div>
           }
@@ -435,7 +393,7 @@ const Products = () => {
           </div>
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 
   return (

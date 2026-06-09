@@ -544,7 +544,8 @@
 }
 
 .comment-delete-btn,
-.comment-edit-btn {
+.comment-edit-btn,
+.comment-report-btn {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -555,6 +556,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.comment-report-btn:hover {
+  color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.comment-report-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .comment-edit-btn:hover {

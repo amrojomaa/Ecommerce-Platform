@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,88 +16,97 @@ import { ConfirmProvider } from './context/ConfirmContext';
 // Layouts
 import MainLayout from './layouts/MainLayout';
 import AdminLayout from './layouts/AdminLayout';
+import SupportAgentLayout from './layouts/SupportAgentLayout';
+import DriverLayout from './layouts/DriverLayout';
+import CashierLayout from './layouts/CashierLayout';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
-
-// Pages - User
-import Home from './pages/Home';
-import Products from './pages/Products';
-import ProductDetails from './pages/ProductDetails';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Payment from './pages/Payment';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import EmailVerification from './pages/EmailVerification';
-import ForgotPassword from './pages/ForgotPassword';
-import VerifyResetCode from './pages/VerifyResetCode';
-import ResetPassword from './pages/ResetPassword';
-import Orders from './pages/Orders';
-import Profile from './pages/Profile';
-import Wishlist from './pages/Wishlist';
-import Recommendations from './pages/Recommendations';
-import AboutUs from './pages/AboutUs';
-import Tickets from './pages/Tickets';
-import Installments from './pages/Installments';
-
-//Pages - Admin
-import AdminDashboard from './pages/admin/AdminDashboard';
-import OperationsManagerDashboard from './pages/admin/OperationsManagerDashboard';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminUserDetails from './pages/admin/AdminUserDetails';
-import AdminTickets from './pages/admin/AdminTickets';
-import AdminComments from './pages/admin/AdminComments';
-import AdminFeedback from './pages/admin/AdminFeedback';
-import AdminDeliveries from './pages/admin/AdminDeliveries';
-import AdminDiscounts from './pages/admin/AdminDiscounts';
-import AdminPromotions from './pages/admin/AdminPromotions';
-import AdminInstallments from './pages/admin/AdminInstallments';
-import AdminPosAnalytics from './pages/admin/AdminPosAnalytics';
-
-//Pages - Support Manager
-import SupportManagerDashboard from './pages/support-manager/SupportManagerDashboard';
-import SupportManagerComments from './pages/support-manager/SupportManagerComments';
-
-//Pages - Support Agent
-import SupportAgentLayout from './layouts/SupportAgentLayout';
-import SupportAgentDashboard from './pages/support-agent/SupportAgentDashboard';
-import SupportAgentTickets from './pages/support-agent/SupportAgentTickets';
-import SupportAgentChats from './pages/support-agent/SupportAgentChats';
-
-//Pages - Driver
-import DriverLayout from './layouts/DriverLayout';
-import DriverDashboard from './pages/driver/DriverDashboard';
-import DriverMap from './pages/driver/DriverMap';
-import DriverActiveJob from './pages/driver/DriverActiveJob';
-import DriverJobHistory from './pages/driver/DriverJobHistory';
-
-// Cashier / POS
-import CashierLayout from './layouts/CashierLayout';
-import PosTerminal from './pages/cashier/PosTerminal';
-
-// Seller
-import SellerDashboard from './pages/seller/SellerDashboard';
-import SellerProducts from './pages/seller/SellerProducts';
-import SellerOrders from './pages/seller/SellerOrders';
-
-// Warehouse Staff
-import WarehouseStaffDashboard from './pages/warehouse-staff/WarehouseStaffDashboard';
-import WarehouseStaffOrders from './pages/warehouse-staff/WarehouseStaffOrders';
-import WarehouseStaffProducts from './pages/warehouse-staff/WarehouseStaffProducts';
-
-// Warehouse Manager
-import WarehouseManagerDashboard from './pages/warehouse-manager/WarehouseManagerDashboard';
-import WarehouseInventory from './pages/warehouse-manager/WarehouseInventory';
-import WarehouseApprovals from './pages/warehouse-manager/WarehouseApprovals';
-import WarehouseIssues from './pages/warehouse-manager/WarehouseIssues';
+import LoadingSpinner from './components/LoadingSpinner';
 
 // Styles
 import './styles/App.css';
 import { isRtlLanguage, normalizeLanguageCode } from './i18n/constants';
+
+const PageFallback = () => (
+  <div className="page-loading">
+    <LoadingSpinner size="large" />
+  </div>
+);
+
+const lazyPage = (loader) => lazy(loader);
+
+// Pages - User
+const Home = lazyPage(() => import('./pages/Home'));
+const Products = lazyPage(() => import('./pages/Products'));
+const ProductDetails = lazyPage(() => import('./pages/ProductDetails'));
+const Cart = lazyPage(() => import('./pages/Cart'));
+const Checkout = lazyPage(() => import('./pages/Checkout'));
+const Payment = lazyPage(() => import('./pages/Payment'));
+const Login = lazyPage(() => import('./pages/Login'));
+const Signup = lazyPage(() => import('./pages/Signup'));
+const EmailVerification = lazyPage(() => import('./pages/EmailVerification'));
+const ForgotPassword = lazyPage(() => import('./pages/ForgotPassword'));
+const VerifyResetCode = lazyPage(() => import('./pages/VerifyResetCode'));
+const ResetPassword = lazyPage(() => import('./pages/ResetPassword'));
+const Orders = lazyPage(() => import('./pages/Orders'));
+const Profile = lazyPage(() => import('./pages/Profile'));
+const Wishlist = lazyPage(() => import('./pages/Wishlist'));
+const Recommendations = lazyPage(() => import('./pages/Recommendations'));
+const AboutUs = lazyPage(() => import('./pages/AboutUs'));
+const Tickets = lazyPage(() => import('./pages/Tickets'));
+const Installments = lazyPage(() => import('./pages/Installments'));
+
+// Pages - Admin
+const AdminDashboard = lazyPage(() => import('./pages/admin/AdminDashboard'));
+const OperationsManagerDashboard = lazyPage(() => import('./pages/admin/OperationsManagerDashboard'));
+const AdminProducts = lazyPage(() => import('./pages/admin/AdminProducts'));
+const AdminCategories = lazyPage(() => import('./pages/admin/AdminCategories'));
+const AdminOrders = lazyPage(() => import('./pages/admin/AdminOrders'));
+const AdminUsers = lazyPage(() => import('./pages/admin/AdminUsers'));
+const AdminUserDetails = lazyPage(() => import('./pages/admin/AdminUserDetails'));
+const AdminTickets = lazyPage(() => import('./pages/admin/AdminTickets'));
+const AdminComments = lazyPage(() => import('./pages/admin/AdminComments'));
+const AdminFeedback = lazyPage(() => import('./pages/admin/AdminFeedback'));
+const AdminDeliveries = lazyPage(() => import('./pages/admin/AdminDeliveries'));
+const AdminDiscounts = lazyPage(() => import('./pages/admin/AdminDiscounts'));
+const AdminPromotions = lazyPage(() => import('./pages/admin/AdminPromotions'));
+const AdminInstallments = lazyPage(() => import('./pages/admin/AdminInstallments'));
+const AdminPosAnalytics = lazyPage(() => import('./pages/admin/AdminPosAnalytics'));
+
+// Pages - Support Manager
+const SupportManagerDashboard = lazyPage(() => import('./pages/support-manager/SupportManagerDashboard'));
+const SupportManagerComments = lazyPage(() => import('./pages/support-manager/SupportManagerComments'));
+
+// Pages - Support Agent
+const SupportAgentDashboard = lazyPage(() => import('./pages/support-agent/SupportAgentDashboard'));
+const SupportAgentTickets = lazyPage(() => import('./pages/support-agent/SupportAgentTickets'));
+const SupportAgentChats = lazyPage(() => import('./pages/support-agent/SupportAgentChats'));
+
+// Pages - Driver
+const DriverDashboard = lazyPage(() => import('./pages/driver/DriverDashboard'));
+const DriverMap = lazyPage(() => import('./pages/driver/DriverMap'));
+const DriverActiveJob = lazyPage(() => import('./pages/driver/DriverActiveJob'));
+const DriverJobHistory = lazyPage(() => import('./pages/driver/DriverJobHistory'));
+
+// Cashier / POS
+const PosTerminal = lazyPage(() => import('./pages/cashier/PosTerminal'));
+
+// Seller
+const SellerDashboard = lazyPage(() => import('./pages/seller/SellerDashboard'));
+const SellerProducts = lazyPage(() => import('./pages/seller/SellerProducts'));
+const SellerOrders = lazyPage(() => import('./pages/seller/SellerOrders'));
+
+// Warehouse Staff
+const WarehouseStaffDashboard = lazyPage(() => import('./pages/warehouse-staff/WarehouseStaffDashboard'));
+const WarehouseStaffOrders = lazyPage(() => import('./pages/warehouse-staff/WarehouseStaffOrders'));
+const WarehouseStaffProducts = lazyPage(() => import('./pages/warehouse-staff/WarehouseStaffProducts'));
+
+// Warehouse Manager
+const WarehouseManagerDashboard = lazyPage(() => import('./pages/warehouse-manager/WarehouseManagerDashboard'));
+const WarehouseInventory = lazyPage(() => import('./pages/warehouse-manager/WarehouseInventory'));
+const WarehouseApprovals = lazyPage(() => import('./pages/warehouse-manager/WarehouseApprovals'));
+const WarehouseIssues = lazyPage(() => import('./pages/warehouse-manager/WarehouseIssues'));
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
@@ -133,6 +142,7 @@ function App() {
       <ConfirmProvider>
     <Router>
       <ScrollToTop />
+      <Suspense fallback={<PageFallback />}>
       <Routes>
 
         <Route path="/" element={<MainLayout />}>
@@ -234,6 +244,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
+      </Suspense>
       <ToastContainer
         position={isRtl ? 'top-left' : 'top-right'}
         autoClose={3000}

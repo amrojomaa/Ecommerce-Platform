@@ -14,7 +14,7 @@ import logging
 
 from .database import SessionLocal, engine, get_db
 from app import models
-from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments, warehouse
+from .routers import Cart, Categories, login, products, users, order, payment, ai_assistant, Wishlist, ticket, comment, rating, feedback, admin_settings, delivery, recommendations, pos, promotions, installments, warehouse, media
 from app.utils.image_storage import IMAGES_ROOT_DIR, ensure_images_root
 
 
@@ -483,6 +483,32 @@ def apply_schema_patches() -> None:
                 """
             )
         )
+        connection.execute(
+            text(
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = 'products_category_name_fkey'
+                          AND conrelid = 'products'::regclass
+                    ) AND NOT EXISTS (
+                        SELECT 1
+                        FROM pg_constraint
+                        WHERE conname = 'products_category_name_fkey'
+                          AND condeferrable
+                    ) THEN
+                        ALTER TABLE products DROP CONSTRAINT products_category_name_fkey;
+                        ALTER TABLE products
+                            ADD CONSTRAINT products_category_name_fkey
+                            FOREIGN KEY (category_name) REFERENCES categories(name)
+                            ON DELETE RESTRICT DEFERRABLE INITIALLY IMMEDIATE;
+                    END IF;
+                END $$;
+                """
+            )
+        )
 
 if RUN_STARTUP_SCHEMA_PATCHES:
     apply_schema_patches()
@@ -590,5 +616,6 @@ app.include_router(pos.router)
 app.include_router(promotions.router)
 app.include_router(installments.router)
 app.include_router(warehouse.router)
+app.include_router(media.router)
 
 app.mount("/images", StaticFiles(directory=str(IMAGES_ROOT_DIR)), name="images")
